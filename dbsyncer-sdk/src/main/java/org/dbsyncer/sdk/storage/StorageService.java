@@ -151,4 +151,12 @@ public interface StorageService {
      * @return 行列表，无结果时空列表
      */
     List<Map<String, Object>> queryList(SqlQuery query);
+
+    /**
+     * 执行原生更新 SQL（系统配置库），返回影响行数。用于 CAS。
+     *
+     * @param query SQL 与绑定参数
+     * @return 影响行数
+     */
+    int executeUpdate(SqlQuery query);
 }

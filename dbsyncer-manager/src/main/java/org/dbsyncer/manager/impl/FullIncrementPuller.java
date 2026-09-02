@@ -15,6 +15,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -53,6 +54,9 @@ public final class FullIncrementPuller extends AbstractPuller {
     @Resource
     private LogService logService;
 
+    @Resource
+    private ClusterService clusterService;
+
     @Override
     public void start(Mapping mapping) {
         start(mapping, false);
@@ -75,11 +79,18 @@ public final class FullIncrementPuller extends AbstractPuller {
         incrementPuller.close(metaId);
     }
 
+    @Override
+    public boolean isActive(String metaId) {
+        return running.contains(metaId) || fullPuller.isActive(metaId) || incrementPuller.isActive(metaId);
+    }
+
     private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
         try {
             Meta meta = metaProfile.getMeta(metaId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
-                //重启恢复是如果是增量阶段直接启动增量任务
+                if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
+                    return;
+                }
                 incrementPuller.start(mapping, autoRecovery);
                 return;
             }
@@ -89,7 +100,14 @@ public final class FullIncrementPuller extends AbstractPuller {
             if (!isRunning(metaId)) {
                 return;
             }
+            if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
+                logger.info("全量已完成，本节点不启动增量：{}", metaId);
+                return;
+            }
             markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
+            if (incrementPuller.isActive(metaId)) {
+                return;
+            }
             logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
             incrementPuller.start(mapping, autoRecovery);
         } catch (Exception e) {
@@ -116,6 +134,9 @@ public final class FullIncrementPuller extends AbstractPuller {
     }
 
     private String getFullIncrementPhase(Meta meta) {
+        if (meta == null || meta.getSnapshot() == null) {
+            return null;
+        }
         return meta.getSnapshot().get(ParserEnum.FULL_INCREMENT_PHASE.getCode());
     }
 

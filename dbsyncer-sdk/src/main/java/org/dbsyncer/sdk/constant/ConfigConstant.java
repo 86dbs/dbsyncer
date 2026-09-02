@@ -87,6 +87,27 @@ public class ConfigConstant {
     public static final String META_SNAPSHOT = "snapshot";
 
     /**
+     * 集群节点表(dbsyncer_cluster_node)
+     */
+    public static final String CLUSTER_NODE_ID = "nodeId";
+    public static final String CLUSTER_IP = "ip";
+    public static final String CLUSTER_HTTP_PORT = "httpPort";
+    public static final String CLUSTER_STATUS = "status";
+    public static final String CLUSTER_ROLE = "role";
+    public static final String CLUSTER_TERM_START_TIME = "termStartTime";
+    public static final String CLUSTER_VERSION = "version";
+    public static final String CLUSTER_LAST_HEARTBEAT_TIME = "lastHeartbeatTime";
+    public static final String CLUSTER_START_TIME = "startTime";
+
+    /**
+     * 集群任务调度表(dbsyncer_cluster_task)
+     */
+    public static final String CLUSTER_TASK_TABLE = "dbsyncer_cluster_task";
+    public static final String SCHEDULE_NODE_ID = "nodeId";
+    public static final String SCHEDULE_VERSION = "version";
+    public static final String SCHEDULE_TASK_TYPE = "taskType";
+
+    /**
      * 任务级 Meta.SNAPSHOT 内键：整库迁移库映射 status 摘要 JSON（不含表级 tables）
      */
     public static final String META_SNAPSHOT_DATABASE = "databaseSnapshots";

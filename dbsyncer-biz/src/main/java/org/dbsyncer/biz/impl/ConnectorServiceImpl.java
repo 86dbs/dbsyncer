@@ -207,13 +207,14 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     @Override
     public List<String> getSchema(String id, String database) {
         Connector connector = profileComponent.getConnector(id);
-        if (connector != null) {
-            ConnectorConfig config = connector.getConfig();
-            org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId());
-            return connectorService.getSchemas(connectorInstance, database);
+        if (connector == null) {
+            return Collections.emptyList();
         }
-        return Collections.emptyList();
+        ConnectorConfig config = connector.getConfig();
+        org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+        String catalog = StringUtil.getIfBlank(database, StringUtil.EMPTY);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, catalog, StringUtil.EMPTY);
+        return connectorService.getSchemas(connectorInstance, database);
     }
 
     @Override

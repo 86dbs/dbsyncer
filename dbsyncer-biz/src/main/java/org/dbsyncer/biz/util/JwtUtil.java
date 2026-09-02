@@ -75,6 +75,56 @@ public abstract class JwtUtil {
     }
 
     /**
+     * 对任意载荷签名为 JWT。
+     *
+     * @param payload 载荷对象
+     * @param secret  密钥
+     * @return JWT
+     */
+    public static String signPayload(Object payload, String secret) throws NoSuchAlgorithmException, InvalidKeyException {
+        if (payload == null || StringUtil.isBlank(secret)) {
+            throw new IllegalArgumentException("payload/secret 不能为空");
+        }
+        Map<String, String> header = new HashMap<>();
+        header.put("typ", TYP);
+        header.put("alg", ALG);
+        String headerBase64 = base64UrlEncode(JsonUtil.objToJson(header).getBytes(StandardCharsets.UTF_8));
+        String payloadBase64 = base64UrlEncode(JsonUtil.objToJson(payload).getBytes(StandardCharsets.UTF_8));
+        String data = headerBase64 + "." + payloadBase64;
+        String signatureBase64 = base64UrlEncode(hmacSha256(data, secret).getBytes(StandardCharsets.UTF_8));
+        return data + "." + signatureBase64;
+    }
+
+    /**
+     * 验签并解析载荷（不校验过期，由调用方处理）。
+     *
+     * @param token  JWT
+     * @param secret 密钥
+     * @param type   载荷类型
+     * @param <T>    载荷类型
+     * @return 载荷，失败返回 null
+     */
+    public static <T> T verifyPayload(String token, String secret, Class<T> type)
+            throws NoSuchAlgorithmException, InvalidKeyException {
+        if (StringUtil.isBlank(token) || StringUtil.isBlank(secret) || type == null) {
+            return null;
+        }
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) {
+            logger.error("Token格式错误，部分数量: {}", parts.length);
+            return null;
+        }
+        String data = parts[0] + "." + parts[1];
+        String expectedSignature = base64UrlEncode(hmacSha256(data, secret).getBytes(StandardCharsets.UTF_8));
+        if (!expectedSignature.equals(parts[2])) {
+            logger.error("Token签名验证失败");
+            return null;
+        }
+        String payloadJson = new String(base64UrlDecode(parts[1]), StandardCharsets.UTF_8);
+        return JsonUtil.jsonToObj(payloadJson, type);
+    }
+
+    /**
      * 验证JWT Token
      *
      * @param token  JWT Token

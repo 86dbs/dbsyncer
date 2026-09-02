@@ -319,8 +319,29 @@ public class MetricReporter implements ScheduledTaskJob {
             vo.addName(key);
             vo.addValue(map.getOrDefault(key, 0L));
         }
-        vo.setAverage(Math.floor(map.values().stream().mapToInt(Long::intValue).average().orElse(0)));
+        long total = 0L;
+        for (Long count : map.values()) {
+            total += count;
+        }
+        vo.setAverage(Math.floor((double) total / buckets.length));
         return vo;
+    }
+
+    /**
+     * 当前秒执行器吞吐（最近时间片计数）。
+     *
+     * @return 条/秒
+     */
+    public long getCurrentBufferActuatorTps() {
+        TpsVO vo = getOneMinBufferActuatorRate();
+        if (CollectionUtils.isEmpty(vo.getValue())) {
+            return 0L;
+        }
+        Object last = vo.getValue().get(vo.getValue().size() - 1);
+        if (last instanceof Number) {
+            return ((Number) last).longValue();
+        }
+        return 0L;
     }
 
     /**

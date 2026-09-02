@@ -39,6 +39,7 @@ import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.notice.MessageService;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
@@ -110,6 +111,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private TaskService<ConfigModel> taskService;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -269,7 +273,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     reConnect(mapping);
                     // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
-                        managerFactory.start(mapping, true);
+                        if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
+                            continue;
+                        }
+                        managerFactory.startLocal(mapping, true);
                     } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
                         managerFactory.changeMetaState(meta.getId(), CommonTaskStatusEnum.READY);
                     }
@@ -391,6 +398,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             }
             Meta meta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
             if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
+                continue;
+            }
+            if (!clusterService.isTaskAssignedToLocal(task.getId())) {
                 continue;
             }
             try {

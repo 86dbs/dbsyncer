@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 社区版提示 -->
+<div th:if="${editionInfo.edition eq 'community'}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+
+    <!-- 集群功能介绍 -->
+    <div class="bg-info/10 border border-info rounded-lg p-4 mb-6 text-left">
+        <h4 class="text-lg font-semibold text-info mb-2">
+            <i class="fa fa-sitemap"></i> 什么是集群？
+        </h4>
+        <p class="text-sm text-secondary mb-3">
+            简单说：将多台 DBSyncer 节点组成一套<strong>高可用同步服务</strong>。单台节点故障，其余节点自动接管任务；数据同步压力变大时，多节点共同分担负载，实现更快、更稳的同步能力。
+        </p>
+        <p class="text-sm text-secondary mb-2 font-medium text-info">四大核心优势：</p>
+        <ul class="text-sm text-secondary mb-3 pl-4">
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>高性能</strong>：大任务自动拆分，多机并行同步，速度成倍提升
+            </li>
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>高稳定</strong>：任务智能分配、异常自动恢复，已做完的不重跑，过程少折腾
+            </li>
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>高可用（HA）</strong>：某台机器挂了，其他机器立刻接手，保障同步业务不停、数据不断档
+            </li>
+            <li><i class="fa fa-angle-right text-info"></i> <strong>动态扩容</strong>：业务量涨了直接加机器，能力跟着长，不用停服重启、无需额外配置</li>
+        </ul>
+        <p class="text-sm text-secondary">
+            适用场景：对同步连续性有要求、大规模数据同步场景。例如多业务库同步至数仓、TB 级数据迁移、增量同步吞吐 1w+ TPS 的业务。
+        </p>
+    </div>
+
+    <p class="text-secondary mb-6">
+        该功能仅在专业版开放，请下载
+        <a href="https://gitee.com/ghi/dbsyncer/releases"
+           class="text-primary hover-underline font-medium"
+           title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
+           target="_blank">
+            <i class="fa fa-download"></i> 专业版
+        </a>
+    </p>
+</div>
+
+<!-- 近 1 分钟指标（集群聚合） -->
+<div th:if="${editionInfo.edition ne 'community' and clusterEnabled}" class="grid grid-cols-3 mb-5">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title text-center" id="clusterTpsTitle">TPS</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="clusterTpsChart" height="160"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title text-center">堆积</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="clusterQueueChart" height="160"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title text-center">全量分片</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="clusterWorkItemChart" height="160"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-4 mb-4" th:if="${editionInfo.edition ne 'community' and clusterEnabled}">
+    <div class="card">
+        <div class="card-body">
+            <p class="text-secondary text-sm mb-1">增量任务总计</p>
+            <span class="text-xxl font-bold" id="clusterIncTotal">-</span>
+        </div>
+    </div>
+</div>
+
+<!-- 集群管理 -->
+<div th:if="${editionInfo.edition ne 'community'}" class="form-container">
+    <div class="card-body">
+        <div class="mb-4 text-sm text-secondary" th:unless="${clusterEnabled}">
+            当前为单机模式。开启集群请配置 dbsyncer.cluster.enabled=true，使用 MySQL 存储，并确认集群功能已授权。
+        </div>
+
+        <table th:if="${clusterEnabled}" class="table">
+            <thead>
+            <tr>
+                <th>节点</th>
+                <th>状态</th>
+                <th>全量分片</th>
+                <th>增量任务</th>
+                <th>TPS</th>
+                <th>堆积</th>
+                <th>持久化</th>
+                <th>CPU</th>
+                <th>内存</th>
+                <th>线程数</th>
+                <th>磁盘</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="clusterTableBody"></tbody>
+        </table>
+        <div th:if="${clusterEnabled}" class="blank-block"></div>
+    </div>
+</div>
+
+<script th:if="${editionInfo.edition ne 'community' and clusterEnabled}" th:src="@{/js/cluster/cluster-list.js}"></script>
+<script th:if="${editionInfo.edition ne 'community' and clusterEnabled}" th:inline="javascript">
+    initClusterList({
+        clusterEnabled: [[${clusterEnabled}]],
+        currentNodeId: [[${current.id}]]
+    });
+</script>
+</html>

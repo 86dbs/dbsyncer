@@ -41,7 +41,15 @@ public enum StorageEnum {
     /**
      * 任务执行明细(统一 同步数据/订正校验/整库迁移 明细)
      */
-    TASK_DETAIL("task_detail");
+    TASK_DETAIL("task_detail"),
+    /**
+     * 集群节点
+     */
+    CLUSTER_NODE("cluster_node"),
+    /**
+     * 集群任务调度
+     */
+    CLUSTER_TASK("cluster_task");
 
     private final String type;
 

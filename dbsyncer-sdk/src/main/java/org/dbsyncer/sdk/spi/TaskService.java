@@ -69,6 +69,23 @@ public interface TaskService<T extends ConfigModel> {
      * @param taskId
      * @return
      */
-    boolean isRunning(String taskId);
+    default boolean isRunning(String taskId) {
+        return false;
+    }
 
+    /**
+     * 本机续跑已分配任务（不走用户启动链）。
+     *
+     * @param id 任务 ID
+     */
+    default void resumeAssigned(String id) {
+    }
+
+    /**
+     * 仅停止本进程执行，不改调度行。
+     *
+     * @param id 任务 ID
+     */
+    default void stopLocal(String id) {
+    }
 }

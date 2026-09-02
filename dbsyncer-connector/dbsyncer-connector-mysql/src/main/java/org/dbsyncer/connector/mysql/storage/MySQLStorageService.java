@@ -120,6 +120,20 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
+    protected int update(String sql, Object[] args) {
+        try {
+            Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, args));
+            return rows == null ? 0 : rows;
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                logger.debug("update skip missing table: {}", e.getMessage());
+                return 0;
+            }
+            throw new MySQLException(e.getMessage(), e);
+        }
+    }
+
+    @Override
     protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         // 读路径：分表不存在时不建表，避免错误 shardId 产生孤儿表
@@ -629,6 +643,20 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_NODE_ID,
+                ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT,
+                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_ROLE, ConfigConstant.CLUSTER_TERM_START_TIME,
+                ConfigConstant.CLUSTER_VERSION, ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> clusterNodeFields = builder.getFields();
+        tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, false));
+
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.SCHEDULE_TASK_TYPE,
+                ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.SCHEDULE_VERSION,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> taskScheduleFields = builder.getFields();
+        tables.computeIfAbsent(StorageEnum.CLUSTER_TASK.getType(), k -> new Executor(k, taskScheduleFields, true, false));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
@@ -915,7 +943,19 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_NICKNAME, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_EMAIL, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CLUSTER_NODE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CLUSTER_IP, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CLUSTER_HTTP_PORT, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_STATUS, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_ROLE, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_TERM_START_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_VERSION, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_START_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.SCHEDULE_NODE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.SCHEDULE_VERSION, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.SCHEDULE_TASK_TYPE, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

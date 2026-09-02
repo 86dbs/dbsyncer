@@ -116,6 +116,21 @@ public class SnowflakeIdWorker {
     }
 
     /**
+     * 重置工作机器号，并清空毫秒序列与上次时间戳。
+     *
+     * @param workerId 工作机器 ID（1–31）
+     */
+    public synchronized void reset(long workerId) {
+        long maxWorkerId = ~(-1L << workerIdBits);
+        if (workerId < 0 || workerId > maxWorkerId) {
+            throw new CommonException(String.format("worker Id can't be greater than %d or less than 0", maxWorkerId));
+        }
+        this.id = workerId;
+        this.sequence = 0L;
+        this.lastTimestamp = -1L;
+    }
+
+    /**
      * 阻塞到下一个毫秒，直到获得新的时间戳
      *
      * @param lastTimestamp 上次生成ID的时间截

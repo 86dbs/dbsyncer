@@ -144,6 +144,20 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     @Override
+    protected int update(String sql, Object[] args) {
+        try {
+            Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, args));
+            return rows == null ? 0 : rows;
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                logger.debug("update skip missing table: {}", e.getMessage());
+                return 0;
+            }
+            throw new H2Exception(e);
+        }
+    }
+
+    @Override
     protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         // 读路径：分表不存在时不建表，避免错误 shardId 产生孤儿表

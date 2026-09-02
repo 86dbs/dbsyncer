@@ -11,8 +11,10 @@ import org.dbsyncer.sdk.storage.strategy.LogStrategy;
 import org.dbsyncer.sdk.storage.strategy.MetaStrategy;
 import org.dbsyncer.sdk.storage.strategy.TableGroupStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.ClusterTaskStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
 import org.dbsyncer.sdk.storage.strategy.UserStrategy;
+import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
 
 /**
  * 存储策略枚举
@@ -61,7 +63,17 @@ public enum StorageStrategyEnum {
     /**
      * 任务策略
      */
-    TASK(StorageEnum.TASK, new TaskStrategy());
+    TASK(StorageEnum.TASK, new TaskStrategy()),
+
+    /**
+     * 集群节点
+     */
+    CLUSTER_NODE(StorageEnum.CLUSTER_NODE, new ClusterNodeStrategy()),
+
+    /**
+     * 集群任务调度
+     */
+    CLUSTER_TASK(StorageEnum.CLUSTER_TASK, new ClusterTaskStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

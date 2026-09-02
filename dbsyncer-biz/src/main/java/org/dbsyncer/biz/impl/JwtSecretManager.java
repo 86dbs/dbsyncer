@@ -133,6 +133,43 @@ public class JwtSecretManager {
     }
 
     /**
+     * 对任意载荷签名。
+     *
+     * @param payload 载荷
+     * @return JWT
+     */
+    public String signPayload(Object payload) throws NoSuchAlgorithmException, InvalidKeyException {
+        JwtSecretConfig config = getJwtSecretConfig();
+        List<JwtSecretVersion> secrets = config.getSecrets();
+        Assert.isTrue(!CollectionUtils.isEmpty(secrets), "JWT密钥未初始化");
+        String secret = secrets.get(secrets.size() - 1).getSecret();
+        return JwtUtil.signPayload(payload, secret);
+    }
+
+    /**
+     * 验签并解析载荷（支持密钥轮换；不校验过期）。
+     *
+     * @param token JWT
+     * @param type  载荷类型
+     * @param <T>   载荷类型
+     * @return 载荷，失败返回 null
+     */
+    public <T> T verifyPayload(String token, Class<T> type) throws NoSuchAlgorithmException, InvalidKeyException {
+        if (StringUtil.isBlank(token) || type == null) {
+            return null;
+        }
+        JwtSecretConfig config = getJwtSecretConfig();
+        for (int i = config.getSecrets().size() - 1; i >= 0; i--) {
+            JwtSecretVersion version = config.getSecrets().get(i);
+            T payload = JwtUtil.verifyPayload(token, version.getSecret(), type);
+            if (payload != null) {
+                return payload;
+            }
+        }
+        return null;
+    }
+
+    /**
      * 从系统配置中获取JWT密钥配置
      *
      * @return JWT密钥配置，如果不存在返回null
