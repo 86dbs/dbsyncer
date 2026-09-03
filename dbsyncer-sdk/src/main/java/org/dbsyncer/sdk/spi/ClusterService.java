@@ -113,12 +113,12 @@ public interface ClusterService {
     }
 
     /**
-     * 启动任务：选出 Scheduler、写入调度并通知目标节点。
-     * <p>全量+增量从启动起即绑定同一 Scheduler，切增量不再二次分配。
+     * 启动任务：写入调度并分配执行节点，不拉起本机执行器。
+     * <p>返回 true 时由调用方在本机拉起；目标在其它节点时由实现负责通知对方内部拉起。
      *
      * @param taskId 任务 / Mapping ID
      * @param model  同步方式（{@link org.dbsyncer.sdk.enums.ModelEnum} code）
-     * @return true 本机是 Scheduler，应拉起对应 Puller
+     * @return true 本机应拉起执行器
      */
     default boolean prepareTaskStart(String taskId, String model) {
         return true;

@@ -69,14 +69,14 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
         }
         Meta current = metaProfile.getMeta(metaId);
         boolean alreadyRunning = current != null && current.getState() == CommonTaskStatusEnum.RUNNING.getCode();
-        boolean runLocal = clusterService.prepareTaskStart(mapping.getId(), mapping.getModel());
+        // 先置 RUNNING，再派工/通知：Leader 未分配扫描与远端 executeLocal 都以 Meta 为准，避免已停任务被误拉起
         changeMetaState(metaId, CommonTaskStatusEnum.RUNNING);
+        boolean runLocal = clusterService.prepareTaskStart(mapping.getId(), mapping.getModel());
         if (!runLocal) {
             return;
         }
-        connectorInstanceBinder.bind(mapping);
         try {
-            puller.start(mapping, autoRecovery);
+            startLocal(mapping, autoRecovery);
         } catch (Exception e) {
             if (!alreadyRunning) {
                 changeMetaState(metaId, CommonTaskStatusEnum.READY);
