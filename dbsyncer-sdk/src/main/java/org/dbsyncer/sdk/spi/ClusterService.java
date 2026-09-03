@@ -171,6 +171,24 @@ public interface ClusterService {
     }
 
     /**
+     * 内部拉起本机分片执行。单机默认 true。
+     *
+     * @param planId 分片计划行 ID
+     * @return true 已受理或本机无需执行
+     */
+    default boolean executeShardLocal(String planId) {
+        return true;
+    }
+
+    /**
+     * 内部停止本机分片执行，不改分片计划行归属。
+     *
+     * @param planId 分片计划行 ID
+     */
+    default void stopShardLocal(String planId) {
+    }
+
+    /**
      * 从集群移除节点。
      *
      * @param nodeId 节点 ID

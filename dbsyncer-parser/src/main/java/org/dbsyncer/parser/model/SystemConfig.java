@@ -109,6 +109,21 @@ public class SystemConfig extends ConfigModel {
      */
     private NoticeConfig noticeConfig;
 
+    /**
+     * 批处理并发窗口：同时推进的表数上限，并作为本机分片执行线程池大小
+     */
+    private int tableWindowSize = 10;
+
+    /**
+     * 单片行预算
+     */
+    private int shardRowBudget = 1_000_000;
+
+    /**
+     * 分片运行超时（毫秒）
+     */
+    private long shardTimeoutMs = 300_000L;
+
     public int getExpireDataDays() {
         return expireDataDays;
     }
@@ -243,5 +258,29 @@ public class SystemConfig extends ConfigModel {
 
     public void setNoticeConfig(NoticeConfig noticeConfig) {
         this.noticeConfig = noticeConfig;
+    }
+
+    public int getTableWindowSize() {
+        return tableWindowSize;
+    }
+
+    public void setTableWindowSize(int tableWindowSize) {
+        this.tableWindowSize = tableWindowSize;
+    }
+
+    public int getShardRowBudget() {
+        return shardRowBudget;
+    }
+
+    public void setShardRowBudget(int shardRowBudget) {
+        this.shardRowBudget = shardRowBudget;
+    }
+
+    public long getShardTimeoutMs() {
+        return shardTimeoutMs;
+    }
+
+    public void setShardTimeoutMs(long shardTimeoutMs) {
+        this.shardTimeoutMs = shardTimeoutMs;
     }
 }

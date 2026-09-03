@@ -103,6 +103,42 @@ public class ClusterController extends BaseController {
     }
 
     /**
+     * 内部拉起本机分片。
+     */
+    @PostMapping("/internal/shard/execute")
+    @ResponseBody
+    public RestResult executeShardLocal(@RequestParam("planId") String planId) {
+        try {
+            if (clusterService.isStandalone()) {
+                return RestResult.restFail("单机不支持内部分片执行接口");
+            }
+            boolean ok = clusterService.executeShardLocal(planId);
+            return ok ? RestResult.restSuccess("ok") : RestResult.restFail("本机不是该分片的执行节点");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 内部停止本机分片。
+     */
+    @PostMapping("/internal/shard/stop")
+    @ResponseBody
+    public RestResult stopShardLocal(@RequestParam("planId") String planId) {
+        try {
+            if (clusterService.isStandalone()) {
+                return RestResult.restFail("单机不支持内部分片停止接口");
+            }
+            clusterService.stopShardLocal(planId);
+            return RestResult.restSuccess("ok");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
      * 心跳探测（免登录，供节点互探）。
      */
     @GetMapping("/ping")

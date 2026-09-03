@@ -657,6 +657,13 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskScheduleFields = builder.getFields();
         tables.computeIfAbsent(StorageEnum.CLUSTER_TASK.getType(), k -> new Executor(k, taskScheduleFields, true, false));
+
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID,
+                ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.PLAN_START_CURSOR, ConfigConstant.PLAN_END_CURSOR,
+                ConfigConstant.PLAN_STATUS, ConfigConstant.PLAN_LAST_PAGE,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> taskPlanFields = builder.getFields();
+        tables.computeIfAbsent(StorageEnum.TASK_PLAN.getType(), k -> new Executor(k, taskPlanFields, true, false));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
@@ -955,7 +962,11 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CLUSTER_START_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.SCHEDULE_NODE_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.SCHEDULE_VERSION, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.SCHEDULE_TASK_TYPE, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.SCHEDULE_TASK_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PLAN_START_CURSOR, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PLAN_END_CURSOR, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PLAN_STATUS, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.PLAN_LAST_PAGE, "INTEGER", Types.INTEGER))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

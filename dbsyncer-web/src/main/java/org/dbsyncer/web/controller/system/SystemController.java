@@ -4,7 +4,9 @@
 package org.dbsyncer.web.controller.system;
 
 import org.dbsyncer.biz.SystemConfigService;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 
 import org.slf4j.Logger;
@@ -30,9 +32,16 @@ public class SystemController extends BaseController {
     @Resource
     private SystemConfigService systemConfigService;
 
+    @Resource
+    private LicenseService licenseService;
+
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getSystemConfigVo());
+        EditionInfoVO editionInfo = new EditionInfoVO();
+        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
+        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
+        model.put("editionInfo", editionInfo);
         return "system/list";
     }
 

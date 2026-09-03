@@ -108,6 +108,14 @@ public class ConfigConstant {
     public static final String SCHEDULE_TASK_TYPE = "taskType";
 
     /**
+     * 任务分片计划表(dbsyncer_task_plan)
+     */
+    public static final String PLAN_START_CURSOR = "startCursor";
+    public static final String PLAN_END_CURSOR = "endCursor";
+    public static final String PLAN_LAST_PAGE = "lastPage";
+    public static final String PLAN_STATUS = "status";
+
+    /**
      * 任务级 Meta.SNAPSHOT 内键：整库迁移库映射 status 摘要 JSON（不含表级 tables）
      */
     public static final String META_SNAPSHOT_DATABASE = "databaseSnapshots";
