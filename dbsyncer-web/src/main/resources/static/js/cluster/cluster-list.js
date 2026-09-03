@@ -281,7 +281,7 @@
         var currentName = (metric && metric.name) ? metric.name : id;
         var inputId = 'clusterNodeNameInput';
         showConfirm({
-            title: '编辑节点名称',
+            title: '编辑节点',
             icon: 'info',
             confirmText: '保存',
             body: '<div class="form-item mb-0">'
