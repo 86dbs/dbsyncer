@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -65,7 +66,7 @@ import java.util.stream.Stream;
  * @date 2019/9/16 23:59
  */
 @Component
-public final class PreloadTemplate implements ApplicationListener<ContextRefreshedEvent> {
+public final class PreloadTemplate implements ApplicationListener<ContextRefreshedEvent>, Ordered {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -135,6 +136,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         resumeDatabaseSyncTasks();
 
         preloadCompleted = true;
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
     }
 
     public void loadNotificationChannel() {
@@ -245,6 +251,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * 恢复同步驱动(Mapping)。
      * <p>先按任务类型 {@code mapping} 分页拉取任务，再批量查任务级 Meta（{@code isTaskDetail=0}），
      * 避免一次性加载全部 Meta。明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
+     * 集群模式只预热连接器并把 STOPPING 置回 READY，不在此处拉起任务。
      */
     private void launchSyncMappings() {
         taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappings -> {
@@ -271,9 +278,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
                 try {
                     reConnect(mapping);
-                    // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
-                        if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
+                        if (!clusterService.isStandalone()) {
                             continue;
                         }
                         managerFactory.startLocal(mapping, true);
@@ -390,6 +396,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     /**
      * 将中断前 Meta.state=RUNNING 的任务重新拉起（先将 Meta 置 READY，再 start）。
+     * 集群模式跳过，由 {@link ClusterService} 在启动完成后恢复本机任务。
      */
     private void resumeRunningCommonTasks(List<ConfigModel> taskAll) {
         for (ConfigModel task : taskAll) {
@@ -400,7 +407,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
                 continue;
             }
-            if (!clusterService.isTaskAssignedToLocal(task.getId())) {
+            if (!clusterService.isStandalone()) {
                 continue;
             }
             try {
