@@ -18,6 +18,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Field;
@@ -149,7 +150,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
         if (success == 0 && fail == 0) {
             return;
         }
-        // 与 FullPuller snapshot flush 共用锁，避免并发 editConfigModel 回写覆盖 DB 原子 success/fail
+        // 与 FullTableProgressUtil.save 共用 tableLock；进度更新走 updateMetaProgress（写前重载），避免覆盖原子计数
         synchronized (MetaLockUtil.lock(writer.getMetaId())) {
             metaProfile.incrementMeta(MetaIncrement.of(writer.getMetaId()).success(success).fail(fail));
         }
@@ -157,13 +158,14 @@ public final class FlushStrategyImpl implements FlushStrategy {
     }
 
     /**
-     * 同步表级 Meta：taskId=table_group.id，isTaskDetail=1；主键由 ADD 路径生成雪花。
+     * 同步表级 Meta 计数：taskId=table_group.id，isTaskDetail=1；主键由 ADD 路径生成雪花。
+     * <p>仅原子累加 success/fail，不写 SNAPSHOT；与 {@link FullTableProgressUtil#save} 共用表锁。
      */
     private void incrementTableMeta(String tableGroupId, long success, long fail) {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        synchronized (("table-meta-" + tableGroupId).intern()) {
+        synchronized (FullTableProgressUtil.tableLock(tableGroupId)) {
             Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
             if (tableMeta == null) {
                 tableMeta = new Meta();

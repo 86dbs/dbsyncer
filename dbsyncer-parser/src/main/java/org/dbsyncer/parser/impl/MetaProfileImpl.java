@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -176,6 +177,21 @@ public class MetaProfileImpl implements MetaProfile {
             return;
         }
         storageService.increment(StorageEnum.META, increment.getMetaId(), deltas);
+    }
+
+    @Override
+    public void updateMetaProgress(String metaId, int state, Map<String, String> snapshot) {
+        if (StringUtil.isBlank(metaId)) {
+            return;
+        }
+        Meta meta = getMeta(metaId);
+        if (meta == null) {
+            return;
+        }
+        meta.setState(state);
+        meta.setSnapshot(snapshot != null ? snapshot : new HashMap<>());
+        meta.setUpdateTime(System.currentTimeMillis());
+        updateMeta(meta);
     }
 
     @Override

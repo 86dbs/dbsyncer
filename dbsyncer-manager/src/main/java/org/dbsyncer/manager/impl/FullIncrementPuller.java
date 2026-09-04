@@ -3,16 +3,16 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -44,6 +43,9 @@ public final class FullIncrementPuller extends AbstractPuller {
 
     @Resource
     private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private FullPuller fullPuller;
@@ -155,15 +157,7 @@ public final class FullIncrementPuller extends AbstractPuller {
             return false;
         }
 
-        Map<String, String> snapshot = meta.getSnapshot();
-        int tableGroupIndex = NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
-        int pageIndex = NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue());
-        String cursor = snapshot.get(ParserEnum.CURSOR.getCode());
-
-        return FullTableProgressUtil.hasIncomplete(snapshot)
-                || tableGroupIndex > ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()
-                || pageIndex > ParserEnum.PAGE_INDEX.getDefaultValue()
-                || StringUtil.isNotBlank(cursor)
+        return FullTableProgressUtil.hasIncomplete(metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()))
                 || processed > 0;
     }
 
@@ -178,7 +172,8 @@ public final class FullIncrementPuller extends AbstractPuller {
         meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
         meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
-        FullTableProgressUtil.clear(meta.getSnapshot());
+        meta.getSnapshot().remove("tableProgress");
+        FullTableProgressUtil.clearAll(profileComponent, metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
         profileComponent.editConfigModel(meta);
     }
 }

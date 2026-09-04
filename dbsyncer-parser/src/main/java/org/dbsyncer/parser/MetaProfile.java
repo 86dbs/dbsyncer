@@ -65,6 +65,11 @@ public interface MetaProfile {
      */
     void incrementMeta(MetaIncrement increment);
 
+    /**
+     * 更新 Meta 进度
+     */
+    void updateMetaProgress(String metaId, int state, Map<String, String> snapshot);
+
     void deleteMetaByTableGroupIds(List<String> tableGroupIds);
 
     /**

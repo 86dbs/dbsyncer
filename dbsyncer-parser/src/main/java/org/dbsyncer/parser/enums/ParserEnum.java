@@ -25,11 +25,6 @@ public enum ParserEnum {
     TABLE_GROUP_INDEX("tableGroupIndex", 0),
 
     /**
-     * 全量多表进度（JSON：tableGroupId -> {pageIndex,cursor,done}）
-     */
-    TABLE_PROGRESS("tableProgress", 0),
-
-    /**
      * 全量+增量阶段: full(全量中) / increment(增量中)
      */
     FULL_INCREMENT_PHASE("fullIncrementPhase", 0);
