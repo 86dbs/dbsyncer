@@ -25,7 +25,12 @@ import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.storage.AbstractStorageService;
+import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.storage.StorageTransactionCallback;
+import org.dbsyncer.sdk.storage.StorageTx;
 import org.dbsyncer.sdk.storage.migrate.StorageDataMigrator;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.slf4j.Logger;
@@ -37,6 +42,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,6 +136,52 @@ public class MySQLStorageService extends AbstractStorageService {
                 return 0;
             }
             throw new MySQLException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public <T> T executeInTransaction(StorageTransactionCallback<T> callback) {
+        Assert.notNull(callback, "callback can not be null.");
+        try {
+            return connectorInstance.execute(tpl -> runInTransaction(tpl, callback));
+        } catch (Exception e) {
+            throw new MySQLException(e.getMessage(), e);
+        }
+    }
+
+    private <T> T runInTransaction(DatabaseTemplate tpl, StorageTransactionCallback<T> callback) throws Exception {
+        SimpleConnection conn = tpl.getSimpleConnection();
+        boolean originalAutoCommit = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        try {
+            StorageTx tx = new StorageTx() {
+                @Override
+                public List<Map<String, Object>> queryList(SqlQuery query) {
+                    List<Map<String, Object>> data = tpl.queryForList(query.getSql(), query.getArgs());
+                    return CollectionUtils.isEmpty(data) ? new ArrayList<>() : data;
+                }
+
+                @Override
+                public int executeUpdate(SqlQuery query) {
+                    return tpl.update(query.getSql(), query.getArgs());
+                }
+            };
+            T result = callback.doInTransaction(tx);
+            conn.commit();
+            return result;
+        } catch (Exception e) {
+            try {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                logger.warn("transaction rollback failed: {}", rollbackEx.getMessage());
+            }
+            throw e;
+        } finally {
+            try {
+                conn.setAutoCommit(originalAutoCommit);
+            } catch (SQLException e) {
+                logger.warn("restore autoCommit failed: {}", e.getMessage());
+            }
         }
     }
 

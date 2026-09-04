@@ -159,4 +159,13 @@ public interface StorageService {
      * @return 影响行数
      */
     int executeUpdate(SqlQuery query);
+
+    /**
+     * 在同一 JDBC 连接事务中执行回调（配置库）。失败自动回滚。
+     *
+     * @param callback 事务内逻辑
+     * @param <T>      返回类型
+     * @return 回调返回值
+     */
+    <T> T executeInTransaction(StorageTransactionCallback<T> callback);
 }
