@@ -27,6 +27,8 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.impl.InFilter;
+import org.dbsyncer.sdk.model.CursorBound;
+import org.dbsyncer.sdk.model.CursorBoundRequest;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -54,6 +56,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -310,6 +313,77 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
+    public CursorBound resolveCursorBound(DatabaseConnectorInstance connectorInstance, CursorBoundRequest request) {
+        if (request == null || connectorInstance == null || request.getBudget() <= 0 || request.getSourceTable() == null) {
+            return CursorBound.unsupported(request == null ? StringUtil.EMPTY : request.getStartCursor());
+        }
+        String startCursor = StringUtil.getIfBlank(request.getStartCursor(), StringUtil.EMPTY);
+        Table table = request.getSourceTable();
+        if (StringUtil.isBlank(table.getName()) || CollectionUtils.isEmpty(table.getColumn())) {
+            return CursorBound.unsupported(startCursor);
+        }
+        if (!PrimaryKeyUtil.isSupportedCursor(table.getColumn())) {
+            return CursorBound.unsupported(startCursor);
+        }
+
+        List<String> primaryKeys = resolveCursorPrimaryKeys(request.getCommand(), table);
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return CursorBound.unsupported(startCursor);
+        }
+        List<Field> pkFields = resolvePrimaryKeyFields(table.getColumn(), primaryKeys);
+        if (CollectionUtils.isEmpty(pkFields) || !PrimaryKeyUtil.isSupportedCursor(pkFields)) {
+            return CursorBound.unsupported(startCursor);
+        }
+
+        String queryFilter = extractQueryFilter(request.getCommand());
+        String schema = buildSchemaWithQuotation(connectorInstance.getSchema());
+        SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, table.getName(), primaryKeys, pkFields, queryFilter);
+        String baseQuerySql = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(buildSqlConfig);
+        PageSql pageSql = new PageSql(baseQuerySql, queryFilter, primaryKeys, pkFields);
+
+        Object[] cursors = PrimaryKeyUtil.getLastCursors(startCursor);
+        boolean fromHead = cursors == null || cursors.length == 0;
+        String sql;
+        Object[] args;
+        FullPluginContext pageContext = new FullPluginContext();
+        pageContext.setPageIndex(1);
+        pageContext.setPageSize(request.getBudget());
+        pageContext.setCursors(fromHead ? null : cursors);
+        pageContext.setArgs(new ArrayList<>());
+        if (fromHead) {
+            sql = getPageSql(pageSql);
+            args = getPageArgs(pageContext);
+        } else {
+            sql = getPageCursorSql(pageSql);
+            if (StringUtil.isBlank(sql)) {
+                return CursorBound.unsupported(startCursor);
+            }
+            args = getPageCursorArgs(pageContext);
+        }
+        if (StringUtil.isBlank(sql)) {
+            return CursorBound.unsupported(startCursor);
+        }
+
+        final String finalSql = sql;
+        final Object[] finalArgs = args == null ? new Object[0] : args;
+        List<Map<String, Object>> rows = connectorInstance.execute(
+                databaseTemplate -> databaseTemplate.queryForList(finalSql, finalArgs));
+        int actualCount = CollectionUtils.isEmpty(rows) ? 0 : rows.size();
+        if (actualCount == 0) {
+            return CursorBound.of(startCursor, StringUtil.EMPTY, true, 0);
+        }
+        Object[] lastCursors = PrimaryKeyUtil.getLastCursors((List) rows, primaryKeys);
+        String endCursor = lastCursors == null || lastCursors.length == 0
+                ? StringUtil.EMPTY
+                : StringUtil.join(lastCursors, StringUtil.COMMA);
+        boolean lastPage = actualCount < request.getBudget();
+        return CursorBound.of(startCursor, endCursor, lastPage, actualCount);
+    }
+
+    /**
+     * 批量写入目标源数据
+     */
+    @Override
     public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
         String event = context.getEvent();
         List<Map> data = context.getTargetList();
@@ -555,14 +629,85 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取架构名
+     * 获取架构名前缀（含点号），空则返回空串。
      */
-    private String buildSchemaWithQuotation(String schema) {
+    protected String buildSchemaWithQuotation(String schema) {
         StringBuilder s = new StringBuilder();
         if (StringUtil.isNotBlank(schema)) {
             s.append(buildWithQuotation(schema)).append(".");
         }
         return s.toString();
+    }
+
+    /**
+     * 解析游标划界使用的主键名（优先 command 中 CURSOR_PK_NAMES）。
+     */
+    private List<String> resolveCursorPrimaryKeys(Map<String, String> command, Table table) {
+        if (command != null) {
+            String cursorPkNames = command.get(ConnectorConstant.CURSOR_PK_NAMES);
+            if (StringUtil.isNotBlank(cursorPkNames)) {
+                return Arrays.stream(StringUtil.split(cursorPkNames, StringUtil.COMMA))
+                        .map(String::trim)
+                        .filter(StringUtil::isNotBlank)
+                        .collect(Collectors.toList());
+            }
+        }
+        List<Field> pkFields = PrimaryKeyUtil.findPrimaryKeyFields(table.getColumn());
+        if (CollectionUtils.isEmpty(pkFields)) {
+            return Collections.emptyList();
+        }
+        return pkFields.stream().map(Field::getName).collect(Collectors.toList());
+    }
+
+    /**
+     * 按主键名顺序取字段定义。
+     */
+    private List<Field> resolvePrimaryKeyFields(List<Field> columns, List<String> primaryKeys) {
+        Map<String, Field> fieldMap = new HashMap<>();
+        for (Field field : columns) {
+            if (field != null && StringUtil.isNotBlank(field.getName())) {
+                fieldMap.putIfAbsent(field.getName(), field);
+            }
+        }
+        List<Field> pkFields = new ArrayList<>(primaryKeys.size());
+        for (String pk : primaryKeys) {
+            Field field = fieldMap.get(pk);
+            if (field == null) {
+                for (Map.Entry<String, Field> entry : fieldMap.entrySet()) {
+                    if (StringUtil.equalsIgnoreCase(entry.getKey(), pk)) {
+                        field = entry.getValue();
+                        break;
+                    }
+                }
+            }
+            if (field == null) {
+                return Collections.emptyList();
+            }
+            pkFields.add(field);
+        }
+        return pkFields;
+    }
+
+    /**
+     * 从已保存的 QUERY SQL 中截取用户过滤条件（含 WHERE，不含 ORDER BY/LIMIT）。
+     * <p>只用 QUERY，不用 QUERY_CURSOR（后者可能含游标占位符）。
+     */
+    private String extractQueryFilter(Map<String, String> command) {
+        if (CollectionUtils.isEmpty(command)) {
+            return StringUtil.EMPTY;
+        }
+        String pageSql = command.get(ConnectorConstant.OPERTION_QUERY);
+        if (StringUtil.isBlank(pageSql)) {
+            return StringUtil.EMPTY;
+        }
+        String upper = pageSql.toUpperCase(Locale.ROOT);
+        int whereIdx = upper.indexOf(" WHERE ");
+        if (whereIdx < 0) {
+            return StringUtil.EMPTY;
+        }
+        int orderIdx = upper.indexOf(" ORDER BY ", whereIdx);
+        int end = orderIdx >= 0 ? orderIdx : pageSql.length();
+        return pageSql.substring(whereIdx, end);
     }
 
     /**
