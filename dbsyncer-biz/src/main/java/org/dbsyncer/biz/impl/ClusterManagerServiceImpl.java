@@ -84,7 +84,7 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
         vo.setLeader(node.getRole() == ClusterNodeRoleEnum.LEADER.getCode());
         vo.setNetworkOk(node.getStatus() == ClusterNodeStatusEnum.ONLINE.getCode());
         vo.setLocal(StringUtil.equals(clusterService.getLocalNodeId(), node.getNodeId()));
-        vo.setLastHeartbeatTime(node.getLastHeartbeatTime());
+        vo.setHeartbeatTime(node.getHeartbeatTime());
         vo.setStartTime(node.getStartTime());
         return vo;
     }

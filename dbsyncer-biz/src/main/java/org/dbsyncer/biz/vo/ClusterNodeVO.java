@@ -23,7 +23,7 @@ public class ClusterNodeVO {
     private boolean leader;
     private boolean networkOk;
     private boolean local;
-    private long lastHeartbeatTime;
+    private long heartbeatTime;
     private long startTime;
 
     public String getId() {
@@ -114,12 +114,12 @@ public class ClusterNodeVO {
         this.local = local;
     }
 
-    public long getLastHeartbeatTime() {
-        return lastHeartbeatTime;
+    public long getHeartbeatTime() {
+        return heartbeatTime;
     }
 
-    public void setLastHeartbeatTime(long lastHeartbeatTime) {
-        this.lastHeartbeatTime = lastHeartbeatTime;
+    public void setHeartbeatTime(long heartbeatTime) {
+        this.heartbeatTime = heartbeatTime;
     }
 
     public long getStartTime() {

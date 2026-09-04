@@ -94,9 +94,9 @@ public class ConfigConstant {
     public static final String CLUSTER_HTTP_PORT = "httpPort";
     public static final String CLUSTER_STATUS = "status";
     public static final String CLUSTER_ROLE = "role";
-    public static final String CLUSTER_TERM_START_TIME = "termStartTime";
+    public static final String CLUSTER_TERM = "term";
     public static final String CLUSTER_VERSION = "version";
-    public static final String CLUSTER_LAST_HEARTBEAT_TIME = "lastHeartbeatTime";
+    public static final String CLUSTER_HEARTBEAT_TIME = "heartbeatTime";
     public static final String CLUSTER_START_TIME = "startTime";
 
     /**

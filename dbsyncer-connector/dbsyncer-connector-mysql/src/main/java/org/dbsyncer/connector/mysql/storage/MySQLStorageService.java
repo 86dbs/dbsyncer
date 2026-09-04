@@ -646,8 +646,8 @@ public class MySQLStorageService extends AbstractStorageService {
 
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_NODE_ID,
                 ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT,
-                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_ROLE, ConfigConstant.CLUSTER_TERM_START_TIME,
-                ConfigConstant.CLUSTER_VERSION, ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
+                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_ROLE, ConfigConstant.CLUSTER_TERM,
+                ConfigConstant.CLUSTER_VERSION, ConfigConstant.CLUSTER_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> clusterNodeFields = builder.getFields();
         tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, false));
@@ -956,9 +956,9 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CLUSTER_HTTP_PORT, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CLUSTER_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CLUSTER_ROLE, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.CLUSTER_TERM_START_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_TERM, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_VERSION, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_HEARTBEAT_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_START_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.SCHEDULE_NODE_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.SCHEDULE_VERSION, "INTEGER", Types.INTEGER),

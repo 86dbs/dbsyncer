@@ -33,14 +33,17 @@ public class ClusterNode {
      */
     private int role;
     /**
-     * 成为 Leader 的毫秒时间戳。
+     * 任期（单调递增，成为 Leader 时 +1，默认 0）。
      */
-    private long termStartTime;
+    private long term;
     /**
      * 元数据版本号，乐观锁。
      */
     private long version;
-    private long lastHeartbeatTime;
+    /**
+     * 最后心跳毫秒。
+     */
+    private long heartbeatTime;
     private long startTime;
     private long createTime;
     private long updateTime;
@@ -109,12 +112,12 @@ public class ClusterNode {
         this.role = role;
     }
 
-    public long getTermStartTime() {
-        return termStartTime;
+    public long getTerm() {
+        return term;
     }
 
-    public void setTermStartTime(long termStartTime) {
-        this.termStartTime = termStartTime;
+    public void setTerm(long term) {
+        this.term = term;
     }
 
     public long getVersion() {
@@ -125,12 +128,12 @@ public class ClusterNode {
         this.version = version;
     }
 
-    public long getLastHeartbeatTime() {
-        return lastHeartbeatTime;
+    public long getHeartbeatTime() {
+        return heartbeatTime;
     }
 
-    public void setLastHeartbeatTime(long lastHeartbeatTime) {
-        this.lastHeartbeatTime = lastHeartbeatTime;
+    public void setHeartbeatTime(long heartbeatTime) {
+        this.heartbeatTime = heartbeatTime;
     }
 
     public long getStartTime() {
