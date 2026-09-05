@@ -4,15 +4,11 @@
 package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.ClusterNode;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 集群控制服务：节点身份、在线列表、任务级调度。
@@ -26,15 +22,10 @@ import java.util.stream.Collectors;
 public interface ClusterService {
 
     /**
-     * 当前运行时是否启用集群能力（授权、开关、存储等门控）。默认 false。
-     *
-     * @param licenseService 许可证服务，可空
-     * @param clusterEnabled 配置开关 {@code dbsyncer.cluster.enabled}
-     * @param storageType    存储类型 {@code dbsyncer.storage.type}
-     * @return true 使用本实现作为集群控制面
+     * 初始化
      */
-    default boolean isClusterRuntime(LicenseService licenseService, boolean clusterEnabled, String storageType) {
-        return false;
+    default void init() {
+
     }
 
     /**
@@ -67,22 +58,7 @@ public interface ClusterService {
      * @return 分页结果
      */
     default Paging<ClusterNode> queryNodes(int pageNum, int pageSize) {
-        int safePageNum = Math.max(1, pageNum);
-        int safePageSize = Math.max(1, pageSize);
-        List<ClusterNode> source = listNodes();
-        List<ClusterNode> all = new ArrayList<>(source == null ? Collections.emptyList() : source);
-        all.sort(Comparator
-                .comparingLong(ClusterNode::getCreateTime)
-                .thenComparing(n -> StringUtil.getIfBlank(n.getNodeId(), StringUtil.EMPTY), String::compareTo));
-        Paging<ClusterNode> paging = new Paging<>(safePageNum, safePageSize);
-        paging.setTotal(all.size());
-        int offset = (safePageNum - 1) * safePageSize;
-        if (offset >= all.size()) {
-            paging.setData(Collections.emptyList());
-            return paging;
-        }
-        paging.setData(all.stream().skip(offset).limit(safePageSize).collect(Collectors.toList()));
-        return paging;
+        return null;
     }
 
     /**
@@ -101,15 +77,6 @@ public interface ClusterService {
      */
     default boolean isLeader() {
         return false;
-    }
-
-    /**
-     * 当前 Leader 节点 ID。
-     *
-     * @return Leader 的 NODE_ID；无 Leader 时为空串
-     */
-    default String getLeaderId() {
-        return StringUtil.EMPTY;
     }
 
     /**

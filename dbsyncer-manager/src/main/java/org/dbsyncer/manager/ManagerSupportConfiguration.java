@@ -6,7 +6,6 @@ package org.dbsyncer.manager;
 import org.dbsyncer.manager.deployment.StandaloneService;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -30,11 +29,11 @@ public class ManagerSupportConfiguration {
     @Bean
     @ConditionalOnMissingBean(ClusterService.class)
     @DependsOn(value = "serviceFactory")
-    public ClusterService clusterService(MetaProfile metaProfile, LicenseService licenseService, Environment environment) {
+    public ClusterService clusterService(MetaProfile metaProfile, Environment environment) {
         ClusterService spi = serviceFactory.get(ClusterService.class);
         boolean clusterEnabled = environment.getProperty("dbsyncer.cluster.enabled", Boolean.class, Boolean.FALSE);
         String storageType = environment.getProperty("dbsyncer.storage.type", "h2");
-        if (spi != null && spi.isClusterRuntime(licenseService, clusterEnabled, storageType)) {
+        if (clusterEnabled && storageType.equalsIgnoreCase("mysql") && spi != null) {
             return spi;
         }
         return new StandaloneService(metaProfile);

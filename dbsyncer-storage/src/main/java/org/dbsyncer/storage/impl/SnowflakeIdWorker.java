@@ -1,7 +1,6 @@
 package org.dbsyncer.storage.impl;
 
 import org.dbsyncer.common.CommonException;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -113,21 +112,6 @@ public class SnowflakeIdWorker {
                 | (dataCenterId << dataCenterIdShift) //
                 | (id << workerIdShift) //
                 | sequence;
-    }
-
-    /**
-     * 重置工作机器号，并清空毫秒序列与上次时间戳。
-     *
-     * @param workerId 工作机器 ID（1–31）
-     */
-    public synchronized void reset(long workerId) {
-        long maxWorkerId = ~(-1L << workerIdBits);
-        if (workerId < 0 || workerId > maxWorkerId) {
-            throw new CommonException(String.format("worker Id can't be greater than %d or less than 0", maxWorkerId));
-        }
-        this.id = workerId;
-        this.sequence = 0L;
-        this.lastTimestamp = -1L;
     }
 
     /**

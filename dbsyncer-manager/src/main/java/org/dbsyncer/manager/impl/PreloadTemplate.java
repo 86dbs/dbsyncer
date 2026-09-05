@@ -46,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -66,7 +65,7 @@ import java.util.stream.Stream;
  * @date 2019/9/16 23:59
  */
 @Component
-public final class PreloadTemplate implements ApplicationListener<ContextRefreshedEvent>, Ordered {
+public final class PreloadTemplate implements ApplicationListener<ContextRefreshedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -121,26 +120,23 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
         // Load plugins
         pluginFactory.loadPlugins();
-
         // Load Notification Channels
         loadNotificationChannel();
 
-        // Load connectorInstances
-        loadConnectorInstance();
-
-        // 同步驱动：按任务级 Meta 恢复 Mapping
-        launchSyncMappings();
-
-        // 订正校验 / 整库迁移
-        resumeValidateSyncTasks();
-        resumeDatabaseSyncTasks();
-
+        if (clusterService.isStandalone()) {
+            // Load connectorInstances
+            loadConnectorInstance();
+            // 同步驱动：按任务级 Meta 恢复 Mapping
+            launchSyncMappings();
+            // 订正校验 / 整库迁移
+            resumeValidateSyncTasks();
+            resumeDatabaseSyncTasks();
+        } else {
+            // Load connectorInstances
+            loadConnectorInstance();
+            clusterService.init();
+        }
         preloadCompleted = true;
-    }
-
-    @Override
-    public int getOrder() {
-        return 0;
     }
 
     public void loadNotificationChannel() {
@@ -232,7 +228,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
         // Load configModels
         Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING, CommandEnum.PRELOAD_META)
-                .forEach(commandEnum->reload(map, commandEnum));
+                .forEach(commandEnum -> reload(map, commandEnum));
 
         afterConfigImport();
     }
@@ -345,7 +341,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private void loadConnectorInstance() {
         List<Connector> list = profileComponent.getConnectorAll();
         if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(connector->generalExecutor.execute(()-> {
+            list.forEach(connector -> generalExecutor.execute(() -> {
                 try {
                     ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
                     logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
