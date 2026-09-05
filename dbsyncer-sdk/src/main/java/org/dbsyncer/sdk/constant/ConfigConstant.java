@@ -95,7 +95,6 @@ public class ConfigConstant {
     public static final String CLUSTER_STATUS = "status";
     public static final String CLUSTER_ROLE = "role";
     public static final String CLUSTER_TERM = "term";
-    public static final String CLUSTER_VERSION = "version";
     public static final String CLUSTER_HEARTBEAT_TIME = "heartbeatTime";
     public static final String CLUSTER_START_TIME = "startTime";
 
@@ -104,11 +103,10 @@ public class ConfigConstant {
      */
     public static final String CLUSTER_TASK_TABLE = "dbsyncer_cluster_task";
     public static final String SCHEDULE_NODE_ID = "nodeId";
-    public static final String SCHEDULE_VERSION = "version";
     public static final String SCHEDULE_TASK_TYPE = "taskType";
 
     /**
-     * 任务分片计划表(dbsyncer_task_plan)
+     * 任务分片计划表(dbsyncer_cluster_task_plan)
      */
     public static final String PLAN_START_CURSOR = "startCursor";
     public static final String PLAN_END_CURSOR = "endCursor";

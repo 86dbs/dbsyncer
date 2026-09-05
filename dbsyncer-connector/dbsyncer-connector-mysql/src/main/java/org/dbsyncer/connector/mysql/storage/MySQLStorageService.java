@@ -25,12 +25,7 @@ import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
-import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.storage.AbstractStorageService;
-import org.dbsyncer.sdk.storage.SqlQuery;
-import org.dbsyncer.sdk.storage.StorageTransactionCallback;
-import org.dbsyncer.sdk.storage.StorageTx;
 import org.dbsyncer.sdk.storage.migrate.StorageDataMigrator;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.slf4j.Logger;
@@ -42,7 +37,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,49 +133,17 @@ public class MySQLStorageService extends AbstractStorageService {
         }
     }
 
+    /**
+     * 执行原生 SQL（支持 {@code allowMultiQueries} 多语句）。
+     */
     @Override
-    public <T> T executeInTransaction(StorageTransactionCallback<T> callback) {
-        Assert.notNull(callback, "callback can not be null.");
+    @SuppressWarnings("unchecked")
+    public void execute(String sql) {
+        Assert.notNull(sql, "sql can not be null.");
         try {
-            return connectorInstance.execute(tpl -> runInTransaction(tpl, callback));
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql));
         } catch (Exception e) {
             throw new MySQLException(e.getMessage(), e);
-        }
-    }
-
-    private <T> T runInTransaction(DatabaseTemplate tpl, StorageTransactionCallback<T> callback) throws Exception {
-        SimpleConnection conn = tpl.getSimpleConnection();
-        boolean originalAutoCommit = conn.getAutoCommit();
-        conn.setAutoCommit(false);
-        try {
-            StorageTx tx = new StorageTx() {
-                @Override
-                public List<Map<String, Object>> queryList(SqlQuery query) {
-                    List<Map<String, Object>> data = tpl.queryForList(query.getSql(), query.getArgs());
-                    return CollectionUtils.isEmpty(data) ? new ArrayList<>() : data;
-                }
-
-                @Override
-                public int executeUpdate(SqlQuery query) {
-                    return tpl.update(query.getSql(), query.getArgs());
-                }
-            };
-            T result = callback.doInTransaction(tx);
-            conn.commit();
-            return result;
-        } catch (Exception e) {
-            try {
-                conn.rollback();
-            } catch (SQLException rollbackEx) {
-                logger.warn("transaction rollback failed: {}", rollbackEx.getMessage());
-            }
-            throw e;
-        } finally {
-            try {
-                conn.setAutoCommit(originalAutoCommit);
-            } catch (SQLException e) {
-                logger.warn("restore autoCommit failed: {}", e.getMessage());
-            }
         }
     }
 
@@ -699,13 +661,13 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_NODE_ID,
                 ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT,
                 ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_ROLE, ConfigConstant.CLUSTER_TERM,
-                ConfigConstant.CLUSTER_VERSION, ConfigConstant.CLUSTER_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
+                ConfigConstant.CLUSTER_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> clusterNodeFields = builder.getFields();
         tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, false));
 
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.SCHEDULE_TASK_TYPE,
-                ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.SCHEDULE_VERSION,
+                ConfigConstant.SCHEDULE_NODE_ID,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskScheduleFields = builder.getFields();
         tables.computeIfAbsent(StorageEnum.CLUSTER_TASK.getType(), k -> new Executor(k, taskScheduleFields, true, false));
@@ -1009,11 +971,9 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CLUSTER_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CLUSTER_ROLE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CLUSTER_TERM, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.CLUSTER_VERSION, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_HEARTBEAT_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_START_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.SCHEDULE_NODE_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.SCHEDULE_VERSION, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.SCHEDULE_TASK_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.PLAN_START_CURSOR, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.PLAN_END_CURSOR, "VARCHAR", Types.VARCHAR),

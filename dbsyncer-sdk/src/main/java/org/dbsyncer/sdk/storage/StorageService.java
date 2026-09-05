@@ -161,11 +161,10 @@ public interface StorageService {
     int executeUpdate(SqlQuery query);
 
     /**
-     * 在同一 JDBC 连接事务中执行回调（配置库）。失败自动回滚。
+     * 执行原生 SQL（配置库）。支持多语句；返回值见实现类约定（如 MySQL 取 {@code SELECT ROW_COUNT()}）。
      *
-     * @param callback 事务内逻辑
-     * @param <T>      返回类型
-     * @return 回调返回值
+     * @param sql  SQL
+     * @return 执行结果
      */
-    <T> T executeInTransaction(StorageTransactionCallback<T> callback);
+    void execute(String sql);
 }

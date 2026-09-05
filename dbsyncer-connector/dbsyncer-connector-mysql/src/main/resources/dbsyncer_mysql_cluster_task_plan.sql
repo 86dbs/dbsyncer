@@ -1,4 +1,4 @@
-CREATE TABLE `dbsyncer_task_plan` (
+CREATE TABLE `dbsyncer_cluster_task_plan` (
   `ID`              bigint NOT NULL AUTO_INCREMENT COMMENT '自增主键',
   `TASK_ID`         varchar(64)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '任务ID',
   `TABLE_GROUP_ID`  varchar(64)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '表映射ID',

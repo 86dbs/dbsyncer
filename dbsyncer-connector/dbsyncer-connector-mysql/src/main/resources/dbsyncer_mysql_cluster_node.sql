@@ -7,7 +7,6 @@ CREATE TABLE `dbsyncer_cluster_node` (
   `STATUS` tinyint NOT NULL DEFAULT 0 COMMENT '0-OFFLINE, 1-ONLINE',
   `ROLE` tinyint NOT NULL DEFAULT 0 COMMENT '节点角色: 0-FOLLOWER, 1-LEADER',
   `TERM` bigint NOT NULL DEFAULT 0 COMMENT '任期（单调递增，成为 Leader 时 +1，默认 0）',
-  `VERSION` bigint NOT NULL DEFAULT 0 COMMENT '节点元数据版本号，用于乐观锁控制',
   `HEARTBEAT_TIME` bigint NOT NULL DEFAULT 0 COMMENT '最后心跳毫秒',
   `START_TIME` bigint NOT NULL DEFAULT 0 COMMENT '进程启动时间',
   `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',

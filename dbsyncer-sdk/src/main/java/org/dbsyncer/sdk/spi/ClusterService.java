@@ -189,6 +189,36 @@ public interface ClusterService {
     }
 
     /**
+     * 尝试以分片编排启动批处理全量。返回 true 表示已接管，调用方勿再启动整表 Puller。
+     * <p>单机默认 false（仍走整表 Puller）。
+     *
+     * @param taskId 任务 / Mapping ID
+     * @param model  同步方式（{@link org.dbsyncer.sdk.enums.ModelEnum} code）
+     * @return true 已由分片编排接管
+     */
+    default boolean tryStartShardOrchestration(String taskId, String model) {
+        return false;
+    }
+
+    /**
+     * 停止本机分片编排（任务级定时与本机在途片受理）。单机空操作。
+     *
+     * @param taskId 任务 / Mapping ID
+     */
+    default void stopShardOrchestration(String taskId) {
+    }
+
+    /**
+     * 本机是否正在运行该任务的分片编排。单机恒 false。
+     *
+     * @param taskId 任务 / Mapping ID
+     * @return true 编排进行中
+     */
+    default boolean isShardOrchestrationActive(String taskId) {
+        return false;
+    }
+
+    /**
      * 从集群移除节点。
      *
      * @param nodeId 节点 ID

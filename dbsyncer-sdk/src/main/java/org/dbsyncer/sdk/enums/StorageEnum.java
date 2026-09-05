@@ -53,7 +53,7 @@ public enum StorageEnum {
     /**
      * 任务分片计划
      */
-    TASK_PLAN("task_plan");
+    TASK_PLAN("cluster_task_plan");
 
     private final String type;
 

@@ -37,10 +37,6 @@ public class ClusterNode {
      */
     private long term;
     /**
-     * 元数据版本号，乐观锁。
-     */
-    private long version;
-    /**
      * 最后心跳毫秒。
      */
     private long heartbeatTime;
@@ -118,14 +114,6 @@ public class ClusterNode {
 
     public void setTerm(long term) {
         this.term = term;
-    }
-
-    public long getVersion() {
-        return version;
-    }
-
-    public void setVersion(long version) {
-        this.version = version;
     }
 
     public long getHeartbeatTime() {

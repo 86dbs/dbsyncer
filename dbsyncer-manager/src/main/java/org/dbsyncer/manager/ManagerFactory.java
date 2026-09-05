@@ -4,11 +4,16 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
+import org.dbsyncer.manager.impl.IncrementPuller;
 import org.dbsyncer.parser.MappingRuntimeService;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -33,6 +38,9 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
     private MetaProfile metaProfile;
 
     @Resource
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
     private Map<String, Puller> map;
 
     @Resource
@@ -40,6 +48,9 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
 
     @Resource
     private ConnectorInstanceBinder connectorInstanceBinder;
+
+    @Resource
+    private IncrementPuller incrementPuller;
 
     @Override
     public void onApplicationEvent(ClosedEvent event) {
@@ -64,7 +75,7 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
     public void start(Mapping mapping, boolean autoRecovery) {
         Puller puller = getPuller(mapping);
         String metaId = mapping.getMetaId();
-        if (puller.isActive(metaId)) {
+        if (puller.isActive(metaId) || clusterService.isShardOrchestrationActive(mapping.getId())) {
             return;
         }
         Meta current = metaProfile.getMeta(metaId);
@@ -90,13 +101,17 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
     public void startLocal(Mapping mapping, boolean autoRecovery) {
         Puller puller = getPuller(mapping);
         String metaId = mapping.getMetaId();
-        if (puller.isActive(metaId)) {
+        if (puller.isActive(metaId) || clusterService.isShardOrchestrationActive(mapping.getId())) {
             return;
         }
         if (!clusterService.assertTaskWritable(mapping.getId())) {
             return;
         }
         connectorInstanceBinder.bind(mapping);
+        // 集群批处理全量可由分片编排接管，不再走整表 Puller
+        if (clusterService.tryStartShardOrchestration(mapping.getId(), mapping.getModel())) {
+            return;
+        }
         puller.start(mapping, autoRecovery);
     }
 
@@ -106,6 +121,7 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
         String metaId = mapping.getMetaId();
         changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
 
+        clusterService.stopShardOrchestration(mapping.getId());
         puller.close(metaId);
         clusterService.clearTaskSchedule(mapping.getId());
     }
@@ -117,6 +133,7 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
      */
     @Override
     public void stopLocal(Mapping mapping) {
+        clusterService.stopShardOrchestration(mapping.getId());
         Puller puller = getPuller(mapping);
         puller.close(mapping.getMetaId());
     }
@@ -129,12 +146,53 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
      */
     @Override
     public boolean isLocalActive(String metaId) {
+        Meta meta = metaProfile.getMeta(metaId);
+        if (meta != null && clusterService.isShardOrchestrationActive(meta.getTaskId())) {
+            return true;
+        }
         for (Puller puller : map.values()) {
             if (puller.isActive(metaId)) {
                 return true;
             }
         }
         return false;
+    }
+
+    @Override
+    public void prepareBatchFullPhase(Mapping mapping) {
+        if (mapping == null || !StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), mapping.getModel())) {
+            return;
+        }
+        Meta meta = metaProfile.getMeta(mapping.getMetaId());
+        String phase = meta == null || meta.getSnapshot() == null
+                ? null : meta.getSnapshot().get(ParserEnum.FULL_INCREMENT_PHASE.getCode());
+        if (ModelEnum.isIncrement(phase)) {
+            return;
+        }
+        incrementPuller.captureAndSaveOffset(mapping);
+    }
+
+    @Override
+    public void startIncrementAfterBatchFull(Mapping mapping) {
+        if (mapping == null || !StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), mapping.getModel())) {
+            return;
+        }
+        String metaId = mapping.getMetaId();
+        Meta meta = metaProfile.getMeta(metaId);
+        if (meta == null) {
+            return;
+        }
+        meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), ModelEnum.INCREMENT.getCode());
+        meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
+        meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
+        meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
+        meta.getSnapshot().remove("tableProgress");
+        FullTableProgressUtil.clearAll(profileComponent, metaProfile, tableGroupProfile.listTableGroupIds(mapping.getId()));
+        profileComponent.editConfigModel(meta);
+        if (incrementPuller.isActive(metaId)) {
+            return;
+        }
+        incrementPuller.start(mapping, false);
     }
 
     @Override

@@ -53,4 +53,18 @@ public interface MappingRuntimeService {
      * @param status 目标状态
      */
     void changeMetaState(String metaId, CommonTaskStatusEnum status);
+
+    /**
+     * 批处理全量开始前准备（全量+增量时捕获增量位点；纯全量可空操作）。
+     *
+     * @param mapping 驱动
+     */
+    void prepareBatchFullPhase(Mapping mapping);
+
+    /**
+     * 批处理全量结束后本机拉起增量（仅全量+增量；纯全量可空操作）。
+     *
+     * @param mapping 驱动
+     */
+    void startIncrementAfterBatchFull(Mapping mapping);
 }

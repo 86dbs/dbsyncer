@@ -343,41 +343,118 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         Object[] cursors = PrimaryKeyUtil.getLastCursors(startCursor);
         boolean fromHead = cursors == null || cursors.length == 0;
+        int budget = request.getBudget();
+
         String sql;
-        Object[] args;
-        FullPluginContext pageContext = new FullPluginContext();
-        pageContext.setPageIndex(1);
-        pageContext.setPageSize(request.getBudget());
-        pageContext.setCursors(fromHead ? null : cursors);
-        pageContext.setArgs(new ArrayList<>());
         if (fromHead) {
             sql = getPageSql(pageSql);
-            args = getPageArgs(pageContext);
         } else {
             sql = getPageCursorSql(pageSql);
             if (StringUtil.isBlank(sql)) {
                 return CursorBound.unsupported(startCursor);
             }
-            args = getPageCursorArgs(pageContext);
         }
         if (StringUtil.isBlank(sql)) {
             return CursorBound.unsupported(startCursor);
         }
+        //先探第 budget 行（OFFSET=budget-1, LIMIT=1），命中则 O(1) 内存
+        Object[] probeArgs = buildBoundProbeArgs(fromHead, cursors, budget);
+        if (probeArgs != null) {
+            List<Map<String, Object>> probeRows = queryBoundRows(connectorInstance, sql, probeArgs);
+            if (!CollectionUtils.isEmpty(probeRows)) {
+                String endCursor = toEndCursor(probeRows, primaryKeys);
+                return CursorBound.of(startCursor, endCursor, false, budget);
+            }
+            // 未命中：剩余行 < budget，回退全窗（行数通常远小于 budget）
+        }
 
-        final String finalSql = sql;
-        final Object[] finalArgs = args == null ? new Object[0] : args;
-        List<Map<String, Object>> rows = connectorInstance.execute(
-                databaseTemplate -> databaseTemplate.queryForList(finalSql, finalArgs));
+        return resolveCursorBoundByFullWindow(connectorInstance, sql, fromHead, cursors, budget, startCursor, primaryKeys);
+    }
+
+    /**
+     * 划界探点参数：取排序后第 {@code budget} 行（OFFSET=budget-1, LIMIT=1）。
+     * <p>游标窗内将 keyset 参数与 {@link #getPageArgs} 分页段拼接；若游标 SQL 分页占位与
+     * {@link #getPageArgs} 不一致（如部分 Oracle 游标仅 ROWNUM），返回 null 表示改走全窗。
+     *
+     * @param fromHead 是否从表头（无 START）
+     * @param cursors  START 解析后的定位键；fromHead 时可为 null
+     * @param budget   片大小
+     * @return 探点参数；无法安全探点时返回 null
+     */
+    protected Object[] buildBoundProbeArgs(boolean fromHead, Object[] cursors, int budget) {
+        int safeBudget = Math.max(budget, 1);
+        FullPluginContext pageContext = newBoundPageContext(1, safeBudget, fromHead ? null : cursors);
+        if (fromHead) {
+            return getPageArgs(pageContext);
+        }
+        Object[] cursorPart = buildCursorArgs(cursors);
+        if (cursorPart == null) {
+            cursorPart = new Object[0];
+        }
+        FullPluginContext sizeOne = newBoundPageContext(1, 1, cursors);
+        Object[] cursorArgsWithPage = getPageCursorArgs(sizeOne);
+        if (cursorArgsWithPage == null) {
+            return null;
+        }
+        int pageArgSlots = cursorArgsWithPage.length - cursorPart.length;
+        if (pageArgSlots < 0) {
+            return null;
+        }
+        Object[] pagePart = getPageArgs(pageContext);
+        if (pagePart == null || pagePart.length != pageArgSlots) {
+            // 游标分页占位与普通分页不一致，无法安全改写 OFFSET
+            return null;
+        }
+        Object[] merged = new Object[cursorPart.length + pagePart.length];
+        System.arraycopy(cursorPart, 0, merged, 0, cursorPart.length);
+        System.arraycopy(pagePart, 0, merged, cursorPart.length, pagePart.length);
+        return merged;
+    }
+
+    /**
+     * 全窗划界：LIMIT=budget，取末行作 END（末页或无法探点时使用）。
+     */
+    private CursorBound resolveCursorBoundByFullWindow(DatabaseConnectorInstance connectorInstance, String sql,
+                                                      boolean fromHead, Object[] cursors, int budget,
+                                                      String startCursor, List<String> primaryKeys) {
+        FullPluginContext pageContext = newBoundPageContext(budget, 1, fromHead ? null : cursors);
+        Object[] args = fromHead ? getPageArgs(pageContext) : getPageCursorArgs(pageContext);
+        if (args == null) {
+            args = new Object[0];
+        }
+        List<Map<String, Object>> rows = queryBoundRows(connectorInstance, sql, args);
         int actualCount = CollectionUtils.isEmpty(rows) ? 0 : rows.size();
         if (actualCount == 0) {
             return CursorBound.of(startCursor, StringUtil.EMPTY, true, 0);
         }
-        Object[] lastCursors = PrimaryKeyUtil.getLastCursors((List) rows, primaryKeys);
-        String endCursor = lastCursors == null || lastCursors.length == 0
-                ? StringUtil.EMPTY
-                : StringUtil.join(lastCursors, StringUtil.COMMA);
-        boolean lastPage = actualCount < request.getBudget();
+        String endCursor = toEndCursor(rows, primaryKeys);
+        boolean lastPage = actualCount < budget;
         return CursorBound.of(startCursor, endCursor, lastPage, actualCount);
+    }
+
+    private FullPluginContext newBoundPageContext(int pageSize, int pageIndex, Object[] cursors) {
+        FullPluginContext pageContext = new FullPluginContext();
+        pageContext.setPageIndex(pageIndex);
+        pageContext.setPageSize(pageSize);
+        pageContext.setCursors(cursors);
+        pageContext.setArgs(new ArrayList<>());
+        return pageContext;
+    }
+
+    private List<Map<String, Object>> queryBoundRows(DatabaseConnectorInstance connectorInstance,
+                                                       String sql, Object[] args) {
+        final String finalSql = sql;
+        final Object[] finalArgs = args == null ? new Object[0] : args;
+        return connectorInstance.execute(
+                databaseTemplate -> databaseTemplate.queryForList(finalSql, finalArgs));
+    }
+
+    private String toEndCursor(List<Map<String, Object>> rows, List<String> primaryKeys) {
+        Object[] lastCursors = PrimaryKeyUtil.getLastCursors((List) rows, primaryKeys);
+        if (lastCursors == null || lastCursors.length == 0) {
+            return StringUtil.EMPTY;
+        }
+        return StringUtil.join(lastCursors, StringUtil.COMMA);
     }
 
     /**
