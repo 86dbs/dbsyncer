@@ -69,9 +69,6 @@ public class WebSsoTicketService {
             throw new BizException("SSO 参数不完整");
         }
         String targetHost = resolveTargetHost(target);
-        if (!isAllowedHost(targetHost)) {
-            throw new BizException("目标节点不在集群白名单中");
-        }
         long now = System.currentTimeMillis();
         WebSsoTicket ticket = new WebSsoTicket();
         ticket.setUsername(username);
@@ -134,11 +131,8 @@ public class WebSsoTicketService {
      * @return true 允许
      */
     public boolean isAllowedTarget(String target) {
-        try {
-            return isAllowedHost(resolveTargetHost(target));
-        } catch (Exception e) {
-            return false;
-        }
+        String nodeId = resolveTargetHost(target);
+        return clusterService.getNode(nodeId) != null;
     }
 
     /**
@@ -173,32 +167,6 @@ public class WebSsoTicketService {
             return "/";
         }
         return path;
-    }
-
-    private boolean isAllowedHost(String targetHost) {
-        if (StringUtil.isBlank(targetHost)) {
-            return false;
-        }
-        if (StringUtil.equals(targetHost, clusterService.getLocalNodeId())) {
-            return true;
-        }
-        List<ClusterNode> nodes = clusterService.listNodes();
-        if (CollectionUtils.isEmpty(nodes)) {
-            return false;
-        }
-        for (ClusterNode node : nodes) {
-            if (node == null) {
-                continue;
-            }
-            if (StringUtil.equals(targetHost, node.getNodeId())) {
-                return true;
-            }
-            String built = node.getIp() + ":" + node.getHttpPort();
-            if (StringUtil.equals(targetHost, built)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private String resolveTargetHost(String target) {

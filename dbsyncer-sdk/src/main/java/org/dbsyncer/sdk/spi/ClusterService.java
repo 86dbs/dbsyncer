@@ -7,9 +7,6 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.ClusterNode;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * 集群服务
  *
@@ -30,8 +27,8 @@ public interface ClusterService {
         return "standalone";
     }
 
-    default List<ClusterNode> listNodes() {
-        return Collections.emptyList();
+    default ClusterNode getNode(String nodeId) {
+        return null;
     }
 
     default Paging<ClusterNode> queryNodes(int pageNum, int pageSize) {
