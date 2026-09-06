@@ -110,8 +110,7 @@
 <script th:if="${editionInfo.edition ne 'community' and clusterEnabled}" th:src="@{/js/cluster/cluster-list.js}"></script>
 <script th:if="${editionInfo.edition ne 'community' and clusterEnabled}" th:inline="javascript">
     initClusterList({
-        clusterEnabled: [[${clusterEnabled}]],
-        currentNodeId: [[${current.id}]]
+        clusterEnabled: [[${clusterEnabled}]]
     });
 </script>
 </html>

@@ -38,16 +38,10 @@ public interface ClusterService {
         return null;
     }
 
-    /**
-     * 移除集群节点
-     */
     default void removeNode(String nodeId) {
         throw new SdkException("单机模式不支持移除节点");
     }
 
-    /**
-     * 修改节点展示名称
-     */
     default void updateNodeName(String nodeId, String name) {
         throw new SdkException("单机模式不支持修改节点名称");
     }

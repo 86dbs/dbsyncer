@@ -17,10 +17,9 @@ public class ClusterNodeMetricVO {
     private String nodeId;
     private String name;
     private boolean local;
-    private boolean leader;
     private String ip;
     private int httpPort;
-    private String status;
+    private int status;
     private boolean reachable;
 
     private BigDecimal cpuPercent;
@@ -63,14 +62,6 @@ public class ClusterNodeMetricVO {
         this.local = local;
     }
 
-    public boolean isLeader() {
-        return leader;
-    }
-
-    public void setLeader(boolean leader) {
-        this.leader = leader;
-    }
-
     public String getIp() {
         return ip;
     }
@@ -87,11 +78,11 @@ public class ClusterNodeMetricVO {
         this.httpPort = httpPort;
     }
 
-    public String getStatus() {
+    public int getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(int status) {
         this.status = status;
     }
 

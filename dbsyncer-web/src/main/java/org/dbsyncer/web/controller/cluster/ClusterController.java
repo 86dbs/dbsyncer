@@ -20,8 +20,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 集群管理。
@@ -58,7 +56,6 @@ public class ClusterController extends BaseController {
         editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
         model.put("editionInfo", editionInfo);
         model.put("clusterEnabled", clusterManagerService.isClusterEnabled());
-        model.put("current", clusterManagerService.current());
         return "cluster/list";
     }
 
@@ -165,27 +162,6 @@ public class ClusterController extends BaseController {
     public RestResult nodesMetrics() {
         try {
             return RestResult.restSuccess(clusterNodeMetricAggregator.collectAll());
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    /**
-     * 运维状态 JSON
-     */
-    @GetMapping("/status.json")
-    @ResponseBody
-    public RestResult status() {
-        try {
-            Map<String, Object> data = new HashMap<>();
-            data.put("clusterEnabled", clusterManagerService.isClusterEnabled());
-            data.put("current", clusterManagerService.current());
-            Map<String, String> query = new HashMap<>();
-            query.put("pageNum", "1");
-            query.put("pageSize", "100");
-            data.put("nodes", clusterManagerService.query(query).getData());
-            return RestResult.restSuccess(data);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

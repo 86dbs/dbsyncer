@@ -23,7 +23,7 @@ public class ClusterNode {
     private long term;
     private long heartbeatTime;
     private long startTime;
-    private String status;
+    private int status;
 
     public long getId() {
         return id;
@@ -113,11 +113,11 @@ public class ClusterNode {
         this.startTime = startTime;
     }
 
-    public String getStatus() {
+    public int getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(int status) {
         this.status = status;
     }
 }

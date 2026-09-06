@@ -21,8 +21,7 @@ public class ClusterNodeVO {
     private long term;
     private long heartbeatTime;
     private long startTime;
-    private String status;
-    private boolean leader;
+    private int status;
     private boolean local;
 
     public long getId() {
@@ -97,20 +96,12 @@ public class ClusterNodeVO {
         this.startTime = startTime;
     }
 
-    public String getStatus() {
+    public int getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(int status) {
         this.status = status;
-    }
-
-    public boolean isLeader() {
-        return leader;
-    }
-
-    public void setLeader(boolean leader) {
-        this.leader = leader;
     }
 
     public boolean isLocal() {

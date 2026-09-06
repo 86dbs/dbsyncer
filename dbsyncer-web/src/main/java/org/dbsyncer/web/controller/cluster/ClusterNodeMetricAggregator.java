@@ -168,7 +168,6 @@ public class ClusterNodeMetricAggregator {
         vo.setName(StringUtil.getIfBlank(node.getName(), node.getNodeId()));
         vo.setStatus(node.getStatus());
         vo.setLocal(node.isLocal());
-        vo.setLeader(node.isLeader());
         vo.setIp(node.getIp());
         vo.setHttpPort(node.getHttpPort());
         vo.setFullWorkItemCount(workItemByNode.getOrDefault(node.getNodeId(), 0));

@@ -9,7 +9,6 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.enums.ClusterNodeRoleEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.stereotype.Service;
@@ -54,14 +53,6 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     }
 
     @Override
-    public ClusterNodeVO current() {
-        ClusterNodeVO vo = new ClusterNodeVO();
-        vo.setId(clusterService.getLocalNodeId());
-        vo.setLocal(true);
-        return vo;
-    }
-
-    @Override
     public void updateNodeName(String nodeId, String name) {
         Assert.hasText(nodeId, "节点ID不能为空");
         Assert.hasText(name, "节点名称不能为空");
@@ -72,7 +63,7 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
 
     private ClusterNodeVO toVO(ClusterNode node) {
         ClusterNodeVO vo = new ClusterNodeVO();
-        vo.setId(node.getNodeId());
+        vo.setId(node.getId());
         vo.setNodeId(node.getNodeId());
         vo.setName(node.getName());
         vo.setRole(node.getRole());
@@ -80,7 +71,6 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
         vo.setHeartbeatTime(node.getHeartbeatTime());
         vo.setStartTime(node.getStartTime());
         vo.setStatus(node.getStatus());
-        vo.setLeader(node.getRole() == ClusterNodeRoleEnum.LEADER.getCode());
         vo.setLocal(StringUtil.equals(clusterService.getLocalNodeId(), node.getNodeId()));
         return vo;
     }

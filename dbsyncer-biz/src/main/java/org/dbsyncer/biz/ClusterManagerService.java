@@ -5,7 +5,6 @@ package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.ClusterNodeVO;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.sdk.model.ClusterNode;
 
 import java.util.Map;
 
@@ -27,11 +26,6 @@ public interface ClusterManagerService {
      * 分页查询节点
      */
     Paging<ClusterNodeVO> query(Map<String, String> params);
-
-    /**
-     * 本节点信息
-     */
-    ClusterNodeVO current();
 
     /**
      * 修改节点名称
