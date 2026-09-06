@@ -13,18 +13,17 @@ package org.dbsyncer.biz.vo;
 public class ClusterNodeVO {
 
     private String id;
+    private String nodeId;
     private String name;
     private String ip;
     private int httpPort;
-    private int workerId;
-    private int status;
-    private String statusName;
     private int role;
-    private boolean leader;
-    private boolean networkOk;
-    private boolean local;
+    private long term;
     private long heartbeatTime;
     private long startTime;
+    private String status;
+    private boolean leader;
+    private boolean local;
 
     public String getId() {
         return id;
@@ -32,6 +31,14 @@ public class ClusterNodeVO {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getNodeId() {
+        return nodeId;
+    }
+
+    public void setNodeId(String nodeId) {
+        this.nodeId = nodeId;
     }
 
     public String getName() {
@@ -58,30 +65,6 @@ public class ClusterNodeVO {
         this.httpPort = httpPort;
     }
 
-    public int getWorkerId() {
-        return workerId;
-    }
-
-    public void setWorkerId(int workerId) {
-        this.workerId = workerId;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public String getStatusName() {
-        return statusName;
-    }
-
-    public void setStatusName(String statusName) {
-        this.statusName = statusName;
-    }
-
     public int getRole() {
         return role;
     }
@@ -90,28 +73,12 @@ public class ClusterNodeVO {
         this.role = role;
     }
 
-    public boolean isLeader() {
-        return leader;
+    public long getTerm() {
+        return term;
     }
 
-    public void setLeader(boolean leader) {
-        this.leader = leader;
-    }
-
-    public boolean isNetworkOk() {
-        return networkOk;
-    }
-
-    public void setNetworkOk(boolean networkOk) {
-        this.networkOk = networkOk;
-    }
-
-    public boolean isLocal() {
-        return local;
-    }
-
-    public void setLocal(boolean local) {
-        this.local = local;
+    public void setTerm(long term) {
+        this.term = term;
     }
 
     public long getHeartbeatTime() {
@@ -128,5 +95,29 @@ public class ClusterNodeVO {
 
     public void setStartTime(long startTime) {
         this.startTime = startTime;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isLeader() {
+        return leader;
+    }
+
+    public void setLeader(boolean leader) {
+        this.leader = leader;
+    }
+
+    public boolean isLocal() {
+        return local;
+    }
+
+    public void setLocal(boolean local) {
+        this.local = local;
     }
 }

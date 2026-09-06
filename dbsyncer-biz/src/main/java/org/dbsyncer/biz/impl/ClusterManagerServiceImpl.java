@@ -10,7 +10,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.ClusterNodeRoleEnum;
-import org.dbsyncer.sdk.enums.ClusterNodeStatusEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.stereotype.Service;
@@ -41,8 +40,8 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
 
     @Override
     public Paging<ClusterNodeVO> query(Map<String, String> params) {
-        int pageNum = NumberUtil.toInt(params == null ? null : params.get("pageNum"), 1);
-        int pageSize = NumberUtil.toInt(params == null ? null : params.get("pageSize"), 10);
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         Paging<ClusterNode> source = clusterService.queryNodes(pageNum, pageSize);
         Paging<ClusterNodeVO> paging = new Paging<>(pageNum, pageSize);
         paging.setTotal(source.getTotal());
@@ -74,28 +73,16 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     private ClusterNodeVO toVO(ClusterNode node) {
         ClusterNodeVO vo = new ClusterNodeVO();
         vo.setId(node.getNodeId());
+        vo.setNodeId(node.getNodeId());
         vo.setName(node.getName());
-        vo.setIp(node.getIp());
-        vo.setHttpPort(node.getHttpPort());
-        vo.setWorkerId(NumberUtil.toInt(node.getId(), node.getWorkerId()));
-        vo.setStatus(node.getStatus());
-        vo.setStatusName(statusName(node.getStatus()));
         vo.setRole(node.getRole());
-        vo.setLeader(node.getRole() == ClusterNodeRoleEnum.LEADER.getCode());
-        vo.setNetworkOk(node.getStatus() == ClusterNodeStatusEnum.ONLINE.getCode());
-        vo.setLocal(StringUtil.equals(clusterService.getLocalNodeId(), node.getNodeId()));
+        vo.setTerm(node.getTerm());
         vo.setHeartbeatTime(node.getHeartbeatTime());
         vo.setStartTime(node.getStartTime());
+        vo.setStatus(node.getStatus());
+        vo.setLeader(node.getRole() == ClusterNodeRoleEnum.LEADER.getCode());
+        vo.setLocal(StringUtil.equals(clusterService.getLocalNodeId(), node.getNodeId()));
         return vo;
     }
 
-    private String statusName(int status) {
-        ClusterNodeStatusEnum e = ClusterNodeStatusEnum.fromCode(status);
-        switch (e) {
-            case ONLINE:
-                return "在线";
-            default:
-                return "离线";
-        }
-    }
 }

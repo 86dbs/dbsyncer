@@ -16,17 +16,13 @@ public class ClusterNodeMetricVO {
 
     private String nodeId;
     private String name;
-    private String roleName;
-    private String statusName;
-    private boolean networkOk;
     private boolean local;
     private boolean leader;
     private String ip;
     private int httpPort;
-    /**
-     * 指标是否拉取成功。
-     */
+    private String status;
     private boolean reachable;
+
     private BigDecimal cpuPercent;
     private BigDecimal memoryUsed;
     private BigDecimal memoryTotal;
@@ -59,30 +55,6 @@ public class ClusterNodeMetricVO {
         this.name = name;
     }
 
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public void setRoleName(String roleName) {
-        this.roleName = roleName;
-    }
-
-    public String getStatusName() {
-        return statusName;
-    }
-
-    public void setStatusName(String statusName) {
-        this.statusName = statusName;
-    }
-
-    public boolean isNetworkOk() {
-        return networkOk;
-    }
-
-    public void setNetworkOk(boolean networkOk) {
-        this.networkOk = networkOk;
-    }
-
     public boolean isLocal() {
         return local;
     }
@@ -113,6 +85,14 @@ public class ClusterNodeMetricVO {
 
     public void setHttpPort(int httpPort) {
         this.httpPort = httpPort;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public boolean isReachable() {

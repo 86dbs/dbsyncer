@@ -319,11 +319,7 @@ public class MetricReporter implements ScheduledTaskJob {
             vo.addName(key);
             vo.addValue(map.getOrDefault(key, 0L));
         }
-        long total = 0L;
-        for (Long count : map.values()) {
-            total += count;
-        }
-        vo.setAverage(Math.floor((double) total / buckets.length));
+        vo.setAverage(Math.floor(map.values().stream().mapToInt(Long::intValue).average().orElse(0)));
         return vo;
     }
 

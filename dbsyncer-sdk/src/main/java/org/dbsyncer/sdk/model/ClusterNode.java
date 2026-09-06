@@ -4,7 +4,7 @@
 package org.dbsyncer.sdk.model;
 
 /**
- * 集群节点（对应 {@code dbsyncer_cluster_node}）。
+ * 集群节点
  *
  * @author wuji
  * @version 1.0.0
@@ -12,37 +12,18 @@ package org.dbsyncer.sdk.model;
  */
 public class ClusterNode {
 
-    /**
-     * 表自增主键，同时作为雪花 WorkerId。
-     */
     private String id;
-    /**
-     * 节点业务 ID，{ip}:{httpPort}。
-     */
+    private long createTime;
+    private long updateTime;
     private String nodeId;
     private String name;
     private String ip;
     private int httpPort;
-    /**
-     * 与 {@link #id} 相同，便于调用方读取。
-     */
-    private int workerId;
-    private int status;
-    /**
-     * 节点角色：0-FOLLOWER，1-LEADER。
-     */
     private int role;
-    /**
-     * 任期（单调递增，成为 Leader 时 +1，默认 0）。
-     */
     private long term;
-    /**
-     * 最后心跳毫秒。
-     */
     private long heartbeatTime;
     private long startTime;
-    private long createTime;
-    private long updateTime;
+    private String status;
 
     public String getId() {
         return id;
@@ -50,6 +31,22 @@ public class ClusterNode {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(long createTime) {
+        this.createTime = createTime;
+    }
+
+    public long getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(long updateTime) {
+        this.updateTime = updateTime;
     }
 
     public String getNodeId() {
@@ -84,22 +81,6 @@ public class ClusterNode {
         this.httpPort = httpPort;
     }
 
-    public int getWorkerId() {
-        return workerId;
-    }
-
-    public void setWorkerId(int workerId) {
-        this.workerId = workerId;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
     public int getRole() {
         return role;
     }
@@ -132,19 +113,11 @@ public class ClusterNode {
         this.startTime = startTime;
     }
 
-    public long getCreateTime() {
-        return createTime;
+    public String getStatus() {
+        return status;
     }
 
-    public void setCreateTime(long createTime) {
-        this.createTime = createTime;
-    }
-
-    public long getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(long updateTime) {
-        this.updateTime = updateTime;
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

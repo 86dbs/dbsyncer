@@ -15,7 +15,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -56,9 +55,6 @@ public final class FullIncrementPuller extends AbstractPuller {
     @Resource
     private LogService logService;
 
-    @Resource
-    private ClusterService clusterService;
-
     @Override
     public void start(Mapping mapping) {
         start(mapping, false);
@@ -90,9 +86,6 @@ public final class FullIncrementPuller extends AbstractPuller {
         try {
             Meta meta = metaProfile.getMeta(metaId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
-                if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
-                    return;
-                }
                 incrementPuller.start(mapping, autoRecovery);
                 return;
             }
@@ -100,10 +93,6 @@ public final class FullIncrementPuller extends AbstractPuller {
             logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
             fullPuller.runSync(mapping, false);
             if (!isRunning(metaId)) {
-                return;
-            }
-            if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
-                logger.info("全量已完成，本节点不启动增量：{}", metaId);
                 return;
             }
             markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());

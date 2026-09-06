@@ -33,8 +33,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,49 +71,31 @@ public class ClusterNodeMetricAggregator {
     private ClusterService clusterService;
 
     /**
-     * 拉取全部在册节点指标（本机直采，远端 HTTP）。
+     * 拉取全部节点指标（本机直采，远端 HTTP）。
      *
      * @return 总览
      */
     public ClusterMetricsOverviewVO collectAll() {
         Map<String, String> query = new HashMap<>();
         query.put("pageNum", "1");
-        query.put("pageSize", "1000");
-        List<ClusterNodeVO> nodes = new ArrayList<>();
-        Collection<ClusterNodeVO> raw = clusterManagerService.query(query).getData();
-        if (!CollectionUtils.isEmpty(raw)) {
-            nodes.addAll(raw);
-        }
-        if (CollectionUtils.isEmpty(nodes)) {
-            ClusterMetricsOverviewVO empty = new ClusterMetricsOverviewVO();
-            ClusterNodeMetricVO local = localNodeMetricProvider.snapshot();
-            local.setName(local.getNodeId());
-            local.setRoleName("");
-            empty.setNodes(Collections.singletonList(local));
-            empty.setTotalTps(Math.floor(local.getTps()));
-            empty.setTotalQueue(local.getQueueUp());
-            empty.setTotalFullWorkItems(local.getFullWorkItemCount());
-            empty.setTotalIncremental(local.getIncrementalCount());
-            empty.setTps(mergeTpsSeries(Collections.singletonList(local)));
-            recordChartMetrics(empty);
-            return empty;
-        }
+        query.put("pageSize", "100");
+        List<ClusterNodeVO> nodes = (List<ClusterNodeVO>) clusterManagerService.query(query).getData();
         Map<String, Integer> workItemByNode = resolveFullWorkItemCounts();
         Map<String, Integer> incByNode = resolveIncrementalCounts();
         List<ClusterNodeVO> remotes = new ArrayList<>();
         List<ClusterNodeMetricVO> metrics = new ArrayList<>();
         for (ClusterNodeVO node : nodes) {
+            // 如果是本机
             if (node.isLocal()) {
                 metrics.add(pullOne(node, workItemByNode, incByNode));
-            } else {
-                remotes.add(node);
+                continue;
             }
+            // 远端
+            remotes.add(node);
         }
-        if (remotes.size() == 1) {
-            metrics.add(pullOne(remotes.get(0), workItemByNode, incByNode));
-        } else if (!CollectionUtils.isEmpty(remotes)) {
-            metrics.addAll(BatchTaskUtil.submit(remotes, node -> pullOne(node, workItemByNode, incByNode),
-                    Math.min(PULL_CONCURRENCY, Math.max(1, remotes.size())), logger));
+        // 并行获取其他节点信息
+        if (!CollectionUtils.isEmpty(remotes)) {
+            metrics.addAll(BatchTaskUtil.submit(remotes, node -> pullOne(node, workItemByNode, incByNode), Math.min(PULL_CONCURRENCY, Math.max(1, remotes.size())), logger));
         }
         ClusterMetricsOverviewVO overview = new ClusterMetricsOverviewVO();
         double totalTps = 0D;
@@ -139,19 +119,11 @@ public class ClusterNodeMetricAggregator {
         overview.setTotalFullWorkItems(totalWorkItems);
         overview.setTotalIncremental(totalInc);
         overview.setTps(mergeTpsSeries(metrics));
-        recordChartMetrics(overview);
-        return overview;
-    }
-
-    private void recordChartMetrics(ClusterMetricsOverviewVO overview) {
-        pushChartPoint(chartQueue, overview.getTotalQueue());
-        pushChartPoint(chartFullWorkItems, overview.getTotalFullWorkItems());
-        fillChartHistory(overview);
-    }
-
-    private void fillChartHistory(ClusterMetricsOverviewVO overview) {
         overview.setQueue(snapshotHistory(chartQueue));
         overview.setFullWorkItems(snapshotHistory(chartFullWorkItems));
+        pushChartPoint(chartQueue, overview.getTotalQueue());
+        pushChartPoint(chartFullWorkItems, overview.getTotalFullWorkItems());
+        return overview;
     }
 
     private void pushChartPoint(HistoryStackVO history, double value) {
@@ -185,30 +157,23 @@ public class ClusterNodeMetricAggregator {
         return Math.floor(sum / values.size());
     }
 
-    private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> workItemByNode,
-                                        Map<String, Integer> incByNode) {
+    private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> workItemByNode, Map<String, Integer> incByNode) {
         ClusterNodeMetricVO vo;
         if (node.isLocal()) {
             vo = localNodeMetricProvider.snapshot();
         } else {
             vo = pullRemote(node);
         }
-        fillIdentity(vo, node);
+        vo.setNodeId(node.getId());
+        vo.setName(StringUtil.getIfBlank(node.getName(), node.getId()));
+        vo.setStatus(node.getStatus());
+        vo.setLocal(node.isLocal());
+        vo.setLeader(node.isLeader());
+        vo.setIp(node.getIp());
+        vo.setHttpPort(node.getHttpPort());
         vo.setFullWorkItemCount(workItemByNode.getOrDefault(node.getId(), 0));
         vo.setIncrementalCount(incByNode.getOrDefault(node.getId(), 0));
         return vo;
-    }
-
-    private void fillIdentity(ClusterNodeMetricVO vo, ClusterNodeVO node) {
-        vo.setNodeId(node.getId());
-        vo.setName(StringUtil.getIfBlank(node.getName(), node.getId()));
-        vo.setStatusName(node.getStatusName());
-        vo.setNetworkOk(node.isNetworkOk());
-        vo.setLocal(node.isLocal());
-        vo.setLeader(node.isLeader());
-        vo.setRoleName(node.isLeader() ? "Leader" : "");
-        vo.setIp(node.getIp());
-        vo.setHttpPort(node.getHttpPort());
     }
 
     @SuppressWarnings("unchecked")
@@ -217,6 +182,7 @@ public class ClusterNodeMetricAggregator {
         if (StringUtil.isBlank(base)) {
             return unreachable(node);
         }
+        // TODO 使用工具类
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(base + "/cluster/metrics").openConnection();
@@ -233,9 +199,7 @@ public class ClusterNodeMetricAggregator {
             if (root == null || !Boolean.TRUE.equals(root.get("success")) || root.get("data") == null) {
                 return unreachable(node);
             }
-            String json = root.get("data") instanceof String
-                    ? (String) root.get("data")
-                    : JsonUtil.objToJson(root.get("data"));
+            String json = root.get("data") instanceof String ? (String) root.get("data") : JsonUtil.objToJson(root.get("data"));
             ClusterNodeMetricVO vo = JsonUtil.jsonToObj(json, ClusterNodeMetricVO.class);
             if (vo == null) {
                 return unreachable(node);
@@ -275,14 +239,9 @@ public class ClusterNodeMetricAggregator {
         if (clusterService.isStandalone()) {
             return new LinkedHashMap<>();
         }
-        String taskTypeFilter = incrementTask
-                ? " AND TASK_TYPE IN ('increment', 'fullIncrement')"
-                : " AND TASK_TYPE = 'full'";
+        String taskTypeFilter = incrementTask ? " AND TASK_TYPE IN ('increment', 'fullIncrement')" : " AND TASK_TYPE = 'full'";
         try {
-            List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(
-                    "SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE
-                            + " WHERE NODE_ID IS NOT NULL" + taskTypeFilter
-                            + " GROUP BY NODE_ID"));
+            List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of("SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE + " WHERE NODE_ID IS NOT NULL" + taskTypeFilter + " GROUP BY NODE_ID"));
             return toNodeCountMap(rows);
         } catch (Exception e) {
             logger.warn("加载集群任务派工统计失败: {}", e.getMessage());
@@ -313,9 +272,7 @@ public class ClusterNodeMetricAggregator {
         }
         row.forEach((key, value) -> {
             String keyStr = key == null ? StringUtil.EMPTY : String.valueOf(key);
-            String camelKey = keyStr.contains(StringUtil.UNDERLINE)
-                    ? UnderlineToCamelUtils.underlineToCamel(keyStr.toLowerCase(), true)
-                    : keyStr.toLowerCase();
+            String camelKey = keyStr.contains(StringUtil.UNDERLINE) ? UnderlineToCamelUtils.underlineToCamel(keyStr.toLowerCase(), true) : keyStr.toLowerCase();
             result.put(camelKey, value);
         });
         return result;
@@ -325,7 +282,7 @@ public class ClusterNodeMetricAggregator {
         Map<String, Long> merged = new LinkedHashMap<>();
         List<String> labelOrder = new ArrayList<>();
         for (ClusterNodeMetricVO item : metrics) {
-            if (item == null || !item.isReachable() || item.getTpsSeries() == null) {
+            if (item == null || item.getTpsSeries() == null) {
                 continue;
             }
             HistoryStackVO series = item.getTpsSeries();
@@ -368,9 +325,8 @@ public class ClusterNodeMetricAggregator {
         return Math.floor((double) total / values.size());
     }
 
-    private static String readBody(HttpURLConnection connection) throws Exception {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+    private String readBody(HttpURLConnection connection) throws Exception {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {

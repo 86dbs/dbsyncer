@@ -5,11 +5,12 @@ package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.ClusterNodeVO;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.sdk.model.ClusterNode;
 
 import java.util.Map;
 
 /**
- * 集群管理。
+ * 集群管理
  *
  * @author wuji
  * @version 1.0.0
@@ -18,29 +19,22 @@ import java.util.Map;
 public interface ClusterManagerService {
 
     /**
-     * 是否集群模式。
-     *
-     * @return true 集群
+     * 是否集群模式
      */
     boolean isClusterEnabled();
 
     /**
-     * 分页查询节点。
-     *
-     * @param params 查询参数
-     * @return 分页
+     * 分页查询节点
      */
     Paging<ClusterNodeVO> query(Map<String, String> params);
 
     /**
-     * 本节点摘要。
-     *
-     * @return 节点
+     * 本节点信息
      */
     ClusterNodeVO current();
 
     /**
-     * 修改节点展示名称。
+     * 修改节点名称
      *
      * @param nodeId 节点 ID
      * @param name   展示名称

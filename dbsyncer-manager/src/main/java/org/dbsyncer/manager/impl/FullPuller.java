@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -25,7 +24,6 @@ import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,9 +71,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     @Resource
     private LogService logService;
 
-    @Resource
-    private ClusterService clusterService;
-
     private final Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
@@ -104,7 +99,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
         } finally {
             map.remove(metaId);
-            if (shouldPublishClosed(mapping, metaId, publishClosed)) {
+            if (publishClosed) {
                 publishClosedEvent(metaId);
             }
             logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
@@ -122,27 +117,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     @Override
     public boolean isActive(String metaId) {
         return map.containsKey(metaId);
-    }
-
-    private boolean shouldPublishClosed(Mapping mapping, String metaId, boolean publishClosed) {
-        if (shouldPublishClosedAfterStop(metaId)) {
-            return true;
-        }
-        if (!publishClosed) {
-            return false;
-        }
-        if (clusterService.isStandalone()) {
-            return true;
-        }
-        return mapping != null && clusterService.assertTaskWritable(mapping.getId());
-    }
-
-    private boolean shouldPublishClosedAfterStop(String metaId) {
-        if (StringUtil.isBlank(metaId) || clusterService.isStandalone()) {
-            return false;
-        }
-        Meta meta = metaProfile.getMeta(metaId);
-        return meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode();
     }
 
     @Override

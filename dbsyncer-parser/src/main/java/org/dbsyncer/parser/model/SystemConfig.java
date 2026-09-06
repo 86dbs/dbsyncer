@@ -117,7 +117,7 @@ public class SystemConfig extends ConfigModel {
     /**
      * 单片行预算
      */
-    private int shardRowBudget = 1_000_000;
+    private int shardRowBudget = 100_000;
 
     /**
      * 分片运行超时（毫秒）

@@ -11,9 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 集群控制服务：节点身份、在线列表、任务级调度。
- * <p>无全局 Leader。任意节点可写配置、启动任务；启动节点选出 Scheduler，调度权在任务上。
- * 单机：是否本机恒 true，调度方法空操作。
+ * 集群服务
  *
  * @author wuji
  * @version 1.0.0
@@ -21,186 +19,37 @@ import java.util.List;
  */
 public interface ClusterService {
 
-    /**
-     * 初始化
-     */
     default void init() {
-
     }
 
-    /**
-     * 是否单机部署。
-     *
-     * @return true 单机
-     */
-    boolean isStandalone();
+    default boolean isStandalone() {
+        return true;
+    }
 
-    /**
-     * 本节点 ID。
-     *
-     * @return 节点 ID
-     */
-    String getLocalNodeId();
+    default String getLocalNodeId() {
+        return "standalone";
+    }
 
-    /**
-     * 集群节点列表。
-     *
-     * @return 节点，单机为空列表
-     */
-    List<ClusterNode> listNodes();
+    default List<ClusterNode> listNodes() {
+        return Collections.emptyList();
+    }
 
-    /**
-     * 分页查询集群节点。顺序固定为创建时间升序、节点 ID 升序。
-     * <p>默认基于 {@link #listNodes()} 内存分页；存储侧可覆盖为库表分页。
-     *
-     * @param pageNum  页码（从 1 起）
-     * @param pageSize 每页条数
-     * @return 分页结果
-     */
     default Paging<ClusterNode> queryNodes(int pageNum, int pageSize) {
         return null;
     }
 
     /**
-     * 在线节点。
-     *
-     * @return 在线节点
-     */
-    default List<ClusterNode> listOnlineNodes() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * 本节点是否为集群 Leader。
-     *
-     * @return true 本机为 Leader
-     */
-    default boolean isLeader() {
-        return false;
-    }
-
-    /**
-     * 启动任务：写入调度并分配执行节点，不拉起本机执行器。
-     * <p>返回 true 时由调用方在本机拉起；目标在其它节点时由实现负责通知对方内部拉起。
-     *
-     * @param taskId 任务 / Mapping ID
-     * @param model  同步方式（{@link org.dbsyncer.sdk.enums.ModelEnum} code）
-     * @return true 本机应拉起执行器
-     */
-    default boolean prepareTaskStart(String taskId, String model) {
-        return true;
-    }
-
-    /**
-     * 本机是否为该任务的 Scheduler。单机恒 true。
-     *
-     * @param taskId 任务 / Mapping ID
-     * @return true 应在本节点执行
-     */
-    default boolean isTaskAssignedToLocal(String taskId) {
-        return true;
-    }
-
-    /**
-     * 停止任务调度：置空 Scheduler 并通知原节点 stopLocal。单机空操作。
-     *
-     * @param taskId 任务 / Mapping ID
-     */
-    default void clearTaskSchedule(String taskId) {
-    }
-
-    /**
-     * 本机围栏：该任务是否仍应由本机执行。单机恒 true。
-     *
-     * @param taskId 任务 / Mapping ID
-     * @return true 允许本机继续执行
-     */
-    default boolean assertTaskWritable(String taskId) {
-        return true;
-    }
-
-    /**
-     * 内部拉起：校验本机仍持有该任务后启动执行器。单机默认 true。
-     *
-     * @param taskId 任务 / Mapping ID
-     * @return true 已拉起或本机无需执行
-     */
-    default boolean executeLocal(String taskId) {
-        return true;
-    }
-
-    /**
-     * 内部停止：仅停本机执行器，不改调度行。
-     *
-     * @param taskId 任务 / Mapping ID
-     */
-    default void stopExecuteLocal(String taskId) {
-    }
-
-    /**
-     * 内部拉起本机分片执行。单机默认 true。
-     *
-     * @param planId 分片计划行 ID
-     * @return true 已受理或本机无需执行
-     */
-    default boolean executeShardLocal(String planId) {
-        return true;
-    }
-
-    /**
-     * 内部停止本机分片执行，不改分片计划行归属。
-     *
-     * @param planId 分片计划行 ID
-     */
-    default void stopShardLocal(String planId) {
-    }
-
-    /**
-     * 尝试以分片编排启动批处理全量。返回 true 表示已接管，调用方勿再启动整表 Puller。
-     * <p>单机默认 false（仍走整表 Puller）。
-     *
-     * @param taskId 任务 / Mapping ID
-     * @param model  同步方式（{@link org.dbsyncer.sdk.enums.ModelEnum} code）
-     * @return true 已由分片编排接管
-     */
-    default boolean tryStartShardOrchestration(String taskId, String model) {
-        return false;
-    }
-
-    /**
-     * 停止本机分片编排（任务级定时与本机在途片受理）。单机空操作。
-     *
-     * @param taskId 任务 / Mapping ID
-     */
-    default void stopShardOrchestration(String taskId) {
-    }
-
-    /**
-     * 本机是否正在运行该任务的分片编排。单机恒 false。
-     *
-     * @param taskId 任务 / Mapping ID
-     * @return true 编排进行中
-     */
-    default boolean isShardOrchestrationActive(String taskId) {
-        return false;
-    }
-
-    /**
-     * 从集群移除节点。
-     *
-     * @param nodeId 节点 ID
+     * 移除集群节点
      */
     default void removeNode(String nodeId) {
         throw new SdkException("单机模式不支持移除节点");
     }
 
     /**
-     * 修改节点展示名称。
-     *
-     * @param nodeId 节点 ID
-     * @param name   展示名称
+     * 修改节点展示名称
      */
     default void updateNodeName(String nodeId, String name) {
         throw new SdkException("单机模式不支持修改节点名称");
     }
+
 }
