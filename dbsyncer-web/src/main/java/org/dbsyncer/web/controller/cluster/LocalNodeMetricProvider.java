@@ -112,6 +112,7 @@ public class LocalNodeMetricProvider {
         ClusterNodeMetricVO vo = new ClusterNodeMetricVO();
         vo.setNodeId(clusterService.getLocalNodeId());
         vo.setLocal(true);
+        vo.setReachable(true);
         vo.setCpuPercent(cpu.getTotalPercent() == null ? BigDecimal.ZERO : cpu.getTotalPercent());
         vo.setMemoryUsed(memory.getSysUsed());
         vo.setMemoryTotal(memory.getSysTotal());

@@ -201,30 +201,82 @@
     }
 
     function formatMetric(m, getter) {
-        if (!m || !m.reachable) {
+        // 本机直采可能未带 reachable；local=true 时仍应展示
+        if (!m || (!m.reachable && !m.local)) {
             return '-';
         }
         return getter(m);
     }
 
+    /** status: 0-离线；1-在线 */
+    function formatStatus(status) {
+        if (Number(status) === 1) {
+            return '<span class="badge badge-success">在线</span>';
+        }
+        return '<span class="badge badge-error">离线</span>';
+    }
+
+    /** role: 0-Follower；1-Leader */
+    function formatRole(role) {
+        if (Number(role) === 1) {
+            return '<span class="badge badge-info">Leader</span>';
+        }
+        return '<span class="text-secondary">Follower</span>';
+    }
+
+    function resolveNodeAddress(item) {
+        if (!item) {
+            return null;
+        }
+        var ip = item.ip;
+        var port = Number(item.httpPort) || 0;
+        if ((!ip || port <= 0) && item.nodeId) {
+            var idx = String(item.nodeId).lastIndexOf(':');
+            if (idx > 0) {
+                if (!ip) {
+                    ip = String(item.nodeId).substring(0, idx);
+                }
+                if (port <= 0) {
+                    port = Number(String(item.nodeId).substring(idx + 1)) || 0;
+                }
+            }
+        }
+        if (!ip || port <= 0) {
+            return null;
+        }
+        return {ip: ip, httpPort: port};
+    }
+
     function buildSsoConsoleUrl(item) {
-        if (!item || !item.ip || !item.httpPort) {
+        var addr = resolveNodeAddress(item);
+        if (!addr) {
             return '';
         }
-        var target = item.ip + ':' + item.httpPort;
+        var target = addr.ip + ':' + addr.httpPort;
         return '/sso/redirect?target=' + encodeURIComponent(target) + '&redirect=' + encodeURIComponent('/');
     }
 
+    /** 悬浮展示完整地址：优先 nodeId，否则 ip:port */
+    function resolveNodeEndpoint(item) {
+        if (!item) {
+            return '';
+        }
+        if (item.nodeId && String(item.nodeId).indexOf(':') > 0) {
+            return String(item.nodeId);
+        }
+        var addr = resolveNodeAddress(item);
+        return addr ? (addr.ip + ':' + addr.httpPort) : '';
+    }
+
     function renderClusterRow(item) {
-        var name = item.name || item.id || '';
+        var nodeId = item.nodeId || '';
+        var name = item.name || nodeId || '';
         var localMark = item.local ? ' (本机)' : '';
-        var m = metricOf(item.id);
-        var fullWorkItems = formatMetric(m, function (metric) {
-            return formatDash(metric.fullWorkItemCount);
-        });
-        var incremental = formatMetric(m, function (metric) {
-            return formatDash(metric.incrementalCount);
-        });
+        var endpoint = resolveNodeEndpoint(item);
+        var endpointTitle = endpoint ? ' title="' + escapeHtml(endpoint) + '"' : '';
+        var m = metricOf(nodeId);
+        var fullWorkItems = m ? formatDash(m.fullWorkItemCount) : '-';
+        var incremental = m ? formatDash(m.incrementalCount) : '-';
         var tps = formatMetric(m, function (metric) {
             return formatDash(Math.floor(metric.tps || 0));
         });
@@ -234,32 +286,38 @@
         var storageQueueUp = formatMetric(m, function (metric) {
             return formatDash(metric.storageQueueUp);
         });
-        var cpu = m && m.reachable ? formatPercent(m.cpuPercent) : '-';
-        var memory = m && m.reachable ? formatUsedTotal(m.memoryUsed, m.memoryTotal, 'G') : '-';
-        var threads = m && m.reachable ? formatDash(m.threadLive) : '-';
-        var disk = m && m.reachable ? formatUsedTotal(m.diskUsed, m.diskTotal, 'G') : '-';
+        var cpu = (m && (m.reachable || m.local)) ? formatPercent(m.cpuPercent) : '-';
+        var memory = (m && (m.reachable || m.local)) ? formatUsedTotal(m.memoryUsed, m.memoryTotal, 'G') : '-';
+        var threads = (m && (m.reachable || m.local)) ? formatDash(m.threadLive) : '-';
+        var disk = (m && (m.reachable || m.local)) ? formatUsedTotal(m.diskUsed, m.diskTotal, 'G') : '-';
         var buttons = [];
         if (clusterEnabled) {
-            var nodeId = escapeHtml(item.id || '');
+            var editId = escapeHtml(nodeId);
             buttons.push(
                 '<button type="button" class="table-action-btn view" title="编辑名称" data-id="'
-                + nodeId + '" data-action="edit"><i class="fa fa-pencil"></i></button>'
+                + editId + '" data-action="edit"><i class="fa fa-pencil"></i></button>'
             );
         }
         var actions = buttons.length > 0
             ? '<div class="flex items-center">' + buttons.join('') + '</div>'
             : '-';
-        var nameHtml = escapeHtml(name);
+        var nameText = escapeHtml(name) + localMark;
+        var nameHtml;
         if (clusterEnabled && !item.local) {
             var consoleUrl = buildSsoConsoleUrl(item);
             if (consoleUrl) {
-                nameHtml = '<a class="text-primary hover-underline" title="打开控制台" href="'
-                    + consoleUrl + '">' + nameHtml + '</a>';
+                nameHtml = '<a class="text-primary hover-underline"' + endpointTitle
+                    + ' href="' + consoleUrl + '">' + nameText + '</a>';
+            } else {
+                nameHtml = '<span' + endpointTitle + '>' + nameText + '</span>';
             }
+        } else {
+            nameHtml = '<span' + endpointTitle + '>' + nameText + '</span>';
         }
         return '<tr>'
-            + '<td>' + nameHtml + localMark + '</td>'
-            + '<td>' + escapeHtml(item.statusName || '') + '</td>'
+            + '<td>' + nameHtml + '</td>'
+            + '<td>' + formatRole(item.role) + '</td>'
+            + '<td>' + formatStatus(item.status) + '</td>'
             + '<td>' + fullWorkItems + '</td>'
             + '<td>' + incremental + '</td>'
             + '<td>' + tps + '</td>'

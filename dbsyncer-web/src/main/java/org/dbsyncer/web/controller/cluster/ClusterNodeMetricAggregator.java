@@ -175,8 +175,11 @@ public class ClusterNodeMetricAggregator {
         return vo;
     }
 
-    @SuppressWarnings("unchecked")
     private ClusterNodeMetricVO pullRemote(ClusterNodeVO node) {
+        // 已离线
+        if (node.getStatus() == 0) {
+            return unreachable(node);
+        }
         String base = localNodeMetricProvider.buildHttpUrl(node.getIp(), node.getHttpPort());
         if (StringUtil.isBlank(base)) {
             return unreachable(node);
