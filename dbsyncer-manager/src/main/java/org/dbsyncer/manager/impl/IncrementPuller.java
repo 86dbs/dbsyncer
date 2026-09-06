@@ -231,11 +231,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
         });
     }
 
-    @Override
-    public boolean isActive(String metaId) {
-        return map.containsKey(metaId);
-    }
-
     /**
      * 用户停止后 Meta 为 STOPPING，需 ClosedEvent 收口；本机围栏停止不发。
      *

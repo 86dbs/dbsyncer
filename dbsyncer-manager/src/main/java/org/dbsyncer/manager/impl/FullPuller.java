@@ -115,11 +115,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     @Override
-    public boolean isActive(String metaId) {
-        return map.containsKey(metaId);
-    }
-
-    @Override
     public void onApplicationEvent(FullRefreshEvent event) {
         flush(event.getTask());
     }

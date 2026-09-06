@@ -77,11 +77,6 @@ public final class FullIncrementPuller extends AbstractPuller {
         incrementPuller.close(metaId);
     }
 
-    @Override
-    public boolean isActive(String metaId) {
-        return running.contains(metaId) || fullPuller.isActive(metaId) || incrementPuller.isActive(metaId);
-    }
-
     private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
         try {
             Meta meta = metaProfile.getMeta(metaId);
@@ -96,9 +91,6 @@ public final class FullIncrementPuller extends AbstractPuller {
                 return;
             }
             markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-            if (incrementPuller.isActive(metaId)) {
-                return;
-            }
             logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
             incrementPuller.start(mapping, autoRecovery);
         } catch (Exception e) {
