@@ -164,15 +164,15 @@ public class ClusterNodeMetricAggregator {
         } else {
             vo = pullRemote(node);
         }
-        vo.setNodeId(node.getId());
-        vo.setName(StringUtil.getIfBlank(node.getName(), node.getId()));
+        vo.setNodeId(node.getNodeId());
+        vo.setName(StringUtil.getIfBlank(node.getName(), node.getNodeId()));
         vo.setStatus(node.getStatus());
         vo.setLocal(node.isLocal());
         vo.setLeader(node.isLeader());
         vo.setIp(node.getIp());
         vo.setHttpPort(node.getHttpPort());
-        vo.setFullWorkItemCount(workItemByNode.getOrDefault(node.getId(), 0));
-        vo.setIncrementalCount(incByNode.getOrDefault(node.getId(), 0));
+        vo.setFullWorkItemCount(workItemByNode.getOrDefault(node.getNodeId(), 0));
+        vo.setIncrementalCount(incByNode.getOrDefault(node.getNodeId(), 0));
         return vo;
     }
 

@@ -12,7 +12,7 @@ package org.dbsyncer.sdk.model;
  */
 public class ClusterNode {
 
-    private String id;
+    private long id;
     private long createTime;
     private long updateTime;
     private String nodeId;
@@ -25,11 +25,11 @@ public class ClusterNode {
     private long startTime;
     private String status;
 
-    public String getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(long id) {
         this.id = id;
     }
 

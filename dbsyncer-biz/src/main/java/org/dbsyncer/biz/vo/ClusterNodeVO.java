@@ -12,7 +12,7 @@ package org.dbsyncer.biz.vo;
  */
 public class ClusterNodeVO {
 
-    private String id;
+    private long id;
     private String nodeId;
     private String name;
     private String ip;
@@ -25,11 +25,11 @@ public class ClusterNodeVO {
     private boolean leader;
     private boolean local;
 
-    public String getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(long id) {
         this.id = id;
     }
 
