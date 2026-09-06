@@ -85,7 +85,7 @@ public class TaskProfileImpl implements TaskProfile {
         int safePageNum = pageNum > 0 ? pageNum : 1;
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         try {
-            ConfigModel probe = (ConfigModel) clazz.newInstance();
+            ConfigModel probe = clazz.newInstance();
             Query query = new Query(safePageNum, safePageSize);
             query.setType(StorageEnum.TASK);
             if (StringUtil.isNotBlank(probe.getType())) {
