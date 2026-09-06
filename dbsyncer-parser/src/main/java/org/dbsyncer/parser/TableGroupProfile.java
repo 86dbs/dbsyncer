@@ -5,7 +5,7 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.storage.ExecuteRequest;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -88,7 +88,7 @@ public interface TableGroupProfile {
      * @param query SQL 与可选分页参数
      * @return TableGroup 列表（无则空列表）
      */
-    List<TableGroup> listTableGroupsBySql(SqlQuery query);
+    List<TableGroup> listTableGroupsBySql(ExecuteRequest query);
 
     int getTableGroupCount(String mappingId);
 

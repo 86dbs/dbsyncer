@@ -12,7 +12,7 @@ import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.SqlResultRowUtil;
 import org.dbsyncer.parser.util.TaskDetailQuerySupport;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.springframework.stereotype.Component;
@@ -89,7 +89,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
 
         String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where + orderSql;
         List<Map<String, Object>> rows = storageService.queryList(
-                SqlQuery.of(sql, args.toArray()).page(pageNum, pageSize));
+                ExecuteRequest.of(sql, args.toArray()).page(pageNum, pageSize));
         List<Map<String, Object>> data = new ArrayList<>(rows == null ? 0 : rows.size());
         if (!CollectionUtils.isEmpty(rows)) {
             for (Map<String, Object> row : rows) {
@@ -112,7 +112,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         List<Object> args = new ArrayList<>();
         String where = TaskDetailQuerySupport.buildWhere(query, args);
         String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where;
-        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()).page(1, 1));
+        List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of(sql, args.toArray()).page(1, 1));
         if (CollectionUtils.isEmpty(rows)) {
             return null;
         }
@@ -121,7 +121,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
 
     private long queryCount(String detailTable, String where, List<Object> args) {
         String sql = "SELECT COUNT(1) AS cnt " + String.format(FROM_JOIN, detailTable) + where;
-        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()));
+        List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of(sql, args.toArray()));
         if (CollectionUtils.isEmpty(rows)) {
             return 0L;
         }

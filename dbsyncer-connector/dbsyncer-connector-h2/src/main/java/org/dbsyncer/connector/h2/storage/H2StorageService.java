@@ -144,9 +144,14 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     @Override
-    protected int update(String sql, Object[] args) {
+    public int update(String sql, Object[] args) {
         try {
-            Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, args));
+            Integer rows = connectorInstance.execute(databaseTemplate -> {
+                if (args != null && args.length > 0) {
+                    return databaseTemplate.update(sql, args);
+                }
+                return databaseTemplate.update(sql);
+            });
             return rows == null ? 0 : rows;
         } catch (Exception e) {
             if (isTableMissing(e)) {
@@ -155,11 +160,6 @@ public class H2StorageService extends AbstractStorageService {
             }
             throw new H2Exception(e);
         }
-    }
-
-    @Override
-    public void execute(String sql) {
-        throw new H2Exception("Not support transaction.");
     }
 
     @Override

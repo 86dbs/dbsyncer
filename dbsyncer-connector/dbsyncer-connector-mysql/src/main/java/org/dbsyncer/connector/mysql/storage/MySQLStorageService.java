@@ -120,29 +120,20 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
-    protected int update(String sql, Object[] args) {
+    public int update(String sql, Object[] args) {
         try {
-            Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, args));
+            Integer rows = connectorInstance.execute(databaseTemplate -> {
+                if (args != null && args.length > 0) {
+                    return databaseTemplate.update(sql, args);
+                }
+                return databaseTemplate.update(sql);
+            });
             return rows == null ? 0 : rows;
         } catch (Exception e) {
             if (isTableMissing(e)) {
                 logger.debug("update skip missing table: {}", e.getMessage());
                 return 0;
             }
-            throw new MySQLException(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 执行原生 SQL（支持 {@code allowMultiQueries} 多语句）。
-     */
-    @Override
-    @SuppressWarnings("unchecked")
-    public void execute(String sql) {
-        Assert.notNull(sql, "sql can not be null.");
-        try {
-            connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql));
-        } catch (Exception e) {
             throw new MySQLException(e.getMessage(), e);
         }
     }

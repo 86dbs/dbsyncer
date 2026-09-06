@@ -18,7 +18,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UnderlineToCamelUtils;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -240,7 +240,7 @@ public class ClusterNodeMetricAggregator {
         }
         String taskTypeFilter = incrementTask ? " AND TASK_TYPE IN ('increment', 'fullIncrement')" : " AND TASK_TYPE = 'full'";
         try {
-            List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of("SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE + " WHERE NODE_ID IS NOT NULL" + taskTypeFilter + " GROUP BY NODE_ID"));
+            List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of("SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE + " WHERE NODE_ID IS NOT NULL" + taskTypeFilter + " GROUP BY NODE_ID"));
             return toNodeCountMap(rows);
         } catch (Exception e) {
             logger.warn("加载集群任务派工统计失败: {}", e.getMessage());

@@ -25,7 +25,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.StringFilter;
-import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -205,7 +205,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         }
         String sql = "SELECT " + RESULT_SELECT_COLUMNS + RESULT_FROM_JOIN + where + RESULT_ORDER_SQL;
         List<Map<String, Object>> rows = storageService.queryList(
-                SqlQuery.of(sql, args.toArray()).page(safePageNum, safePageSize));
+                ExecuteRequest.of(sql, args.toArray()).page(safePageNum, safePageSize));
         List<Map<String, Object>> data = new ArrayList<>(rows == null ? 0 : rows.size());
         if (!CollectionUtils.isEmpty(rows)) {
             for (Map<String, Object> row : rows) {
@@ -229,7 +229,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     private long queryTableGroupResultCount(String where, List<Object> args) {
         String sql = "SELECT COUNT(1) AS cnt " + RESULT_FROM_JOIN + where;
-        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()));
+        List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of(sql, args.toArray()));
         if (CollectionUtils.isEmpty(rows)) {
             return 0L;
         }
@@ -262,7 +262,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public List<TableGroup> listTableGroupsBySql(SqlQuery query) {
+    public List<TableGroup> listTableGroupsBySql(ExecuteRequest query) {
         if (query == null) {
             return Collections.emptyList();
         }

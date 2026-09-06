@@ -4,13 +4,12 @@
 package org.dbsyncer.sdk.storage;
 
 /**
- * 原生 SQL 查询参数（可选分页）。
- * <p>{@code pageNum/pageSize} 均大于 0 时按分页查询，否则全量返回。
+ * 原生请求参数
  *
  * @author wuji
  * @version 1.0.0
  */
-public class SqlQuery {
+public class ExecuteRequest {
 
     private String sql;
 
@@ -20,7 +19,7 @@ public class SqlQuery {
 
     private int pageSize;
 
-    private SqlQuery() {
+    private ExecuteRequest() {
     }
 
     /**
@@ -30,8 +29,8 @@ public class SqlQuery {
      * @param args 绑定参数
      * @return 查询参数
      */
-    public static SqlQuery of(String sql, Object... args) {
-        SqlQuery query = new SqlQuery();
+    public static ExecuteRequest of(String sql, Object... args) {
+        ExecuteRequest query = new ExecuteRequest();
         query.sql = sql;
         query.args = args == null ? new Object[0] : args;
         return query;
@@ -44,7 +43,7 @@ public class SqlQuery {
      * @param pageSize 每页条数
      * @return this
      */
-    public SqlQuery page(int pageNum, int pageSize) {
+    public ExecuteRequest page(int pageNum, int pageSize) {
         this.pageNum = pageNum;
         this.pageSize = pageSize;
         return this;
