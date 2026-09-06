@@ -190,7 +190,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     @Override
     public Paging queryTableGroupResults(String mappingId, String detailStatus, int pageNum, int pageSize) {
-        Assert.hasText(mappingId, "驱动ID不能为空");
+        Assert.hasText(mappingId, "同步任务ID不能为空");
         int safePageNum = Math.max(pageNum, 1);
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
 

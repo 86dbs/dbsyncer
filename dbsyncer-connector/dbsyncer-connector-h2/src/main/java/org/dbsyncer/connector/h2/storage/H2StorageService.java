@@ -28,6 +28,7 @@ import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.dbsyncer.sdk.storage.migrate.StorageDataMigrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
@@ -160,6 +161,16 @@ public class H2StorageService extends AbstractStorageService {
             }
             throw new H2Exception(e);
         }
+    }
+
+    @Override
+    public <T> List<T> query(String sql, Object[] args, Class<T> beanClass) {
+        return connectorInstance.execute(databaseTemplate -> {
+            if (args != null && args.length > 0) {
+                return databaseTemplate.query(sql, args, new BeanPropertyRowMapper<>(beanClass));
+            }
+            return databaseTemplate.query(sql, new BeanPropertyRowMapper<>(beanClass));
+        });
     }
 
     @Override

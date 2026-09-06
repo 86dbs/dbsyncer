@@ -116,4 +116,8 @@ public interface StorageService {
      */
     int update(String sql, Object[] args);
 
+    /**
+     * 执行原生查询
+     */
+    <T> List<T> query(String sql, Object[] args, Class<T> beanClass);
 }

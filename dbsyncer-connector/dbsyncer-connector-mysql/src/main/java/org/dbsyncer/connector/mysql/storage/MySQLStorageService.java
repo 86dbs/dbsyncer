@@ -31,6 +31,7 @@ import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.util.Assert;
 
 import java.io.BufferedReader;
@@ -136,6 +137,16 @@ public class MySQLStorageService extends AbstractStorageService {
             }
             throw new MySQLException(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public <T> List<T> query(String sql, Object[] args, Class<T> beanClass) {
+        return connectorInstance.execute(databaseTemplate -> {
+            if (args != null && args.length > 0) {
+                return databaseTemplate.query(sql, args, new BeanPropertyRowMapper<>(beanClass));
+            }
+            return databaseTemplate.query(sql, new BeanPropertyRowMapper<>(beanClass));
+        });
     }
 
     @Override
