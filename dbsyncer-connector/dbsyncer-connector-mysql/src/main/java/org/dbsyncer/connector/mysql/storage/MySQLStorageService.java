@@ -640,6 +640,27 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
+        // 集群节点表
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_NODE_ID,
+                ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT,
+                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_ROLE, ConfigConstant.CLUSTER_TERM,
+                ConfigConstant.CLUSTER_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> clusterNodeFields = builder.getFields();
+
+        // 集群任务表
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.SCHEDULE_TASK_TYPE,
+                ConfigConstant.SCHEDULE_NODE_ID,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> taskScheduleFields = builder.getFields();
+
+        // 集群任务分片表
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID,
+                ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.PLAN_START_CURSOR, ConfigConstant.PLAN_END_CURSOR,
+                ConfigConstant.PLAN_STATUS, ConfigConstant.PLAN_LAST_PAGE,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> taskPlanFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -648,26 +669,8 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
-
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_NODE_ID,
-                ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT,
-                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_ROLE, ConfigConstant.CLUSTER_TERM,
-                ConfigConstant.CLUSTER_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
-                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        List<Field> clusterNodeFields = builder.getFields();
         tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, false));
-
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.SCHEDULE_TASK_TYPE,
-                ConfigConstant.SCHEDULE_NODE_ID,
-                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        List<Field> taskScheduleFields = builder.getFields();
         tables.computeIfAbsent(StorageEnum.CLUSTER_TASK.getType(), k -> new Executor(k, taskScheduleFields, true, false));
-
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID,
-                ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.PLAN_START_CURSOR, ConfigConstant.PLAN_END_CURSOR,
-                ConfigConstant.PLAN_STATUS, ConfigConstant.PLAN_LAST_PAGE,
-                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        List<Field> taskPlanFields = builder.getFields();
         tables.computeIfAbsent(StorageEnum.TASK_PLAN.getType(), k -> new Executor(k, taskPlanFields, true, false));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
