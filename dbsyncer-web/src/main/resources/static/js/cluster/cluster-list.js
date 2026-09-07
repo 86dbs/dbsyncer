@@ -268,6 +268,21 @@
         return addr ? (addr.ip + ':' + addr.httpPort) : '';
     }
 
+    /** 多行单元格：标签 + 值 */
+    function stackCell(lines) {
+        if (!lines || !lines.length) {
+            return '-';
+        }
+        var html = ['<div class="flex flex-col white-space-none text-xs">'];
+        lines.forEach(function (line, index) {
+            var cls = index === 0 ? '' : ' class="mt-1"';
+            html.push('<div' + cls + '><span class="text-tertiary">' + escapeHtml(line.label)
+                + '</span> ' + line.value + '</div>');
+        });
+        html.push('</div>');
+        return html.join('');
+    }
+
     function renderClusterRow(item) {
         var nodeId = item.nodeId || '';
         var name = item.name || nodeId || '';
@@ -314,19 +329,36 @@
         } else {
             nameHtml = '<span' + endpointTitle + '>' + nameText + '</span>';
         }
+        var statusHtml = '<div class="flex flex-col white-space-none">'
+            + '<div>' + formatRole(item.role) + '</div>'
+            + '<div class="mt-1">' + formatStatus(item.status) + '</div>'
+            + '</div>';
+        var timeHtml = stackCell([
+            {label: '心跳', value: formatRelativeTime(item.heartbeatTime)},
+            {label: '启动', value: formatDate(item.startTime)}
+        ]);
+        var taskHtml = stackCell([
+            {label: '全量分片', value: escapeHtml(fullWorkItems)},
+            {label: '增量任务', value: escapeHtml(incremental)}
+        ]);
+        var throughputHtml = stackCell([
+            {label: 'TPS', value: escapeHtml(tps)},
+            {label: '堆积', value: escapeHtml(queueUp)},
+            {label: '持久化', value: escapeHtml(storageQueueUp)}
+        ]);
+        var resourceHtml = stackCell([
+            {label: 'CPU', value: escapeHtml(cpu)},
+            {label: '内存', value: escapeHtml(memory)},
+            {label: '线程', value: escapeHtml(threads)},
+            {label: '磁盘', value: escapeHtml(disk)}
+        ]);
         return '<tr>'
             + '<td>' + nameHtml + '</td>'
-            + '<td>' + formatRole(item.role) + '</td>'
-            + '<td>' + formatStatus(item.status) + '</td>'
-            + '<td>' + fullWorkItems + '</td>'
-            + '<td>' + incremental + '</td>'
-            + '<td>' + tps + '</td>'
-            + '<td>' + queueUp + '</td>'
-            + '<td>' + storageQueueUp + '</td>'
-            + '<td>' + cpu + '</td>'
-            + '<td>' + memory + '</td>'
-            + '<td>' + threads + '</td>'
-            + '<td>' + disk + '</td>'
+            + '<td>' + statusHtml + '</td>'
+            + '<td>' + timeHtml + '</td>'
+            + '<td>' + taskHtml + '</td>'
+            + '<td>' + throughputHtml + '</td>'
+            + '<td>' + resourceHtml + '</td>'
             + '<td>' + actions + '</td>'
             + '</tr>';
     }
