@@ -197,4 +197,19 @@ public class ClusterController extends BaseController {
         }
     }
 
+    /**
+     * 删除离线节点
+     */
+    @PostMapping("/remove")
+    @ResponseBody
+    public RestResult remove(@RequestParam("id") String id) {
+        try {
+            clusterManagerService.removeNode(id);
+            return RestResult.restSuccess("删除节点成功");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
 }

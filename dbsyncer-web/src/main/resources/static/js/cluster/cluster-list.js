@@ -158,6 +158,8 @@
             var action = $btn.attr('data-action');
             if (action === 'edit') {
                 editNodeName(id);
+            } else if (action === 'delete') {
+                removeNode(id, $btn.attr('data-name') || id);
             }
         });
     }
@@ -312,6 +314,14 @@
                 '<button type="button" class="table-action-btn view" title="编辑名称" data-id="'
                 + editId + '" data-action="edit"><i class="fa fa-pencil"></i></button>'
             );
+            // 仅离线节点可删（status: 0-离线；1-在线）
+            if (Number(item.status) === 0 && !item.local) {
+                buttons.push(
+                    '<button type="button" class="table-action-btn delete" title="删除节点" data-id="'
+                    + editId + '" data-name="' + escapeHtml(name) + '" data-action="delete">'
+                    + '<i class="fa fa-trash"></i></button>'
+                );
+            }
         }
         var actions = buttons.length > 0
             ? '<div class="flex items-center">' + buttons.join('') + '</div>'
@@ -404,6 +414,31 @@
                 el.select();
             }
         }, 0);
+    }
+
+    function removeNode(id, displayName) {
+        if (!id) {
+            return;
+        }
+        var tipName = displayName || id;
+        showConfirm({
+            title: '确定要删除节点？',
+            icon: 'warning',
+            confirmType: 'danger',
+            confirmText: '删除',
+            body: '<p class="mb-0">将移除离线节点 <strong>' + escapeHtml(tipName)
+                + '</strong>，此操作不可恢复。</p>',
+            onConfirm: function () {
+                doPoster('/cluster/remove', {id: id}, function (res) {
+                    if (res.success === true) {
+                        bootGrowl(res.data || '删除成功', 'success');
+                        loadNodeMetrics(false);
+                    } else {
+                        bootGrowl(res.message || '删除失败', 'danger');
+                    }
+                });
+            }
+        });
     }
 
     function updateTaskSummary(overview) {

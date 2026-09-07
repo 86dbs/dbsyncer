@@ -34,4 +34,11 @@ public interface ClusterManagerService {
      * @param name   展示名称
      */
     void updateNodeName(String nodeId, String name);
+
+    /**
+     * 移除离线节点
+     *
+     * @param nodeId 节点 ID
+     */
+    void removeNode(String nodeId);
 }

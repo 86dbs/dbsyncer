@@ -61,6 +61,13 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
         clusterService.updateNodeName(nodeId, trimmed);
     }
 
+    @Override
+    public void removeNode(String nodeId) {
+        Assert.hasText(nodeId, "节点ID不能为空");
+        Assert.isTrue(!StringUtil.equals(clusterService.getLocalNodeId(), nodeId), "不能删除本机节点");
+        clusterService.removeNode(nodeId);
+    }
+
     private ClusterNodeVO toVO(ClusterNode node) {
         ClusterNodeVO vo = new ClusterNodeVO();
         vo.setId(node.getId());
