@@ -17,6 +17,7 @@ public class ClusterNodeVO {
     private String name;
     private String ip;
     private int httpPort;
+    private Integer workerId;
     private int role;
     private long term;
     private long heartbeatTime;
@@ -62,6 +63,14 @@ public class ClusterNodeVO {
 
     public void setHttpPort(int httpPort) {
         this.httpPort = httpPort;
+    }
+
+    public Integer getWorkerId() {
+        return workerId;
+    }
+
+    public void setWorkerId(Integer workerId) {
+        this.workerId = workerId;
     }
 
     public int getRole() {

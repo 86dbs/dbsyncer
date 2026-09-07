@@ -92,6 +92,7 @@ public class ConfigConstant {
     public static final String CLUSTER_NODE_ID = "nodeId";
     public static final String CLUSTER_IP = "ip";
     public static final String CLUSTER_HTTP_PORT = "httpPort";
+    public static final String CLUSTER_WORKER_ID = "workerId";
     public static final String CLUSTER_STATUS = "status";
     public static final String CLUSTER_ROLE = "role";
     public static final String CLUSTER_TERM = "term";

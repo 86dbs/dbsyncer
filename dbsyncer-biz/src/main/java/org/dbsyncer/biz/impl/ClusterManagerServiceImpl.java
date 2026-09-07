@@ -68,6 +68,7 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
         vo.setName(node.getName());
         vo.setIp(node.getIp());
         vo.setHttpPort(node.getHttpPort());
+        vo.setWorkerId(node.getWorkerId());
         vo.setRole(node.getRole());
         vo.setTerm(node.getTerm());
         vo.setHeartbeatTime(node.getHeartbeatTime());
