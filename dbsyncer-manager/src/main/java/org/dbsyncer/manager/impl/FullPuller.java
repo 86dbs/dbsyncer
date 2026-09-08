@@ -23,6 +23,7 @@ import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -72,6 +73,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private LogService logService;
 
     private final Map<String, Task> map = new ConcurrentHashMap<>();
+
+    @Override
+    public ModelEnum getModel() {
+        return ModelEnum.FULL;
+    }
 
     @Override
     public void start(Mapping mapping) {

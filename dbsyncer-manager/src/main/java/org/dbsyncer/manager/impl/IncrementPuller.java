@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.config.IncrementRecoveryConfig;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -113,6 +113,11 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @PostConstruct
     private void init() {
         scheduledTaskService.start(3000, this);
+    }
+
+    @Override
+    public ModelEnum getModel() {
+        return ModelEnum.INCREMENT;
     }
 
     @Override
@@ -297,8 +302,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
             String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), connector.getId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
             String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnector.getId(), ConnectorInstanceUtil.TARGET_SUFFIX);
-            abstractListener.setConnectorInstance(connectorFactory.connect(sourceInstanceId));
-            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
+            abstractListener.setConnectorInstance(connectorFactory.connect(sourceInstanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema()));
+            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId, targetConnector.getConfig(), mapping.getTargetDatabase(), mapping.getTargetSchema()));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             setRsaConfig(abstractListener);
             abstractListener.setConnectorConfig(connectorConfig);

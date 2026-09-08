@@ -31,12 +31,20 @@ public class ManagerSupportConfiguration {
     @DependsOn(value = "serviceFactory")
     public ClusterService clusterService(Environment environment) {
         ClusterService spi = serviceFactory.get(ClusterService.class);
-        boolean clusterEnabled = environment.getProperty("dbsyncer.cluster.enabled", Boolean.class, Boolean.FALSE);
-        String storageType = environment.getProperty("dbsyncer.storage.type");
-        // 暂仅支持MySQL
-        if (spi != null && clusterEnabled && StringUtil.equalsIgnoreCase("MySQL", storageType)) {
+        if (spi != null && isClusterEnabled(environment)) {
             return spi;
         }
         return new StandaloneService();
+    }
+
+    /**
+     * 是否启用集群，暂仅支持MySQL存储
+     *
+     * @param environment 环境配置
+     * @return 是否启用
+     */
+    private boolean isClusterEnabled(Environment environment) {
+        boolean clusterEnabled = environment.getProperty("dbsyncer.cluster.enabled", Boolean.class, Boolean.FALSE);
+        return clusterEnabled && StringUtil.equalsIgnoreCase("MySQL", environment.getProperty("dbsyncer.storage.type"));
     }
 }

@@ -6,6 +6,7 @@ package org.dbsyncer.web.controller.cluster;
 import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -41,6 +42,9 @@ public class ClusterController extends BaseController {
     private LicenseService licenseService;
 
     @Resource
+    private ClusterService clusterService;
+
+    @Resource
     private LocalNodeMetricProvider localNodeMetricProvider;
 
     @Resource
@@ -55,81 +59,46 @@ public class ClusterController extends BaseController {
         editionInfo.setEdition(licenseService.getEditionEnum().getCode());
         editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
         model.put("editionInfo", editionInfo);
-        model.put("clusterEnabled", clusterManagerService.isClusterEnabled());
+        model.put("clusterEnabled", !clusterService.isStandalone());
         return "cluster/list";
     }
 
-//    /**
-//     * 内部拉起本机执行器。
-//     */
-//    @PostMapping("/internal/execute")
-//    @ResponseBody
-//    public RestResult executeLocal(@RequestParam("taskId") String taskId) {
-//        try {
-//            if (clusterManagerService.isClusterEnabled()) {
-//                return RestResult.restFail("单机不支持内部执行接口");
-//            }
-//            boolean ok = clusterService.executeLocal(taskId);
-//            return ok ? RestResult.restSuccess("ok") : RestResult.restFail("本机不是该任务的调度节点");
-//        } catch (Exception e) {
-//            logger.error(e.getLocalizedMessage(), e);
-//            return RestResult.restFail(e.getMessage());
-//        }
-//    }
+    /**
+     * 内部拉起执行器（禁止再走用户启动链）。
+     */
+    @PostMapping("/internal/execute")
+    @ResponseBody
+    public RestResult execute(@RequestParam("taskId") String taskId,
+                              @RequestParam(value = "autoRecovery", defaultValue = "false") boolean autoRecovery) {
+        try {
+            if (clusterService.isStandalone()) {
+                return RestResult.restFail("单机不支持内部执行接口");
+            }
+            boolean ok = clusterService.execute(taskId, autoRecovery);
+            return ok ? RestResult.restSuccess("ok") : RestResult.restFail("本机不是该任务的调度节点");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
 
-//    /**
-//     * 内部停止本机执行器。
-//     */
-//    @PostMapping("/internal/stop")
-//    @ResponseBody
-//    public RestResult stopLocal(@RequestParam("taskId") String taskId) {
-//        try {
-//            if (clusterService.isStandalone()) {
-//                return RestResult.restFail("单机不支持内部停止接口");
-//            }
-//            clusterService.stopExecuteLocal(taskId);
-//            return RestResult.restSuccess("ok");
-//        } catch (Exception e) {
-//            logger.error(e.getLocalizedMessage(), e);
-//            return RestResult.restFail(e.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * 内部拉起本机分片。
-//     */
-//    @PostMapping("/internal/shard/execute")
-//    @ResponseBody
-//    public RestResult executeShardLocal(@RequestParam("planId") String planId) {
-//        try {
-//            if (clusterService.isStandalone()) {
-//                return RestResult.restFail("单机不支持内部分片执行接口");
-//            }
-//            boolean ok = clusterService.executeShardLocal(planId);
-//            return ok ? RestResult.restSuccess("ok") : RestResult.restFail("本机不是该分片的执行节点");
-//        } catch (Exception e) {
-//            logger.error(e.getLocalizedMessage(), e);
-//            return RestResult.restFail(e.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * 内部停止本机分片。
-//     */
-//    @PostMapping("/internal/shard/stop")
-//    @ResponseBody
-//    public RestResult stopShardLocal(@RequestParam("planId") String planId) {
-//        try {
-//            if (clusterService.isStandalone()) {
-//                return RestResult.restFail("单机不支持内部分片停止接口");
-//            }
-//            clusterService.stopShardLocal(planId);
-//            return RestResult.restSuccess("ok");
-//        } catch (Exception e) {
-//            logger.error(e.getLocalizedMessage(), e);
-//            return RestResult.restFail(e.getMessage());
-//        }
-//    }
+    /**
+     * 内部停止执行器。
+     */
+    @PostMapping("/internal/stop")
+    @ResponseBody
+    public RestResult stopExecute(@RequestParam("taskId") String taskId) {
+        try {
+            if (clusterService.isStandalone()) {
+                return RestResult.restFail("单机不支持内部停止接口");
+            }
+            clusterService.stopExecute(taskId);
+            return RestResult.restSuccess("ok");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
 
     /**
      * 心跳探测（免登录，供节点互探）。
