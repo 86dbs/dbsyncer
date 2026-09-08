@@ -56,6 +56,11 @@ public final class FullIncrementPuller extends AbstractPuller {
     private LogService logService;
 
     @Override
+    public ModelEnum getModel() {
+        return ModelEnum.FULLINCREMENT;
+    }
+
+    @Override
     public void start(Mapping mapping) {
         start(mapping, false);
     }

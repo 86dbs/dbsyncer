@@ -32,10 +32,6 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     @Resource
     private ClusterService clusterService;
 
-    @Override
-    public boolean isClusterEnabled() {
-        return !clusterService.isStandalone();
-    }
 
     @Override
     public Paging<ClusterNodeVO> query(Map<String, String> params) {

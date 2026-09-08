@@ -6,13 +6,13 @@ import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.Map;
 
 /**
  * @author AE86
@@ -29,7 +29,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     private MetaProfile metaProfile;
 
     @Resource
-    private Map<String, Puller> map;
+    private ClusterService clusterService;
 
     @Override
     public void onApplicationEvent(ClosedEvent event) {
@@ -47,13 +47,13 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
      * @param autoRecovery 是否为服务重启自动恢复（true 时对 CDC 监听启动失败按配置重试）
      */
     public void start(Mapping mapping, boolean autoRecovery) {
-        Puller puller = getPuller(mapping);
-
+        Assert.notNull(mapping, "驱动不能为空");
+        Assert.hasText(mapping.getId(), "驱动ID不能为空");
         // 标记运行中
         changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
 
         try {
-            puller.start(mapping, autoRecovery);
+            clusterService.start(mapping.getId(), mapping.getModel(), autoRecovery);
         } catch (Exception e) {
             // rollback
             changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
@@ -62,13 +62,14 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     }
 
     public void close(Mapping mapping) {
-        Puller puller = getPuller(mapping);
+        Assert.notNull(mapping, "驱动不能为空");
+        Assert.hasText(mapping.getId(), "驱动ID不能为空");
 
         // 标记停止中
         String metaId = mapping.getMetaId();
         changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
 
-        puller.close(metaId);
+        clusterService.stop(mapping.getId());
     }
 
     public void changeMetaState(String metaId, CommonTaskStatusEnum status) {
@@ -79,17 +80,5 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
             meta.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(meta);
         }
-    }
-
-    private Puller getPuller(Mapping mapping) {
-        Assert.notNull(mapping, "驱动不能为空");
-        String model = mapping.getModel();
-        String metaId = mapping.getMetaId();
-        Assert.hasText(model, "同步方式不能为空");
-        Assert.hasText(metaId, "任务ID不能为空");
-
-        Puller puller = map.get(model.concat("Puller"));
-        Assert.notNull(puller, String.format("未知的同步方式: %s", model));
-        return puller;
     }
 }

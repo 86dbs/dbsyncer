@@ -18,11 +18,6 @@ import java.util.Map;
 public interface ClusterManagerService {
 
     /**
-     * 是否集群模式
-     */
-    boolean isClusterEnabled();
-
-    /**
      * 分页查询节点
      */
     Paging<ClusterNodeVO> query(Map<String, String> params);
