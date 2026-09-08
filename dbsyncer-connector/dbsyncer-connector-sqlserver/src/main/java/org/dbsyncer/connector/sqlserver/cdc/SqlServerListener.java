@@ -68,6 +68,10 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     private static final String LSN_POSITION = "position";
     private static final int OFFSET_COLUMNS = 4;
+    /**
+     * 拉取变更数据时的游标大小，避免驱动一次性缓存全部结果集
+     */
+    private static final int FETCH_SIZE = 1000;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
     private Set<String> tables;
@@ -198,8 +202,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     private void readChangeTables() {
         changeTables = queryAndMapList(GET_TABLES_CDC_ENABLED, rs-> {
-            final Set<SqlServerChangeTable> tables = new HashSet<>();
+            final Set<SqlServerChangeTable> changed = new HashSet<>();
             while (rs.next()) {
+                // 只关注当前任务监听的表，避免拉取无关表的变更数据
+                if (!this.tables.contains(rs.getString(2))) {
+                    continue;
+                }
                 SqlServerChangeTable changeTable = new SqlServerChangeTable(
                         // schemaName
                         rs.getString(1),
@@ -215,9 +223,9 @@ public class SqlServerListener extends AbstractDatabaseListener {
                         rs.getBytes(7),
                         // capturedColumns
                         rs.getString(15));
-                tables.add(changeTable);
+                changed.add(changeTable);
             }
-            return tables;
+            return changed;
         });
     }
 
@@ -263,31 +271,14 @@ public class SqlServerListener extends AbstractDatabaseListener {
         Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement->statement.setBytes(1, lastLsn.getBinary()), rs->Lsn.valueOf(rs.getBytes(1)));
         changeTables.forEach(changeTable-> {
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
-            List<CDCEvent> list = queryAndMapList(query, statement-> {
+            queryAndMapList(query, statement-> {
+                statement.setFetchSize(FETCH_SIZE);
                 statement.setBytes(1, startLsn.getBinary());
                 statement.setBytes(2, stopLsn.getBinary());
             }, rs-> {
-                int columnCount = rs.getMetaData().getColumnCount();
-                List<Object> row = null;
-                List<CDCEvent> data = new ArrayList<>();
-                while (rs.next()) {
-                    // skip update before
-                    final int operation = rs.getInt(3);
-                    if (TableOperationEnum.isUpdateBefore(operation)) {
-                        continue;
-                    }
-                    row = new ArrayList<>(columnCount - OFFSET_COLUMNS);
-                    for (int i = OFFSET_COLUMNS + 1; i <= columnCount; i++) {
-                        row.add(rs.getObject(i));
-                    }
-                    data.add(new CDCEvent(changeTable.getTableName(), operation, row));
-                }
-                return data;
+                parseEvent(changeTable.getTableName(), rs, stopLsn);
+                return null;
             });
-
-            if (!CollectionUtils.isEmpty(list)) {
-                parseEvent(list, stopLsn);
-            }
         });
     }
 
@@ -306,24 +297,46 @@ public class SqlServerListener extends AbstractDatabaseListener {
         }
     }
 
-    private void parseEvent(List<CDCEvent> list, Lsn stopLsn) {
-        int size = list.size();
-        for (int i = 0; i < size; i++) {
-            boolean isEnd = i == size - 1;
-            CDCEvent event = list.get(i);
-            if (TableOperationEnum.isUpdateAfter(event.getCode())) {
-                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow(), null, (isEnd ? stopLsn : null)));
+    /**
+     * 边读边发，避免变更量过大时一次性堆积到内存导致OOM。
+     * 仅缓存一行做前瞻，用于给最后一行附加stopLsn位点。
+     */
+    private void parseEvent(String tableName, ResultSet rs, Lsn stopLsn) throws SQLException {
+        final int columnCount = rs.getMetaData().getColumnCount();
+        CDCEvent pending = null;
+        while (rs.next()) {
+            // skip update before
+            final int operation = rs.getInt(3);
+            if (TableOperationEnum.isUpdateBefore(operation)) {
                 continue;
             }
-
-            if (TableOperationEnum.isInsert(event.getCode())) {
-                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow(), null, (isEnd ? stopLsn : null)));
-                continue;
+            List<Object> row = new ArrayList<>(columnCount - OFFSET_COLUMNS);
+            for (int i = OFFSET_COLUMNS + 1; i <= columnCount; i++) {
+                row.add(rs.getObject(i));
             }
-
-            if (TableOperationEnum.isDelete(event.getCode())) {
-                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), null, (isEnd ? stopLsn : null)));
+            if (null != pending) {
+                sendEvent(pending, null);
             }
+            pending = new CDCEvent(tableName, operation, row);
+        }
+        if (null != pending) {
+            sendEvent(pending, stopLsn);
+        }
+    }
+
+    private void sendEvent(CDCEvent event, Lsn offset) {
+        if (TableOperationEnum.isUpdateAfter(event.getCode())) {
+            trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow(), null, offset));
+            return;
+        }
+
+        if (TableOperationEnum.isInsert(event.getCode())) {
+            trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow(), null, offset));
+            return;
+        }
+
+        if (TableOperationEnum.isDelete(event.getCode())) {
+            trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), null, offset));
         }
     }
 
@@ -406,7 +419,8 @@ public class SqlServerListener extends AbstractDatabaseListener {
                     snapshot.put(LSN_POSITION, lastLsn.toString());
                 } catch (InterruptedException e) {
                     break;
-                } catch (Exception e) {
+                } catch (Throwable e) {
+                    // 捕获Error(如OOM)，避免解析线程静默退出后任务假死
                     if (connected) {
                         logger.error(e.getMessage(), e);
                         sleepInMills(1000L);
