@@ -38,12 +38,15 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
+    private SystemConfig systemConfig;
+
     @Override
     public SystemConfig getSystemConfig() {
-        Query condition = new Query();
-        condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.SYSTEM);
-        List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, condition, SystemConfig.class);
-        return CollectionUtils.isEmpty(list) ? null : list.get(0);
+        if (systemConfig != null) {
+            return systemConfig;
+        }
+        systemConfig = querySystemConfig();
+        return systemConfig;
     }
 
     @Override
@@ -62,8 +65,11 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
         } else {
             storageService.edit(StorageEnum.CONFIG, ConfigModelUtil.convertModelToMap(config));
         }
+        //todo 分布式需要优化
+        systemConfig = querySystemConfig();
         return config.getId();
     }
+
 
     @Override
     public int countSystemConfigs() {
@@ -90,5 +96,12 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
         for (SystemConfig config : configs) {
             saveSystemConfig(config);
         }
+    }
+
+    private SystemConfig querySystemConfig() {
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.SYSTEM);
+        List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, condition, SystemConfig.class);
+        return CollectionUtils.isEmpty(list) ? null : list.get(0);
     }
 }
