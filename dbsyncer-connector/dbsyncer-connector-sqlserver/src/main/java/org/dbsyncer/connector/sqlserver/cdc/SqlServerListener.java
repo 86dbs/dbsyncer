@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.sqlserver.cdc;
 
-import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
@@ -74,6 +73,11 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     private static final String LSN_POSITION = "position";
     private static final int OFFSET_COLUMNS = 4;
+    /**
+     * SQL Server CDC TVF在LSN为空/越界时会抛出Msg 313（文案具有误导性，实际表示区间无效）。
+     * @see <a href="https://learn.microsoft.com/en-us/sql/relational-databases/system-functions/cdc-fn-cdc-get-all-changes-capture-instance-transact-sql">fn_cdc_get_all_changes</a>
+     */
+    private static final int CDC_INVALID_LSN_ERROR = 313;
     /**
      * 拉取变更数据时的游标大小，避免驱动一次性缓存全部结果集
      */
@@ -294,19 +298,48 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     private long pull(Lsn stopLsn) {
         final Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement->statement.setBytes(1, lastLsn.getBinary()), rs->Lsn.valueOf(rs.getBytes(1)));
+        if (null == startLsn || !startLsn.isAvailable()) {
+            throw new SqlServerException("获取起始LSN失败, lastLsn=" + lastLsn);
+        }
         long rows = 0;
         for (SqlServerChangeTable changeTable : changeTables) {
+            Lsn fromLsn = resolveFromLsn(changeTable, startLsn, stopLsn);
+            if (null == fromLsn) {
+                continue;
+            }
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
             Integer count = queryAndMapList(query, statement-> {
                 statement.setFetchSize(FETCH_SIZE);
-                statement.setBytes(1, startLsn.getBinary());
+                statement.setBytes(1, fromLsn.getBinary());
                 statement.setBytes(2, stopLsn.getBinary());
             }, rs->parseEvent(changeTable.getTableName(), rs, stopLsn));
+            // Msg 313按空结果处理；其它异常会向上抛出，阻止位点推进
             if (null != count) {
                 rows += count;
             }
         }
         return rows;
+    }
+
+    /**
+     * 将拉取起点钳制到捕获实例的最小可用LSN，避免因CDC清理导致起点越界触发Msg 313。
+     * <p>若起点已越过本批结束位点，则本表本批无需拉取。
+     *
+     * @return 有效起点；无需拉取时返回null
+     */
+    private Lsn resolveFromLsn(SqlServerChangeTable changeTable, Lsn startLsn, Lsn stopLsn) {
+        Lsn fromLsn = startLsn;
+        Lsn minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance()),
+                rs->Lsn.valueOf(rs.getBytes(1)));
+        if (null != minLsn && minLsn.isAvailable() && fromLsn.compareTo(minLsn) < 0) {
+            logger.warn("CDC位点[{}]早于表[{}]最小可用LSN[{}]，可能因清理产生数据空洞，跳到最小LSN继续",
+                    fromLsn, changeTable.getTableName(), minLsn);
+            fromLsn = minLsn;
+        }
+        if (fromLsn.compareTo(stopLsn) > 0) {
+            return null;
+        }
+        return fromLsn;
     }
 
     /**
@@ -437,25 +470,41 @@ public class SqlServerListener extends AbstractDatabaseListener {
         Object execute = instance.execute(databaseTemplate-> {
             PreparedStatement ps = null;
             ResultSet rs = null;
-            T apply = null;
             try {
                 ps = databaseTemplate.getSimpleConnection().prepareStatement(preparedQuerySql);
                 if (null != statementPreparer) {
                     statementPreparer.accept(ps);
                 }
                 rs = ps.executeQuery();
-                apply = mapper.apply(rs);
-            } catch (SQLServerException e) {
-                // 为过程或函数 cdc.fn_cdc_get_all_changes_ ... 提供的参数数目不足。
-            } catch (Exception e) {
-                logger.error(e.getMessage());
+                return mapper.apply(rs);
+            } catch (SQLException e) {
+                // Msg 313: CDC TVF在LSN为空/越界时的误导性报错，按空结果处理；其它异常必须抛出，避免位点误推进丢数
+                if (isCdcInvalidLsnError(e)) {
+                    logger.warn("CDC查询LSN区间无效，按空结果处理. sql={}, error={}", preparedQuerySql, e.getMessage());
+                    return null;
+                }
+                throw new SqlServerException(e);
             } finally {
                 close(rs);
                 close(ps);
             }
-            return apply;
         });
         return (T) execute;
+    }
+
+    /**
+     * 判定是否为CDC变更函数因LSN区间无效抛出的Msg 313。
+     * <p>不能仅按消息包含函数名判断，否则会把权限拒绝(Msg 229)等真实错误误当成空结果。
+     */
+    private boolean isCdcInvalidLsnError(SQLException e) {
+        if (e.getErrorCode() == CDC_INVALID_LSN_ERROR) {
+            return true;
+        }
+        // 部分驱动/本地化场景下errorCode可能为0，再用文案兜底
+        String message = e.getMessage();
+        return null != message
+                && (message.contains("参数数目不足") || message.contains("insufficient number of arguments"))
+                && (message.contains("fn_cdc_get_all_changes") || message.contains("fn_cdc_get_net_changes"));
     }
 
     public Lsn getMaxLsn() {
