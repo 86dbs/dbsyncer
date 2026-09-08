@@ -467,7 +467,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        Object execute = instance.execute(databaseTemplate-> {
+        return instance.execute(databaseTemplate-> {
             PreparedStatement ps = null;
             ResultSet rs = null;
             try {
@@ -489,7 +489,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 close(ps);
             }
         });
-        return (T) execute;
     }
 
     /**
