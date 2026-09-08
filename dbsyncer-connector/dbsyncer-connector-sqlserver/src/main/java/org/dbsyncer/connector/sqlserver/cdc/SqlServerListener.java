@@ -65,6 +65,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
      * https://learn.microsoft.com/zh-cn/previous-versions/sql/sql-server-2008/bb510627(v=sql.100)?redirectedfrom=MSDN
      */
     private static final String GET_ALL_CHANGES_FOR_TABLE = "select * from cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC";
+    /**
+     * 从LSN时间映射表中取出最多N个事务的提交位点，作为单批拉取的结束位点。
+     * <p>提交位点是事务边界，按此切批不会拆散同一事务的变更。
+     * <p>binary类型不支持max聚合，因此用嵌套TOP取最大值。
+     */
+    private static final String GET_BATCH_STOP_LSN = "select top (1) start_lsn from (select top (?) start_lsn from cdc.lsn_time_mapping where start_lsn > ? and start_lsn <= ? order by start_lsn asc) t order by start_lsn desc";
 
     private static final String LSN_POSITION = "position";
     private static final int OFFSET_COLUMNS = 4;
@@ -72,13 +78,32 @@ public class SqlServerListener extends AbstractDatabaseListener {
      * 拉取变更数据时的游标大小，避免驱动一次性缓存全部结果集
      */
     private static final int FETCH_SIZE = 1000;
+    /**
+     * 单批拉取的事务数范围，用于把积压变更拆分成小批次
+     */
+    private static final int MIN_LSN_RANGE = 500;
+    private static final int MAX_LSN_RANGE = 20000;
+    private static final int DEFAULT_LSN_RANGE = 5000;
+    /**
+     * 单批拉取耗时超过该值判定为过重，需要缩小批次范围
+     */
+    private static final long SLOW_PULL_MILLIS = 30000;
+    /**
+     * 单批拉取耗时低于该值且行数不多，判定为过轻，可以扩大批次范围
+     */
+    private static final long FAST_PULL_MILLIS = 3000;
+    /**
+     * 单批拉取行数超过该值判定为过重，需要缩小批次范围
+     */
+    private static final long HIGH_PULL_ROWS = 100000;
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
     private Set<String> tables;
     private Set<SqlServerChangeTable> changeTables;
     private DatabaseConnectorInstance instance;
     private Worker worker;
-    private Lsn lastLsn;
+    private volatile Lsn lastLsn;
+    private volatile int currentLsnRange = DEFAULT_LSN_RANGE;
     private String serverName;
     private final int BUFFER_CAPACITY = 256;
     private BlockingQueue<Lsn> buffer = new LinkedBlockingQueue<>(BUFFER_CAPACITY);
@@ -267,19 +292,55 @@ public class SqlServerListener extends AbstractDatabaseListener {
         });
     }
 
-    private void pull(Lsn stopLsn) {
-        Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement->statement.setBytes(1, lastLsn.getBinary()), rs->Lsn.valueOf(rs.getBytes(1)));
-        changeTables.forEach(changeTable-> {
+    private long pull(Lsn stopLsn) {
+        final Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement->statement.setBytes(1, lastLsn.getBinary()), rs->Lsn.valueOf(rs.getBytes(1)));
+        long rows = 0;
+        for (SqlServerChangeTable changeTable : changeTables) {
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
-            queryAndMapList(query, statement-> {
+            Integer count = queryAndMapList(query, statement-> {
                 statement.setFetchSize(FETCH_SIZE);
                 statement.setBytes(1, startLsn.getBinary());
                 statement.setBytes(2, stopLsn.getBinary());
-            }, rs-> {
-                parseEvent(changeTable.getTableName(), rs, stopLsn);
-                return null;
-            });
-        });
+            }, rs->parseEvent(changeTable.getTableName(), rs, stopLsn));
+            if (null != count) {
+                rows += count;
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * 取出本批的结束位点，把大段积压拆成最多{@link #currentLsnRange}个事务的小批次。
+     * <p>映射表查不到边界（如刚启用CDC、或积压已在目标位点内）时，直接推进到目标位点。
+     */
+    private Lsn nextBatchStopLsn(Lsn stopLsn) {
+        Lsn batchStopLsn = queryAndMapList(GET_BATCH_STOP_LSN, statement-> {
+            statement.setInt(1, currentLsnRange);
+            statement.setBytes(2, lastLsn.getBinary());
+            statement.setBytes(3, stopLsn.getBinary());
+        }, rs->rs.next() ? Lsn.valueOf(rs.getBytes(1)) : null);
+        if (null == batchStopLsn || !batchStopLsn.isAvailable()) {
+            return stopLsn;
+        }
+        // 必须严格前进，否则回退到目标位点，避免批次不推进
+        boolean valid = batchStopLsn.compareTo(lastLsn) > 0 && batchStopLsn.compareTo(stopLsn) < 0;
+        return valid ? batchStopLsn : stopLsn;
+    }
+
+    /**
+     * 根据上一批的行数和耗时动态调整批次范围：过重则缩小以加快位点刷新，过轻则放大以加快追平积压。
+     */
+    private void adjustLsnRange(long rows, long duration) {
+        int newRange = currentLsnRange;
+        if (duration > SLOW_PULL_MILLIS || rows > HIGH_PULL_ROWS) {
+            newRange = Math.max(MIN_LSN_RANGE, currentLsnRange / 2);
+        } else if (duration < FAST_PULL_MILLIS && rows < HIGH_PULL_ROWS / 10) {
+            newRange = Math.min(MAX_LSN_RANGE, currentLsnRange * 2);
+        }
+        if (newRange != currentLsnRange) {
+            logger.info("调整CDC批次范围[{} -> {}], 本批行数:{}, 耗时:{}ms", currentLsnRange, newRange, rows, duration);
+            currentLsnRange = newRange;
+        }
     }
 
     private void trySendEvent(RowChangedEvent event) {
@@ -301,9 +362,10 @@ public class SqlServerListener extends AbstractDatabaseListener {
      * 边读边发，避免变更量过大时一次性堆积到内存导致OOM。
      * 仅缓存一行做前瞻，用于给最后一行附加stopLsn位点。
      */
-    private void parseEvent(String tableName, ResultSet rs, Lsn stopLsn) throws SQLException {
+    private int parseEvent(String tableName, ResultSet rs, Lsn stopLsn) throws SQLException {
         final int columnCount = rs.getMetaData().getColumnCount();
         CDCEvent pending = null;
+        int rows = 0;
         while (rs.next()) {
             // skip update before
             final int operation = rs.getInt(3);
@@ -318,10 +380,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 sendEvent(pending, null);
             }
             pending = new CDCEvent(tableName, operation, row);
+            rows++;
         }
         if (null != pending) {
             sendEvent(pending, stopLsn);
         }
+        return rows;
     }
 
     private void sendEvent(CDCEvent event, Lsn offset) {
@@ -413,10 +477,16 @@ public class SqlServerListener extends AbstractDatabaseListener {
                         continue;
                     }
 
-                    pull(stopLsn);
+                    // 分批推进到目标位点，避免单批变更过大，同时更频繁地刷新位点
+                    while (connected && !isInterrupted() && lastLsn.compareTo(stopLsn) < 0) {
+                        Lsn batchStopLsn = nextBatchStopLsn(stopLsn);
+                        long begin = System.currentTimeMillis();
+                        long rows = pull(batchStopLsn);
 
-                    lastLsn = stopLsn;
-                    snapshot.put(LSN_POSITION, lastLsn.toString());
+                        lastLsn = batchStopLsn;
+                        snapshot.put(LSN_POSITION, lastLsn.toString());
+                        adjustLsnRange(rows, System.currentTimeMillis() - begin);
+                    }
                 } catch (InterruptedException e) {
                     break;
                 } catch (Throwable e) {
