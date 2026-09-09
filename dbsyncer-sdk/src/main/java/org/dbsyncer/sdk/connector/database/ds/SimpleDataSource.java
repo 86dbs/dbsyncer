@@ -6,9 +6,10 @@ package org.dbsyncer.sdk.connector.database.ds;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.util.DatabaseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -20,9 +21,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     // 从缓存队列获取连接次数
     private final int MAX_PULL_TIME = 20;
@@ -123,7 +125,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     }
 
     @Override
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
         return null;
     }
 
@@ -132,11 +134,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         // 清空连接池并关闭所有连接，避免在遍历时修改集合
         SimpleConnection connection;
         while ((connection = pool.poll()) != null) {
-            try {
-                closeQuietly(connection);
-            } catch (Exception e) {
-                // 忽略关闭异常，确保所有连接都能尝试关闭
-            }
+            closeQuietly(connection);
         }
     }
 
@@ -147,9 +145,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
                 closeQuietly(simpleConnection);
                 return;
             }
-
-            // 回收连接
-            pool.offer(simpleConnection);
+            // 回收连接；入池失败必须关闭，避免连接游离在池外且计数不回收
+            if (!pool.offer(simpleConnection)) {
+                closeQuietly(simpleConnection);
+            }
         }
     }
 
@@ -162,9 +161,18 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         }
     }
 
+    /**
+     * 关闭物理连接并回收活跃计数。
+     */
     private void closeQuietly(SimpleConnection connection) {
-        if (connection != null) {
+        if (connection == null) {
+            return;
+        }
+        try {
             connection.close();
+        } catch (Exception e) {
+            logger.warn("关闭连接失败, url={}, msg={}", url, e.getMessage());
+        } finally {
             activeNum.decrementAndGet();
         }
     }
