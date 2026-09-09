@@ -116,11 +116,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     @Override
-    public ModelEnum getModel() {
-        return ModelEnum.INCREMENT;
-    }
-
-    @Override
     public void start(Mapping mapping) {
         start(mapping, false);
     }
