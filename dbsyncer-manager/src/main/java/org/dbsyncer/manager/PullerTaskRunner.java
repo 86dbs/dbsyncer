@@ -69,11 +69,6 @@ public final class PullerTaskRunner implements TaskRunner {
 
     private Puller getPuller(Mapping mapping) {
         String model = mapping.getModel();
-        Assert.hasText(model, "同步方式不能为空");
-        Assert.hasText(mapping.getMetaId(), "任务ID不能为空");
-
-        Puller puller = pullerMap.get(ModelEnum.getModelEnum(model));
-        Assert.notNull(puller, String.format("未知的同步方式: %s", model));
-        return puller;
+        return pullerMap.get(ModelEnum.getModelEnum(model));
     }
 }
