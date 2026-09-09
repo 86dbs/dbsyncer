@@ -5,7 +5,6 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskRunner;
 import org.springframework.stereotype.Component;
@@ -13,8 +12,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,21 +28,13 @@ public final class PullerTaskRunner implements TaskRunner {
     private ProfileComponent profileComponent;
 
     @Resource
-    private List<Puller> pullers;
-
-    @Resource
     private ClusterService clusterService;
 
-    private final Map<ModelEnum, Puller> pullerMap = new EnumMap<>(ModelEnum.class);
+    @Resource
+    private Map<String, Puller> map;
 
     @PostConstruct
     private void init() {
-        for (Puller puller : pullers) {
-            ModelEnum model = puller.getModel();
-            Assert.notNull(model, String.format("同步方式不能为空: %s", puller.getClass().getName()));
-            Puller exist = pullerMap.put(model, puller);
-            Assert.isNull(exist, String.format("同步方式重复注册: %s", model.getCode()));
-        }
         clusterService.bindTaskRunner(this);
     }
 
@@ -69,11 +58,7 @@ public final class PullerTaskRunner implements TaskRunner {
 
     private Puller getPuller(Mapping mapping) {
         String model = mapping.getModel();
-        Assert.hasText(model, "同步方式不能为空");
-        Assert.hasText(mapping.getMetaId(), "任务ID不能为空");
+        return map.get(model.concat("Puller"));
 
-        Puller puller = pullerMap.get(ModelEnum.getModelEnum(model));
-        Assert.notNull(puller, String.format("未知的同步方式: %s", model));
-        return puller;
     }
 }

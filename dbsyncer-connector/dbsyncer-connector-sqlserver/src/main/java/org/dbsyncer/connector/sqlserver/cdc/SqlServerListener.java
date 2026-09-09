@@ -57,6 +57,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private static final String ENABLE_DB_CDC = "IF EXISTS(select 1 from sys.databases where name = '#' and is_cdc_enabled=0) EXEC sys.sp_cdc_enable_db";
     private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' and is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'%s', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
     private static final String GET_TABLES_CDC_ENABLED = "EXEC sys.sp_cdc_help_change_data_capture";
+    //二进制转换出来 SELECT CONVERT(varchar(50), sys.fn_cdc_get_max_lsn(), 1) AS max_lsn;
     private static final String GET_MAX_LSN = "select sys.fn_cdc_get_max_lsn()";
     private static final String GET_MIN_LSN = "select sys.fn_cdc_get_min_lsn('#')";
     private static final String GET_INCREMENT_LSN = "select sys.fn_cdc_increment_lsn(?)";
