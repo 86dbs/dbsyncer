@@ -5,7 +5,6 @@ package org.dbsyncer.manager.deployment;
 
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskRunner;
-import org.springframework.util.Assert;
 
 /**
  * 单机控制面：本机即执行者，调度方法空操作。
@@ -16,7 +15,7 @@ import org.springframework.util.Assert;
  */
 public final class StandaloneService implements ClusterService {
 
-    private volatile TaskRunner taskRunner;
+    private TaskRunner taskRunner;
 
     @Override
     public void bindTaskRunner(TaskRunner runner) {
@@ -25,29 +24,23 @@ public final class StandaloneService implements ClusterService {
 
     @Override
     public void start(String taskId, String model, boolean autoRecovery) {
-        getTaskRunner().start(taskId, autoRecovery);
+        taskRunner.start(taskId, autoRecovery);
     }
 
     @Override
     public void stop(String taskId) {
-        getTaskRunner().stop(taskId);
+        taskRunner.stop(taskId);
     }
 
     @Override
     public boolean execute(String taskId, boolean autoRecovery) {
-        getTaskRunner().start(taskId, autoRecovery);
+        taskRunner.start(taskId, autoRecovery);
         return true;
     }
 
     @Override
     public void stopExecute(String taskId) {
-        getTaskRunner().stop(taskId);
+        taskRunner.stop(taskId);
     }
 
-
-    private TaskRunner getTaskRunner() {
-        TaskRunner runner = taskRunner;
-        Assert.notNull(runner, "本机任务执行器未绑定");
-        return runner;
-    }
 }

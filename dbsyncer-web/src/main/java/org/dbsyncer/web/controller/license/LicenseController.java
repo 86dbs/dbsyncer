@@ -93,8 +93,8 @@ public class LicenseController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
-        model.put("editionInfo", getEditionInfoVO());
         model.put("productInfo", licenseService.getProductInfo());
+        initEditionInfo(model);
         return "license/list";
     }
 
@@ -161,7 +161,9 @@ public class LicenseController extends BaseController {
     @GetMapping("/query.json")
     @ResponseBody
     public RestResult query() {
-        EditionInfoVO infoVo = getEditionInfoVO();
+        EditionInfoVO infoVo = new EditionInfoVO();
+        infoVo.setEdition(licenseService.getEditionEnum().getCode());
+        infoVo.setEditionName(licenseService.getEditionEnum().getMessage());
         ProductInfo productInfo = licenseService.getProductInfo();
         if (productInfo == null || CollectionUtils.isEmpty(productInfo.getProducts())) {
             // 专业版软件已部署，但尚未激活任何产品授权
@@ -262,13 +264,6 @@ public class LicenseController extends BaseController {
             return "已过期";
         }
         return "";
-    }
-
-    private EditionInfoVO getEditionInfoVO() {
-        EditionInfoVO infoVo = new EditionInfoVO();
-        infoVo.setEdition(licenseService.getEditionEnum().getCode());
-        infoVo.setEditionName(licenseService.getEditionEnum().getMessage());
-        return infoVo;
     }
 
     private void formatEffectiveTimeContent(EditionInfoVO infoVo) {

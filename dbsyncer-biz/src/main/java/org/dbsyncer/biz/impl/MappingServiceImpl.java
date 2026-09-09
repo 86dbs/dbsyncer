@@ -340,7 +340,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String  start(String id) {
+    public String start(String id) {
         Mapping mapping = assertMappingExist(id);
         //校验映射关系是否存在
         assertTableGroupExist(id);

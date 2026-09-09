@@ -63,7 +63,7 @@ public final class PullerTaskRunner implements TaskRunner {
 
     private Mapping requireMapping(String taskId) {
         Mapping mapping = profileComponent.getMapping(taskId);
-        Assert.notNull(mapping, String.format("驱动不存在: %s", taskId));
+        Assert.notNull(mapping, String.format("同步任务不存在: %s", taskId));
         return mapping;
     }
 

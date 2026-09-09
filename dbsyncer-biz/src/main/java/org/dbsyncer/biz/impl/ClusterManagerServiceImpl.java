@@ -32,7 +32,6 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     @Resource
     private ClusterService clusterService;
 
-
     @Override
     public Paging<ClusterNodeVO> query(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);

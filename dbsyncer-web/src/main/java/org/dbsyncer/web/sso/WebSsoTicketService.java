@@ -6,23 +6,18 @@ package org.dbsyncer.web.sso;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.biz.model.WebSsoTicket;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
-import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.spi.ClusterService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

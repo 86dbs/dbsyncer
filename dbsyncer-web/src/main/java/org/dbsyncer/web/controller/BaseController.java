@@ -3,6 +3,8 @@ package org.dbsyncer.web.controller;
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.ConvertService;
 import org.dbsyncer.biz.PluginService;
+import org.dbsyncer.biz.vo.EditionInfoVO;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.springframework.ui.ModelMap;
 
 import javax.annotation.Resource;
@@ -27,6 +29,9 @@ public abstract class BaseController {
 
     @Resource
     private PluginService pluginService;
+
+    @Resource
+    private LicenseService licenseService;
 
     /**
      * 获取请求参数
@@ -66,5 +71,12 @@ public abstract class BaseController {
             }
         }
         return sb.toString();
+    }
+
+    protected void initEditionInfo(ModelMap model) {
+        EditionInfoVO editionInfo = new EditionInfoVO();
+        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
+        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
+        model.put("editionInfo", editionInfo);
     }
 }

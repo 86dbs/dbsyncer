@@ -45,9 +45,6 @@ public class MappingController extends BaseController {
     @Resource
     private DataSyncService dataSyncService;
 
-    @Resource
-    private LicenseService licenseService;
-
     /**
      * 同步任务列表页面
      */
@@ -290,10 +287,4 @@ public class MappingController extends BaseController {
         }
     }
 
-    private void initEditionInfo(ModelMap model) {
-        EditionInfoVO editionInfo = new EditionInfoVO();
-        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
-        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
-        model.put("editionInfo", editionInfo);
-    }
 }

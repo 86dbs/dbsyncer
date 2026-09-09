@@ -1,6 +1,7 @@
 package org.dbsyncer.storage.impl;
 
 import org.dbsyncer.common.CommonException;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 

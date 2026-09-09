@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 全量同步表级进度：
+ * 全量同步表级进度
  *
  * @author wuji
  * @version 1.0.0

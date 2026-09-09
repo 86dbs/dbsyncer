@@ -47,8 +47,6 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
      * @param autoRecovery 是否为服务重启自动恢复（true 时对 CDC 监听启动失败按配置重试）
      */
     public void start(Mapping mapping, boolean autoRecovery) {
-        Assert.notNull(mapping, "驱动不能为空");
-        Assert.hasText(mapping.getId(), "驱动ID不能为空");
         // 标记运行中
         changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
 
@@ -62,9 +60,6 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     }
 
     public void close(Mapping mapping) {
-        Assert.notNull(mapping, "驱动不能为空");
-        Assert.hasText(mapping.getId(), "驱动ID不能为空");
-
         // 标记停止中
         String metaId = mapping.getMetaId();
         changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);

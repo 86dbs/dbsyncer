@@ -123,12 +123,7 @@ public class MySQLStorageService extends AbstractStorageService {
     @Override
     public int update(String sql, Object[] args) {
         try {
-            Integer rows = connectorInstance.execute(databaseTemplate -> {
-                if (args != null && args.length > 0) {
-                    return databaseTemplate.update(sql, args);
-                }
-                return databaseTemplate.update(sql);
-            });
+            Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, args));
             return rows == null ? 0 : rows;
         } catch (Exception e) {
             if (isTableMissing(e)) {
@@ -141,12 +136,7 @@ public class MySQLStorageService extends AbstractStorageService {
 
     @Override
     public <T> List<T> query(String sql, Object[] args, Class<T> beanClass) {
-        return connectorInstance.execute(databaseTemplate -> {
-            if (args != null && args.length > 0) {
-                return databaseTemplate.query(sql, args, new BeanPropertyRowMapper<>(beanClass));
-            }
-            return databaseTemplate.query(sql, new BeanPropertyRowMapper<>(beanClass));
-        });
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.query(sql, args, new BeanPropertyRowMapper<>(beanClass)));
     }
 
     @Override
