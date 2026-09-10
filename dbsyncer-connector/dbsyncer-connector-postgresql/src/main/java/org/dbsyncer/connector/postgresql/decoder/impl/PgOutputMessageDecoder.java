@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.postgresql.decoder.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.decoder.AbstractMessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
@@ -23,6 +24,7 @@ import org.springframework.util.Assert;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +39,25 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final LocalDateTime PG_EPOCH = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
-    private static final String GET_TABLE_SCHEMA = "select t.oid,t.relname as tableName from pg_class t inner join (select ns.oid as nspoid, ns.nspname from pg_namespace ns where ns.nspname = '%s') as n on n.nspoid = t.relnamespace where relkind = 'r'";
+    /**
+     * 普通表与分区主表；子分区 OID 归一到根主表名，便于按主表映射过滤增量事件。
+     */
+    private static final String GET_TABLE_SCHEMA = "SELECT t.oid, COALESCE(root.relname, t.relname) AS tableName "
+            + "FROM pg_class t "
+            + "INNER JOIN pg_namespace n ON n.oid = t.relnamespace AND n.nspname = ? "
+            + "LEFT JOIN LATERAL ("
+            + "  WITH RECURSIVE ancestors AS ("
+            + "    SELECT i.inhparent AS parent_oid, 1 AS depth FROM pg_inherits i WHERE i.inhrelid = t.oid "
+            + "    UNION ALL "
+            + "    SELECT i.inhparent, a.depth + 1 FROM ancestors a "
+            + "    INNER JOIN pg_inherits i ON i.inhrelid = a.parent_oid"
+            + "  ) "
+            + "  SELECT c.relname FROM ancestors a "
+            + "  INNER JOIN pg_class c ON c.oid = a.parent_oid "
+            + "  WHERE COALESCE(c.relispartition, false) = false "
+            + "  ORDER BY a.depth DESC LIMIT 1"
+            + ") root ON TRUE "
+            + "WHERE t.relkind IN ('r', 'p')";
     private static final Map<Integer, TableId> tables = new ConcurrentHashMap<>();
     private ConnectorService connectorService;
     private DatabaseConnectorInstance connectorInstance;
@@ -104,35 +124,79 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private void initPublication() {
         String pubName = getPubName();
         String selectPublication = String.format("SELECT COUNT(1) FROM pg_publication WHERE pubname = '%s'", pubName);
-        Integer count = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForObject(selectPublication, Integer.class));
-        if (0 < count) {
+        Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(selectPublication, Integer.class));
+        if (count != null && count > 0) {
+            ensurePublishViaPartitionRoot(pubName);
             return;
         }
 
         logger.info("Creating new publication '{}' for plugin '{}'", pubName, getOutputPlugin());
         try {
-            String createPublication = String.format("CREATE PUBLICATION %s FOR ALL TABLES", pubName);
+            // PG13+：变更事件按分区主表上报，与按主表配置的映射一致
+            String createPublication = String.format(
+                    "CREATE PUBLICATION %s FOR ALL TABLES WITH (publish_via_partition_root = true)", pubName);
             logger.info("Creating Publication with statement '{}'", createPublication);
-            connectorInstance.execute(databaseTemplate-> {
+            connectorInstance.execute(databaseTemplate -> {
                 databaseTemplate.execute(createPublication);
                 return true;
             });
         } catch (Exception e) {
-            throw new PostgreSQLException(e.getCause());
+            logger.warn("Create publication with publish_via_partition_root failed, fallback without option: {}", e.getMessage());
+            try {
+                String createPublication = String.format("CREATE PUBLICATION %s FOR ALL TABLES", pubName);
+                logger.info("Creating Publication with statement '{}'", createPublication);
+                connectorInstance.execute(databaseTemplate -> {
+                    databaseTemplate.execute(createPublication);
+                    return true;
+                });
+            } catch (Exception ex) {
+                throw new PostgreSQLException(ex.getCause() != null ? ex.getCause() : ex);
+            }
+        }
+    }
+
+    /**
+     * 已有 publication 尽量开启按主表上报；失败时依赖 OID 子→父归一仍可对齐映射。
+     */
+    private void ensurePublishViaPartitionRoot(String pubName) {
+        try {
+            String query = String.format("SELECT pubviaroot FROM pg_publication WHERE pubname = '%s'", pubName);
+            Boolean viaRoot = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(query, Boolean.class));
+            if (Boolean.TRUE.equals(viaRoot)) {
+                return;
+            }
+            String alter = String.format("ALTER PUBLICATION %s SET (publish_via_partition_root = true)", pubName);
+            logger.info("Updating publication to publish via partition root: {}", alter);
+            connectorInstance.execute(databaseTemplate -> {
+                databaseTemplate.execute(alter);
+                return true;
+            });
+        } catch (Exception e) {
+            logger.warn("Unable to ensure publish_via_partition_root for '{}': {}", pubName, e.getMessage());
         }
     }
 
     private void readSchema() {
-        final String querySchema = String.format(GET_TABLE_SCHEMA, schema);
-        List<Map> schemas = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(querySchema));
-        if (!CollectionUtils.isEmpty(schemas)) {
-            schemas.forEach(map-> {
-                Long oid = (Long) map.get("oid");
-                String tableName = (String) map.get("tableName");
+        List<Map> schemas = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(GET_TABLE_SCHEMA, schema));
+        if (CollectionUtils.isEmpty(schemas)) {
+            return;
+        }
+        // 同一逻辑表名（含分区主表）只拉取一次列元数据，避免子分区 OID 重复打 JDBC
+        Map<String, List<Field>> columnsByTable = new HashMap<>();
+        for (Map map : schemas) {
+            Long oid = (Long) map.get("oid");
+            String tableName = (String) map.get("tableName");
+            if (oid == null || StringUtil.isBlank(tableName)) {
+                continue;
+            }
+            List<Field> columns = columnsByTable.get(tableName);
+            if (columns == null) {
                 MetaInfo metaInfo = getMetaInfo(tableName);
                 Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
-                tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, metaInfo.getColumn()));
-            });
+                columns = metaInfo.getColumn();
+                columnsByTable.put(tableName, columns);
+            }
+            tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, columns));
         }
     }
 
