@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.postgresql.decoder.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.decoder.AbstractMessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
@@ -23,6 +24,7 @@ import org.springframework.util.Assert;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -176,14 +178,25 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
 
     private void readSchema() {
         List<Map> schemas = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(GET_TABLE_SCHEMA, schema));
-        if (!CollectionUtils.isEmpty(schemas)) {
-            schemas.forEach(map -> {
-                Long oid = (Long) map.get("oid");
-                String tableName = (String) map.get("tableName");
+        if (CollectionUtils.isEmpty(schemas)) {
+            return;
+        }
+        // 同一逻辑表名（含分区主表）只拉取一次列元数据，避免子分区 OID 重复打 JDBC
+        Map<String, List<Field>> columnsByTable = new HashMap<>();
+        for (Map map : schemas) {
+            Long oid = (Long) map.get("oid");
+            String tableName = (String) map.get("tableName");
+            if (oid == null || StringUtil.isBlank(tableName)) {
+                continue;
+            }
+            List<Field> columns = columnsByTable.get(tableName);
+            if (columns == null) {
                 MetaInfo metaInfo = getMetaInfo(tableName);
                 Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
-                tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, metaInfo.getColumn()));
-            });
+                columns = metaInfo.getColumn();
+                columnsByTable.put(tableName, columns);
+            }
+            tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, columns));
         }
     }
 
