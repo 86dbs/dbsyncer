@@ -16,12 +16,15 @@ import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -31,6 +34,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -44,6 +48,18 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_DATABASE = "SELECT datname FROM pg_database WHERE datistemplate = FALSE order by datname";
     private final String QUERY_SCHEMA = "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name NOT IN ('information_schema') ORDER BY schema_name";
+    /**
+     * 列出普通表/分区主表/视图/物化视图；排除子分区，避免与主表重复映射。
+     * 分区主表类型归一为 TABLE，兼容现有 TableTypeEnum 与增量过滤逻辑。
+     */
+    private static final String QUERY_TABLE = "SELECT c.relname AS table_name, "
+            + "CASE c.relkind WHEN 'v' THEN 'VIEW' WHEN 'm' THEN 'MATERIALIZED VIEW' ELSE 'TABLE' END AS table_type "
+            + "FROM pg_class c "
+            + "INNER JOIN pg_namespace n ON n.oid = c.relnamespace "
+            + "WHERE n.nspname = ? "
+            + "AND c.relkind IN ('r', 'p', 'v', 'm') "
+            + "AND COALESCE(c.relispartition, false) = false "
+            + "ORDER BY c.relname";
 
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
@@ -80,6 +96,32 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
             return new DatabaseConnectorInstance(effectiveConfig, catalog, context.getSchema());
         }
         return super.connect(config, context);
+    }
+
+    @Override
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return connectorInstance.execute(databaseTemplate -> {
+            SimpleConnection connection = databaseTemplate.getSimpleConnection();
+            Connection conn = connection.getConnection();
+            String effectiveSchema = getSchema(context.getSchema(), conn);
+            List<Map<String, Object>> rows = databaseTemplate.queryForList(QUERY_TABLE, effectiveSchema);
+            if (CollectionUtils.isEmpty(rows)) {
+                return new ArrayList<>();
+            }
+            List<Table> tables = new ArrayList<>(rows.size());
+            for (Map<String, Object> row : rows) {
+                Object nameValue = row.get("table_name");
+                if (nameValue == null) {
+                    continue;
+                }
+                Table table = new Table();
+                table.setName(String.valueOf(nameValue));
+                Object typeValue = row.get("table_type");
+                table.setType(typeValue == null ? TableTypeEnum.TABLE.getCode() : String.valueOf(typeValue));
+                tables.add(table);
+            }
+            return tables;
+        });
     }
 
     @Override
