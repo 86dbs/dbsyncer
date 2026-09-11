@@ -124,4 +124,17 @@ public interface ClusterService {
         return true;
     }
 
+    /**
+     * 任务恢复保护期剩余秒数。
+     */
+    default long getLeaderProtectRemainSeconds() {
+        return 0L;
+    }
+
+    /**
+     * 结束保护期并立即恢复离线/未分配任务。
+     */
+    default void recoverOfflineTasks() {
+    }
+
 }

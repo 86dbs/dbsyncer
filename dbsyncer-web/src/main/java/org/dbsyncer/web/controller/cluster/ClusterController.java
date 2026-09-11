@@ -173,4 +173,19 @@ public class ClusterController extends BaseController {
         }
     }
 
+    /**
+     * 重写分配 离线节点任务
+     */
+    @PostMapping("/recoverOfflineTasks")
+    @ResponseBody
+    public RestResult recoverOfflineTasks() {
+        try {
+            clusterManagerService.recoverOfflineTasks();
+            return RestResult.restSuccess("已触发恢复离线节点任务");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
 }

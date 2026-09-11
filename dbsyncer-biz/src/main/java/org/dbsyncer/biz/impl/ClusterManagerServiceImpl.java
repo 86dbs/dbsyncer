@@ -63,6 +63,12 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
         clusterService.removeNode(nodeId);
     }
 
+    @Override
+    public void recoverOfflineTasks() {
+        Assert.isTrue(!clusterService.isStandalone(), "单机模式不支持该操作");
+        clusterService.recoverOfflineTasks();
+    }
+
     private ClusterNodeVO toVO(ClusterNode node) {
         ClusterNodeVO vo = new ClusterNodeVO();
         vo.setId(node.getId());
@@ -76,7 +82,11 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
         vo.setHeartbeatTime(node.getHeartbeatTime());
         vo.setStartTime(node.getStartTime());
         vo.setStatus(node.getStatus());
-        vo.setLocal(StringUtil.equals(clusterService.getLocalNodeId(), node.getNodeId()));
+        boolean local = StringUtil.equals(clusterService.getLocalNodeId(), node.getNodeId());
+        vo.setLocal(local);
+        if (local) {
+            vo.setProtectRemainSeconds(clusterService.getLeaderProtectRemainSeconds());
+        }
         return vo;
     }
 

@@ -160,6 +160,8 @@
                 editNodeName(id);
             } else if (action === 'delete') {
                 removeNode(id, $btn.attr('data-name') || id);
+            } else if (action === 'recover') {
+                recoverOfflineTasks();
             }
         });
     }
@@ -322,6 +324,13 @@
                     + '<i class="fa fa-trash"></i></button>'
                 );
             }
+            // 本机 Leader 保护期内：可手动恢复离线节点任务
+            if (item.local && Number(item.protectRemainSeconds) > 0) {
+                buttons.push(
+                    '<button type="button" class="table-action-btn play" title="恢复离线节点任务" data-action="recover">'
+                    + '<i class="fa fa-refresh"></i></button>'
+                );
+            }
         }
         var actions = buttons.length > 0
             ? '<div class="flex items-center">' + buttons.join('') + '</div>'
@@ -341,8 +350,12 @@
         }
         var statusHtml = '<div class="flex flex-col white-space-none">'
             + '<div>' + formatRole(item.role) + '</div>'
-            + '<div class="mt-1">' + formatStatus(item.status) + '</div>'
-            + '</div>';
+            + '<div class="mt-1">' + formatStatus(item.status) + '</div>';
+        if (item.local && Number(item.protectRemainSeconds) > 0) {
+            statusHtml += '<div class="mt-1 text-warning">等待节点恢复：倒计时 '
+                + Number(item.protectRemainSeconds) + ' 秒</div>';
+        }
+        statusHtml += '</div>';
         var timeHtml = stackCell([
             {label: '心跳', value: formatRelativeTime(item.heartbeatTime)},
             {label: '启动', value: formatDate(item.startTime)}
@@ -435,6 +448,25 @@
                         loadNodeMetrics(false);
                     } else {
                         bootGrowl(res.message || '删除失败', 'danger');
+                    }
+                });
+            }
+        });
+    }
+
+    function recoverOfflineTasks() {
+        showConfirm({
+            title: '恢复离线节点任务？',
+            icon: 'warning',
+            confirmText: '立即恢复',
+            body: '<p class="mb-0">立即对离线节点任务换主并补派未分配任务。</p>',
+            onConfirm: function () {
+                doPoster('/cluster/recoverOfflineTasks', {}, function (res) {
+                    if (res.success === true) {
+                        bootGrowl(res.data || '已触发恢复', 'success');
+                        loadNodeMetrics(false);
+                    } else {
+                        bootGrowl(res.message || '恢复失败', 'danger');
                     }
                 });
             }

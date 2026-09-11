@@ -24,6 +24,10 @@ public class ClusterNodeVO {
     private long startTime;
     private int status;
     private boolean local;
+    /**
+     * 任务恢复保护期剩余秒数（本机 Leader 且保护期内大于 0）
+     */
+    private long protectRemainSeconds;
 
     public long getId() {
         return id;
@@ -119,5 +123,13 @@ public class ClusterNodeVO {
 
     public void setLocal(boolean local) {
         this.local = local;
+    }
+
+    public long getProtectRemainSeconds() {
+        return protectRemainSeconds;
+    }
+
+    public void setProtectRemainSeconds(long protectRemainSeconds) {
+        this.protectRemainSeconds = protectRemainSeconds;
     }
 }

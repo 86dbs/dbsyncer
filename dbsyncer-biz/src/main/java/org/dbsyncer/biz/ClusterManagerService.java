@@ -36,4 +36,9 @@ public interface ClusterManagerService {
      * @param nodeId 节点 ID
      */
     void removeNode(String nodeId);
+
+    /**
+     * 结束保护期并恢复离线/未分配任务（本机须为 Leader）。
+     */
+    void recoverOfflineTasks();
 }
