@@ -11,8 +11,8 @@ import org.dbsyncer.biz.vo.HistoryStackVO;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.common.util.HttpClientUtil;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UnderlineToCamelUtils;
@@ -26,12 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import javax.annotation.Resource;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -184,20 +179,13 @@ public class ClusterNodeMetricAggregator {
         if (StringUtil.isBlank(base)) {
             return unreachable(node);
         }
-        // TODO 使用工具类
-        HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL(base + "/cluster/metrics").openConnection();
-            NetUtil.applyInsecureSslIfNeeded(connection);
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
-            connection.setReadTimeout(READ_TIMEOUT_MS);
-            if (connection.getResponseCode() != 200) {
-                logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), connection.getResponseCode());
+            HttpClientUtil.HttpResult result = HttpClientUtil.get(base + "/cluster/metrics", CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
+            if (!result.isOk()) {
+                logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), result.getStatusCode());
                 return unreachable(node);
             }
-            String body = readBody(connection);
-            Map<String, Object> root = JsonUtil.jsonToObj(body, Map.class);
+            Map<String, Object> root = JsonUtil.jsonToObj(result.getBody(), Map.class);
             if (root == null || !Boolean.TRUE.equals(root.get("success")) || root.get("data") == null) {
                 return unreachable(node);
             }
@@ -211,10 +199,6 @@ public class ClusterNodeMetricAggregator {
         } catch (Exception e) {
             logger.warn("拉取节点指标异常, node={}: {}", node.getId(), e.getMessage());
             return unreachable(node);
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
         }
     }
 
@@ -325,16 +309,5 @@ public class ClusterNodeMetricAggregator {
             }
         }
         return Math.floor((double) total / values.size());
-    }
-
-    private String readBody(HttpURLConnection connection) throws Exception {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-            return sb.toString();
-        }
     }
 }
