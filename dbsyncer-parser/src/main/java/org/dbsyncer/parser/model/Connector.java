@@ -40,6 +40,11 @@ public class Connector extends ConfigModel {
     @JSONField(name = "isTarget")
     private boolean isTarget = true;
 
+    /**
+     * 连接状态：1-在线，0-离线；默认在线
+     */
+    private int status = 1;
+
     public ConnectorConfig getConfig() {
         return config;
     }
@@ -71,5 +76,13 @@ public class Connector extends ConfigModel {
 
     public void setIsTarget(boolean isTarget) {
         this.isTarget = isTarget;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
     }
 }

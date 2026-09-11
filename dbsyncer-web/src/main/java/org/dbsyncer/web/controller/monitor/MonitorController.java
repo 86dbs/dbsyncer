@@ -4,7 +4,6 @@
 package org.dbsyncer.web.controller.monitor;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
@@ -77,9 +76,6 @@ public class MonitorController extends BaseController {
     private DataSyncService dataSyncService;
 
     @Resource
-    private ConnectorService connectorService;
-
-    @Resource
     private MappingService mappingService;
 
     @Resource
@@ -120,13 +116,6 @@ public class MonitorController extends BaseController {
         collectCpu();
         collectMemory();
         collectDiskSpace();
-    }
-
-    @Scheduled(fixedRate = 10000)
-    public void refreshConnectorHealth() {
-        if (preloadTemplate.isPreloadCompleted()) {
-            connectorService.refreshHealth();
-        }
     }
 
     @Scheduled(fixedRate = 30000)

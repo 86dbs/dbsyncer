@@ -40,6 +40,7 @@ import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.sdk.spi.ClusterService;
+import org.dbsyncer.sdk.spi.ConnectorHealthService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +112,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     @Resource
     private ClusterService clusterService;
 
+    @Resource
+    private ConnectorHealthService connectorHealthService;
+
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
 
@@ -128,6 +132,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             // 订正校验 / 整库迁移
             resumeValidateSyncTasks();
             resumeDatabaseSyncTasks();
+            //初始化连接心跳检测
+            connectorHealthService.start();
         } else {
             // Load connectorInstances
             loadConnectorInstance();

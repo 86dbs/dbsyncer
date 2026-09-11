@@ -47,6 +47,7 @@ public abstract class ConfigModelUtil {
             Connector connector = (Connector) model;
             params.put(ConfigConstant.CONNECTOR_IS_SOURCE, connector.isSource() ? 1 : 0);
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, connector.isTarget() ? 1 : 0);
+            params.put(ConfigConstant.CONNECTOR_STATUS, connector.getStatus());
         }
 
         // 表映射关系：关联信息落拆分列

@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ */
 package org.dbsyncer.manager;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
@@ -9,7 +12,6 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;

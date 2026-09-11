@@ -34,6 +34,10 @@ public class ConfigConstant {
      * 连接器可作为目标端（拆分列 IS_TARGET，1-是 0-否）
      */
     public static final String CONNECTOR_IS_TARGET = "isTarget";
+    /**
+     * 连接器状态（拆分列 STATUS，1-在线 0-离线）
+     */
+    public static final String CONNECTOR_STATUS = "status";
     public static final String MAPPING = "mapping";
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";

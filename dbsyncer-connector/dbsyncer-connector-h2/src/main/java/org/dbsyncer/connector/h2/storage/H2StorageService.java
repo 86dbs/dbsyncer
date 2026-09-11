@@ -581,7 +581,8 @@ public class H2StorageService extends AbstractStorageService {
 
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.CONNECTOR_IS_SOURCE, ConfigConstant.CONNECTOR_IS_TARGET, ConfigConstant.CONFIG_MODEL_JSON);
+                ConfigConstant.CONNECTOR_IS_SOURCE, ConfigConstant.CONNECTOR_IS_TARGET, ConfigConstant.CONNECTOR_STATUS,
+                ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> connectorFields = builder.getFields();
 
         // 表映射关系：关联信息拆分列 + json(字段映射/command等)
@@ -741,6 +742,7 @@ public class H2StorageService extends AbstractStorageService {
         if (StorageEnum.CONNECTOR.getType().equals(type)) {
             addColumnIfNotExist(table, "IS_SOURCE", "INT NOT NULL DEFAULT 1");
             addColumnIfNotExist(table, "IS_TARGET", "INT NOT NULL DEFAULT 1");
+            addColumnIfNotExist(table, "STATUS", "INT NOT NULL DEFAULT 1");
             return;
         }
         if (StorageEnum.TABLE_GROUP.getType().equals(type)) {
@@ -933,6 +935,7 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.CONNECTOR_IS_SOURCE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CONNECTOR_IS_TARGET, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CONNECTOR_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),

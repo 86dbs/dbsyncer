@@ -278,23 +278,32 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             return;
         }
 
-        // 更新连接器状态
+        // 探测连通性，同步内存缓存与库表 STATUS（1-在线 / 0-离线）
         Set<String> exist = new HashSet<>();
-        list.forEach(c -> {
-            health.put(c.getId(), isAlive(c.getId(), c.getConfig()));
-            exist.add(c.getId());
-        });
-
-        // 移除删除的连接器
-        Set<String> remove = new HashSet<>();
-        for (Map.Entry<String, Boolean> entry : health.entrySet()) {
-            if (!exist.contains(entry.getKey())) {
-                remove.add(entry.getKey());
-            }
+        for (Connector connector : list) {
+            boolean alive = isAlive(connector.getId(), connector.getConfig());
+            health.put(connector.getId(), alive);
+            exist.add(connector.getId());
+            persistStatusIfChanged(connector, alive);
         }
+        // 移除已删除连接器的缓存
+        health.keySet().removeIf(id -> !exist.contains(id));
+    }
 
-        if (!CollectionUtils.isEmpty(remove)) {
-            remove.forEach(health::remove);
+    /**
+     * 健康状态变化时回写连接器 {@code STATUS}（含 JSON），未变化则跳过，避免每拍写库。
+     */
+    private void persistStatusIfChanged(Connector connector, boolean alive) {
+        int newStatus = alive ? 1 : 0;
+        if (connector.getStatus() == newStatus) {
+            return;
+        }
+        connector.setStatus(newStatus);
+        connector.setUpdateTime(System.currentTimeMillis());
+        try {
+            profileComponent.editConfigModel(connector);
+        } catch (Exception e) {
+            logger.warn("更新连接器状态失败, connectorId={}, status={}, err={}", connector.getId(), newStatus, e.getMessage());
         }
     }
 
@@ -338,7 +347,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     private ConnectorVO convertConnector2Vo(Connector connector) {
-        ConnectorVO vo = new ConnectorVO(isAlive(connector.getId()));
+        ConnectorVO vo = new ConnectorVO();
         BeanUtils.copyProperties(connector, vo);
         return vo;
     }

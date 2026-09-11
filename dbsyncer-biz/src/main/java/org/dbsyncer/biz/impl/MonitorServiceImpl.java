@@ -439,7 +439,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             // 采集连接离线状态
             ConnectorOfflineContent content = new ConnectorOfflineContent();
             connectorService.getConnectorAll().forEach(connector -> {
-                if (!connector.isRunning()) {
+                if (connector.getStatus() != 1) {
                     ConnectorOfflineContent.ErrorItem item = new ConnectorOfflineContent.ErrorItem();
                     item.setName(connector.getName());
                     item.setType(connector.getConfig().getConnectorType());

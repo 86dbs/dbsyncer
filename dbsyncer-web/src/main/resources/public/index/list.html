@@ -367,7 +367,7 @@
                     </div>
                 </div>
                 <div class="flex items-center mr-2">
-                    ${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}
+                    ${Number(connector.status) === 1 ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}
                 </div>
             </div>`;
             },
