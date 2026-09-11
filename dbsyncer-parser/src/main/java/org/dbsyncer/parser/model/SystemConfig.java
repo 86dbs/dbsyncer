@@ -115,9 +115,14 @@ public class SystemConfig extends ConfigModel {
     private int tableWindowSize = 10;
 
     /**
-     * 单片行预算
+     * 分片大小（单片行数预算）
      */
     private int shardRowBudget = 100_000;
+
+    /**
+     * 分片总数（与分片行数相除得到每波预切片数）
+     */
+    private int shardTotal = 1_000_000;
 
     /**
      * 分片运行超时（毫秒）
@@ -274,6 +279,14 @@ public class SystemConfig extends ConfigModel {
 
     public void setShardRowBudget(int shardRowBudget) {
         this.shardRowBudget = shardRowBudget;
+    }
+
+    public int getShardTotal() {
+        return shardTotal;
+    }
+
+    public void setShardTotal(int shardTotal) {
+        this.shardTotal = shardTotal;
     }
 
     public long getShardTimeoutMs() {

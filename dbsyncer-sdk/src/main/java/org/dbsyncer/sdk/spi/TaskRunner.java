@@ -43,4 +43,28 @@ public interface TaskRunner {
      */
     default void releaseConnector(String taskId) {
     }
+
+    /**
+     * 全量+增量进入批处理全量前：可恢复则跳过，否则捕获增量位点。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     */
+    default void prepareFullIncrement(String taskId) {
+    }
+
+    /**
+     * 批处理全量完成后切换到增量阶段并启动增量。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     */
+    default void switchToIncrementAfterFull(String taskId) {
+    }
+
+    /**
+     * 纯全量批处理收口（发布关闭事件，驱动 Meta 就绪与连接回收）。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     */
+    default void completeBatchFull(String taskId) {
+    }
 }

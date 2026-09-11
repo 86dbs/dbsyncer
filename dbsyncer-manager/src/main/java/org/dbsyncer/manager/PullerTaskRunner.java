@@ -3,11 +3,16 @@
  */
 package org.dbsyncer.manager;
 
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
+import org.dbsyncer.manager.impl.FullIncrementPuller;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -33,6 +38,12 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Resource
     private ConnectorInstanceBinder connectorInstanceBinder;
+
+    @Resource
+    private FullIncrementPuller fullIncrementPuller;
+
+    @Resource
+    private ApplicationContext applicationContext;
 
     @Resource
     private Map<String, Puller> map;
@@ -71,6 +82,30 @@ public final class PullerTaskRunner implements TaskRunner {
         connectorInstanceBinder.release(mapping);
     }
 
+    @Override
+    public void prepareFullIncrement(String taskId) {
+        Mapping mapping = requireMapping(taskId);
+        if (!StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), mapping.getModel())) {
+            return;
+        }
+        fullIncrementPuller.prepareFullPhase(mapping);
+    }
+
+    @Override
+    public void switchToIncrementAfterFull(String taskId) {
+        Mapping mapping = requireMapping(taskId);
+        if (!StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), mapping.getModel())) {
+            return;
+        }
+        fullIncrementPuller.switchToIncrement(mapping);
+    }
+
+    @Override
+    public void completeBatchFull(String taskId) {
+        Mapping mapping = requireMapping(taskId);
+        applicationContext.publishEvent(new ClosedEvent(applicationContext, mapping.getMetaId()));
+    }
+
     private Mapping requireMapping(String taskId) {
         Mapping mapping = profileComponent.getMapping(taskId);
         Assert.notNull(mapping, String.format("同步任务不存在: %s", taskId));
@@ -80,6 +115,5 @@ public final class PullerTaskRunner implements TaskRunner {
     private Puller getPuller(Mapping mapping) {
         String model = mapping.getModel();
         return map.get(model.concat("Puller"));
-
     }
 }

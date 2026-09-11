@@ -77,6 +77,34 @@ public final class FullIncrementPuller extends AbstractPuller {
         incrementPuller.close(metaId);
     }
 
+    /**
+     * 批处理全量前准备：可恢复则跳过，否则捕获增量位点。
+     *
+     * @param mapping 驱动
+     */
+    public void prepareFullPhase(Mapping mapping) {
+        if (mapping == null) {
+            return;
+        }
+        Meta meta = metaProfile.getMeta(mapping.getMetaId());
+        prepareFullPhase(mapping, meta, mapping.getMetaId());
+    }
+
+    /**
+     * 批处理全量完成后标记增量阶段并启动增量。
+     *
+     * @param mapping 驱动
+     */
+    public void switchToIncrement(Mapping mapping) {
+        if (mapping == null) {
+            return;
+        }
+        String metaId = mapping.getMetaId();
+        markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
+        logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+        incrementPuller.start(mapping, false);
+    }
+
     private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
         try {
             Meta meta = metaProfile.getMeta(metaId);

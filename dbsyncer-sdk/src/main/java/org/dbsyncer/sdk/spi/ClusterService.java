@@ -137,4 +137,34 @@ public interface ClusterService {
     default void recoverOfflineTasks() {
     }
 
+    /**
+     * 尝试由控制面接管批处理全量编排。
+     * <p>单机或不接管时返回 false，调用方继续走本机整表执行器。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     * @param model  同步方式
+     * @return true 已接管
+     */
+    default boolean tryStartShardOrchestration(String taskId, String model) {
+        return false;
+    }
+
+    /**
+     * 停止批处理全量编排并清理在途计划。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     */
+    default void stopShardOrchestration(String taskId) {
+    }
+
+    /**
+     * 本机是否正在对该任务做批处理全量编排。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     * @return true 编排进行中
+     */
+    default boolean isShardOrchestrationActive(String taskId) {
+        return false;
+    }
+
 }

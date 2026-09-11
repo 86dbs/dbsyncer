@@ -93,6 +93,15 @@
                     </div>
                 </div>
                 <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
+                    <label class="form-label">分片总数<i class="fa fa-question-circle"
+                                                          title="与分片行数相除得到每波预切片数，例如 100万/10万=10；本波全部完成后再切下一波"></i><strong
+                            class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="10000000" required
+                               name="shardTotal" th:value="${config?.shardTotal}"/>
+                    </div>
+                </div>
+                <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
                     <label class="form-label">分片超时(毫秒)<i class="fa fa-question-circle"
                                                                 title="运行中分片超过该时间未刷新则视为超时"></i><strong
                             class="text-primary">*</strong></label>
