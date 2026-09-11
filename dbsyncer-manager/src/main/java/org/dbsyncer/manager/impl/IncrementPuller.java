@@ -88,6 +88,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private ConnectorFactory connectorFactory;
 
     @Resource
+    private ConnectorInstanceBinder connectorInstanceBinder;
+
+    @Resource
     private ProfileComponent profileComponent;
 
     @Resource
@@ -225,6 +228,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
             tableGroupContext.clear(metaId);
             if (shouldPublishClosedAfterStop(metaId)) {
                 publishClosedEvent(metaId);
+            } else {
+                // 围栏停止：不发 ClosedEvent（避免 Meta 被置 READY），但仍回收本机连接
+                releaseMappingConnectors(metaId);
             }
             logger.info("关闭成功:{}", metaId);
             return null;
@@ -243,6 +249,20 @@ public final class IncrementPuller extends AbstractPuller implements Application
         }
         Meta meta = metaProfile.getMeta(metaId);
         return meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode();
+    }
+
+    /**
+     * 按 Meta 回收本机 Mapping 连接（围栏停止专用）。
+     *
+     * @param metaId Meta ID
+     */
+    private void releaseMappingConnectors(String metaId) {
+        Meta meta = metaProfile.getMeta(metaId);
+        if (meta == null || StringUtil.isBlank(meta.getTaskId())) {
+            return;
+        }
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        connectorInstanceBinder.release(mapping);
     }
 
     @Override

@@ -40,7 +40,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     @Override
     public void onApplicationEvent(ClosedEvent event) {
         changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
-        // 集群：任务自然结束/失败收口后回收本机连接（用户停止路径会在 stopExecute 再释一次，幂等）
+        // 集群：排空/收口后再回收本机连接（用户停止、自然结束、失败）
         releaseMappingConnectors(event.getMetaId());
     }
 
