@@ -27,4 +27,20 @@ public interface TaskRunner {
      * @param taskId 任务 ID（Mapping ID）
      */
     void stop(String taskId);
+
+    /**
+     * 按任务恢复源/目标连接（集群接回或启动前调用；单机默认可空操作）。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     */
+    default void restoreConnector(String taskId) {
+    }
+
+    /**
+     * 释放任务连接（集群停止或任务结束后调用；单机默认可空操作）。
+     *
+     * @param taskId 任务 ID（Mapping ID）
+     */
+    default void releaseConnector(String taskId) {
+    }
 }

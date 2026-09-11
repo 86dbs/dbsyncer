@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.manager;
 
+import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -31,11 +32,22 @@ public final class PullerTaskRunner implements TaskRunner {
     private ClusterService clusterService;
 
     @Resource
+    private ConnectorInstanceBinder connectorInstanceBinder;
+
+    @Resource
     private Map<String, Puller> map;
 
     @PostConstruct
     private void init() {
         clusterService.bindTaskRunner(this);
+    }
+
+    @Override
+    public void restoreConnector(String taskId) {
+        if (clusterService.isStandalone()) {
+            return;
+        }
+        connectorInstanceBinder.restore(requireMapping(taskId));
     }
 
     @Override
@@ -48,6 +60,15 @@ public final class PullerTaskRunner implements TaskRunner {
     public void stop(String taskId) {
         Mapping mapping = requireMapping(taskId);
         getPuller(mapping).close(mapping.getMetaId());
+    }
+
+    @Override
+    public void releaseConnector(String taskId) {
+        if (clusterService.isStandalone()) {
+            return;
+        }
+        Mapping mapping = profileComponent.getMapping(taskId);
+        connectorInstanceBinder.release(mapping);
     }
 
     private Mapping requireMapping(String taskId) {

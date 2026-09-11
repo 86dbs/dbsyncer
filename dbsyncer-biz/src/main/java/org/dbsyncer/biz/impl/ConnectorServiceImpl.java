@@ -29,6 +29,7 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -75,6 +76,9 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Resource
     private Checker connectorChecker;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Override
     public String add(Map<String, String> params) {
@@ -213,8 +217,12 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         ConnectorConfig config = connector.getConfig();
         org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
         String catalog = StringUtil.getIfBlank(database, StringUtil.EMPTY);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, catalog, StringUtil.EMPTY);
-        return connectorService.getSchemas(connectorInstance, database);
+        try {
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, catalog, StringUtil.EMPTY);
+            return connectorService.getSchemas(connectorInstance, database);
+        } finally {
+            releaseIdleConnector(id);
+        }
     }
 
     @Override
@@ -278,12 +286,15 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             return;
         }
 
-        // 探测连通性，同步内存缓存与库表 STATUS（1-在线 / 0-离线）
+        // 仅探测已缓存实例，避免集群下为健康检查全量建连
         Set<String> exist = new HashSet<>();
         for (Connector connector : list) {
-            boolean alive = isAlive(connector.getId(), connector.getConfig());
-            health.put(connector.getId(), alive);
             exist.add(connector.getId());
+            if (!connectorFactory.containsConnector(connector.getId())) {
+                continue;
+            }
+            boolean alive = probeAlive(connector.getId(), connector.getConfig());
+            health.put(connector.getId(), alive);
             persistStatusIfChanged(connector, alive);
         }
         // 移除已删除连接器的缓存
@@ -309,18 +320,48 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public boolean isAlive(String id) {
-        return health.getOrDefault(id, false);
+        Connector connector = profileComponent.getConnector(id);
+        if (connector == null || connector.getConfig() == null) {
+            return false;
+        }
+        boolean created = false;
+        try {
+            if (!connectorFactory.containsConnector(id)) {
+                connectorFactory.connect(id, connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
+                created = true;
+            }
+            boolean alive = probeAlive(id, connector.getConfig());
+            health.put(id, alive);
+            persistStatusIfChanged(connector, alive);
+            return alive;
+        } catch (Exception e) {
+            LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
+            logService.log(logType, "%s%s", logType.getName(), e.getMessage());
+            return false;
+        } finally {
+            if (created) {
+                releaseIdleConnector(id);
+            }
+        }
     }
 
     @Override
     public Object getPosition(String mappingId) {
         Mapping mapping = profileComponent.getMapping(mappingId);
+        Assert.notNull(mapping, "Mapping can not be null.");
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
-        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        ConnectorInstance connectorInstance;
+        if (connectorFactory.contains(instanceId)) {
+            connectorInstance = connectorFactory.connect(instanceId);
+        } else {
+            Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+            Assert.notNull(connector, "源连接器不存在");
+            connectorInstance = connectorFactory.connect(instanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
+        }
         return connectorFactory.getPosition(connectorInstance);
     }
 
-    private boolean isAlive(String connectorConfigId, ConnectorConfig config) {
+    private boolean probeAlive(String connectorConfigId, ConnectorConfig config) {
         try {
             return connectorFactory.isAlive(connectorConfigId, config);
         } catch (Exception e) {
@@ -328,6 +369,18 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             logService.log(logType, "%s%s", logType.getName(), e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * 集群下若无运行任务占用该连接器，则断开配置级缓存。
+     *
+     * @param connectorId 连接器 ID
+     */
+    private void releaseIdleConnector(String connectorId) {
+        if (clusterService.isStandalone() || connectorFactory.isAcquired(connectorId)) {
+            return;
+        }
+        connectorFactory.disconnect(connectorId);
     }
 
     /**

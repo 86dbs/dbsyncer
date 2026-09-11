@@ -21,6 +21,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
@@ -119,6 +120,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private PreloadTemplate preloadTemplate;
+
+    @Resource
+    private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
     private MappingChecker mappingChecker;
@@ -679,8 +683,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     public List<Table> updateConnectorTables(ValidateSyncTask task, String suffix) {
         boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(task, isSource);
-        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
-        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        ConnectorInstance connectorInstance = connectorInstanceBinder.ensure(task, suffix);
         List<Table> tables = connectorFactory.getTables(connectorInstance, context);
         // 按升序展示表
         Collections.sort(tables, Comparator.comparing(Table::getName));

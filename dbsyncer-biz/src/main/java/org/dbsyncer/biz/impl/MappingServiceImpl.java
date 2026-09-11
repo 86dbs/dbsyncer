@@ -25,6 +25,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
+import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
@@ -125,6 +126,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private PreloadTemplate preloadTemplate;
+
+    @Resource
+    private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
     private RsaManager rsaManager;
@@ -555,8 +559,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
         });
 
-        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
-        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        ConnectorInstance connectorInstance = connectorInstanceBinder.ensure(mapping, suffix);
         tables = connectorFactory.getTables(connectorInstance, context);
         tables.addAll(customTables);
         // 按升序展示表
@@ -713,8 +716,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         boolean isSource = StringUtil.equals("source", type);
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
 
-        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
-        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        ConnectorInstance connectorInstance = connectorInstanceBinder.ensure(mapping,
+                isSource ? ConnectorInstanceUtil.SOURCE_SUFFIX : ConnectorInstanceUtil.TARGET_SUFFIX);
         ConnectorService connectorService = connectorFactory.getConnectorService(connectorInstance.getConfig());
         ConfigValidator configValidator = connectorService.getConfigValidator();
         Assert.notNull(configValidator, "ConfigValidator can not be null.");

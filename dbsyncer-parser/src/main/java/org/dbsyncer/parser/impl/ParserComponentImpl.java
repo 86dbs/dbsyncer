@@ -5,7 +5,6 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.rsa.RsaManager;
-import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
@@ -13,6 +12,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
@@ -85,28 +85,30 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Override
     public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
-        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
-        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        ConnectorInstance connectorInstance = requireInstance(context.getMappingId(), context.getConnectorId(),
+                context.getCatalog(), context.getSchema(), context.getSuffix());
         return connectorFactory.getMetaInfo(connectorInstance, context);
     }
 
     @Override
     public Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup) {
         return buildConnectorCommand(mapping.getId(), mapping.getSourceConnectorId(), mapping.getTargetConnectorId(),
-                mapping.getSourceSchema(), mapping.getTargetSchema(), mapping.isForceUpdate(), tableGroup);
+                mapping.getSourceDatabase(), mapping.getSourceSchema(), mapping.getTargetDatabase(), mapping.getTargetSchema(),
+                mapping.isForceUpdate(), tableGroup);
     }
 
     @Override
     public Map<String, String> getCommand(ValidateSyncTask task, TableGroup tableGroup) {
         return buildConnectorCommand(task.getId(), task.getSourceConnectorId(), task.getTargetConnectorId(),
-                task.getSourceSchema(), task.getTargetSchema(), true, tableGroup);
+                task.getSourceDatabase(), task.getSourceSchema(), task.getTargetDatabase(), task.getTargetSchema(), true, tableGroup);
     }
 
     /**
      * 根据驱动/任务 id 与表组构建连接器命令
      */
     private Map<String, String> buildConnectorCommand(String mappingId, String sourceConnectorId, String targetConnectorId,
-                                                      String sourceSchema, String targetSchema, boolean forceUpdate, TableGroup tableGroup) {
+                                                      String sourceDatabase, String sourceSchema, String targetDatabase,
+                                                      String targetSchema, boolean forceUpdate, TableGroup tableGroup) {
         ConnectorConfig sConnConfig = getConnectorConfig(sourceConnectorId);
         ConnectorConfig tConnConfig = getConnectorConfig(targetConnectorId);
         Table sourceTable = tableGroup.getSourceTable();
@@ -125,10 +127,10 @@ public class ParserComponentImpl implements ParserComponent {
                 }
             });
         }
-        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mappingId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
-        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mappingId, targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
-        ConnectorInstance sourceInstance = connectorFactory.connect(sourceInstanceId);
-        ConnectorInstance targetInstance = connectorFactory.connect(targetInstanceId);
+        ConnectorInstance sourceInstance = requireInstance(mappingId, sourceConnectorId, sourceDatabase, sourceSchema,
+                ConnectorInstanceUtil.SOURCE_SUFFIX);
+        ConnectorInstance targetInstance = requireInstance(mappingId, targetConnectorId, targetDatabase, targetSchema,
+                ConnectorInstanceUtil.TARGET_SUFFIX);
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sourceSchema, sTable, sourceInstance, tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), targetSchema, tTable, targetInstance, targetFilter);
         targetConfig.setForceUpdate(forceUpdate);
@@ -159,10 +161,10 @@ public class ParserComponentImpl implements ParserComponent {
         List<String> primaryKeys = getPrimaryKeysForCursor(command, group.getSourceTable(), enableCursor);
         final FullPluginContext context = new FullPluginContext();
 
-        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
-        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
-        context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
-        context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
+        context.setSourceConnectorInstance(requireInstance(mapping.getId(), sourceConnectorId, mapping.getSourceDatabase(),
+                mapping.getSourceSchema(), ConnectorInstanceUtil.SOURCE_SUFFIX));
+        context.setTargetConnectorInstance(requireInstance(mapping.getId(), targetConnectorId, mapping.getTargetDatabase(),
+                mapping.getTargetSchema(), ConnectorInstanceUtil.TARGET_SUFFIX));
         context.setEvent(ConnectorConstant.OPERTION_INSERT);
         context.setCommand(command);
         context.setBatchSize(mapping.getBatchNum());
@@ -330,6 +332,26 @@ public class ParserComponentImpl implements ParserComponent {
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
         return profileComponent.getConnector(connectorId).getConfig();
+    }
+
+    /**
+     * 获取任务级连接，池中没有时按配置建连。
+     *
+     * @param uniqueId    任务 ID
+     * @param connectorId 连接器 ID
+     * @param catalog     目录
+     * @param schema      模式
+     * @param suffix      源/目标后缀
+     * @return 连接实例
+     */
+    private ConnectorInstance requireInstance(String uniqueId, String connectorId, String catalog, String schema, String suffix) {
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, connectorId, suffix);
+        if (connectorFactory.contains(instanceId)) {
+            return connectorFactory.connect(instanceId);
+        }
+        Connector connector = profileComponent.getConnector(connectorId);
+        Assert.notNull(connector, "连接器不存在");
+        return connectorFactory.connect(instanceId, connector.getConfig(), catalog, schema);
     }
 
     /**

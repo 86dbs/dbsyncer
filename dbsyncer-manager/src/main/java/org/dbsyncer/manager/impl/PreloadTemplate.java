@@ -27,7 +27,6 @@ import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.impl.DingTalkNoticeService;
 import org.dbsyncer.plugin.impl.HttpNoticeService;
@@ -115,6 +114,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     @Resource
     private ConnectorHealthService connectorHealthService;
 
+    @Resource
+    private ConnectorInstanceBinder connectorInstanceBinder;
+
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
 
@@ -135,8 +137,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             //初始化连接心跳检测
             connectorHealthService.start();
         } else {
-            // Load connectorInstances
-            loadConnectorInstance();
+            // 集群：不预热全部连接；由控制面按本机负责任务先恢复连接再启任务
             clusterService.init();
         }
         preloadCompleted = true;
@@ -238,7 +239,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * 配置导入完成后的收尾：重建连接实例，恢复同步驱动与企业任务。
      */
     public void afterConfigImport() {
-        loadConnectorInstance();
+        // 集群不预热全部连接器；单机仍全量预热
+        if (clusterService.isStandalone()) {
+            loadConnectorInstance();
+        }
         launchSyncMappings();
         resumeValidateSyncTasks();
         resumeDatabaseSyncTasks();
@@ -273,7 +277,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     continue;
                 }
                 try {
-                    reConnect(mapping);
+                    // 集群启动不预热；单机恢复时重建任务级连接
+                    if (clusterService.isStandalone()) {
+                        reConnect(mapping);
+                    }
                     // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
                         managerFactory.start(mapping, true);
@@ -301,14 +308,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     public void reConnect(String uniqueId, String sourceConnectorId, String sourceDatabase, String sourceSchema,
                           String targetConnectorId, String targetDatabase, String targetSchema) {
-        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
-        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
-        Connector connector = profileComponent.getConnector(sourceConnectorId);
-        ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), sourceDatabase, sourceSchema);
-        Assert.notNull(instance, "Source connector instance can not null");
-        connector = profileComponent.getConnector(targetConnectorId);
-        instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), targetDatabase, targetSchema);
-        Assert.notNull(instance, "Target connector instance can not null");
+        connectorInstanceBinder.bind(uniqueId, sourceConnectorId, sourceDatabase, sourceSchema,
+                targetConnectorId, targetDatabase, targetSchema);
     }
 
     private void reload(Map<String, Map> map, CommandEnum commandEnum) {
@@ -367,7 +368,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             }
             ValidateSyncTask task = (ValidateSyncTask) commonTask;
             try {
-                reConnect(task);
+                if (clusterService.isStandalone()) {
+                    reConnect(task);
+                }
             } catch (Exception e) {
                 logger.error("校验任务连接器预热失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
             }

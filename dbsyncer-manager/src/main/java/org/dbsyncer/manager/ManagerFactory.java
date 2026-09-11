@@ -5,6 +5,7 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.manager.event.ClosedEvent;
+import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
@@ -33,9 +34,14 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     @Resource
     private ClusterService clusterService;
 
+    @Resource
+    private ConnectorInstanceBinder connectorInstanceBinder;
+
     @Override
     public void onApplicationEvent(ClosedEvent event) {
         changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
+        // 集群：任务自然结束/失败收口后回收本机连接（用户停止路径会在 stopExecute 再释一次，幂等）
+        releaseMappingConnectors(event.getMetaId());
     }
 
     public void start(Mapping mapping) {
@@ -77,5 +83,19 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
             meta.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(meta);
         }
+    }
+
+    /**
+     * 集群下任务关闭后释放本机连接。
+     *
+     * @param metaId Meta ID
+     */
+    private void releaseMappingConnectors(String metaId) {
+        Meta meta = metaProfile.getMeta(metaId);
+        if (meta == null) {
+            return;
+        }
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        connectorInstanceBinder.release(mapping);
     }
 }

@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -54,6 +55,11 @@ public class ConnectorFactory implements DisposableBean {
 
     private final Set<String> connectorTypes = new HashSet<>();
 
+    /**
+     * 本机运行中任务占用的连接器 ID（taskId -> connectorIds）。
+     */
+    private final Map<String, Set<String>> runningTaskConnectors = new ConcurrentHashMap<>();
+
     @PostConstruct
     private void init() {
         ServiceLoader<ConnectorService> services = ServiceLoader.load(ConnectorService.class, Thread.currentThread().getContextClassLoader());
@@ -67,6 +73,7 @@ public class ConnectorFactory implements DisposableBean {
     public void destroy() {
         pool.values().forEach(this::disconnect);
         pool.clear();
+        runningTaskConnectors.clear();
     }
 
     /**
@@ -133,11 +140,77 @@ public class ConnectorFactory implements DisposableBean {
     public boolean isAlive(String instanceId, ConnectorConfig config) {
         Assert.hasText(instanceId, "ConnectorConfigId can not be null.");
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        ConnectorInstance instance = pool.get(instanceId);
+        ConnectorInstance instance = findInstance(instanceId);
         if (instance != null) {
             return getConnectorService(config).isAlive(instance);
         }
         return false;
+    }
+
+    /**
+     * 连接池是否已缓存该实例。
+     *
+     * @param instanceId 实例 ID
+     * @return 已缓存返回 true
+     */
+    public boolean contains(String instanceId) {
+        return instanceId != null && pool.containsKey(instanceId);
+    }
+
+    /**
+     * 是否存在该连接器的任意缓存实例（配置级或任务级）。
+     *
+     * @param connectorId 连接器 ID
+     * @return 存在返回 true
+     */
+    public boolean containsConnector(String connectorId) {
+        return contains(connectorId) || hasTaskInstance(connectorId);
+    }
+
+    /**
+     * 是否被本机运行中任务占用。
+     *
+     * @param connectorId 连接器 ID
+     * @return 占用返回 true
+     */
+    public boolean isAcquired(String connectorId) {
+        if (connectorId == null || connectorId.isEmpty()) {
+            return false;
+        }
+        for (Set<String> ids : runningTaskConnectors.values()) {
+            if (ids != null && ids.contains(connectorId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 本机任务是否已登记运行占用。
+     *
+     * @param taskId 任务 ID
+     * @return 已登记返回 true
+     */
+    public boolean isTaskAcquired(String taskId) {
+        return taskId != null && !taskId.isEmpty() && runningTaskConnectors.containsKey(taskId);
+    }
+
+    /**
+     * 登记本机运行中任务占用的连接器。
+     *
+     * @param taskId       任务 ID
+     * @param connectorIds 连接器 ID
+     */
+    public void acquire(String taskId, String... connectorIds) {
+        if (taskId == null || taskId.isEmpty() || connectorIds == null) {
+            return;
+        }
+        Set<String> set = runningTaskConnectors.computeIfAbsent(taskId, k -> ConcurrentHashMap.newKeySet());
+        for (String connectorId : connectorIds) {
+            if (connectorId != null && !connectorId.isEmpty()) {
+                set.add(connectorId);
+            }
+        }
     }
 
     /**
@@ -270,6 +343,76 @@ public class ConnectorFactory implements DisposableBean {
         pool.computeIfPresent(instanceId, (k, v)->(v == instance) ? null : v);
         // 在锁外执行断开连接操作，避免阻塞其他线程
         disconnect(instance);
+    }
+
+    /**
+     * 释放本机任务连接：断开该任务全部任务级实例；若无其他运行中任务占用同一连接器，再断开配置级缓存。
+     *
+     * @param taskId       任务 ID
+     * @param connectorIds 任务用到的连接器 ID
+     */
+    public void releaseTask(String taskId, String... connectorIds) {
+        disconnectByTaskId(taskId);
+        Set<String> acquired = runningTaskConnectors.remove(taskId);
+        Set<String> toCheck = new HashSet<>();
+        if (acquired != null) {
+            toCheck.addAll(acquired);
+        }
+        if (connectorIds != null) {
+            for (String connectorId : connectorIds) {
+                if (connectorId != null && !connectorId.isEmpty()) {
+                    toCheck.add(connectorId);
+                }
+            }
+        }
+        for (String connectorId : toCheck) {
+            if (!isAcquired(connectorId)) {
+                disconnect(connectorId);
+            }
+        }
+    }
+
+    private void disconnectByTaskId(String taskId) {
+        if (taskId == null || taskId.isEmpty()) {
+            return;
+        }
+        String prefix = taskId + "@";
+        List<String> keys = new ArrayList<>();
+        for (String key : pool.keySet()) {
+            if (key != null && key.startsWith(prefix)) {
+                keys.add(key);
+            }
+        }
+        for (String key : keys) {
+            disconnect(key);
+        }
+    }
+
+    private boolean hasTaskInstance(String connectorId) {
+        if (connectorId == null || connectorId.isEmpty()) {
+            return false;
+        }
+        String token = "@" + connectorId + "@";
+        for (String key : pool.keySet()) {
+            if (key != null && key.contains(token)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ConnectorInstance findInstance(String connectorId) {
+        ConnectorInstance instance = pool.get(connectorId);
+        if (instance != null) {
+            return instance;
+        }
+        String token = "@" + connectorId + "@";
+        for (Map.Entry<String, ConnectorInstance> entry : pool.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().contains(token)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     private void disconnect(ConnectorInstance connectorInstance) {
