@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * 连接器健康检查服务：探测与写 STATUS；启停由单机预加载或集群角色管理触发。
+ * 连接器健康检查服务
  *
  * @author wuji
  * @version 1.0.0

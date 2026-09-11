@@ -25,6 +25,8 @@ public class ClusterNode {
     private long heartbeatTime;
     private long startTime;
     private int status;
+    private boolean local;
+    private long protectRemainSeconds;
 
     public long getId() {
         return id;
@@ -128,5 +130,21 @@ public class ClusterNode {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public boolean isLocal() {
+        return local;
+    }
+
+    public void setLocal(boolean local) {
+        this.local = local;
+    }
+
+    public long getProtectRemainSeconds() {
+        return protectRemainSeconds;
+    }
+
+    public void setProtectRemainSeconds(long protectRemainSeconds) {
+        this.protectRemainSeconds = protectRemainSeconds;
     }
 }

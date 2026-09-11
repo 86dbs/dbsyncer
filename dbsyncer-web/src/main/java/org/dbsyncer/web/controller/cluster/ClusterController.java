@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.web.controller.cluster;
 
-import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.BaseController;
@@ -34,9 +33,6 @@ public class ClusterController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ClusterManagerService clusterManagerService;
-
-    @Resource
     private ClusterService clusterService;
 
     @Resource
@@ -46,7 +42,7 @@ public class ClusterController extends BaseController {
     private ClusterNodeMetricAggregator clusterNodeMetricAggregator;
 
     /**
-     * 集群列表页。
+     * 集群列表页
      */
     @GetMapping("/list")
     public String list(ModelMap model) {
@@ -66,8 +62,7 @@ public class ClusterController extends BaseController {
             if (clusterService.isStandalone()) {
                 return RestResult.restFail("单机不支持内部执行接口");
             }
-            boolean ok = clusterService.execute(taskId, autoRecovery);
-            return ok ? RestResult.restSuccess("ok") : RestResult.restFail("本机不是该任务的调度节点");
+            return RestResult.restSuccess(clusterService.execute(taskId, autoRecovery));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -130,13 +125,13 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 节点分页。
+     * 节点分页
      */
     @PostMapping("/query")
     @ResponseBody
     public RestResult query(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(clusterManagerService.query(getParams(request)));
+            return RestResult.restSuccess(clusterService.query(getParams(request)));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -150,7 +145,7 @@ public class ClusterController extends BaseController {
     @ResponseBody
     public RestResult edit(@RequestParam("id") String id, @RequestParam("name") String name) {
         try {
-            clusterManagerService.updateNodeName(id, name);
+            clusterService.updateNodeName(id, name);
             return RestResult.restSuccess("修改节点名称成功");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -165,7 +160,7 @@ public class ClusterController extends BaseController {
     @ResponseBody
     public RestResult remove(@RequestParam("id") String id) {
         try {
-            clusterManagerService.removeNode(id);
+            clusterService.removeNode(id);
             return RestResult.restSuccess("删除节点成功");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -174,13 +169,13 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 重写分配 离线节点任务
+     * 重写分配离线节点任务
      */
     @PostMapping("/recoverOfflineTasks")
     @ResponseBody
     public RestResult recoverOfflineTasks() {
         try {
-            clusterManagerService.recoverOfflineTasks();
+            clusterService.recoverOfflineTasks();
             return RestResult.restSuccess("已触发恢复离线节点任务");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

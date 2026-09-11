@@ -3,10 +3,8 @@
  */
 package org.dbsyncer.web.controller.cluster;
 
-import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.ClusterMetricsOverviewVO;
 import org.dbsyncer.biz.vo.ClusterNodeMetricVO;
-import org.dbsyncer.biz.vo.ClusterNodeVO;
 import org.dbsyncer.biz.vo.HistoryStackVO;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -17,6 +15,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UnderlineToCamelUtils;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -43,18 +42,14 @@ import java.util.Map;
 @Service
 public class ClusterNodeMetricAggregator {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private static final int CONNECT_TIMEOUT_MS = 2000;
     private static final int READ_TIMEOUT_MS = 3000;
     private static final int PULL_CONCURRENCY = 8;
     private static final int CHART_HISTORY_COUNT = 12;
-
     private final HistoryStackVO chartQueue = new HistoryStackVO();
     private final HistoryStackVO chartFullWorkItems = new HistoryStackVO();
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    @Resource
-    private ClusterManagerService clusterManagerService;
 
     @Resource
     private LocalNodeMetricProvider localNodeMetricProvider;
@@ -74,12 +69,12 @@ public class ClusterNodeMetricAggregator {
         Map<String, String> query = new HashMap<>();
         query.put("pageNum", "1");
         query.put("pageSize", "100");
-        List<ClusterNodeVO> nodes = (List<ClusterNodeVO>) clusterManagerService.query(query).getData();
+        List<ClusterNode> nodes = (List<ClusterNode>) clusterService.query(query).getData();
         Map<String, Integer> workItemByNode = resolveFullWorkItemCounts();
         Map<String, Integer> incByNode = resolveIncrementalCounts();
-        List<ClusterNodeVO> remotes = new ArrayList<>();
+        List<ClusterNode> remotes = new ArrayList<>();
         List<ClusterNodeMetricVO> metrics = new ArrayList<>();
-        for (ClusterNodeVO node : nodes) {
+        for (ClusterNode node : nodes) {
             // 如果是本机
             if (node.isLocal()) {
                 metrics.add(pullOne(node, workItemByNode, incByNode));
@@ -152,7 +147,7 @@ public class ClusterNodeMetricAggregator {
         return Math.floor(sum / values.size());
     }
 
-    private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> workItemByNode, Map<String, Integer> incByNode) {
+    private ClusterNodeMetricVO pullOne(ClusterNode node, Map<String, Integer> workItemByNode, Map<String, Integer> incByNode) {
         ClusterNodeMetricVO vo;
         if (node.isLocal()) {
             vo = localNodeMetricProvider.snapshot();
@@ -170,39 +165,39 @@ public class ClusterNodeMetricAggregator {
         return vo;
     }
 
-    private ClusterNodeMetricVO pullRemote(ClusterNodeVO node) {
+    private ClusterNodeMetricVO pullRemote(ClusterNode node) {
         // 已离线
         if (node.getStatus() == 0) {
-            return unreachable(node);
+            return unreachable();
         }
         String base = localNodeMetricProvider.buildHttpUrl(node.getIp(), node.getHttpPort());
         if (StringUtil.isBlank(base)) {
-            return unreachable(node);
+            return unreachable();
         }
         try {
             HttpClientUtil.HttpResult result = HttpClientUtil.get(base + "/cluster/metrics", CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
             if (!result.isOk()) {
                 logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), result.getStatusCode());
-                return unreachable(node);
+                return unreachable();
             }
-            Map<String, Object> root = JsonUtil.jsonToObj(result.getBody(), Map.class);
+            Map root = JsonUtil.jsonToObj(result.getBody(), Map.class);
             if (root == null || !Boolean.TRUE.equals(root.get("success")) || root.get("data") == null) {
-                return unreachable(node);
+                return unreachable();
             }
             String json = root.get("data") instanceof String ? (String) root.get("data") : JsonUtil.objToJson(root.get("data"));
             ClusterNodeMetricVO vo = JsonUtil.jsonToObj(json, ClusterNodeMetricVO.class);
             if (vo == null) {
-                return unreachable(node);
+                return unreachable();
             }
             vo.setReachable(true);
             return vo;
         } catch (Exception e) {
             logger.warn("拉取节点指标异常, node={}: {}", node.getId(), e.getMessage());
-            return unreachable(node);
+            return unreachable();
         }
     }
 
-    private ClusterNodeMetricVO unreachable(ClusterNodeVO node) {
+    private ClusterNodeMetricVO unreachable() {
         ClusterNodeMetricVO vo = new ClusterNodeMetricVO();
         vo.setReachable(false);
         vo.setCpuPercent(BigDecimal.ZERO);

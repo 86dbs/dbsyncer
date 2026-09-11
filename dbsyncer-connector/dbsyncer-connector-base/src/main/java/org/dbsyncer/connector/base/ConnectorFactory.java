@@ -40,9 +40,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 连接器工厂
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2019-09-18 23:30
+ * @author AE86
+ * @version 1.0.0
+ * @date 2019-09-18 23:30
  */
 @Component
 public class ConnectorFactory implements DisposableBean {
@@ -121,10 +121,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 获取监听器
-     *
-     * @param connectorType
-     * @param listenerType
-     * @return
      */
     public Listener getListener(String connectorType, String listenerType) {
         return getConnectorService(connectorType).getListener(listenerType);
@@ -132,10 +128,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 检查连接配置是否可用
-     *
-     * @param instanceId
-     * @param config
-     * @return
      */
     public boolean isAlive(String instanceId, ConnectorConfig config) {
         Assert.hasText(instanceId, "ConnectorConfigId can not be null.");

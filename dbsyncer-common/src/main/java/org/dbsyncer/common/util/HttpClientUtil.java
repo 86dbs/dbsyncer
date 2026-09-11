@@ -13,7 +13,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 基于 {@link HttpURLConnection} 的简易 HTTP 客户端（节点内网互调）。
+ * 基于 {@link HttpURLConnection} 的简易 HTTP 客户端。
  *
  * @author wuji
  * @version 1.0.0
