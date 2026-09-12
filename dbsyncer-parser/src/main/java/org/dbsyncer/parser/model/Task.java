@@ -19,10 +19,6 @@ public class Task {
 
     private Object[] cursors;
 
-    private long startTime;
-
-    private long endTime;
-
     /**
      * 父任务（表级子任务时非空）
      */
@@ -48,8 +44,6 @@ public class Task {
         Task child = new Task(this.id);
         child.parent = this;
         child.tableGroupId = tableGroupId;
-        child.startTime = this.startTime;
-        child.endTime = this.endTime;
         child.pageIndex = 1;
         return child;
     }
@@ -95,22 +89,6 @@ public class Task {
 
     public void setCursors(Object[] cursors) {
         this.cursors = cursors;
-    }
-
-    public long getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(long startTime) {
-        this.startTime = startTime;
-    }
-
-    public long getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
     }
 
     public Task getParent() {

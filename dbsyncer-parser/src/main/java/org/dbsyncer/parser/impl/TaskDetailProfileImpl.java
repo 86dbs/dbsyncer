@@ -35,7 +35,8 @@ import java.util.Map;
 public class TaskDetailProfileImpl implements TaskDetailProfile {
 
     private static final String SELECT_COLUMNS =
-            "d.ID AS id, d.CREATE_TIME AS createTime, d.UPDATE_TIME AS updateTime, "
+            "d.ID AS id, d.CREATE_TIME AS createTime, "
+                    + "dm.START_TIME AS startTime, dm.UPDATE_TIME AS updateTime, "
                     + "d.TABLE_GROUP_ID AS tableGroupId, d.TYPE AS type, d.TARGET_TABLE AS targetTable, "
                     + "d.IS_SUCCESS AS isSuccess, d.ERROR AS error, d.DATA AS data, "
                     + "tg.SOURCE_TABLE AS sourceTable, tg.TARGET_TABLE AS targetTableName, "
@@ -56,7 +57,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
      * 装配时读忽略大小写、写出固定用这些 key，保证前端 JSON 字段稳定。
      */
     private static final String[] SELECT_ALIASES = {
-            "id", "createTime", "updateTime", "tableGroupId", "type", "targetTable",
+            "id", "createTime", "startTime", "updateTime", "tableGroupId", "type", "targetTable",
             "isSuccess", "error", "data", "sourceTable", "targetTableName",
             "sourceDatabase", "targetDatabase", "sourceSchema", "targetSchema",
             "sourceTotal", "targetTotal", "sortIndex",

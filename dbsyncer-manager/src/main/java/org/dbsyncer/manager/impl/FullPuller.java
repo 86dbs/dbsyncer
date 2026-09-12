@@ -123,10 +123,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private void doTask(Task task, Mapping mapping) {
         Meta meta = metaProfile.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
-        long now = Instant.now().toEpochMilli();
-        long startTime = meta.getStartTime() > 0 ? meta.getStartTime() : now;
-        task.setStartTime(startTime);
-        task.setEndTime(now);
 
         Map<String, String> snapshot = meta.getSnapshot();
         // 旧版单游标断点：绝对表序下标（用于无 tableProgress 时跳过已完成表）
@@ -168,7 +164,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             pageNum++;
         }
 
-        task.setEndTime(Instant.now().toEpochMilli());
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
         task.setCursors(null);
@@ -231,8 +226,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             Assert.notNull(meta, "检查meta为空.");
             refreshMetaTotals(meta);
 
-            Task root = task.getParent() != null ? task.getParent() : task;
-            meta.setStartTime(root.getStartTime());
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
 
@@ -274,7 +267,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
             refreshMetaTotals(meta);
-            meta.setStartTime(task.getStartTime());
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
             FullTableProgressUtil.clear(snapshot);

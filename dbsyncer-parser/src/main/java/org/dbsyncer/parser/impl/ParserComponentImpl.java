@@ -46,7 +46,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -298,7 +297,6 @@ public class ParserComponentImpl implements ParserComponent {
         flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
 
         // 发布刷新事件给FullExtractor
-        task.setEndTime(Instant.now().toEpochMilli());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
     }
 
