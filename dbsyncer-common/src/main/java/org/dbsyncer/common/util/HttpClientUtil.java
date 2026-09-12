@@ -74,14 +74,6 @@ public abstract class HttpClientUtil {
         return Collections.unmodifiableMap(headers);
     }
 
-    public static HttpResult get(String url) throws Exception {
-        return get(url, null, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_READ_TIMEOUT_MS);
-    }
-
-    public static HttpResult get(String url, int connectTimeoutMs, int readTimeoutMs) throws Exception {
-        return get(url, null, connectTimeoutMs, readTimeoutMs);
-    }
-
     public static HttpResult get(String url, Map<String, String> headers, int connectTimeoutMs, int readTimeoutMs)
             throws Exception {
         HttpGet request = new HttpGet(url);
