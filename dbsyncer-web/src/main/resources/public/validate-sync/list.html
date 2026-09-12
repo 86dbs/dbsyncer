@@ -233,7 +233,7 @@
         if (isRunning) {
             return '';
         }
-        var durationText = formatElapsedDuration(task.beginTime, task.endTime);
+        var durationText = formatElapsedDuration(task.startTime, task.endTime);
         if (!durationText) {
             return '';
         }

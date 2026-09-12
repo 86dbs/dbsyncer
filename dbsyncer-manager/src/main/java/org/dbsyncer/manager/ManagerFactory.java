@@ -75,8 +75,13 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         Meta meta = metaProfile.getMeta(metaId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
+            long now = Instant.now().toEpochMilli();
             meta.setState(code);
-            meta.setUpdateTime(Instant.now().toEpochMilli());
+            meta.setUpdateTime(now);
+            // 进入运行中时记录本轮启动时间，供耗时（updateTime - startTime）计算
+            if (CommonTaskStatusEnum.RUNNING == status) {
+                meta.setStartTime(now);
+            }
             profileComponent.editConfigModel(meta);
         }
     }

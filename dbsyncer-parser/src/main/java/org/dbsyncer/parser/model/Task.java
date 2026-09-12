@@ -19,7 +19,7 @@ public class Task {
 
     private Object[] cursors;
 
-    private long beginTime;
+    private long startTime;
 
     private long endTime;
 
@@ -48,7 +48,7 @@ public class Task {
         Task child = new Task(this.id);
         child.parent = this;
         child.tableGroupId = tableGroupId;
-        child.beginTime = this.beginTime;
+        child.startTime = this.startTime;
         child.endTime = this.endTime;
         child.pageIndex = 1;
         return child;
@@ -97,12 +97,12 @@ public class Task {
         this.cursors = cursors;
     }
 
-    public long getBeginTime() {
-        return beginTime;
+    public long getStartTime() {
+        return startTime;
     }
 
-    public void setBeginTime(long beginTime) {
-        this.beginTime = beginTime;
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
     }
 
     public long getEndTime() {

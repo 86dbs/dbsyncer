@@ -119,7 +119,7 @@
         if (isRunning) {
             return '';
         }
-        var durationText = formatElapsedDuration(task.beginTime, task.endTime);
+        var durationText = formatElapsedDuration(task.startTime, task.endTime);
         if (!durationText) {
             return '';
         }
@@ -159,7 +159,7 @@
             } else if (progress >= 60) {
                 state = 'warning';
             }
-        } else if (Number(task.metaState) !== META_STATE_DONE && Number(task.endTime) > 0 && progress < 100) {
+        } else if (Number(task.metaState) !== META_STATE_DONE && !isRunning && progress > 0 && progress < 100) {
             state = 'warning';
         } else if (n > 0) {
             state = 'danger';

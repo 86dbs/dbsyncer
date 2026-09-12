@@ -43,8 +43,10 @@ public class Meta extends ConfigModel {
     private AtomicLong diff;
     private AtomicLong fixed;
     private Map<String, String> snapshot;
-    private long beginTime;
-    private long endTime;
+    /**
+     * 任务开始时间，落库列 {@code START_TIME}；Java/Map 键统一为 {@code startTime}。
+     */
+    private long startTime;
 
     public Meta() {
         super.setType(ConfigConstant.META);
@@ -68,8 +70,8 @@ public class Meta extends ConfigModel {
         this.diff = new AtomicLong(0);
         this.fixed = new AtomicLong(0);
         this.snapshot = new HashMap<>();
-        this.beginTime = 0L;
-        this.endTime = 0L;
+        this.startTime = 0L;
+        setUpdateTime(0L);
     }
 
     public String getTaskId() {
@@ -148,19 +150,11 @@ public class Meta extends ConfigModel {
         this.snapshot = snapshot;
     }
 
-    public long getBeginTime() {
-        return beginTime;
+    public long getStartTime() {
+        return startTime;
     }
 
-    public void setBeginTime(long beginTime) {
-        this.beginTime = beginTime;
-    }
-
-    public long getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
     }
 }
