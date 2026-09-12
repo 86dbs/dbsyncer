@@ -6,11 +6,9 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.ConvertService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ConvertEnum;
-
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-
 import java.util.List;
 
 /**
@@ -18,7 +16,7 @@ import java.util.List;
  * @version 1.0.0
  * @date 2020/1/14 0:03
  */
-@Component
+@Service
 public class ConvertServiceImpl implements ConvertService {
 
     @Resource

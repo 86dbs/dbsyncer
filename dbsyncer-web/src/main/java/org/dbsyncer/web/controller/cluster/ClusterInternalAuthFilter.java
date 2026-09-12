@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.web.security;
+package org.dbsyncer.web.controller.cluster;
 
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.HttpClientUtil;
@@ -40,7 +40,7 @@ import java.security.MessageDigest;
  */
 public class ClusterInternalAuthFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(ClusterInternalAuthFilter.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String PRINCIPAL = "cluster-internal";
 
@@ -97,7 +97,7 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
      * @param provided 请求头
      * @return 是否一致
      */
-    static boolean matches(String expected, String provided) {
+    private boolean matches(String expected, String provided) {
         if (expected == null || provided == null) {
             return false;
         }

@@ -1,10 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.web.sso;
+package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.impl.JwtSecretManager;
+import org.dbsyncer.biz.SsoTicketService;
 import org.dbsyncer.biz.model.WebSsoTicket;
 import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -28,9 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.0
  */
 @Service
-public class WebSsoTicketService {
+public class SsoTicketServiceImpl implements SsoTicketService {
 
-    private static final Logger logger = LoggerFactory.getLogger(WebSsoTicketService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SsoTicketServiceImpl.class);
 
     /**
      * 票据有效期（毫秒）
@@ -59,6 +59,7 @@ public class WebSsoTicketService {
      * @param target   目标节点，推荐 {@code ip:port}；也兼容 {@code http(s)://ip:port}
      * @return JWT 票据
      */
+    @Override
     public String issue(String username, String roleCode, String target) {
         if (StringUtil.isBlank(username) || StringUtil.isBlank(target)) {
             throw new BizException("SSO 参数不完整");
@@ -86,6 +87,7 @@ public class WebSsoTicketService {
      * @param rawTicket JWT
      * @return 有效票据；失败返回 null
      */
+    @Override
     public WebSsoTicket consume(String rawTicket) {
         purgeExpiredJti();
         if (StringUtil.isBlank(rawTicket)) {
@@ -125,6 +127,7 @@ public class WebSsoTicketService {
      * @param target 目标 URL
      * @return true 允许
      */
+    @Override
     public boolean isAllowedTarget(String target) {
         String nodeId = resolveTargetHost(target);
         return clusterService.getNode(nodeId) != null;
@@ -136,6 +139,7 @@ public class WebSsoTicketService {
      * @param target 目标 URL
      * @return 根地址
      */
+    @Override
     public String normalizeTargetBase(String target) {
         String host = resolveTargetHost(target);
         int idx = host.lastIndexOf(':');
@@ -153,6 +157,7 @@ public class WebSsoTicketService {
      * @param redirect 跳转路径
      * @return 安全路径
      */
+    @Override
     public String sanitizeRedirect(String redirect) {
         if (StringUtil.isBlank(redirect)) {
             return "/";

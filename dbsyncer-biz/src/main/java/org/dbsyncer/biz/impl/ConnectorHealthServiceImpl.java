@@ -9,7 +9,7 @@ import org.dbsyncer.sdk.spi.ConnectorHealthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
@@ -20,8 +20,8 @@ import javax.annotation.Resource;
  * @version 1.0.0
  * @date 2026-09-10
  */
-@Component
-public final class ConnectorHealthScheduler implements ConnectorHealthService, DisposableBean {
+@Service
+public final class ConnectorHealthServiceImpl implements ConnectorHealthService, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
