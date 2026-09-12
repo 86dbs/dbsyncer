@@ -121,11 +121,9 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     private void doTask(Task task, Mapping mapping) {
-        long now = Instant.now().toEpochMilli();
-        task.setBeginTime(now);
-        task.setEndTime(now);
-
         Meta meta = metaProfile.getMeta(task.getId());
+        Assert.notNull(meta, "检查meta为空.");
+
         Map<String, String> snapshot = meta.getSnapshot();
         // 旧版单游标断点：绝对表序下标（用于无 tableProgress 时跳过已完成表）
         int legacyTableGroupIndex = NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()),
@@ -166,7 +164,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             pageNum++;
         }
 
-        task.setEndTime(Instant.now().toEpochMilli());
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
         task.setCursors(null);
@@ -227,11 +224,8 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         synchronized (metaLock(task.getId())) {
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
-            refreshMetaTotals(meta, task);
+            refreshMetaTotals(meta);
 
-            Task root = task.getParent() != null ? task.getParent() : task;
-            meta.setBeginTime(root.getBeginTime());
-            meta.setEndTime(root.getEndTime());
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
 
@@ -262,7 +256,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             progress.setCursor(StringUtil.EMPTY);
             progress.setDone(true);
             FullTableProgressUtil.put(meta.getSnapshot(), tableGroupId, progress);
-            refreshMetaTotals(meta, parent);
+            refreshMetaTotals(meta);
             meta.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(meta);
         }
@@ -272,9 +266,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         synchronized (metaLock(task.getId())) {
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
-            refreshMetaTotals(meta, task);
-            meta.setBeginTime(task.getBeginTime());
-            meta.setEndTime(task.getEndTime());
+            refreshMetaTotals(meta);
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
             FullTableProgressUtil.clear(snapshot);
@@ -286,14 +278,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
     }
 
-    private void refreshMetaTotals(Meta meta, Task task) {
+    private void refreshMetaTotals(Meta meta) {
         long finished = meta.getSuccess().get() + meta.getFail().get();
         if (meta.getTotal().get() < finished) {
             meta.getTotal().set(finished);
         }
-        Task root = task.getParent() != null ? task.getParent() : task;
-        meta.setBeginTime(root.getBeginTime());
-        meta.setEndTime(root.getEndTime());
     }
 
     private Object metaLock(String metaId) {

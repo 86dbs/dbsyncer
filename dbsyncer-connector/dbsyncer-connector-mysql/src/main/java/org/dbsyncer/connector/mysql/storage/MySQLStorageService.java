@@ -601,7 +601,7 @@ public class MySQLStorageService extends AbstractStorageService {
 
         // 任务执行结果：严格按 dbsyncer_meta 拆分列(无 name/type/json)
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
+                ConfigConstant.META_START_TIME, ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
                 ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
                 ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT);
         List<Field> metaFields = builder.getFields();
@@ -760,7 +760,7 @@ public class MySQLStorageService extends AbstractStorageService {
             return;
         }
         if (StorageEnum.META.getType().equals(type)) {
-            // 补齐与查询模式匹配的索引：getMetaByTaskId / getDetailMetaMap / clearRunData
+            addColumnIfNotExist(table, "START_TIME", "bigint NOT NULL DEFAULT 0 COMMENT '任务启动时间'");
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
             return;
         }
@@ -891,6 +891,7 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DETAIL_IS_SUCCESS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.DETAIL_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.META_START_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_STATE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.META_IS_TASK_DETAIL, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.META_TOTAL, "BIGINT", Types.BIGINT),

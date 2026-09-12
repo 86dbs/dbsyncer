@@ -281,6 +281,8 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.CONFIG_MODEL_ID, id);
         p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
         p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
+        long startTime = num(root, "startTime", "START_TIME", 0);
+        p.put(ConfigConstant.META_START_TIME, startTime);
         p.put(ConfigConstant.META_TASK_ID, first(val(root, "taskId"), val(root, "mappingId"), id));
         p.put(ConfigConstant.META_STATE, (int) num(root, "state", 0));
         p.put(ConfigConstant.META_IS_TASK_DETAIL, (int) num(root, "isTaskDetail", 0));
@@ -310,6 +312,7 @@ public abstract class StorageDataMigrator {
             p.put(ConfigConstant.CONFIG_MODEL_ID, UUIDUtil.getUUID());
             p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, now);
+            p.put(ConfigConstant.META_START_TIME, 0L);
             p.put(ConfigConstant.META_TASK_ID, taskId);
             p.put(ConfigConstant.META_STATE, state);
             p.put(ConfigConstant.META_IS_TASK_DETAIL, 0);
@@ -457,6 +460,7 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.CONFIG_MODEL_ID, UUIDUtil.getUUID());
         p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
         p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, now);
+        p.put(ConfigConstant.META_START_TIME, 0L);
         p.put(ConfigConstant.META_TASK_ID, tableGroupId);
         p.put(ConfigConstant.META_STATE, 0);
         p.put(ConfigConstant.META_IS_TASK_DETAIL, 1);

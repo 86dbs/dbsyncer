@@ -15,6 +15,7 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -43,7 +44,6 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
@@ -429,8 +429,8 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                     vo.setProgress(calculateProgressPercent(roundDone, tableCount, tableSnapshots));
                     if (taskMeta != null) {
                         vo.setMetaState(taskMeta.getState());
-                        vo.setBeginTime(taskMeta.getBeginTime() > 0 ? taskMeta.getBeginTime() : null);
-                        vo.setEndTime(taskMeta.getEndTime() > 0 ? taskMeta.getEndTime() : null);
+                        vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
+                        vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
                     }
                     list.add(vo);
                 }
@@ -722,8 +722,10 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Meta taskMeta = metaProfile.getMetaByTaskId(validateSyncTask.getId(), TaskLevelEnum.TASK);
         if (taskMeta != null) {
             vo.setMetaState(taskMeta.getState());
-            vo.setBeginTime(taskMeta.getBeginTime() > 0 ? taskMeta.getBeginTime() : null);
-            vo.setEndTime(taskMeta.getEndTime() > 0 ? taskMeta.getEndTime() : null);
+            vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
+            if (taskMeta.getUpdateTime() > 0) {
+                vo.setUpdateTime(taskMeta.getUpdateTime());
+            }
         }
         return vo;
     }

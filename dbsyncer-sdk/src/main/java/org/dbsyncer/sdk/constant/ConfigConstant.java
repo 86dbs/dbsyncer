@@ -85,6 +85,10 @@ public class ConfigConstant {
     public static final String META_DIFF = "diff";
     public static final String META_FIXED = "fixed";
     public static final String META_SNAPSHOT = "snapshot";
+    /**
+     * 任务启动时间（落库列 START_TIME）
+     */
+    public static final String META_START_TIME = "startTime";
 
     /**
      * 任务级 Meta.SNAPSHOT 内键：整库迁移库映射 status 摘要 JSON（不含表级 tables）
