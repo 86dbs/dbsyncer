@@ -598,7 +598,7 @@ public class H2StorageService extends AbstractStorageService {
 
         // 任务执行结果：严格按 dbsyncer_meta 拆分列(无 name/type/json)
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
+                ConfigConstant.META_START_TIME, ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
                 ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
                 ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT);
         List<Field> metaFields = builder.getFields();
@@ -759,6 +759,7 @@ public class H2StorageService extends AbstractStorageService {
         }
         // 任务执行明细按任务分表(每表数据量有限)，H2 索引名为 schema 全局唯一，分表间不再单独建二级索引
         if (StorageEnum.META.getType().equals(type)) {
+            addColumnIfNotExist(table, "START_TIME", "BIGINT NOT NULL DEFAULT 0");
             createIndexIfNotExist(table, "IDX_STATE_UPDATE_TIME", "`STATE`,`UPDATE_TIME`");
             // 对齐 MySQL：按 TASK_ID + IS_TASK_DETAIL 查询/重置明细 Meta
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
@@ -942,6 +943,7 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DETAIL_IS_SUCCESS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.DETAIL_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.META_START_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_STATE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.META_IS_TASK_DETAIL, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.META_TOTAL, "BIGINT", Types.BIGINT),
