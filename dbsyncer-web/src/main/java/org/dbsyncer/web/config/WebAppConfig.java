@@ -6,7 +6,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.UserInfo;
-import org.dbsyncer.web.security.ClusterInternalAuthFilter;
+import org.dbsyncer.web.controller.cluster.ClusterInternalAuthFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     /**
      * 认证页面
      */
-    private static final String LOGIN_PAGE = "/login.html";
+    public static final String LOGIN_PAGE = "/login.html";
 
     /**
      * 每个帐号允许同时登录会话数, 默认同一个帐号只能在一个地方登录

@@ -64,9 +64,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-04-23 11:30
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-04-23 11:30
  */
 @Component
 public class MetricReporter implements ScheduledTaskJob {

@@ -6,7 +6,6 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
-import org.dbsyncer.biz.vo.ConnectorVO;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -32,7 +31,6 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -226,47 +224,26 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public List<ConnectorVO> getConnectorAll() {
-        return profileComponent.getConnectorAll().stream().map(this::convertConnector2Vo).sorted(Comparator.comparing(Connector::getUpdateTime).reversed()).collect(Collectors.toList());
+    public List<Connector> getConnectorAll() {
+        return profileComponent.getConnectorAll().stream().sorted(Comparator.comparing(Connector::getUpdateTime).reversed()).collect(Collectors.toList());
     }
 
     @Override
-    public List<ConnectorVO> getConnectorRelation() {
-        return profileComponent.getConnectorAll().stream()
-                .filter(this::isRelationalDatabaseConnector)
-                .map(this::convertConnector2Vo)
-                .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Paging<ConnectorVO> search(Map<String, String> params) {
+    public Paging<Connector> search(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        boolean relationOnly = StringUtil.equals("1", params.get("relationOnly"));
+        // 过滤源库或目标库类型
         String role = params.get("role");
         Paging<Connector> paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey, role);
-        Paging<ConnectorVO> result = new Paging<>(pageNum, pageSize);
         if (paging == null) {
-            return result;
+            return null;
         }
-        result.setTotal(paging.getTotal());
-        if (CollectionUtils.isEmpty(paging.getData())) {
-            return result;
+        // 整库迁移场景，暂仅支持关系性数据库
+        if (StringUtil.equals("1", params.get("relationOnly")) && !CollectionUtils.isEmpty(paging.getData())) {
+            paging.setData(paging.getData().stream().filter(this::isRelationalDatabaseConnector).collect(Collectors.toList()));
         }
-        List<ConnectorVO> rows = new ArrayList<>(paging.getData().size());
-        for (Connector connector : paging.getData()) {
-            if (connector == null) {
-                continue;
-            }
-            if (relationOnly && !isRelationalDatabaseConnector(connector)) {
-                continue;
-            }
-            rows.add(convertConnector2Vo(connector));
-        }
-        result.setData(rows);
-        return result;
+        return paging;
     }
 
     @Override
@@ -399,9 +376,4 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         }
     }
 
-    private ConnectorVO convertConnector2Vo(Connector connector) {
-        ConnectorVO vo = new ConnectorVO();
-        BeanUtils.copyProperties(connector, vo);
-        return vo;
-    }
 }

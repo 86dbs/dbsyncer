@@ -9,21 +9,19 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
-
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-
 import java.util.List;
 
 /**
  * 支持的条件和运算符类型
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-01-19 16:02
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-01-19 16:02
  */
-@Component
+@Service
 public class ConditionServiceImpl implements ConditionService {
 
     @Resource

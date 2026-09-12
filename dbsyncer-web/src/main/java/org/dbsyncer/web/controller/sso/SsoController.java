@@ -4,11 +4,11 @@
 package org.dbsyncer.web.controller.sso;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.SsoTicketService;
 import org.dbsyncer.biz.model.WebSsoTicket;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.web.sso.WebSsoTicketService;
-
+import org.dbsyncer.web.config.WebAppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,7 +27,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -44,12 +43,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/sso")
 public class SsoController {
 
-    private static final Logger logger = LoggerFactory.getLogger(SsoController.class);
-
-    private static final String LOGIN_PAGE = "/login.html";
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private WebSsoTicketService webSsoTicketService;
+    private SsoTicketService ssoTicketService;
 
     /**
      * 已登录用户跳转到目标节点（携带短时票据）。
@@ -65,19 +62,19 @@ public class SsoController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || StringUtil.equals("anonymousUser", String.valueOf(authentication.getPrincipal()))) {
-            response.sendRedirect(LOGIN_PAGE);
+            response.sendRedirect(WebAppConfig.LOGIN_PAGE);
             return;
         }
         try {
-            if (!webSsoTicketService.isAllowedTarget(target)) {
+            if (!ssoTicketService.isAllowedTarget(target)) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "目标节点不在集群白名单中");
                 return;
             }
             String username = authentication.getName();
             String roleCode = joinAuthorities(authentication.getAuthorities());
-            String ticket = webSsoTicketService.issue(username, roleCode, target);
-            String safeRedirect = webSsoTicketService.sanitizeRedirect(redirect);
-            String base = webSsoTicketService.normalizeTargetBase(target);
+            String ticket = ssoTicketService.issue(username, roleCode, target);
+            String safeRedirect = ssoTicketService.sanitizeRedirect(redirect);
+            String base = ssoTicketService.normalizeTargetBase(target);
             String consumeUrl = base + "/sso/consume?ticket="
                     + URLEncoder.encode(ticket, StandardCharsets.UTF_8.name())
                     + "&redirect=" + URLEncoder.encode(safeRedirect, StandardCharsets.UTF_8.name());
@@ -104,13 +101,13 @@ public class SsoController {
                         @RequestParam(value = "redirect", required = false, defaultValue = "/") String redirect,
                         HttpServletRequest request,
                         HttpServletResponse response) throws IOException {
-        WebSsoTicket ssoTicket = webSsoTicketService.consume(ticket);
+        WebSsoTicket ssoTicket = ssoTicketService.consume(ticket);
         if (ssoTicket == null) {
-            response.sendRedirect(LOGIN_PAGE);
+            response.sendRedirect(WebAppConfig.LOGIN_PAGE);
             return;
         }
         establishSession(request, ssoTicket);
-        response.sendRedirect(webSsoTicketService.sanitizeRedirect(redirect));
+        response.sendRedirect(ssoTicketService.sanitizeRedirect(redirect));
     }
 
     private void establishSession(HttpServletRequest request, WebSsoTicket ssoTicket) {

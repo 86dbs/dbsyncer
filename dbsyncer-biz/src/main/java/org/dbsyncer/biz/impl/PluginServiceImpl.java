@@ -20,7 +20,7 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Plugin;
 import org.springframework.beans.BeanUtils;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @date 2020/01/13 17:18
  */
-@Component
+@Service
 public class PluginServiceImpl implements PluginService {
 
     @Resource

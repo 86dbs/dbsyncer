@@ -72,9 +72,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-04-27 10:20
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-04-27 10:20
  */
 @Service
 public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob {

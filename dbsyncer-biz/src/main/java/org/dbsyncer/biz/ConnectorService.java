@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.ConnectorVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Connector;
 
@@ -19,79 +18,51 @@ public interface ConnectorService {
 
     /**
      * 新增连接器
-     *
-     * @param params
      */
     String add(Map<String, String> params);
 
     /**
      * 复制连接器
-     *
-     * @param id
-     * @return
      */
     String copy(String id);
 
     /**
      * 修改连接器
-     *
-     * @param params
      */
     String edit(Map<String, String> params);
 
     /**
      * 删除连接器
-     *
-     * @param id
      */
     String remove(String id);
 
     /**
      * 获取连接器
-     *
-     * @param id
-     * @return
      */
     Connector getConnector(String id);
 
     /**
      * 获取数据库信息
-     *
-     * @param id
-     * @return
      */
     List<String> getDatabase(String id);
 
     /**
      * 获取Schema信息
-     *
-     * @param id
-     * @param catalog
-     * @return
      */
     List<String> getSchema(String id, String catalog);
 
     /**
      * 获取所有连接器
-     *
-     * @return
      */
-    List<ConnectorVO> getConnectorAll();
+    List<Connector> getConnectorAll();
 
-
-     List<ConnectorVO> getConnectorRelation();
     /**
      * 搜索连接器
-     *
-     * @param params
-     * @return
      */
-    Paging<ConnectorVO> search(Map<String, String> params);
+    Paging<Connector> search(Map<String, String> params);
 
     /**
      * 获取所有支持的连接器类型
-     *
-     * @return
      */
     List<String> getConnectorTypeAll();
 
@@ -102,17 +73,11 @@ public interface ConnectorService {
 
     /**
      * 连接器是否可用
-     *
-     * @param id
-     * @return
      */
     boolean isAlive(String id);
 
     /**
      * 获取位点信息
-     *
-     * @param params
-     * @return
      */
     Object getPosition(String params);
 }
