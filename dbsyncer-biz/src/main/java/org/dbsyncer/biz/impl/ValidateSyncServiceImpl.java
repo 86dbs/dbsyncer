@@ -723,9 +723,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         if (taskMeta != null) {
             vo.setMetaState(taskMeta.getState());
             vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
-            if (taskMeta.getUpdateTime() > 0) {
-                vo.setUpdateTime(taskMeta.getUpdateTime());
-            }
+            vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
         }
         return vo;
     }
