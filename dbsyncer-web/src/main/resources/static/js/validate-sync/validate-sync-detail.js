@@ -106,7 +106,7 @@
         }
 
         function getElapsedDuration(row) {
-            var text = formatElapsedDuration(row.createTime, row.updateTime);
+            var text = formatElapsedDuration(row.startTime, row.updateTime);
             if (!text) {
                 return '';
             }

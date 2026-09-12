@@ -120,10 +120,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     private void doTask(Task task, Mapping mapping) {
-        long now = Instant.now().toEpochMilli();
-        task.setBeginTime(now);
-        task.setEndTime(now);
-
         flush(task);
 
         int pageSize = ConfigConstant.PAGE_SIZE;
@@ -144,8 +140,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             }
             pageNum++;
         }
-
-        task.setEndTime(Instant.now().toEpochMilli());
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
         task.setCursors(null);
@@ -197,10 +191,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
             refreshMetaTotals(meta, task);
-
-            Task root = task.getParent() != null ? task.getParent() : task;
-            meta.setBeginTime(root.getBeginTime());
-            meta.setEndTime(root.getEndTime());
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
             snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
@@ -230,8 +220,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
             refreshMetaTotals(meta, task);
-            meta.setBeginTime(task.getBeginTime());
-            meta.setEndTime(task.getEndTime());
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
             snapshot.remove("tableProgress");

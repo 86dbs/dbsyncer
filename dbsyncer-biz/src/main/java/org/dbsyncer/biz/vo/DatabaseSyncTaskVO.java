@@ -42,10 +42,8 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
     private int completedTableCount;
     /** 任务级 Meta.state（本轮业务态，含 DONE=3） */
     private Integer metaState;
-    /** 本轮执行开始时间（任务级 Meta） */
-    private Long beginTime;
-    /** 本轮执行结束时间（任务级 Meta） */
-    private Long endTime;
+    /** 本轮执行开始时间（任务级 Meta.startTime） */
+    private Long startTime;
 
     public DatabaseSyncTaskVO(Connector sourceConnector, Connector targetConnector) {
         this.sourceConnector = sourceConnector;
@@ -147,19 +145,11 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
         this.metaState = metaState;
     }
 
-    public Long getBeginTime() {
-        return beginTime;
+    public Long getStartTime() {
+        return startTime;
     }
 
-    public void setBeginTime(Long beginTime) {
-        this.beginTime = beginTime;
-    }
-
-    public Long getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(Long endTime) {
-        this.endTime = endTime;
+    public void setStartTime(Long startTime) {
+        this.startTime = startTime;
     }
 }

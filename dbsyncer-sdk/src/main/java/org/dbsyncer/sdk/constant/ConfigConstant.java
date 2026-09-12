@@ -89,6 +89,10 @@ public class ConfigConstant {
     public static final String META_DIFF = "diff";
     public static final String META_FIXED = "fixed";
     public static final String META_SNAPSHOT = "snapshot";
+    /**
+     * 任务启动时间（落库列 START_TIME）
+     */
+    public static final String META_START_TIME = "startTime";
 
     /**
      * 集群节点表(dbsyncer_cluster_node)
