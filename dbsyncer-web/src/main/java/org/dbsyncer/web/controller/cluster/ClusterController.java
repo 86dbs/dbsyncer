@@ -151,12 +151,24 @@ public class ClusterController extends BaseController {
     /**
      * 重写分配离线节点任务
      */
-    @PostMapping("/recoverOfflineTasks")
+    @PostMapping("/internal/forceExpireLeaderGracePeriod")
     @ResponseBody
-    public RestResult recoverOfflineTasks() {
+    public RestResult forceExpireLeaderGracePeriod() {
         try {
             clusterService.forceExpireLeaderGracePeriod();
             return RestResult.restSuccess("已触发恢复离线节点任务");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+
+    @GetMapping("/internal/getGracePeriod")
+    @ResponseBody
+    public RestResult getGracePeriod() {
+        try {
+            return RestResult.restSuccess(clusterService.getGracePeriod());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

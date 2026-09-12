@@ -161,7 +161,7 @@
             } else if (action === 'delete') {
                 removeNode(id, $btn.attr('data-name') || id);
             } else if (action === 'recover') {
-                recoverOfflineTasks();
+                forceExpireLeaderGracePeriod();
             }
         });
     }
@@ -324,8 +324,8 @@
                     + '<i class="fa fa-trash"></i></button>'
                 );
             }
-            // 本机且为 Leader 保护期内：可手动恢复离线节点任务
-            if (item.local && Number(item.role) === 1 && Number(item.protectRemainSeconds) > 0) {
+            // 保护期内：仅在本机 Leader 行显示「恢复」（调度只能由 Leader 执行）
+            if (Number(item.protectRemainSeconds) > 0) {
                 buttons.push(
                     '<button type="button" class="table-action-btn play" title="恢复离线节点任务" data-action="recover">'
                     + '<i class="fa fa-refresh"></i></button>'
@@ -454,14 +454,14 @@
         });
     }
 
-    function recoverOfflineTasks() {
+    function forceExpireLeaderGracePeriod() {
         showConfirm({
             title: '恢复离线节点任务？',
             icon: 'warning',
             confirmText: '立即恢复',
             body: '<p class="mb-0">立即对离线节点任务换主并补派未分配任务。</p>',
             onConfirm: function () {
-                doPoster('/cluster/recoverOfflineTasks', {}, function (res) {
+                doPoster('/cluster/internal/forceExpireLeaderGracePeriod', {}, function (res) {
                     if (res.success === true) {
                         bootGrowl(res.data || '已触发恢复', 'success');
                         loadNodeMetrics(false);

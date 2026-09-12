@@ -64,13 +64,20 @@ public interface ClusterService {
      *
      * @return 剩余秒数；非保护期为 0
      */
-    default long getLeaderGracePeriod() {
+    default long getGracePeriod() {
         return 0L;
     }
 
     /**
-     * 结束保护期并立即恢复离线/未分配任务。
+     * 结束保护期并通知集群各节点；随后恢复离线/未分配任务。
      */
     default void forceExpireLeaderGracePeriod() {
     }
+
+    /**
+     * 节点间通知：仅结束本机保护期门控（不扇出、不调度）。
+     */
+    default void acceptForceExpireLeaderGracePeriod() {
+    }
+
 }
