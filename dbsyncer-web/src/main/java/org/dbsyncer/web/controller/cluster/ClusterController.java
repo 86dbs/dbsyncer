@@ -53,11 +53,11 @@ public class ClusterController extends BaseController {
 
     /**
      * 内部拉起执行器（禁止再走用户启动链）。
+     * 须通过 {@code ClusterInternalAuthFilter} 校验 {@code X-Cluster-Token}，未配置 token 时拒绝。
      */
     @PostMapping("/internal/execute")
     @ResponseBody
-    public RestResult execute(@RequestParam("taskId") String taskId,
-                              @RequestParam(value = "autoRecovery", defaultValue = "false") boolean autoRecovery) {
+    public RestResult execute(@RequestParam("taskId") String taskId, @RequestParam(value = "autoRecovery", defaultValue = "false") boolean autoRecovery) {
         try {
             if (clusterService.isStandalone()) {
                 return RestResult.restFail("单机不支持内部执行接口");
@@ -70,7 +70,7 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 内部停止执行器。
+     * 内部停止执行器。须携带 {@code X-Cluster-Token}。
      */
     @PostMapping("/internal/stop")
     @ResponseBody
@@ -88,16 +88,7 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 心跳探测（免登录，供节点互探）。
-     */
-    @GetMapping("/ping")
-    @ResponseBody
-    public RestResult ping() {
-        return RestResult.restSuccess("ok");
-    }
-
-    /**
-     * 本机运行指标（免登录，供集群内节点互拉）。
+     * 本机运行指标（供集群内节点互拉，须携带 {@code X-Cluster-Token}）。
      */
     @GetMapping("/metrics")
     @ResponseBody
@@ -122,6 +113,15 @@ public class ClusterController extends BaseController {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
+    }
+
+    /**
+     * 心跳探测（免登录，供节点互探）。
+     */
+    @GetMapping("/ping")
+    @ResponseBody
+    public RestResult ping() {
+        return RestResult.restSuccess("ok");
     }
 
     /**

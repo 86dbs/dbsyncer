@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.common.util;
 
+import org.dbsyncer.common.model.HttpResult;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -11,6 +13,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 基于 {@link HttpURLConnection} 的简易 HTTP 客户端。
@@ -21,7 +26,28 @@ import java.nio.charset.StandardCharsets;
  */
 public abstract class HttpClientUtil {
 
+    /**
+     * 节点间内部控制面共享密钥请求头。
+     * 闭源 Cluster SPI 调用 {@code /cluster/internal/execute} 与 {@code /cluster/internal/stop} 时必须携带。
+     */
+    public static final String CLUSTER_TOKEN_HEADER = "X-Cluster-Token";
+
     private HttpClientUtil() {
+    }
+
+    /**
+     * 构建节点间调用头。token 为空时返回空 Map（请求仍会发出，但服务端会拒绝 internal/metrics）。
+     *
+     * @param token {@code dbsyncer.cluster.internal-token}
+     * @return 不可变请求头
+     */
+    public static Map<String, String> clusterTokenHeaders(String token) {
+        if (StringUtil.isBlank(token)) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> headers = new LinkedHashMap<String, String>(2);
+        headers.put(CLUSTER_TOKEN_HEADER, token);
+        return Collections.unmodifiableMap(headers);
     }
 
     /**
@@ -34,7 +60,22 @@ public abstract class HttpClientUtil {
      * @throws Exception 网络或 IO 异常
      */
     public static HttpResult get(String url, int connectTimeoutMs, int readTimeoutMs) throws Exception {
-        return exchange("GET", url, null, null, connectTimeoutMs, readTimeoutMs);
+        return get(url, null, connectTimeoutMs, readTimeoutMs);
+    }
+
+    /**
+     * GET 请求（可带自定义头，例如 {@link #CLUSTER_TOKEN_HEADER}）。
+     *
+     * @param url              完整 URL
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读超时毫秒
+     * @return 响应（含状态码与正文）
+     * @throws Exception 网络或 IO 异常
+     */
+    public static HttpResult get(String url, Map<String, String> headers, int connectTimeoutMs, int readTimeoutMs)
+            throws Exception {
+        return exchange("GET", url, null, null, headers, connectTimeoutMs, readTimeoutMs);
     }
 
     /**
@@ -48,8 +89,25 @@ public abstract class HttpClientUtil {
      * @throws Exception 网络或 IO 异常
      */
     public static HttpResult postForm(String url, String formBody, int connectTimeoutMs, int readTimeoutMs) throws Exception {
+        return postForm(url, formBody, null, connectTimeoutMs, readTimeoutMs);
+    }
+
+    /**
+     * POST {@code application/x-www-form-urlencoded}（可带自定义头）。
+     * 闭源 Cluster SPI 调用内部 execute/stop 时应传入 {@link #clusterTokenHeaders(String)}。
+     *
+     * @param url              完整 URL
+     * @param formBody         表单正文（已编码的 key=value&...）
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读取超时毫秒
+     * @return 响应（含状态码与正文）
+     * @throws Exception 网络或 IO 异常
+     */
+    public static HttpResult postForm(String url, String formBody, Map<String, String> headers,
+                                      int connectTimeoutMs, int readTimeoutMs) throws Exception {
         return exchange("POST", url, formBody, "application/x-www-form-urlencoded; charset=UTF-8",
-                connectTimeoutMs, readTimeoutMs);
+                headers, connectTimeoutMs, readTimeoutMs);
     }
 
     /**
@@ -67,7 +125,8 @@ public abstract class HttpClientUtil {
     }
 
     private static HttpResult exchange(String method, String url, String body, String contentType,
-                                       int connectTimeoutMs, int readTimeoutMs) throws Exception {
+                                       Map<String, String> headers, int connectTimeoutMs, int readTimeoutMs)
+            throws Exception {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
@@ -75,6 +134,13 @@ public abstract class HttpClientUtil {
             connection.setRequestMethod(method);
             connection.setConnectTimeout(connectTimeoutMs);
             connection.setReadTimeout(readTimeoutMs);
+            if (headers != null && !headers.isEmpty()) {
+                for (Map.Entry<String, String> header : headers.entrySet()) {
+                    if (header.getKey() != null && header.getValue() != null) {
+                        connection.setRequestProperty(header.getKey(), header.getValue());
+                    }
+                }
+            }
             if (body != null) {
                 connection.setDoOutput(true);
                 if (StringUtil.isNotBlank(contentType)) {
@@ -113,32 +179,4 @@ public abstract class HttpClientUtil {
         }
     }
 
-    /**
-     * HTTP 响应结果。
-     */
-    public static final class HttpResult {
-
-        private final int statusCode;
-        private final String body;
-
-        public HttpResult(int statusCode, String body) {
-            this.statusCode = statusCode;
-            this.body = body == null ? StringUtil.EMPTY : body;
-        }
-
-        /**
-         * @return HTTP 状态码是否为 200
-         */
-        public boolean isOk() {
-            return statusCode == 200;
-        }
-
-        public int getStatusCode() {
-            return statusCode;
-        }
-
-        public String getBody() {
-            return body;
-        }
-    }
 }

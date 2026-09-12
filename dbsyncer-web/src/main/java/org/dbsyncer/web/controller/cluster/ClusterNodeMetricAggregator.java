@@ -6,6 +6,7 @@ package org.dbsyncer.web.controller.cluster;
 import org.dbsyncer.biz.vo.ClusterMetricsOverviewVO;
 import org.dbsyncer.biz.vo.ClusterNodeMetricVO;
 import org.dbsyncer.biz.vo.HistoryStackVO;
+import org.dbsyncer.common.model.HttpResult;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -21,6 +22,7 @@ import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
@@ -59,6 +61,9 @@ public class ClusterNodeMetricAggregator {
 
     @Resource
     private ClusterService clusterService;
+
+    @Value("${dbsyncer.cluster.internal-token:}")
+    private String internalToken;
 
     /**
      * 拉取全部节点指标（本机直采，远端 HTTP）。
@@ -175,7 +180,7 @@ public class ClusterNodeMetricAggregator {
             return unreachable();
         }
         try {
-            HttpClientUtil.HttpResult result = HttpClientUtil.get(base + "/cluster/metrics", CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
+            HttpResult result = HttpClientUtil.get(base + "/cluster/metrics", HttpClientUtil.clusterTokenHeaders(internalToken), CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
             if (!result.isOk()) {
                 logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), result.getStatusCode());
                 return unreachable();

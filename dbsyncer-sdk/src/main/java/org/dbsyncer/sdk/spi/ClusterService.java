@@ -70,6 +70,10 @@ public interface ClusterService {
 
     /**
      * 内部拉起执行器（校验本机仍为调度节点）。禁止再走用户启动链。
+     * <p>
+     * 集群远端通过 HTTP {@code POST /cluster/internal/execute} 触发。调用方必须携带请求头
+     * {@code X-Cluster-Token}，值与配置 {@code dbsyncer.cluster.internal-token} 相同。
+     * 开源侧可用 {@code HttpClientUtil.clusterTokenHeaders(token)}；闭源 Cluster SPI 同样必须带此头。
      *
      * @param taskId       任务 ID
      * @param autoRecovery 是否重启自动恢复
@@ -81,6 +85,8 @@ public interface ClusterService {
 
     /**
      * 内部停止执行器。
+     * <p>
+     * 集群远端通过 HTTP {@code POST /cluster/internal/stop} 触发，须带 {@code X-Cluster-Token}。
      *
      * @param taskId 任务 ID
      */
