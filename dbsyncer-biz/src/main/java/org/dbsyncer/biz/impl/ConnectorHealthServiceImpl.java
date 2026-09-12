@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.sdk.spi.ConnectorHealthService;
 import org.slf4j.Logger;
@@ -29,7 +29,7 @@ public final class ConnectorHealthServiceImpl implements ConnectorHealthService,
     private static final long PERIOD_MS = 10_000L;
 
     @Resource
-    private ConnectorService connectorService;
+    private ConnectorConfigService connectorConfigService;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -41,7 +41,7 @@ public final class ConnectorHealthServiceImpl implements ConnectorHealthService,
         if (started) {
             return;
         }
-        scheduledTaskService.start(CONNECTOR_HEALTH_KEY, PERIOD_MS, connectorService::refreshHealth);
+        scheduledTaskService.start(CONNECTOR_HEALTH_KEY, PERIOD_MS, connectorConfigService::refreshHealth);
         started = true;
         logger.info("connector health scheduler started");
     }

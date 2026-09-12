@@ -14,7 +14,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2019/10/17 23:18
  */
-public interface ConnectorService {
+public interface ConnectorConfigService {
 
     /**
      * 新增连接器

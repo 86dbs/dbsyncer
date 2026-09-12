@@ -4,7 +4,7 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
@@ -29,6 +29,7 @@ import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.ClusterService;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ import java.util.stream.Collectors;
  * @date 2019/10/17 23:20
  */
 @Service
-public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorService {
+public class ConnectorConfigServiceImpl extends BaseServiceImpl implements ConnectorConfigService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -213,7 +214,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             return Collections.emptyList();
         }
         ConnectorConfig config = connector.getConfig();
-        org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+        ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
         String catalog = StringUtil.getIfBlank(database, StringUtil.EMPTY);
         try {
             ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, catalog, StringUtil.EMPTY);
@@ -368,7 +369,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             return false;
         }
         try {
-            org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(connector.getConfig().getConnectorType());
+            ConnectorService connectorService = connectorFactory.getConnectorService(connector.getConfig().getConnectorType());
             return connectorService instanceof AbstractDatabaseConnector;
         } catch (Exception e) {
             logger.warn("过滤关系型连接器失败, connectorId={}, type={}", connector.getId(), connector.getConfig().getConnectorType(), e);

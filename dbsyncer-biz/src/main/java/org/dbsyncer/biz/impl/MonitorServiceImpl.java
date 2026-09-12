@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
@@ -109,7 +109,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private LogService logService;
 
     @Resource
-    private ConnectorService connectorService;
+    private ConnectorConfigService connectorConfigService;
 
     @Resource
     private SystemConfigService systemConfigService;
@@ -438,7 +438,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (LocalDateTime.now().minusMinutes(1).isAfter(delayTime)) {
             // 采集连接离线状态
             ConnectorOfflineContent content = new ConnectorOfflineContent();
-            connectorService.getConnectorAll().forEach(connector -> {
+            connectorConfigService.getConnectorAll().forEach(connector -> {
                 if (connector.getStatus() != 1) {
                     ConnectorOfflineContent.ErrorItem item = new ConnectorOfflineContent.ErrorItem();
                     item.setName(connector.getName());

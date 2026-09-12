@@ -1,6 +1,6 @@
 package org.dbsyncer.web.controller.index;
 
-import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.web.controller.BaseController;
 
@@ -27,7 +27,7 @@ public class ConnectorController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ConnectorService connectorService;
+    private ConnectorConfigService connectorConfigService;
 
     @GetMapping("/list")
     public String pageList(HttpServletRequest request, ModelMap model) {
@@ -36,7 +36,7 @@ public class ConnectorController extends BaseController {
 
     @GetMapping("/page/add")
     public String pageAdd(HttpServletRequest request, ModelMap model) {
-        model.put("connectorTypes", connectorService.getConnectorTypeAll());
+        model.put("connectorTypes", connectorConfigService.getConnectorTypeAll());
         return "connector/add";
     }
 
@@ -47,7 +47,7 @@ public class ConnectorController extends BaseController {
 
     @GetMapping("/page/edit")
     public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
-        model.put("connector", connectorService.getConnector(id));
+        model.put("connector", connectorConfigService.getConnector(id));
         return "connector/edit";
     }
 
@@ -56,7 +56,7 @@ public class ConnectorController extends BaseController {
     public RestResult search(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(connectorService.search(params));
+            return RestResult.restSuccess(connectorConfigService.search(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -67,7 +67,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
         try {
-            return RestResult.restSuccess(connectorService.copy(id));
+            return RestResult.restSuccess(connectorConfigService.copy(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -79,7 +79,7 @@ public class ConnectorController extends BaseController {
     public RestResult add(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(connectorService.add(params));
+            return RestResult.restSuccess(connectorConfigService.add(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -91,7 +91,7 @@ public class ConnectorController extends BaseController {
     public RestResult edit(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(connectorService.edit(params));
+            return RestResult.restSuccess(connectorConfigService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -102,7 +102,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult get(HttpServletRequest request, String id) {
         try {
-            return RestResult.restSuccess(connectorService.getConnector(id));
+            return RestResult.restSuccess(connectorConfigService.getConnector(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -113,7 +113,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult remove(HttpServletRequest request, @RequestParam(value = "id") String id) {
         try {
-            return RestResult.restSuccess(connectorService.remove(id));
+            return RestResult.restSuccess(connectorConfigService.remove(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -124,7 +124,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult getPosition(@RequestParam(value = "id") String id) {
         try {
-            return RestResult.restSuccess(connectorService.getPosition(id));
+            return RestResult.restSuccess(connectorConfigService.getPosition(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -135,7 +135,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult test(@RequestParam(value = "id") String id) {
         try {
-            boolean isAlive = connectorService.isAlive(id);
+            boolean isAlive = connectorConfigService.isAlive(id);
             if (isAlive) {
                 return RestResult.restSuccess("连接测试成功");
             } else {
@@ -151,7 +151,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult getDatabase(String id) {
         try {
-            return RestResult.restSuccess(connectorService.getDatabase(id));
+            return RestResult.restSuccess(connectorConfigService.getDatabase(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -162,7 +162,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult getSchema(String id, String database) {
         try {
-            return RestResult.restSuccess(connectorService.getSchema(id, database));
+            return RestResult.restSuccess(connectorConfigService.getSchema(id, database));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
