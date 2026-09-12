@@ -3,21 +3,14 @@
  */
 package org.dbsyncer.plugin.impl;
 
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.http.entity.ContentType;
 import org.dbsyncer.common.config.AppConfig;
+import org.dbsyncer.common.model.HttpResult;
+import org.dbsyncer.common.util.HttpClientUtil;
 import org.dbsyncer.sdk.notice.NoticeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 public abstract class AbstractNoticeService implements NoticeService {
 
@@ -34,25 +27,19 @@ public abstract class AbstractNoticeService implements NoticeService {
 
     protected void send(String url, String message) {
         try {
-            StringEntity se = new StringEntity(message, "UTF-8");
-            se.setContentEncoding("UTF-8");
-            se.setContentType("application/json");
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setEntity(se);
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            CloseableHttpResponse response = httpClient.execute(httpPost);
-            String msg = EntityUtils.toString(response.getEntity());
-            if (response.getStatusLine().getStatusCode() != 200) {
-                throw new IllegalArgumentException(msg);
+            HttpResult result = HttpClientUtil.post(url, message, ContentType.APPLICATION_JSON);
+            if (!result.isOk()) {
+                throw new IllegalArgumentException(result.getBody());
             }
-            logger.info("Send message:{}, result:{}", message, msg);
+            logger.info("Send message:{}, result:{}", message, result.getBody());
         } catch (HttpHostConnectException e) {
             throw new IllegalArgumentException("网络连接异常，无法连接");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        } catch (ClientProtocolException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            if (e.getCause() instanceof HttpHostConnectException) {
+                throw new IllegalArgumentException("网络连接异常，无法连接");
+            }
             throw new RuntimeException(e);
         }
     }
