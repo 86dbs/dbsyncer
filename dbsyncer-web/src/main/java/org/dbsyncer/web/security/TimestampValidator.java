@@ -26,13 +26,6 @@ public class TimestampValidator {
     // 缓存时间：5分钟，清理间隔：30秒
     private static final ExpiringCache<String, Long> nonceCache = new ExpiringCache<>(5 * 60 * 1000L, 30 * 1000L);
 
-    // 静态初始化块，确保缓存清理任务启动
-    static {
-        nonceCache.init();
-        // 注册JVM关闭钩子，确保清理任务正确关闭
-        Runtime.getRuntime().addShutdownHook(new Thread(nonceCache::destroy));
-    }
-
     /**
      * 初始化缓存清理任务（如果需要手动初始化，可以调用此方法）
      */
