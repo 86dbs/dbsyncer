@@ -324,8 +324,8 @@
                     + '<i class="fa fa-trash"></i></button>'
                 );
             }
-            // 本机 Leader 保护期内：可手动恢复离线节点任务
-            if (item.local && Number(item.protectRemainSeconds) > 0) {
+            // 本机且为 Leader 保护期内：可手动恢复离线节点任务
+            if (item.local && Number(item.role) === 1 && Number(item.protectRemainSeconds) > 0) {
                 buttons.push(
                     '<button type="button" class="table-action-btn play" title="恢复离线节点任务" data-action="recover">'
                     + '<i class="fa fa-refresh"></i></button>'
@@ -351,7 +351,7 @@
         var statusHtml = '<div class="flex flex-col white-space-none">'
             + '<div>' + formatRole(item.role) + '</div>'
             + '<div class="mt-1">' + formatStatus(item.status) + '</div>';
-        if (item.local && Number(item.protectRemainSeconds) > 0) {
+        if (Number(item.protectRemainSeconds) > 0) {
             statusHtml += '<div class="mt-1 text-warning">等待节点恢复：倒计时 '
                 + Number(item.protectRemainSeconds) + ' 秒</div>';
         }

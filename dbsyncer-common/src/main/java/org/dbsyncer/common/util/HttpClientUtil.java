@@ -93,6 +93,10 @@ public abstract class HttpClientUtil {
         return post(url, body, contentType, null, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_READ_TIMEOUT_MS);
     }
 
+    public static HttpResult post(String url, String body, Map<String, String> headers) throws Exception {
+        return post(url, body, ContentType.APPLICATION_JSON, null, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_READ_TIMEOUT_MS);
+    }
+
     public static HttpResult post(String url, String body, ContentType contentType, Map<String, String> headers,
                                   int connectTimeoutMs, int readTimeoutMs) throws Exception {
         HttpPost request = new HttpPost(url);
