@@ -108,11 +108,6 @@ public class SsoTicketServiceImpl implements SsoTicketService {
             logger.warn("SSO 票据已过期, jti={}", ticket.getJti());
             return null;
         }
-        String localHost = clusterService.getLocalNodeId();
-        if (StringUtil.isBlank(ticket.getTargetHost()) || !StringUtil.equals(ticket.getTargetHost(), localHost)) {
-            logger.warn("SSO 票据目标不匹配, expect={}, actual={}", localHost, ticket.getTargetHost());
-            return null;
-        }
         Long prev = usedJti.putIfAbsent(ticket.getJti(), exp);
         if (prev != null) {
             logger.warn("SSO 票据重放, jti={}", ticket.getJti());

@@ -32,15 +32,4 @@ public final class StandaloneService implements ClusterService {
         taskRunner.stop(taskId);
     }
 
-    @Override
-    public boolean execute(String taskId, boolean autoRecovery) {
-        taskRunner.start(taskId, autoRecovery);
-        return true;
-    }
-
-    @Override
-    public void stopExecute(String taskId) {
-        taskRunner.stop(taskId);
-    }
-
 }

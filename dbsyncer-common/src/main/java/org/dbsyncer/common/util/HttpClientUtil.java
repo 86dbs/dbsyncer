@@ -28,7 +28,7 @@ public abstract class HttpClientUtil {
 
     /**
      * 节点间内部控制面共享密钥请求头。
-     * 闭源 Cluster SPI 调用 {@code /cluster/internal/execute} 与 {@code /cluster/internal/stop} 时必须携带。
+     * 闭源 Cluster SPI 调用 {@code /cluster/internal/message} 与 {@code /cluster/metrics} 时必须携带。
      */
     public static final String CLUSTER_TOKEN_HEADER = "X-Cluster-Token";
 
@@ -79,6 +79,40 @@ public abstract class HttpClientUtil {
     }
 
     /**
+     * GET 请求（可重试）。
+     *
+     * @param url              完整 URL
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读超时毫秒
+     * @param retryTimes       总尝试次数（含首次，小于 1 按 1）
+     * @return 响应（含状态码与正文）
+     * @throws Exception 全部尝试均抛异常时抛出最后一次异常
+     */
+    public static HttpResult get(String url, Map<String, String> headers, int connectTimeoutMs, int readTimeoutMs,
+                                 int retryTimes) throws Exception {
+        return get(url, headers, connectTimeoutMs, readTimeoutMs, retryTimes, 0L);
+    }
+
+    /**
+     * GET 请求（可重试，带间隔）。
+     *
+     * @param url              完整 URL
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读超时毫秒
+     * @param retryTimes       总尝试次数（含首次，小于 1 按 1）
+     * @param retryIntervalMs  重试间隔毫秒（小于等于 0 不休眠）
+     * @return 响应（含状态码与正文）
+     * @throws Exception 全部尝试均抛异常时抛出最后一次异常
+     */
+    public static HttpResult get(String url, Map<String, String> headers, int connectTimeoutMs, int readTimeoutMs,
+                                 int retryTimes, long retryIntervalMs) throws Exception {
+        return exchangeWithRetry("GET", url, null, null, headers, connectTimeoutMs, readTimeoutMs, retryTimes,
+                retryIntervalMs);
+    }
+
+    /**
      * POST {@code application/x-www-form-urlencoded}。
      *
      * @param url              完整 URL
@@ -94,7 +128,7 @@ public abstract class HttpClientUtil {
 
     /**
      * POST {@code application/x-www-form-urlencoded}（可带自定义头）。
-     * 闭源 Cluster SPI 调用内部 execute/stop 时应传入 {@link #clusterTokenHeaders(String)}。
+     * 闭源 Cluster SPI 调用 {@code /cluster/internal/message} 时应传入 {@link #clusterTokenHeaders(String)}。
      *
      * @param url              完整 URL
      * @param formBody         表单正文（已编码的 key=value&...）
@@ -111,6 +145,112 @@ public abstract class HttpClientUtil {
     }
 
     /**
+     * POST form（可重试）。
+     *
+     * @param url              完整 URL
+     * @param formBody         表单正文
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读取超时毫秒
+     * @param retryTimes       总尝试次数（含首次，小于 1 按 1）
+     * @return 响应
+     * @throws Exception 全部尝试均抛异常时抛出最后一次异常
+     */
+    public static HttpResult postForm(String url, String formBody, Map<String, String> headers,
+                                      int connectTimeoutMs, int readTimeoutMs, int retryTimes) throws Exception {
+        return postForm(url, formBody, headers, connectTimeoutMs, readTimeoutMs, retryTimes, 0L);
+    }
+
+    /**
+     * POST form（可重试，带间隔）。
+     *
+     * @param url              完整 URL
+     * @param formBody         表单正文
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读取超时毫秒
+     * @param retryTimes       总尝试次数（含首次，小于 1 按 1）
+     * @param retryIntervalMs  重试间隔毫秒（小于等于 0 不休眠）
+     * @return 响应
+     * @throws Exception 全部尝试均抛异常时抛出最后一次异常
+     */
+    public static HttpResult postForm(String url, String formBody, Map<String, String> headers,
+                                      int connectTimeoutMs, int readTimeoutMs, int retryTimes, long retryIntervalMs)
+            throws Exception {
+        return exchangeWithRetry("POST", url, formBody, "application/x-www-form-urlencoded; charset=UTF-8",
+                headers, connectTimeoutMs, readTimeoutMs, retryTimes, retryIntervalMs);
+    }
+
+    /**
+     * POST {@code application/json}。
+     *
+     * @param url              完整 URL
+     * @param jsonBody         JSON 正文
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读取超时毫秒
+     * @return 响应（含状态码与正文）
+     * @throws Exception 网络或 IO 异常
+     */
+    public static HttpResult postJson(String url, String jsonBody, int connectTimeoutMs, int readTimeoutMs)
+            throws Exception {
+        return postJson(url, jsonBody, null, connectTimeoutMs, readTimeoutMs);
+    }
+
+    /**
+     * POST {@code application/json}（可带自定义头，例如 {@link #CLUSTER_TOKEN_HEADER}）。
+     *
+     * @param url              完整 URL
+     * @param jsonBody         JSON 正文
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读取超时毫秒
+     * @return 响应（含状态码与正文）
+     * @throws Exception 网络或 IO 异常
+     */
+    public static HttpResult postJson(String url, String jsonBody, Map<String, String> headers,
+                                      int connectTimeoutMs, int readTimeoutMs) throws Exception {
+        return exchange("POST", url, jsonBody, "application/json; charset=UTF-8",
+                headers, connectTimeoutMs, readTimeoutMs);
+    }
+
+    /**
+     * POST JSON（可重试）。
+     *
+     * @param url              完整 URL
+     * @param jsonBody         JSON 正文
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读取超时毫秒
+     * @param retryTimes       总尝试次数（含首次，小于 1 按 1）
+     * @return 响应
+     * @throws Exception 全部尝试均抛异常时抛出最后一次异常
+     */
+    public static HttpResult postJson(String url, String jsonBody, Map<String, String> headers,
+                                      int connectTimeoutMs, int readTimeoutMs, int retryTimes) throws Exception {
+        return postJson(url, jsonBody, headers, connectTimeoutMs, readTimeoutMs, retryTimes, 0L);
+    }
+
+    /**
+     * POST JSON（可重试，带间隔）。
+     *
+     * @param url              完整 URL
+     * @param jsonBody         JSON 正文
+     * @param headers          额外请求头，可为 null
+     * @param connectTimeoutMs 连接超时毫秒
+     * @param readTimeoutMs    读取超时毫秒
+     * @param retryTimes       总尝试次数（含首次，小于 1 按 1）
+     * @param retryIntervalMs  重试间隔毫秒（小于等于 0 不休眠）
+     * @return 响应
+     * @throws Exception 全部尝试均抛异常时抛出最后一次异常
+     */
+    public static HttpResult postJson(String url, String jsonBody, Map<String, String> headers,
+                                      int connectTimeoutMs, int readTimeoutMs, int retryTimes, long retryIntervalMs)
+            throws Exception {
+        return exchangeWithRetry("POST", url, jsonBody, "application/json; charset=UTF-8",
+                headers, connectTimeoutMs, readTimeoutMs, retryTimes, retryIntervalMs);
+    }
+
+    /**
      * URL 编码表单字段值。
      *
      * @param value 原始值
@@ -121,6 +261,42 @@ public abstract class HttpClientUtil {
             return URLEncoder.encode(StringUtil.getIfBlank(value, StringUtil.EMPTY), "UTF-8");
         } catch (Exception e) {
             return value;
+        }
+    }
+
+    private static HttpResult exchangeWithRetry(String method, String url, String body, String contentType,
+                                                Map<String, String> headers, int connectTimeoutMs, int readTimeoutMs,
+                                                int retryTimes, long retryIntervalMs) throws Exception {
+        int times = Math.max(1, retryTimes);
+        Exception lastError = null;
+        HttpResult lastResult = null;
+        for (int i = 0; i < times; i++) {
+            try {
+                lastResult = exchange(method, url, body, contentType, headers, connectTimeoutMs, readTimeoutMs);
+                if (lastResult.isOk()) {
+                    return lastResult;
+                }
+            } catch (Exception e) {
+                lastError = e;
+            }
+            if (i < times - 1) {
+                sleepQuietly(retryIntervalMs);
+            }
+        }
+        if (lastResult != null) {
+            return lastResult;
+        }
+        throw lastError == null ? new Exception("HTTP request failed") : lastError;
+    }
+
+    private static void sleepQuietly(long retryIntervalMs) {
+        if (retryIntervalMs <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(retryIntervalMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

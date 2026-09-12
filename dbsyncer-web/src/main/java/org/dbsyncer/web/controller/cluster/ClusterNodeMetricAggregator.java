@@ -222,9 +222,6 @@ public class ClusterNodeMetricAggregator {
     }
 
     private Map<String, Integer> resolveAssignmentCounts(boolean incrementTask) {
-        if (clusterService.isStandalone()) {
-            return new LinkedHashMap<>();
-        }
         String taskTypeFilter = incrementTask ? " AND TASK_TYPE IN ('increment', 'fullIncrement')" : " AND TASK_TYPE = 'full'";
         try {
             List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of("SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE + " WHERE NODE_ID IS NOT NULL" + taskTypeFilter + " GROUP BY NODE_ID"));

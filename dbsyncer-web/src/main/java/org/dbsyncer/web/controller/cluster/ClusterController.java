@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -52,34 +53,13 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 内部拉起执行器（禁止再走用户启动链）。
-     * 须通过 {@code ClusterInternalAuthFilter} 校验 {@code X-Cluster-Token}，未配置 token 时拒绝。
+     * 内部统一消息入口（按 type/event 路由）。须携带 {@code X-Cluster-Token}。
      */
-    @PostMapping("/internal/execute")
+    @PostMapping("/internal/message")
     @ResponseBody
-    public RestResult execute(@RequestParam("taskId") String taskId, @RequestParam(value = "autoRecovery", defaultValue = "false") boolean autoRecovery) {
+    public RestResult message(@RequestBody String message) {
         try {
-            if (clusterService.isStandalone()) {
-                return RestResult.restFail("单机不支持内部执行接口");
-            }
-            return RestResult.restSuccess(clusterService.execute(taskId, autoRecovery));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    /**
-     * 内部停止执行器。须携带 {@code X-Cluster-Token}。
-     */
-    @PostMapping("/internal/stop")
-    @ResponseBody
-    public RestResult stopExecute(@RequestParam("taskId") String taskId) {
-        try {
-            if (clusterService.isStandalone()) {
-                return RestResult.restFail("单机不支持内部停止接口");
-            }
-            clusterService.stopExecute(taskId);
+            clusterService.receiveMessage(message);
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -175,7 +155,7 @@ public class ClusterController extends BaseController {
     @ResponseBody
     public RestResult recoverOfflineTasks() {
         try {
-            clusterService.recoverOfflineTasks();
+            clusterService.forceExpireLeaderGracePeriod();
             return RestResult.restSuccess("已触发恢复离线节点任务");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

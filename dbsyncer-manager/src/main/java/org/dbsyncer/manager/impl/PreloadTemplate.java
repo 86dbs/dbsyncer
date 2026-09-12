@@ -7,9 +7,7 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
@@ -46,15 +44,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.stream.Stream;
 
 /**
  * 预加载配置模板
@@ -217,23 +212,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         return preloadCompleted;
     }
 
-    public void reload(String json) {
-        Map<String, Map> map = JsonUtil.jsonToObj(json, Map.class);
-        if (CollectionUtils.isEmpty(map)) {
-            return;
-        }
-        // 版本信息检查
-        Map versionInfo = map.get(DBS_VERSION_INFO);
-        Assert.isTrue(versionInfo != null, "不支持导入低版本或配置不完整");
-        VersionInfo info = JsonUtil.jsonToObj(versionInfo.toString(), VersionInfo.class);
-        logger.info("upload config: appName={}, version={}, createTime={}", info.getAppName(), info.getVersion(), DateFormatUtil.timestampToString(new Timestamp(info.getCreateTime())));
-
-        // Load configModels
-        Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING, CommandEnum.PRELOAD_META)
-                .forEach(commandEnum -> reload(map, commandEnum));
-
-        afterConfigImport();
-    }
 
     /**
      * 配置导入完成后的收尾：重建连接实例，恢复同步驱动与企业任务。
@@ -277,10 +255,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     continue;
                 }
                 try {
-                    // 集群启动不预热；单机恢复时重建任务级连接
-                    if (clusterService.isStandalone()) {
-                        reConnect(mapping);
-                    }
+                    reConnect(mapping);
                     // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
                         managerFactory.start(mapping, true);
@@ -368,9 +343,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             }
             ValidateSyncTask task = (ValidateSyncTask) commonTask;
             try {
-                if (clusterService.isStandalone()) {
-                    reConnect(task);
-                }
+                reConnect(task);
             } catch (Exception e) {
                 logger.error("校验任务连接器预热失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
             }
