@@ -190,7 +190,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         synchronized (metaLock(task.getId())) {
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
-            refreshMetaTotals(meta, task);
+            refreshMetaTotals(meta);
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
             snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(task.getPageIndex()));
@@ -208,7 +208,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         synchronized (metaLock(parent.getId())) {
             Meta meta = metaProfile.getMeta(parent.getId());
             Assert.notNull(meta, "检查meta为空.");
-            refreshMetaTotals(meta, parent);
+            refreshMetaTotals(meta);
             meta.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(meta);
         }
@@ -219,7 +219,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         synchronized (metaLock(task.getId())) {
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
-            refreshMetaTotals(meta, task);
+            refreshMetaTotals(meta);
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
             snapshot.remove("tableProgress");
@@ -231,14 +231,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
     }
 
-    private void refreshMetaTotals(Meta meta, Task task) {
+    private void refreshMetaTotals(Meta meta) {
         long finished = meta.getSuccess().get() + meta.getFail().get();
         if (meta.getTotal().get() < finished) {
             meta.getTotal().set(finished);
         }
-        Task root = task.getParent() != null ? task.getParent() : task;
-        meta.setBeginTime(root.getBeginTime());
-        meta.setEndTime(root.getEndTime());
     }
 
     private Object metaLock(String metaId) {
