@@ -122,7 +122,8 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         http.csrf().disable()
                 .addFilterBefore(clusterInternalAuthFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**", "/index/version.json", "/openapi/**", "/cluster/ping", "/sso/consume").permitAll()
+                .antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**", "/index/version.json", "/openapi/**",
+                        "/cluster/ping", "/cluster/internal/**", "/sso/consume").permitAll()
                 .anyRequest().authenticated().and()
                 .formLogin().loginProcessingUrl(LOGIN).loginPage(LOGIN_PAGE).successHandler(loginSuccessHandler()).failureHandler(loginFailHandler()).permitAll().and().logout().permitAll()
                 .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler()).and().sessionManagement().sessionFixation().migrateSession()
@@ -176,9 +177,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Override
     public void sessionCreated(HttpSessionEvent se) {
-        logger.info("创建会话:{}", se.getSession().getId());
-        int maxInactiveInterval = se.getSession().getMaxInactiveInterval();
-        logger.info(String.valueOf(maxInactiveInterval));
+        logger.info("创建会话:{}, maxInactiveInterval={}", se.getSession().getId(), se.getSession().getMaxInactiveInterval());
     }
 
     @Override

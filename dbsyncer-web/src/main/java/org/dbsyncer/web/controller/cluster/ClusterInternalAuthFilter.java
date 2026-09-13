@@ -10,9 +10,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
 
@@ -32,6 +29,8 @@ import java.security.MessageDigest;
  * 配置项 {@code dbsyncer.cluster.internal-token} 未设置时一律拒绝（生产默认安全）。
  * 请求须携带头 {@link HttpClientUtil#CLUSTER_TOKEN_HEADER}。
  * {@code /cluster/ping} 仅存活探测，不在本过滤器范围内。
+ * <p>
+ * 鉴权成功后不写入 {@code SecurityContext}，避免 Spring Security 为无 Cookie 的节点互调创建 HttpSession。
  *
  * @author wuji
  * @version 1.0.0
@@ -39,10 +38,6 @@ import java.security.MessageDigest;
 public class ClusterInternalAuthFilter extends OncePerRequestFilter {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private static final String PRINCIPAL = "cluster-internal";
-
-    private static final String ROLE = "ROLE_CLUSTER_INTERNAL";
 
     private final UrlPathHelper urlPathHelper = new UrlPathHelper();
 
@@ -84,7 +79,7 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
             reject(response, HttpServletResponse.SC_UNAUTHORIZED, "集群内部接口鉴权失败");
             return;
         }
-        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(PRINCIPAL, "N/A", AuthorityUtils.createAuthorityList(ROLE)));
+        // 仅校验共享密钥；路径已在 Security 配置中 permitAll，勿写入 SecurityContext，否则会强制创建会话。
         filterChain.doFilter(request, response);
     }
 

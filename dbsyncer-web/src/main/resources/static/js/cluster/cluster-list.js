@@ -327,7 +327,7 @@
             // 保护期内：仅在本机 Leader 行显示「恢复」（调度只能由 Leader 执行）
             if (Number(item.gracePeriodSeconds) > 0) {
                 buttons.push(
-                    '<button type="button" class="table-action-btn play" title="恢复离线节点任务" data-action="recover">'
+                    '<button type="button" class="table-action-btn play" title="跳过节点恢复" data-action="recover">'
                     + '<i class="fa fa-refresh"></i></button>'
                 );
             }
@@ -352,7 +352,7 @@
             + '<div>' + formatRole(item.role) + '</div>'
             + '<div class="mt-1">' + formatStatus(item.status) + '</div>';
         if (Number(item.gracePeriodSeconds) > 0) {
-            statusHtml += '<div class="mt-1 text-warning">等待节点恢复中：' + Number(item.gracePeriodSeconds) + ' 秒</div>';
+            statusHtml += '<div class="mt-1 text-warning">等待节点恢复：' + Number(item.gracePeriodSeconds) + ' 秒</div>';
         }
         statusHtml += '</div>';
         var timeHtml = stackCell([
@@ -455,14 +455,14 @@
 
     function forceExpireLeaderGracePeriod() {
         showConfirm({
-            title: '跳过节点恢复？',
+            title: '跳过等待节点恢复？',
             icon: 'warning',
-            confirmText: '跳过等待',
-            body: '<p class="mb-0">跳过等待节点恢复，将立即分配离线节点任务。</p>',
+            confirmText: '确认',
+            body: '<p class="mb-0">将重新分配离线节点任务到新节点</p>',
             onConfirm: function () {
                 doPoster('/cluster/forceExpireGracePeriod', {}, function (res) {
                     if (res.success === true) {
-                        bootGrowl(res.data || '已触发恢复', 'success');
+                        bootGrowl(res.data || '已跳过恢复', 'success');
                         loadNodeMetrics(false);
                     } else {
                         bootGrowl(res.message || '恢复失败', 'danger');
