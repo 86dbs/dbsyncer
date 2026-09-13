@@ -8,7 +8,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * {@link CacheServiceImpl} 单元测试。
@@ -88,5 +90,60 @@ public class CacheServiceTest {
         Assert.assertEquals(1, cacheService.size());
         cacheService.clear();
         Assert.assertEquals(0, cacheService.size());
+    }
+
+    @Test
+    public void testExecuteWithLock() throws InterruptedException {
+        AtomicInteger counter = new AtomicInteger();
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(2);
+
+        Runnable task = () -> {
+            try {
+                start.await();
+                cacheService.executeWithLock("lock1", () -> {
+                    int current = counter.get();
+                    try {
+                        Thread.sleep(50L);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    counter.set(current + 1);
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                done.countDown();
+            }
+        };
+
+        Thread t1 = new Thread(task);
+        Thread t2 = new Thread(task);
+        t1.start();
+        t2.start();
+        start.countDown();
+        Assert.assertTrue(done.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(2, counter.get());
+    }
+
+    @Test
+    public void testTryLock() throws InterruptedException {
+        Assert.assertTrue(cacheService.tryLock("lock2"));
+        AtomicInteger otherGotLock = new AtomicInteger(-1);
+        Thread other = new Thread(() -> otherGotLock.set(cacheService.tryLock("lock2") ? 1 : 0));
+        other.start();
+        other.join(1000L);
+        Assert.assertEquals(0, otherGotLock.get());
+        cacheService.unlock("lock2");
+        Assert.assertTrue(cacheService.tryLock("lock2"));
+        cacheService.unlock("lock2");
+    }
+
+    @Test
+    public void testLockIndependentFromCacheValue() {
+        cacheService.put("same-key", "value");
+        cacheService.lock("same-key");
+        Assert.assertEquals("value", cacheService.get("same-key"));
+        cacheService.unlock("same-key");
     }
 }

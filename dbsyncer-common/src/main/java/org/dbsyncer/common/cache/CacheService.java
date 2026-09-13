@@ -4,11 +4,14 @@
 package org.dbsyncer.common.cache;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * 本地缓存服务（语义对齐 Redis TTL），以 Spring Bean 方式注入使用。
  * <p>
- * 多业务共用同一实例时，请自行用前缀隔离 key，例如 {@code openapi:nonce:}。
+ * 多业务共用同一实例时，请用 {@link CacheConstant} 前缀隔离 key。
+ * <p>
+ * 锁与缓存数据分表存储，lockKey 可与缓存 key 相同，互不覆盖。
  *
  * @author 穿云
  * @version 1.0.0
@@ -89,4 +92,52 @@ public interface CacheService {
      * 当前条目数（可能含尚未扫掉的过期项）。
      */
     int size();
+
+    /**
+     * 按 lockKey 阻塞加锁（可重入）。
+     */
+    void lock(String lockKey);
+
+    /**
+     * 尝试加锁，立即返回。
+     *
+     * @return 是否获取成功
+     */
+    boolean tryLock(String lockKey);
+
+    /**
+     * 在超时时间内尝试加锁。
+     *
+     * @return 是否获取成功；等待被中断时恢复中断标记并返回 false
+     */
+    boolean tryLock(String lockKey, long waitTime, TimeUnit unit);
+
+    /**
+     * 释放当前线程持有的锁；未持有时忽略。
+     */
+    void unlock(String lockKey);
+
+    /**
+     * 加锁执行，结束后自动解锁。
+     */
+    default void executeWithLock(String lockKey, Runnable action) {
+        lock(lockKey);
+        try {
+            action.run();
+        } finally {
+            unlock(lockKey);
+        }
+    }
+
+    /**
+     * 加锁执行并返回结果，结束后自动解锁。
+     */
+    default <T> T executeWithLock(String lockKey, Supplier<T> action) {
+        lock(lockKey);
+        try {
+            return action.get();
+        } finally {
+            unlock(lockKey);
+        }
+    }
 }

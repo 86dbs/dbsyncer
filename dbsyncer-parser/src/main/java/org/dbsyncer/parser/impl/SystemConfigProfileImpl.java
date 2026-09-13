@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.cache.CacheConstant;
+import org.dbsyncer.common.cache.CacheService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -38,15 +40,27 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
-    private SystemConfig systemConfig;
+    @Resource
+    private CacheService cacheService;
 
     @Override
     public SystemConfig getSystemConfig() {
-        if (systemConfig != null) {
-            return systemConfig;
+        SystemConfig cached = cacheService.get(CacheConstant.SYSTEM_CONFIG, SystemConfig.class);
+        if (cached != null) {
+            return cached;
         }
-        systemConfig = querySystemConfig();
-        return systemConfig;
+        return cacheService.executeWithLock(CacheConstant.SYSTEM_CONFIG_LOCK, () -> {
+            SystemConfig again = cacheService.get(CacheConstant.SYSTEM_CONFIG, SystemConfig.class);
+            if (again != null) {
+                return again;
+            }
+            SystemConfig config = querySystemConfig();
+            if (config != null) {
+                // 配置变更低频，本地常驻；save/remove 时主动刷新
+                cacheService.put(CacheConstant.SYSTEM_CONFIG, config);
+            }
+            return config;
+        });
     }
 
     @Override
@@ -65,11 +79,16 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
         } else {
             storageService.edit(StorageEnum.CONFIG, ConfigModelUtil.convertModelToMap(config));
         }
-        //todo 分布式需要优化
-        systemConfig = querySystemConfig();
+        cacheService.executeWithLock(CacheConstant.SYSTEM_CONFIG_LOCK, () -> {
+            SystemConfig latest = querySystemConfig();
+            if (latest != null) {
+                cacheService.put(CacheConstant.SYSTEM_CONFIG, latest);
+            } else {
+                cacheService.remove(CacheConstant.SYSTEM_CONFIG);
+            }
+        });
         return config.getId();
     }
-
 
     @Override
     public int countSystemConfigs() {
@@ -82,6 +101,8 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
             return;
         }
         storageService.remove(StorageEnum.CONFIG, id);
+        cacheService.executeWithLock(CacheConstant.SYSTEM_CONFIG_LOCK,
+                () -> cacheService.remove(CacheConstant.SYSTEM_CONFIG));
     }
 
     @Override

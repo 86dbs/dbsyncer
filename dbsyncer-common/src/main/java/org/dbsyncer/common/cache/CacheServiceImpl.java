@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 基于内存的 {@link CacheService} 实现：惰性删除 + 定时扫表。
@@ -31,6 +32,7 @@ public class CacheServiceImpl implements CacheService, DisposableBean {
     private static final long CLEANUP_INTERVAL_MS = 30_000L;
 
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ReentrantLock> locks = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean(false);
     private volatile ScheduledExecutorService cleanupExecutor;
 
@@ -74,7 +76,7 @@ public class CacheServiceImpl implements CacheService, DisposableBean {
     public <T> T get(String key, Class<T> type) {
         Objects.requireNonNull(type, "type");
         Object value = get(key);
-        if (value == null || !type.isInstance(value)) {
+        if (!type.isInstance(value)) {
             return null;
         }
         return (T) value;
@@ -153,9 +155,46 @@ public class CacheServiceImpl implements CacheService, DisposableBean {
     }
 
     @Override
+    public void lock(String lockKey) {
+        resolveLock(lockKey).lock();
+    }
+
+    @Override
+    public boolean tryLock(String lockKey) {
+        return resolveLock(lockKey).tryLock();
+    }
+
+    @Override
+    public boolean tryLock(String lockKey, long waitTime, TimeUnit unit) {
+        Objects.requireNonNull(unit, "unit");
+        try {
+            return resolveLock(lockKey).tryLock(waitTime, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    @Override
+    public void unlock(String lockKey) {
+        Objects.requireNonNull(lockKey, "lockKey");
+        ReentrantLock lock = locks.get(lockKey);
+        if (lock == null || !lock.isHeldByCurrentThread()) {
+            return;
+        }
+        lock.unlock();
+    }
+
+    @Override
     public void destroy() {
         stopCleanup();
         cache.clear();
+        locks.clear();
+    }
+
+    private ReentrantLock resolveLock(String lockKey) {
+        Objects.requireNonNull(lockKey, "lockKey");
+        return locks.computeIfAbsent(lockKey, k -> new ReentrantLock());
     }
 
     private void startCleanup() {
