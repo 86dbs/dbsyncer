@@ -74,6 +74,9 @@ public class LocalNodeMetricProvider {
     @Value("${server.ssl.enabled:false}")
     private boolean sslEnabled;
 
+    @Value("${server.servlet.context-path:/}")
+    private String contextPath;
+
     @Resource
     private MonitorService monitorService;
 
@@ -286,13 +289,13 @@ public class LocalNodeMetricProvider {
     }
 
     /**
-     * 本节点协议下的 Web 根地址（跟随 {@code server.ssl.enabled}）。
+     * 本节点协议下的 Web 根地址（跟随 {@code server.ssl.enabled} 与 {@code server.servlet.context-path}）。
      *
      * @param ip       IP
      * @param httpPort 端口
-     * @return 如 http(s)://ip:port；非法时为空
+     * @return 如 http(s)://ip:port[/context-path]；非法时为空
      */
     public String buildHttpUrl(String ip, int httpPort) {
-        return NetUtil.buildWebRootUrl(ip, httpPort, sslEnabled);
+        return NetUtil.buildWebRootUrl(ip, httpPort, sslEnabled, contextPath);
     }
 }

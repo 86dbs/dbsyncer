@@ -40,6 +40,9 @@ public class SsoTicketServiceImpl implements SsoTicketService {
     @Value("${server.ssl.enabled:false}")
     private boolean sslEnabled;
 
+    @Value("${server.servlet.context-path:/}")
+    private String contextPath;
+
     @Resource
     private JwtSecretManager jwtSecretManager;
 
@@ -129,7 +132,8 @@ public class SsoTicketServiceImpl implements SsoTicketService {
     }
 
     /**
-     * 规范化为 {@code http(s)://ip:port}（无尾斜杠；协议跟随 {@code server.ssl.enabled}）。
+     * 规范化为 {@code http(s)://ip:port[/context-path]}（无尾斜杠；协议与路径跟随本机
+     * {@code server.ssl.enabled}、{@code server.servlet.context-path}）。
      *
      * @param target 目标 URL
      * @return 根地址
@@ -143,7 +147,7 @@ public class SsoTicketServiceImpl implements SsoTicketService {
         }
         String ip = host.substring(0, idx);
         int port = Integer.parseInt(host.substring(idx + 1));
-        return NetUtil.buildWebRootUrl(ip, port, sslEnabled);
+        return NetUtil.buildWebRootUrl(ip, port, sslEnabled, contextPath);
     }
 
     /**

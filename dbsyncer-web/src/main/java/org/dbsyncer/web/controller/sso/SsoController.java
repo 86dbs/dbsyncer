@@ -7,6 +7,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.SsoTicketService;
 import org.dbsyncer.biz.model.WebSsoTicket;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.web.config.WebAppConfig;
 import org.slf4j.Logger;
@@ -58,11 +59,12 @@ public class SsoController {
     @GetMapping("/redirect")
     public void redirect(@RequestParam("target") String target,
                          @RequestParam(value = "redirect", required = false, defaultValue = "/") String redirect,
+                         HttpServletRequest request,
                          HttpServletResponse response) throws IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || StringUtil.equals("anonymousUser", String.valueOf(authentication.getPrincipal()))) {
-            response.sendRedirect(WebAppConfig.LOGIN_PAGE);
+            sendLocalRedirect(request, response, WebAppConfig.LOGIN_PAGE);
             return;
         }
         try {
@@ -74,6 +76,7 @@ public class SsoController {
             String roleCode = joinAuthorities(authentication.getAuthorities());
             String ticket = ssoTicketService.issue(username, roleCode, target);
             String safeRedirect = ssoTicketService.sanitizeRedirect(redirect);
+            // base 已含目标节点 context-path（与本机 server.servlet.context-path 一致）
             String base = ssoTicketService.normalizeTargetBase(target);
             String consumeUrl = base + "/sso/consume?ticket="
                     + URLEncoder.encode(ticket, StandardCharsets.UTF_8.name())
@@ -103,11 +106,19 @@ public class SsoController {
                         HttpServletResponse response) throws IOException {
         WebSsoTicket ssoTicket = ssoTicketService.consume(ticket);
         if (ssoTicket == null) {
-            response.sendRedirect(WebAppConfig.LOGIN_PAGE);
+            sendLocalRedirect(request, response, WebAppConfig.LOGIN_PAGE);
             return;
         }
         establishSession(request, ssoTicket);
-        response.sendRedirect(ssoTicketService.sanitizeRedirect(redirect));
+        sendLocalRedirect(request, response, ssoTicketService.sanitizeRedirect(redirect));
+    }
+
+    /**
+     * 本机相对路径重定向，自动拼接 {@code request.getContextPath()}。
+     */
+    private void sendLocalRedirect(HttpServletRequest request, HttpServletResponse response, String path)
+            throws IOException {
+        response.sendRedirect(response.encodeRedirectURL(NetUtil.joinContextPath(request.getContextPath(), path)));
     }
 
     private void establishSession(HttpServletRequest request, WebSsoTicket ssoTicket) {

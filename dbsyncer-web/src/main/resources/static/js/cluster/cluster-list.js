@@ -257,7 +257,7 @@
             return '';
         }
         var target = addr.ip + ':' + addr.httpPort;
-        return '/sso/redirect?target=' + encodeURIComponent(target) + '&redirect=' + encodeURIComponent('/');
+        return $basePath + '/sso/redirect?target=' + encodeURIComponent(target) + '&redirect=' + encodeURIComponent('/');
     }
 
     /** 悬浮展示完整地址：优先 nodeId，否则 ip:port */
