@@ -63,13 +63,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private ConnectorProfile connectorProfile;
 
     @Resource
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
     private MetaProfile metaProfile;
 
     @Resource
     private TaskProfile taskProfile;
-
-    @Resource
-    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private ManagerFactory managerFactory;

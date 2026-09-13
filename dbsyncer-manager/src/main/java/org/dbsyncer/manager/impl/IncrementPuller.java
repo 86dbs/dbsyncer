@@ -27,6 +27,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
@@ -93,19 +94,19 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
+
+    @Resource
     private TaskProfile taskProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private ConnectorProfile connectorProfile;
-
-    @Resource
     private MetaProfile metaProfile;
-
-    @Resource
-    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -218,7 +219,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
-        snapshot.remove("tableProgress");
+        snapshot.remove(ParserEnum.TABLE_PROGRESS.getCode());
         FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(mapping.getId()));
         meta.getSuccess().set(0);
         meta.getFail().set(0);
@@ -343,9 +344,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     private void setRsaConfig(AbstractListener listener) {
-        if (systemConfigProfile.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig.isEnableOpenAPI()) {
             listener.setRsaManager(rsaManager);
-            listener.setRsaConfig(systemConfigProfile.getSystemConfig().getRsaConfig());
+            listener.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 

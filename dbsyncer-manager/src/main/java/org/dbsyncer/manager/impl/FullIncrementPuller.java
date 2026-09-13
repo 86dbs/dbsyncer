@@ -177,7 +177,7 @@ public final class FullIncrementPuller extends AbstractPuller {
         meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
         meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
-        meta.getSnapshot().remove("tableProgress");
+        meta.getSnapshot().remove(ParserEnum.TABLE_PROGRESS.getCode());
         FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
         metaProfile.updateMeta(meta);
     }

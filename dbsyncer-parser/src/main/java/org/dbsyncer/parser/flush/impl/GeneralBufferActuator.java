@@ -25,6 +25,7 @@ import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TableGroupPicker;
 import org.dbsyncer.parser.model.WriterRequest;
@@ -276,9 +277,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     private void setRsaConfig(IncrementPluginContext context) {
-        if (systemConfigProfile.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig.isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
-            context.setRsaConfig(systemConfigProfile.getSystemConfig().getRsaConfig());
+            context.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 

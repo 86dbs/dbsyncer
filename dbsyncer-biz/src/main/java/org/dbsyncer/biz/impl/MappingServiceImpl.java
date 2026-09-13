@@ -395,7 +395,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         mapping.setSourceTable(updateConnectorTables(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX));
         mapping.setTargetTable(updateConnectorTables(mapping, ConnectorInstanceUtil.TARGET_SUFFIX));
         taskProfile.updateTask(mapping);
-        return "刷新驱动表成功";
+        return "刷新同步任务表成功";
     }
 
     @Override
@@ -514,7 +514,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     /**
-     * 提交统计驱动总数任务
+     * 提交统计同比任务总数任务
      */
     private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
         MappingCountTask task = new MappingCountTask();

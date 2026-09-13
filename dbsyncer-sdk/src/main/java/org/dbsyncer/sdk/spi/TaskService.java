@@ -58,16 +58,11 @@ public interface TaskService<T extends ConfigModel> {
 
     /**
      * 获取所有任务 根据任务类型
-     *
-     * @return
      */
     List<T> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum);
 
     /**
      * 检查任务是否在本进程执行中（内存集合，防重入）。
-     *
-     * @param taskId
-     * @return
      */
     default boolean isRunning(String taskId) {
         return false;
@@ -83,8 +78,6 @@ public interface TaskService<T extends ConfigModel> {
 
     /**
      * 仅停止本进程执行，不改调度行。
-     *
-     * @param id 任务 ID
      */
     default void stopLocal(String id) {
     }

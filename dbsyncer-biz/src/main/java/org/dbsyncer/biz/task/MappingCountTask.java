@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 统计驱动总数任务
+ * 统计同步任务总数任务
  *
  * @author 穿云
  * @version 1.0.0

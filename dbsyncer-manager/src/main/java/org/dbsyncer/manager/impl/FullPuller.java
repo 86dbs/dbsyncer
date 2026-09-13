@@ -218,7 +218,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             refreshMetaTotals(meta);
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
-            snapshot.remove("tableProgress");
+            snapshot.remove(ParserEnum.TABLE_PROGRESS.getCode());
             snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
             snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
             snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(),
