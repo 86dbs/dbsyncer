@@ -352,8 +352,7 @@
             + '<div>' + formatRole(item.role) + '</div>'
             + '<div class="mt-1">' + formatStatus(item.status) + '</div>';
         if (Number(item.gracePeriodSeconds) > 0) {
-            statusHtml += '<div class="mt-1 text-warning">等待节点恢复：倒计时 '
-                + Number(item.gracePeriodSeconds) + ' 秒</div>';
+            statusHtml += '<div class="mt-1 text-warning">等待节点恢复中：' + Number(item.gracePeriodSeconds) + ' 秒</div>';
         }
         statusHtml += '</div>';
         var timeHtml = stackCell([
@@ -456,10 +455,10 @@
 
     function forceExpireLeaderGracePeriod() {
         showConfirm({
-            title: '恢复离线节点任务？',
+            title: '跳过节点恢复？',
             icon: 'warning',
-            confirmText: '立即恢复',
-            body: '<p class="mb-0">立即对离线节点任务换主并补派未分配任务。</p>',
+            confirmText: '跳过等待',
+            body: '<p class="mb-0">跳过等待节点恢复，将立即分配离线节点任务。</p>',
             onConfirm: function () {
                 doPoster('/cluster/forceExpireGracePeriod', {}, function (res) {
                     if (res.success === true) {

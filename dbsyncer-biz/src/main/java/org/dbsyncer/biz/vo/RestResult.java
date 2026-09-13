@@ -14,7 +14,7 @@ import java.io.Serializable;
  * @version 1.0.0
  * @date 2017年3月30日 下午2:26:19
  */
-public class RestResult implements Serializable {
+public class RestResult<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -26,7 +26,7 @@ public class RestResult implements Serializable {
     /**
      * 数据
      */
-    private Object data;
+    private T data;
 
     /**
      * 消息
@@ -38,7 +38,7 @@ public class RestResult implements Serializable {
      */
     private int status;
 
-    public RestResult(boolean success, Object data, String message, int status) {
+    public RestResult(boolean success, T data, String message, int status) {
         this.success = success;
         this.data = data;
         this.message = message;
@@ -65,11 +65,11 @@ public class RestResult implements Serializable {
         this.success = success;
     }
 
-    public Object getData() {
+    public T getData() {
         return data;
     }
 
-    public void setData(Object data) {
+    public void setData(T data) {
         this.data = data;
     }
 

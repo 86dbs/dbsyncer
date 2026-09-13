@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.web.controller.cluster;
 
-import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
 import org.dbsyncer.biz.vo.ClusterMetricsOverviewVO;
 import org.dbsyncer.biz.vo.ClusterNodeMetricVO;
 import org.dbsyncer.biz.vo.HistoryStackVO;
@@ -187,12 +187,14 @@ public class ClusterNodeMetricAggregator {
                 logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), result.getStatusCode());
                 return unreachable();
             }
-            RestResult res = JsonUtil.jsonToObj(result.getBody(), RestResult.class);
+            RestResult<ClusterNodeMetricVO> res = JsonUtil.jsonToObj(result.getBody(), new TypeReference<RestResult<ClusterNodeMetricVO>>() {});
             if (res == null || !res.isSuccess()) {
                 return unreachable();
             }
-            JSONObject json = (JSONObject) res.getData();
-            ClusterNodeMetricVO vo = json.toJavaObject(ClusterNodeMetricVO.class);
+            ClusterNodeMetricVO vo = res.getData();
+            if (vo == null) {
+                return unreachable();
+            }
             vo.setReachable(true);
             return vo;
         } catch (Exception e) {
@@ -253,7 +255,7 @@ public class ClusterNodeMetricAggregator {
             return result;
         }
         row.forEach((key, value) -> {
-            String keyStr = key == null ? StringUtil.EMPTY : String.valueOf(key);
+            String keyStr = key == null ? StringUtil.EMPTY : key;
             String camelKey = keyStr.contains(StringUtil.UNDERLINE) ? UnderlineToCamelUtils.underlineToCamel(keyStr.toLowerCase(), true) : keyStr.toLowerCase();
             result.put(camelKey, value);
         });
