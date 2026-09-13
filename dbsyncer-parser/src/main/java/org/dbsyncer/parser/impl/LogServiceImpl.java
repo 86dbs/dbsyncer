@@ -6,16 +6,14 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,8 +21,8 @@ import java.util.concurrent.Executor;
 
 /**
  * @version 1.0.0
- * @Author AE86
- * @Date 2020-05-21 23:18
+ * @author AE86
+ * @date 2020-05-21 23:18
  */
 @Component
 public class LogServiceImpl implements LogService {
@@ -45,7 +43,7 @@ public class LogServiceImpl implements LogService {
     private Executor storageExecutor;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Override
     public void log(LogType logType) {
@@ -74,10 +72,7 @@ public class LogServiceImpl implements LogService {
     }
 
     private int resolveMaxStorageErrorLength() {
-        if (profileComponent == null || profileComponent.getSystemConfig() == null) {
-            return DEFAULT_MAX_STORAGE_ERROR_LENGTH;
-        }
-        int max = profileComponent.getSystemConfig().getMaxStorageErrorLength();
+        int max = systemConfigProfile.getSystemConfig().getMaxStorageErrorLength();
         return max > 0 ? max : DEFAULT_MAX_STORAGE_ERROR_LENGTH;
     }
 

@@ -13,7 +13,6 @@ import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.parser.util.SqlResultRowUtil;
@@ -83,7 +82,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     @Override
     public String addTableGroup(TableGroup model) {
-        String id = operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
+        String id = operationTemplate.execute(model, CommandEnum.OPR_ADD);
         addTableGroupDetailMeta(id);
         return id;
     }
@@ -117,7 +116,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     @Override
     public String editTableGroup(TableGroup model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
+        return operationTemplate.execute(model, CommandEnum.OPR_EDIT);
     }
 
     @Override
@@ -291,7 +290,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public boolean existsTableGroup(String taskId, String sourceTable, String targetTable) {
+    public boolean existTableGroup(String taskId, String sourceTable, String targetTable) {
         if (StringUtil.isBlank(taskId) || StringUtil.isBlank(sourceTable) || StringUtil.isBlank(targetTable)) {
             return false;
         }
@@ -399,11 +398,6 @@ public class TableGroupProfileImpl implements TableGroupProfile {
             }
             query.setPageNum(query.getPageNum() + 1);
         }
-    }
-
-    @Override
-    public String getPreloadGroupKey(String taskId) {
-        return ConfigConstant.TABLE_GROUP + "_" + taskId;
     }
 
     private void removeTableGroupDetailMeta(String tableGroupId) {

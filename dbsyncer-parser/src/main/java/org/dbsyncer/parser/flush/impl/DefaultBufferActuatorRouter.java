@@ -5,6 +5,7 @@ package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.AbstractBufferActuatorRouter;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.model.BufferActuatorMetric;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
@@ -56,8 +57,8 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
         if (StringUtil.isBlank(metaId) || sourceTableNames == null) {
             return;
         }
-        final int maxBufferActuatorSize = profileComponent.getSystemConfig() == null ? 50
-                : profileComponent.getSystemConfig().getMaxBufferActuatorSize();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        final int maxBufferActuatorSize = systemConfig.getMaxBufferActuatorSize();
         router.computeIfAbsent(metaId, k -> {
             Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
             for (String tableName : sourceTableNames) {

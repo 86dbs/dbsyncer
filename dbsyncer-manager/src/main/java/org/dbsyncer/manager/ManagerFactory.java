@@ -7,7 +7,7 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -26,7 +26,7 @@ import java.time.Instant;
 public class ManagerFactory implements ApplicationListener<ClosedEvent> {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -86,7 +86,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
             if (CommonTaskStatusEnum.RUNNING == status) {
                 meta.setStartTime(now);
             }
-            profileComponent.editConfigModel(meta);
+            metaProfile.updateMeta(meta);
         }
     }
 
@@ -100,7 +100,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         if (meta == null) {
             return;
         }
-        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
         connectorInstanceBinder.release(mapping);
     }
 }

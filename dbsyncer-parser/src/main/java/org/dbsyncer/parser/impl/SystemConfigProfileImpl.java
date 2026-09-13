@@ -96,16 +96,6 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
     }
 
     @Override
-    public void removeSystemConfig(String id) {
-        if (StringUtil.isBlank(id)) {
-            return;
-        }
-        storageService.remove(StorageEnum.CONFIG, id);
-        cacheService.executeWithLock(CacheConstant.SYSTEM_CONFIG_LOCK,
-                () -> cacheService.remove(CacheConstant.SYSTEM_CONFIG));
-    }
-
-    @Override
     public void importFromJson(String json) {
         if (StringUtil.isBlank(json)) {
             return;

@@ -12,11 +12,13 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
@@ -62,9 +64,9 @@ import java.util.stream.Collectors;
 /**
  * 通用执行器（单线程消费，多线程批量写，按序执行）
  *
- * @Version 1.0.0
- * @Author AE86
- * @Date 2022-03-27 16:50
+ * @version 1.0.0
+ * @author AE86
+ * @date 2022-03-27 16:50
  */
 @Component
 public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
@@ -84,13 +86,19 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private ParserComponent parserComponent;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     @Resource
     private MetaProfile metaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -136,7 +144,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.setTypeEnum(request.getTypeEnum());
             response.setSql(request.getSql());
             response.setMerged(true);
-        } else if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(request.getTraceId())) {
+        } else if (systemConfigProfile.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(request.getTraceId())) {
             logger.info("traceId:{} merge into traceId:{}", request.getTraceId(), response.getTraceId());
         }
     }
@@ -156,7 +164,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         }
         // 打印trace信息
         printTraceInfo(response);
-        final Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        final Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
         List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
 
         switch (response.getTypeEnum()) {
@@ -268,9 +276,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     private void setRsaConfig(IncrementPluginContext context) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        if (systemConfigProfile.getSystemConfig().isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
-            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            context.setRsaConfig(systemConfigProfile.getSystemConfig().getRsaConfig());
         }
     }
 
@@ -336,13 +344,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
         Assert.hasText(connectorId, "Connector id can not be empty.");
-        Connector conn = profileComponent.getConnector(connectorId);
+        Connector conn = connectorProfile.getConnector(connectorId);
         Assert.notNull(conn, "Connector can not be null.");
         return conn.getConfig();
     }
 
     private void printTraceInfo(WriterResponse response) {
-        if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(response.getTraceId())) {
+        if (systemConfigProfile.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(response.getTraceId())) {
             logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", response.getTraceId(), response.getTableName(), response.getEvent(), JsonUtil
                     .objToJson(response.getChangedOffset()), response.getDataList());
         }

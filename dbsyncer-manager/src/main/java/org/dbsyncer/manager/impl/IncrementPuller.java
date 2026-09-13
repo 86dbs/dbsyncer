@@ -12,12 +12,14 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
@@ -66,9 +68,9 @@ import java.util.stream.Collectors;
 /**
  * 增量同步
  *
- * @Version 1.0.0
- * @Author AE86
- * @Date 2020-04-26 15:28
+ * @version 1.0.0
+ * @author AE86
+ * @date 2020-04-26 15:28
  */
 @Component
 public final class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {
@@ -91,13 +93,19 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
+    private ConnectorProfile connectorProfile;
+
+    @Resource
     private MetaProfile metaProfile;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -127,9 +135,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
     public void start(Mapping mapping, boolean autoRecovery) {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
-        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
-        Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Connector targetConnector = connectorProfile.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mappingId);
@@ -143,7 +151,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     long now = Instant.now().toEpochMilli();
                     meta.setStartTime(now);
                     meta.setUpdateTime(now);
-                    profileComponent.editConfigModel(meta);
+                    metaProfile.updateMeta(meta);
                     tableGroupContext.put(mapping, list);
                     return buildListener(mapping, connector, targetConnector, list, meta);
                 });
@@ -195,9 +203,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
      */
     public void captureAndSaveOffset(Mapping mapping) {
         final String metaId = mapping.getMetaId();
-        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
-        Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Connector targetConnector = connectorProfile.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mapping.getId());
@@ -211,10 +219,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         snapshot.remove("tableProgress");
-        FullTableProgressUtil.clearAll(profileComponent, metaProfile, tableGroupProfile.listTableGroupIds(mapping.getId()));
+        FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(mapping.getId()));
         meta.getSuccess().set(0);
         meta.getFail().set(0);
-        profileComponent.editConfigModel(meta);
+        metaProfile.updateMeta(meta);
         logger.info("全量+增量模式已保存增量位点：{}, {}", metaId, snapshot);
     }
 
@@ -261,7 +269,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (meta == null || StringUtil.isBlank(meta.getTaskId())) {
             return;
         }
-        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
         connectorInstanceBinder.release(mapping);
     }
 
@@ -288,7 +296,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, metaProfile, profileComponent, pluginFactory, logService, meta.getId(),
+        listener.register(new ParserConsumer(bufferActuatorRouter, metaProfile, pluginFactory, logService, meta.getId(),
                 list, mapping.getChannelSize()));
 
         // 默认定时抽取
@@ -335,9 +343,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     private void setRsaConfig(AbstractListener listener) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        if (systemConfigProfile.getSystemConfig().isEnableOpenAPI()) {
             listener.setRsaManager(rsaManager);
-            listener.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            listener.setRsaConfig(systemConfigProfile.getSystemConfig().getRsaConfig());
         }
     }
 

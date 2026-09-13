@@ -3,13 +3,8 @@
  */
 package org.dbsyncer.parser.enums;
 
-import org.dbsyncer.parser.command.CommandExecutor;
-import org.dbsyncer.parser.command.Persistence;
-import org.dbsyncer.parser.command.Preload;
-import org.dbsyncer.sdk.constant.ConfigConstant;
-
 /**
- * 枚举命令模式: 持久化和预加载
+ * 枚举命令模式
  *
  * @author AE86
  * @version 1.0.0
@@ -20,77 +15,11 @@ public enum CommandEnum {
     /**
      * 添加
      */
-    OPR_ADD("add", Persistence::addConfig),
+    OPR_ADD,
 
     /**
      * 修改
      */
-    OPR_EDIT("edit", Persistence::editConfig),
+    OPR_EDIT
 
-    /**
-     * 预加载SystemConfig
-     */
-    PRELOAD_SYSTEM(ConfigConstant.SYSTEM, Preload::parseSystemConfig, true),
-
-    /**
-     * 预加载UserConfig
-     */
-    PRELOAD_USER(ConfigConstant.USER, Preload::parseUserConfig, true),
-
-    /**
-     * 预加载Connector
-     */
-    PRELOAD_CONNECTOR(ConfigConstant.CONNECTOR, Preload::parseConnector, true),
-
-    /**
-     * 预加载Mapping
-     */
-    PRELOAD_MAPPING(ConfigConstant.MAPPING, Preload::parseMapping, true),
-
-    /**
-     * 预加载TableGroup
-     */
-    PRELOAD_TABLE_GROUP(ConfigConstant.TABLE_GROUP, Preload::parseTableGroup, true),
-
-    /**
-     * 预加载Meta
-     */
-    PRELOAD_META(ConfigConstant.META, Preload::parseMeta, true);
-
-    /**
-     * 命令类型
-     */
-    private final String modelType;
-
-    /**
-     * 执行器
-     */
-    private final CommandExecutor commandExecutor;
-
-    /**
-     * 是否预加载
-     */
-    private final boolean preload;
-
-    CommandEnum(String modelType, CommandExecutor commandExecutor) {
-        this(modelType, commandExecutor, false);
-    }
-
-    CommandEnum(String modelType, CommandExecutor commandExecutor, boolean preload) {
-        this.modelType = modelType;
-        this.commandExecutor = commandExecutor;
-        this.preload = preload;
-    }
-
-    public String getModelType() {
-        return modelType;
-    }
-
-    public boolean isPreload() {
-        return preload;
-    }
-
-    public CommandExecutor getCommandExecutor() {
-        return commandExecutor;
-    }
 }

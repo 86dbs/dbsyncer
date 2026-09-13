@@ -7,7 +7,8 @@ import org.dbsyncer.biz.ConfigExportService;
 import org.dbsyncer.biz.ConfigImportService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.UserConfigService;
-import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.biz.checker.impl.notice.NoticeConfigChecker;
+import org.dbsyncer.biz.checker.impl.system.SystemConfigChecker;
 import org.dbsyncer.biz.vo.SystemConfigVO;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.enums.FileSuffixEnum;
@@ -19,13 +20,13 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RSAUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -49,7 +50,10 @@ import java.util.stream.Collectors;
 public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -61,10 +65,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private PreloadTemplate preloadTemplate;
 
     @Resource
-    private Checker systemConfigChecker;
+    private SystemConfigChecker systemConfigChecker;
 
     @Resource
-    private Checker noticeConfigChecker;
+    private NoticeConfigChecker noticeConfigChecker;
 
     @Resource
     private UserConfigService userConfigService;
@@ -80,15 +84,15 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     public String edit(Map<String, String> params) {
-        ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
-        profileComponent.editConfigModel(model);
+        SystemConfig systemConfig = systemConfigChecker.checkEditConfigModel(params);
+        systemConfigProfile.saveSystemConfig(systemConfig);
         return "修改成功.";
     }
 
     @Override
     public String editNoticeConfig(Map<String, String> params) {
-        ConfigModel model = noticeConfigChecker.checkEditConfigModel(params);
-        profileComponent.editConfigModel(model);
+        SystemConfig systemConfig = noticeConfigChecker.checkEditConfigModel(params);
+        systemConfigProfile.saveSystemConfig(systemConfig);
         preloadTemplate.loadNotificationChannel();
         return "修改成功.";
     }
@@ -103,15 +107,15 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     public SystemConfig getSystemConfig() {
-        SystemConfig config = profileComponent.getSystemConfig();
+        SystemConfig config = systemConfigProfile.getSystemConfig();
         if (null != config) {
             return config;
         }
 
         synchronized (this) {
-            config = profileComponent.getSystemConfig();
+            config = systemConfigProfile.getSystemConfig();
             if (null == config) {
-                config = (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
+                config = systemConfigChecker.checkAddConfigModel(new HashMap<>());
             }
             return config;
         }
@@ -122,7 +126,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         List<ConfigModel> list = new ArrayList<>();
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());
-        list.addAll(profileComponent.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
+        list.addAll(connectorProfile.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
         Paging<Mapping> mappingPaging = taskProfile.queryTasks(Mapping.class, 1, 5, null);
         if (mappingPaging != null && !CollectionUtils.isEmpty(mappingPaging.getData())) {
             list.addAll(mappingPaging.getData());

@@ -5,9 +5,10 @@ package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.UUIDUtil;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.flush.impl.GeneralBufferActuator;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
@@ -35,7 +36,7 @@ public abstract class AbstractBufferActuatorRouter implements BufferActuatorRout
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    protected ProfileComponent profileComponent;
+    protected SystemConfigProfile systemConfigProfile;
 
     @Resource
     protected GeneralBufferActuator generalBufferActuator;
@@ -46,7 +47,8 @@ public abstract class AbstractBufferActuatorRouter implements BufferActuatorRout
      * @param event 变更事件
      */
     protected void printTraceInfo(ChangedEvent event) {
-        if (profileComponent.getSystemConfig() != null && profileComponent.getSystemConfig().isEnablePrintTraceInfo()) {
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig != null && systemConfig.isEnablePrintTraceInfo()) {
             event.setTraceId(UUIDUtil.getUUID().toLowerCase());
             logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", event.getTraceId(), event.getSourceTableName(),
                     event.getEvent(), JsonUtil.objToJson(event.getChangedOffset()), event.getChangedRow());

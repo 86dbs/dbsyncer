@@ -16,9 +16,9 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
@@ -75,7 +75,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ProfileComponent profileComponent;
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private TaskProfile taskProfile;
@@ -276,8 +276,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public List<DatabaseSyncTaskVO> getAll() {
         return taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC).stream()
-                .filter(DatabaseSyncTask.class::isInstance)
-                .map(t -> convertTask2Vo((DatabaseSyncTask) t))
+                .filter(Objects::nonNull)
+                .map(this::convertTask2Vo)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -301,7 +301,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (StringUtil.isBlank(connectorId)) {
             throw new BizException("连接器不能为空");
         }
-        Connector connector = profileComponent.getConnector(connectorId);
+        Connector connector = connectorProfile.getConnector(connectorId);
         if (connector == null) {
             throw new BizException("连接器不存在");
         }
@@ -517,8 +517,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         List<DatabaseMappingVO> mappingViews = buildDatabaseMappingVo(
                 DatabaseSyncMappingUtil.sortByIndex(task.getDatabaseMappings()), tableGroups);
         DatabaseMappingVO first = CollectionUtils.isEmpty(mappingViews) ? null : mappingViews.get(0);
-        Connector source = first == null ? null : profileComponent.getConnector(first.getSourceConnectorId());
-        Connector target = first == null ? null : profileComponent.getConnector(first.getTargetConnectorId());
+        Connector source = first == null ? null : connectorProfile.getConnector(first.getSourceConnectorId());
+        Connector target = first == null ? null : connectorProfile.getConnector(first.getTargetConnectorId());
         DatabaseSyncTaskVO vo = new DatabaseSyncTaskVO(source, target);
         BeanUtils.copyProperties(task, vo);
         // 覆盖 BeanUtils 写入的仅库维映射，挂上 table_group 表映射供编辑页
@@ -598,7 +598,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             if (CollectionUtils.isEmpty(tableMappings)) {
                 continue;
             }
-            Connector sourceConnector = profileComponent.getConnector(mapping.getSourceConnectorId());
+            Connector sourceConnector = connectorProfile.getConnector(mapping.getSourceConnectorId());
             Assert.notNull(sourceConnector, "源连接器不存在");
             Assert.notNull(sourceConnector.getConfig(), "源连接器配置不存在");
             // 与 ParserComponentImpl#getMetaInfo 的实例ID保持一致（mappingId + connectorId + suffix）

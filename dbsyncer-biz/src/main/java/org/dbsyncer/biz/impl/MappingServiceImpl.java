@@ -27,10 +27,11 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
@@ -95,7 +96,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private ConnectorProfile connectorProfile;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private TaskProfile taskProfile;
@@ -138,10 +142,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, model);
 
-        String id = profileComponent.addConfigModel(model);
+        String id = taskProfile.addTask(model);
         // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
         refreshMappingTables(id);
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = taskProfile.getTask(id, Mapping.class);
 
         // 匹配相似表（异步）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
@@ -161,7 +165,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String copy(String id) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = taskProfile.getTask(id, Mapping.class);
         Assert.notNull(mapping, "The mapping id is invalid.");
 
         String json = JsonUtil.objToJson(mapping);
@@ -171,7 +175,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
         mappingChecker.addMeta(newMapping);
 
-        profileComponent.addConfigModel(newMapping);
+        taskProfile.addTask(newMapping);
         preloadTemplate.reConnect(newMapping);
         log(LogType.MappingLog.COPY, newMapping);
 
@@ -210,7 +214,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             // 更新meta
             tableGroupService.updateMeta(mapping, metaSnapshot);
-            profileComponent.editConfigModel(model);
+            taskProfile.updateTask(model);
         }
         // 统计总数
         submitMappingCountTask(mapping, metaSnapshot);
@@ -233,7 +237,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             tableGroupProfile.removeTableGroupsByTaskId(id);
 
             // 删除任务级 meta
-            profileComponent.removeConfigModel(metaId);
+            metaProfile.removeMeta(metaId);
             log(LogType.MetaLog.DELETE, meta);
 
             // 删除驱动表映射关系
@@ -246,7 +250,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             connectorFactory.disconnect(targetInstanceId);
 
             // 删除驱动
-            profileComponent.removeConfigModel(id);
+            taskProfile.deleteTask(id);
             log(LogType.MappingLog.DELETE, mapping);
         }
         return "驱动删除成功";
@@ -254,20 +258,20 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public MappingVO getMapping(String id) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = taskProfile.getTask(id, Mapping.class);
         return convertMapping2Vo(mapping);
     }
 
     @Override
     public MappingCustomTableVO getMappingCustomTable(String id, String type) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = taskProfile.getTask(id, Mapping.class);
         MappingCustomTableVO vo = new MappingCustomTableVO();
         vo.setId(mapping.getId());
         vo.setName(mapping.getName());
         boolean isSource = StringUtil.equals("source", type);
         List<Table> tables = isSource ? mapping.getSourceTable() : mapping.getTargetTable();
         String connectorId = isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId();
-        ConnectorConfig config = profileComponent.getConnector(connectorId).getConfig();
+        ConnectorConfig config = connectorProfile.getConnector(connectorId).getConfig();
         ConnectorService<?, ?> connectorService = connectorFactory.getConnectorService(config);
         vo.setConnectorConfig(config);
         vo.setExtendedType(connectorService.getExtendedTableType().getCode());
@@ -386,11 +390,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String refreshMappingTables(String id) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = taskProfile.getTask(id, Mapping.class);
         Assert.notNull(mapping, "The mapping id is invalid.");
         mapping.setSourceTable(updateConnectorTables(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX));
         mapping.setTargetTable(updateConnectorTables(mapping, ConnectorInstanceUtil.TARGET_SUFFIX));
-        profileComponent.editConfigModel(mapping);
+        taskProfile.updateTask(mapping);
         return "刷新驱动表成功";
     }
 
@@ -490,7 +494,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             saveCustomTable(mapping, params);
-            profileComponent.editConfigModel(mapping);
+            taskProfile.updateTask(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
@@ -503,7 +507,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             removeCustomTable(mapping, params);
-            profileComponent.editConfigModel(mapping);
+            taskProfile.updateTask(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
@@ -517,7 +521,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setMappingId(mapping.getId());
         task.setMetaSnapshot(metaSnapshot);
         task.setParserComponent(parserComponent);
-        task.setProfileComponent(profileComponent);
+        task.setSystemConfigProfile(systemConfigProfile);
+        task.setConnectorProfile(connectorProfile);
+        task.setTaskProfile(taskProfile);
         task.setTableGroupProfile(tableGroupProfile);
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
@@ -532,7 +538,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         MappingMatchTableTask task = new MappingMatchTableTask();
         task.setMappingId(mapping.getId());
         task.setTableGroupService(tableGroupService);
-        task.setProfileComponent(profileComponent);
+        task.setTaskProfile(taskProfile);
         task.setParserComponent(parserComponent);
         task.setTableGroupProfile(tableGroupProfile);
         task.setConnectorFactory(connectorFactory);
@@ -578,8 +584,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         BeanUtils.copyProperties(meta, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
 
-        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
-        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Connector s = connectorProfile.getConnector(mapping.getSourceConnectorId());
+        Connector t = connectorProfile.getConnector(mapping.getTargetConnectorId());
         MappingVO vo = new MappingVO(s, t, metaVo);
         BeanUtils.copyProperties(mapping, vo);
         // 全量表列表体积大，下拉/搜索走 searchTables 分页；VO 不回传
@@ -599,18 +605,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         }
         logger.warn("驱动 Meta 缺失，尝试重建. mappingId:{}, name:{}, metaId:{}", mapping.getId(), mapping.getName(), metaId);
         mappingChecker.addMeta(mapping);
-        profileComponent.editConfigModel(mapping);
+        taskProfile.updateTask(mapping);
         return metaProfile.getMeta(mapping.getMetaId());
     }
 
     /**
      * 检查是否存在驱动
-     *
-     * @param mappingId
-     * @return
      */
     private Mapping assertMappingExist(String mappingId) {
-        Mapping mapping = profileComponent.getMapping(mappingId);
+        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
         Assert.notNull(mapping, "驱动不存在.");
         return mapping;
     }
@@ -705,7 +708,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
             meta.getFail().set(0);
             meta.getSuccess().set(0);
-            profileComponent.editConfigModel(meta);
+            metaProfile.updateMeta(meta);
         }
     }
 

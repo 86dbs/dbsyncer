@@ -8,12 +8,11 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.common.util.TaskSplitUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -151,7 +150,7 @@ public class ConnectorProfileImpl implements ConnectorProfile {
 
     @Override
     public String addConnector(Connector connector) {
-        return operationTemplate.execute(new OperationConfig(connector, CommandEnum.OPR_ADD));
+        return operationTemplate.execute(connector, CommandEnum.OPR_ADD);
     }
 
     @Override
@@ -165,12 +164,12 @@ public class ConnectorProfileImpl implements ConnectorProfile {
 
     @Override
     public String updateConnector(Connector connector) {
-        return operationTemplate.execute(new OperationConfig(connector, CommandEnum.OPR_EDIT));
+        return operationTemplate.execute(connector, CommandEnum.OPR_EDIT);
     }
 
     @Override
     public void removeConnector(String id) {
-        operationTemplate.remove(new OperationConfig(id));
+        storageService.remove(StorageEnum.CONNECTOR, id);
     }
 
     @Override

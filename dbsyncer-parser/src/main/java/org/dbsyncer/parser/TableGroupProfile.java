@@ -95,7 +95,7 @@ public interface TableGroupProfile {
     /**
      * 是否已存在相同源表+目标表映射（库侧等值查询，不扫全表）。
      */
-    boolean existsTableGroup(String taskId, String sourceTable, String targetTable);
+    boolean existTableGroup(String taskId, String sourceTable, String targetTable);
 
     List<String> listTableGroupIds(String taskId);
 
@@ -109,8 +109,4 @@ public interface TableGroupProfile {
      */
     void pageScanTableGroupsByTaskId(Consumer<TableGroup> consumer);
 
-    /**
-     * 旧版 JSON 导入/导出快照中，任务下 table_group 分组键（{@code tableGroup_{taskId}}）。
-     */
-    String getPreloadGroupKey(String taskId);
 }

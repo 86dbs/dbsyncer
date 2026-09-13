@@ -7,7 +7,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
@@ -22,25 +21,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Version 1.0.0
- * @Author AE86
- * @Date 2023-11-12 01:32
+ * @version 1.0.0
+ * @author AE86
+ * @date 2023-11-12 01:32
  */
 public final class ParserConsumer implements Watcher {
 
     private final BufferActuatorRouterService bufferActuatorRouter;
     private final MetaProfile metaProfile;
-    private final ProfileComponent profileComponent;
     private final PluginFactory pluginFactory;
     private final LogService logService;
     private final String metaId;
 
-    public ParserConsumer(BufferActuatorRouterService bufferActuatorRouter, MetaProfile metaProfile, ProfileComponent profileComponent,
+    public ParserConsumer(BufferActuatorRouterService bufferActuatorRouter, MetaProfile metaProfile,
                           PluginFactory pluginFactory, LogService logService, String metaId,
                           List<TableGroup> tableGroups, int channelSize) {
         this.bufferActuatorRouter = bufferActuatorRouter;
         this.metaProfile = metaProfile;
-        this.profileComponent = profileComponent;
         this.pluginFactory = pluginFactory;
         this.logService = logService;
         this.metaId = metaId;
@@ -62,7 +59,7 @@ public final class ParserConsumer implements Watcher {
         Meta meta = metaProfile.getMeta(metaId);
         if (meta != null) {
             meta.setSnapshot(snapshot);
-            profileComponent.editConfigModel(meta);
+            metaProfile.updateMeta(meta);
         }
     }
 

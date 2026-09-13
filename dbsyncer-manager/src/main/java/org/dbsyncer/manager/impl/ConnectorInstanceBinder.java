@@ -5,7 +5,7 @@ package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -29,7 +29,7 @@ import javax.annotation.Resource;
 public class ConnectorInstanceBinder {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -146,7 +146,7 @@ public class ConnectorInstanceBinder {
 
     private ConnectorInstance connect(String uniqueId, String connectorId, String database, String schema, String suffix) {
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, connectorId, suffix);
-        Connector connector = profileComponent.getConnector(connectorId);
+        Connector connector = connectorProfile.getConnector(connectorId);
         Assert.notNull(connector, "连接器不存在");
         ConnectorInstance instance = connectorFactory.connect(instanceId, connector.getConfig(), database, schema);
         Assert.notNull(instance, "Connector instance can not null");

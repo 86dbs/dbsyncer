@@ -14,7 +14,7 @@ import org.dbsyncer.parser.model.SystemConfig;
 public interface SystemConfigProfile {
 
     /**
-     * 获取系统配置（无则 null）。
+     * 获取系统配置。
      */
     SystemConfig getSystemConfig();
 
@@ -32,9 +32,4 @@ public interface SystemConfigProfile {
      * 从 system.json 数组导入。
      */
     void importFromJson(String json);
-
-    /**
-     * 删除系统配置。
-     */
-    void removeSystemConfig(String id);
 }

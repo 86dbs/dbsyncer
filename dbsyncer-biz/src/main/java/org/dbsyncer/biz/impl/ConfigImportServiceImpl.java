@@ -20,7 +20,6 @@ import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TaskImportResult;
 import org.dbsyncer.sdk.spi.TaskService;
@@ -93,7 +92,6 @@ public class ConfigImportServiceImpl implements ConfigImportService {
                     info.getAppName(), info.getVersion(), info.getCreateTime());
 
             systemConfigProfile.importFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.SYSTEM));
-            ensureSystemConfig();
             userProfile.importFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.USER));
             connectorProfile.importConnectorsFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.CONNECTOR));
 
@@ -114,22 +112,6 @@ public class ConfigImportServiceImpl implements ConfigImportService {
         } catch (Exception e) {
             throw new BizException("导入配置 ZIP 失败: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * 导入后若无系统配置则补默认行，避免增量启动等路径 getSystemConfig() 为空 NPE。
-     */
-    private void ensureSystemConfig() {
-        if (systemConfigProfile.getSystemConfig() != null) {
-            return;
-        }
-        SystemConfig config = new SystemConfig();
-        config.setName("系统配置");
-        long now = System.currentTimeMillis();
-        config.setCreateTime(now);
-        config.setUpdateTime(now);
-        systemConfigProfile.saveSystemConfig(config);
-        logger.warn("Imported package has no system config, created default system config");
     }
 
     /**

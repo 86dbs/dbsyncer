@@ -6,7 +6,7 @@ package org.dbsyncer.parser.flush.impl;
 import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -26,9 +26,9 @@ import java.util.concurrent.Executor;
 /**
  * 持久化执行器
  *
- * @Version 1.0.0
- * @Author AE86
- * @Date 2023-03-27 16:50
+ * @version 1.0.0
+ * @author AE86
+ * @date 2023-03-27 16:50
  */
 @Component
 public final class StorageBufferActuator extends AbstractBufferActuator<StorageRequest, StorageResponse> {
@@ -45,7 +45,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     private Executor storageExecutor;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -82,7 +82,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
             meta = metaProfile.getMeta(shardId);
         }
         if (meta != null) {
-            Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+            Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
             if (mapping != null) {
                 logger.info("{}, data={}", mapping.getName(), request.getRow());
             }

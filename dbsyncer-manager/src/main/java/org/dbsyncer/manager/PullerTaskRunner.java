@@ -7,7 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.manager.impl.FullIncrementPuller;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -31,7 +31,7 @@ import java.util.Map;
 public final class PullerTaskRunner implements TaskRunner {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     @Resource
     private ClusterService clusterService;
@@ -78,7 +78,7 @@ public final class PullerTaskRunner implements TaskRunner {
         if (clusterService.isStandalone()) {
             return;
         }
-        Mapping mapping = profileComponent.getMapping(taskId);
+        Mapping mapping = taskProfile.getTask(taskId, Mapping.class);
         connectorInstanceBinder.release(mapping);
     }
 
@@ -107,7 +107,7 @@ public final class PullerTaskRunner implements TaskRunner {
     }
 
     private Mapping requireMapping(String taskId) {
-        Mapping mapping = profileComponent.getMapping(taskId);
+        Mapping mapping = taskProfile.getTask(taskId, Mapping.class);
         Assert.notNull(mapping, String.format("同步任务不存在: %s", taskId));
         return mapping;
     }

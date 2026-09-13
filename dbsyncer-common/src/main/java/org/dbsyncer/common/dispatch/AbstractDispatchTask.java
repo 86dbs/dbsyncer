@@ -9,9 +9,9 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-22 23:34
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-22 23:34
  */
 public abstract class AbstractDispatchTask implements DispatchTask {
 

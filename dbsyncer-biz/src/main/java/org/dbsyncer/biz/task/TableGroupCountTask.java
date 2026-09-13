@@ -17,9 +17,9 @@ import java.util.List;
 /**
  * 统计驱动表总数任务
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-24 01:23
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-24 01:23
  */
 public class TableGroupCountTask extends AbstractCountTask {
 
@@ -29,7 +29,7 @@ public class TableGroupCountTask extends AbstractCountTask {
 
     @Override
     public void execute() throws Exception {
-        Mapping mapping = profileComponent.getMapping(mappingId);
+        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
         if (shouldStop(mapping)) {
             return;
         }
@@ -42,7 +42,7 @@ public class TableGroupCountTask extends AbstractCountTask {
                     logger.warn("驱动被修改, 提前结束任务 ({},{})", mapping.getName(), mapping.getModel());
                     return;
                 }
-                mapping = profileComponent.getMapping(mappingId);
+                mapping = taskProfile.getTask(mappingId, Mapping.class);
                 updateTableGroupCount(mapping, tableGroupProfile.getTableGroup(tableGroupId));
             }
         }

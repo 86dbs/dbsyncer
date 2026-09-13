@@ -5,8 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorConfigService;
-import org.dbsyncer.biz.checker.Checker;
-import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.biz.checker.impl.connector.ConnectorChecker;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -16,7 +15,6 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -59,9 +57,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     private final Map<String, Boolean> health = new ConcurrentHashMap<>();
 
     @Resource
-    private ProfileComponent profileComponent;
-
-    @Resource
     private ConnectorProfile connectorProfile;
 
     @Resource
@@ -74,22 +69,22 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     private LogService logService;
 
     @Resource
-    private Checker connectorChecker;
+    private ConnectorChecker connectorChecker;
 
     @Resource
     private ClusterService clusterService;
 
     @Override
     public String add(Map<String, String> params) {
-        ConfigModel model = connectorChecker.checkAddConfigModel(params);
-        log(LogType.ConnectorLog.INSERT, model);
+        Connector connector = connectorChecker.checkAddConfigModel(params);
+        log(LogType.ConnectorLog.INSERT, connector);
 
-        return profileComponent.addConfigModel(model);
+        return connectorProfile.addConnector(connector);
     }
 
     @Override
     public String copy(String id) {
-        Connector connector = profileComponent.getConnector(id);
+        Connector connector = connectorProfile.getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
         ConnectorConfig config = connector.getConfig();
@@ -113,29 +108,30 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         if (connector.isTarget()) {
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, "1");
         }
-        ConfigModel model = connectorChecker.checkAddConfigModel(params);
+
+        Connector model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);
 
-        return profileComponent.addConfigModel(model);
+        return connectorProfile.addConnector(model);
     }
 
     @Override
     public String edit(Map<String, String> params) {
-        ConfigModel model = connectorChecker.checkEditConfigModel(params);
+        Connector model = connectorChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
 
-        return profileComponent.editConfigModel(model);
+        return connectorProfile.updateConnector(model);
     }
 
     @Override
     public String remove(String id) {
         assertConnectorNotInUse(id);
 
-        Connector connector = profileComponent.getConnector(id);
+        Connector connector = connectorProfile.getConnector(id);
         if (connector != null) {
             connectorFactory.disconnect(connector.getId());
             log(LogType.ConnectorLog.DELETE, connector);
-            profileComponent.removeConfigModel(id);
+            connectorProfile.removeConnector(id);
         }
         return "删除连接器成功!";
     }
@@ -198,18 +194,18 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Override
     public Connector getConnector(String id) {
-        return profileComponent.getConnector(id);
+        return connectorProfile.getConnector(id);
     }
 
     @Override
     public List<String> getDatabase(String id) {
-        Connector connector = profileComponent.getConnector(id);
+        Connector connector = connectorProfile.getConnector(id);
         return connector != null ? connector.getDatabases() : Collections.emptyList();
     }
 
     @Override
     public List<String> getSchema(String id, String database) {
-        Connector connector = profileComponent.getConnector(id);
+        Connector connector = connectorProfile.getConnector(id);
         if (connector == null) {
             return Collections.emptyList();
         }
@@ -226,7 +222,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Override
     public List<Connector> getConnectorAll() {
-        return profileComponent.getConnectorAll().stream().sorted(Comparator.comparing(Connector::getUpdateTime).reversed()).collect(Collectors.toList());
+        return connectorProfile.getConnectorAll().stream().sorted(Comparator.comparing(Connector::getUpdateTime).reversed()).collect(Collectors.toList());
     }
 
     @Override
@@ -256,7 +252,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Override
     public void refreshHealth() {
-        List<Connector> list = profileComponent.getConnectorAll();
+        List<Connector> list = connectorProfile.getConnectorAll();
         if (CollectionUtils.isEmpty(list)) {
             if (!CollectionUtils.isEmpty(health)) {
                 health.clear();
@@ -290,7 +286,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         connector.setStatus(newStatus);
         connector.setUpdateTime(System.currentTimeMillis());
         try {
-            profileComponent.editConfigModel(connector);
+            connectorProfile.updateConnector(connector);
         } catch (Exception e) {
             logger.warn("更新连接器状态失败, connectorId={}, status={}, err={}", connector.getId(), newStatus, e.getMessage());
         }
@@ -298,7 +294,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Override
     public boolean isAlive(String id) {
-        Connector connector = profileComponent.getConnector(id);
+        Connector connector = connectorProfile.getConnector(id);
         if (connector == null || connector.getConfig() == null) {
             return false;
         }
@@ -325,14 +321,14 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Override
     public Object getPosition(String mappingId) {
-        Mapping mapping = profileComponent.getMapping(mappingId);
+        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
         Assert.notNull(mapping, "Mapping can not be null.");
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
         ConnectorInstance connectorInstance;
         if (connectorFactory.contains(instanceId)) {
             connectorInstance = connectorFactory.connect(instanceId);
         } else {
-            Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+            Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
             Assert.notNull(connector, "源连接器不存在");
             connectorInstance = connectorFactory.connect(instanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
         }

@@ -4,23 +4,20 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.model.TokenInfo;
 import org.dbsyncer.biz.util.JwtUtil;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.JwtSecretVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -63,10 +60,7 @@ public class JwtSecretManager {
     private static final Logger logger = LoggerFactory.getLogger(JwtSecretManager.class);
 
     @Resource
-    private SystemConfigService systemConfigService;
-
-    @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     /**
      * 默认密钥长度（字节数）
@@ -175,7 +169,7 @@ public class JwtSecretManager {
      * @return JWT密钥配置，如果不存在返回null
      */
     private JwtSecretConfig getJwtSecretConfig() {
-        SystemConfig systemConfig = systemConfigService.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         Assert.notNull(systemConfig, "系统服务暂不可用，请重试");
         JwtSecretConfig config = systemConfig.getJwtSecretConfig();
         if (config == null || CollectionUtils.isEmpty(config.getSecrets())) {
@@ -218,7 +212,7 @@ public class JwtSecretManager {
 
             // 保存到系统配置
             systemConfig.setJwtSecretConfig(config);
-            profileComponent.editConfigModel(systemConfig);
+            systemConfigProfile.saveSystemConfig(systemConfig);
             logger.info("生成新的JWT密钥成功，版本: {}，历史密钥数量: {}", newVersion, versions.size());
         } catch (Exception e) {
             logger.error("生成并保存JWT密钥失败", e);

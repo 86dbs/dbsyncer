@@ -8,20 +8,16 @@ import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TaskProfile;
-import org.dbsyncer.parser.command.impl.PreloadCommand;
-import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -63,22 +59,17 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /**
-     * 版本信息
-     */
-    public static final String DBS_VERSION_INFO = "versionInfo";
-
     @Resource
-    private ProfileComponent profileComponent;
-
-    @Resource
-    private TableGroupProfile tableGroupProfile;
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private MetaProfile metaProfile;
 
     @Resource
     private TaskProfile taskProfile;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private ManagerFactory managerFactory;
@@ -191,7 +182,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * @return 已有或新建的系统配置
      */
     private SystemConfig initSystemConfigIfAbsent() {
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         if (systemConfig != null) {
             return systemConfig;
         }
@@ -200,7 +191,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         long now = System.currentTimeMillis();
         systemConfig.setCreateTime(now);
         systemConfig.setUpdateTime(now);
-        profileComponent.addConfigModel(systemConfig);
+        systemConfigProfile.saveSystemConfig(systemConfig);
         logger.warn("No system config found, created default system config");
         return systemConfig;
     }
@@ -287,33 +278,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 targetConnectorId, targetDatabase, targetSchema);
     }
 
-    private void reload(Map<String, Map> map, CommandEnum commandEnum) {
-        reload(map, commandEnum, commandEnum.getModelType());
-    }
-
-    private void reload(Map<String, Map> map, CommandEnum commandEnum, String groupId) {
-        Map config = map.get(groupId);
-        if (null == config) {
-            return;
-        }
-        Group group = JsonUtil.jsonToObj(config.toString(), Group.class);
-        if (null == group || group.isEmpty()) {
-            return;
-        }
-
-        for (String id : group.getIndex()) {
-            Map m = map.get(id);
-            ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, m.toString()));
-            profileComponent.addConfigModel(model);
-            // Load tableGroups
-            if (CommandEnum.PRELOAD_MAPPING == commandEnum) {
-                reload(map, CommandEnum.PRELOAD_TABLE_GROUP, tableGroupProfile.getPreloadGroupKey(model.getId()));
-            }
-        }
-    }
-
     private void loadConnectorInstance() {
-        List<Connector> list = profileComponent.getConnectorAll();
+        List<Connector> list = connectorProfile.getConnectorAll();
         if (!CollectionUtils.isEmpty(list)) {
             list.forEach(connector -> generalExecutor.execute(() -> {
                 try {
@@ -379,7 +345,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             try {
                 meta.setState(CommonTaskStatusEnum.READY.getCode());
                 meta.setUpdateTime(System.currentTimeMillis());
-                profileComponent.editConfigModel(meta);
+                metaProfile.updateMeta(meta);
                 taskService.start(task.getId());
                 logger.info("已恢复运行中任务: type={}, taskId={}, name={}", task.getType(), task.getId(), task.getName());
             } catch (Exception e) {

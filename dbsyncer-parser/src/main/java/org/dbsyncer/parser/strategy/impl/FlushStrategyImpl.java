@@ -12,7 +12,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
@@ -50,7 +50,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -64,7 +64,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     @Override
     public void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
         // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
-        if (!profileComponent.getSystemConfig().isEnableStorageWriteFull()) {
+        if (!systemConfigProfile.getSystemConfig().isEnableStorageWriteFull()) {
             // 不记录全量数据，只统计成功失败总数
             refreshTotal(result);
 
@@ -174,7 +174,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 long now = Instant.now().toEpochMilli();
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);
-                profileComponent.addConfigModel(tableMeta);
+                metaProfile.updateMeta(tableMeta);
             }
             metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).success(success).fail(fail));
         }
@@ -183,7 +183,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap) {
         refreshTotal(result);
 
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         // 是否写失败数据
         if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
             final String error = StringUtil.substring(result.getError().toString(), 0, systemConfig.getMaxStorageErrorLength());

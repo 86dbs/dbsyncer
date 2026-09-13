@@ -7,10 +7,13 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -29,9 +32,9 @@ import java.util.Map;
 /**
  * 抽象类统计驱动总数任务
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-25 01:00
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-25 01:00
  */
 public abstract class AbstractCountTask extends AbstractDispatchTask {
 
@@ -41,7 +44,11 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
 
     protected ParserComponent parserComponent;
 
-    protected ProfileComponent profileComponent;
+    protected SystemConfigProfile systemConfigProfile;
+
+    protected ConnectorProfile connectorProfile;
+
+    protected TaskProfile taskProfile;
 
     protected TableGroupProfile tableGroupProfile;
 
@@ -59,8 +66,16 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         this.parserComponent = parserComponent;
     }
 
-    public void setProfileComponent(ProfileComponent profileComponent) {
-        this.profileComponent = profileComponent;
+    public void setSystemConfigProfile(SystemConfigProfile systemConfigProfile) {
+        this.systemConfigProfile = systemConfigProfile;
+    }
+
+    public void setConnectorProfile(ConnectorProfile connectorProfile) {
+        this.connectorProfile = connectorProfile;
+    }
+
+    public void setTaskProfile(TaskProfile taskProfile) {
+        this.taskProfile = taskProfile;
     }
 
     public void setTableGroupProfile(TableGroupProfile tableGroupProfile) {
@@ -85,7 +100,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         Map<String, String> command = parserComponent.getCommand(mapping, group);
         String sourceConnectorId = mapping.getSourceConnectorId();
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mappingId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
-        ConnectorConfig config = profileComponent.getConnector(sourceConnectorId).getConfig();
+        ConnectorConfig config = connectorProfile.getConnector(sourceConnectorId).getConfig();
         ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         Assert.notNull(command, "command can not null");
         ConnectorService connectorService = connectorFactory.getConnectorService(config);
@@ -98,7 +113,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
 
         long count = connectorService.getCount(connectorInstance, metaContext);
         tableGroup.getSourceTable().setCount(count);
-        profileComponent.editConfigModel(tableGroup);
+        tableGroupProfile.editTableGroup(tableGroup);
         logger.info("{}表{}, 总数:{}, {}ms", mapping.getName(), tableGroup.getSourceTable().getName(), count, (Instant.now().toEpochMilli() - now));
     }
 
@@ -107,9 +122,10 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
     }
 
     private void setRsaConfig(DefaultMetaContext context) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig.isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
-            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            context.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 }

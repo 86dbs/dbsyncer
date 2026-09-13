@@ -12,7 +12,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class BaseServiceImpl {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -83,7 +83,7 @@ public class BaseServiceImpl {
 
     protected void log(LogType log, TableGroup tableGroup) {
         if (null != tableGroup) {
-            Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
+            Mapping mapping = taskProfile.getTask(tableGroup.getTaskId(), Mapping.class);
             if (null != mapping) {
                 // 新增驱动知识库(全量)映射关系:[My_User] >> [My_User_Target]
                 String name = mapping.getName();

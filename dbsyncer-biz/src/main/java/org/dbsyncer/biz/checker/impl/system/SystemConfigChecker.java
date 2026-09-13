@@ -15,7 +15,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public class SystemConfigChecker extends AbstractChecker {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private LogService logService;
@@ -48,19 +48,19 @@ public class SystemConfigChecker extends AbstractChecker {
     private RsaManager rsaManager;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public SystemConfig checkAddConfigModel(Map<String, String> params) {
         SystemConfig systemConfig = new SystemConfig();
         systemConfig.setName("系统配置");
 
         // 修改基本配置
         this.modifyConfigModel(systemConfig, params);
 
-        profileComponent.addConfigModel(systemConfig);
+        systemConfigProfile.saveSystemConfig(systemConfig);
         return systemConfig;
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public SystemConfig checkEditConfigModel(Map<String, String> params) {
         printParams(params);
         Assert.notEmpty(params, "Config check params is null.");
         Map<String, Object> newParams = new HashMap<>();
@@ -77,7 +77,7 @@ public class SystemConfigChecker extends AbstractChecker {
         }
         params.put("watermark", watermark);
 
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
         BeanUtil.mapToBean(newParams, systemConfig);
         // 修改 API 密钥配置

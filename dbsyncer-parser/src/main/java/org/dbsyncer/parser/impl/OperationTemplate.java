@@ -9,7 +9,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -62,11 +61,7 @@ public final class OperationTemplate {
         return parseRow(data.get(0), clazz);
     }
 
-    public String execute(OperationConfig config) {
-        ConfigModel model = config.getModel();
-        Assert.notNull(model, "ConfigModel can not be null.");
-        CommandEnum cmd = config.getCommandEnum();
-        Assert.notNull(cmd, "CommandEnum can not be null.");
+    public String execute(ConfigModel model, CommandEnum cmd) {
         Assert.isTrue(!(model instanceof UserConfig), "UserConfig must go through UserProfile.syncUserConfig");
         if (CommandEnum.OPR_ADD == cmd) {
             if (StringUtil.isBlank(model.getId())) {
@@ -105,16 +100,6 @@ public final class OperationTemplate {
         StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0).getType());
         storageService.addBatch(type, null, paramsList);
         return models.stream().map(ConfigModel::getId).collect(Collectors.toList());
-    }
-
-    public void remove(OperationConfig config) {
-        String id = config.getId();
-        Assert.hasText(id, "ID can not be empty.");
-        storageService.remove(StorageEnum.CONFIG, id);
-        storageService.remove(StorageEnum.USER, id);
-        storageService.remove(StorageEnum.CONNECTOR, id);
-        storageService.remove(StorageEnum.TASK, id);
-        storageService.remove(StorageEnum.META, id);
     }
 
     /**

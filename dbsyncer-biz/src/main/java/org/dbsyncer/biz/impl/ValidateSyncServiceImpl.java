@@ -24,10 +24,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskProfile;
@@ -95,9 +95,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     private ValidateSyncDetailService validateSyncDetailService;
 
     @Resource
-    private ProfileComponent profileComponent;
-
-    @Resource
     private TaskProfile taskProfile;
 
     @Resource
@@ -108,6 +105,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private TaskDetailProfile taskDetailProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private TableGroupService tableGroupService;
@@ -152,7 +152,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         // 关联同步任务
         String mappingId = params.get("mappingId");
         if (StringUtil.isNotBlank(mappingId)) {
-            Mapping mapping = profileComponent.getMapping(mappingId);
+            Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
             Assert.notNull(mapping, "mapping is not exist");
             task.setSourceConnectorId(mapping.getSourceConnectorId());
             task.setSourceDatabase(mapping.getSourceDatabase());
@@ -324,7 +324,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 mappingChecker.sortTableGroup(groupAll, params);
                 for (TableGroup g : groupAll) {
                     validateSyncTableGroupChecker.mergeConfig(task, g);
-                    profileComponent.editConfigModel(g);
+                    tableGroupProfile.editTableGroup(g);
                 }
             }
         } else {
@@ -337,7 +337,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                         continue;
                     }
                     validateSyncTableGroupChecker.mergeConfig(task, g);
-                    profileComponent.editConfigModel(g);
+                    tableGroupProfile.editTableGroup(g);
                 }
             });
         }
@@ -707,7 +707,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                     continue;
                 }
                 g.setIndex(i--);
-                profileComponent.editConfigModel(g);
+                tableGroupProfile.editTableGroup(g);
             }
         }
     }
@@ -718,8 +718,8 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         }
 
         ValidateSyncTask validateSyncTask = (ValidateSyncTask) task;
-        Connector s = profileComponent.getConnector(validateSyncTask.getSourceConnectorId());
-        Connector t = profileComponent.getConnector(validateSyncTask.getTargetConnectorId());
+        Connector s = connectorProfile.getConnector(validateSyncTask.getSourceConnectorId());
+        Connector t = connectorProfile.getConnector(validateSyncTask.getTargetConnectorId());
         ValidateSyncTaskVO vo = new ValidateSyncTaskVO(s, t);
         BeanUtils.copyProperties(task, vo);
         Meta taskMeta = metaProfile.getMetaByTaskId(validateSyncTask.getId(), TaskLevelEnum.TASK);

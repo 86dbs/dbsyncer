@@ -5,10 +5,9 @@ package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -24,9 +23,9 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-01-08 15:17
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-01-08 15:17
  */
 @Component
 public class ConnectorChecker extends AbstractChecker {
@@ -34,13 +33,13 @@ public class ConnectorChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ProfileComponent profileComponent;
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public Connector checkAddConfigModel(Map<String, String> params) {
         printParams(params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String connectorType = params.get("connectorType");
@@ -63,11 +62,11 @@ public class ConnectorChecker extends AbstractChecker {
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public Connector checkEditConfigModel(Map<String, String> params) {
         printParams(params);
         Assert.notEmpty(params, "ConnectorChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Connector connector = profileComponent.getConnector(id);
+        Connector connector = connectorProfile.getConnector(id);
         Assert.notNull(connector, "Can not find connector.");
         ConnectorConfig config = connector.getConfig();
         // 修改基本配置

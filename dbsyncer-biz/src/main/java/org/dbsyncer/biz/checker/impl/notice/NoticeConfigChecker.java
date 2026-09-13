@@ -11,7 +11,7 @@ import org.dbsyncer.common.model.HttpNoticeChannel;
 import org.dbsyncer.common.model.MailNoticeChannel;
 import org.dbsyncer.common.model.WeChatNoticeChannel;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.springframework.stereotype.Component;
@@ -23,26 +23,26 @@ import java.util.Map;
 /**
  * 通知配置校验器
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2026-03-04 19:00
+ * @author AE86
+ * @version 1.0.0
+ * @date 2026-03-04 19:00
  */
 @Component
 public class NoticeConfigChecker extends AbstractChecker {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public SystemConfig checkAddConfigModel(Map<String, String> params) {
         throw new BizException("Unsupported method");
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public SystemConfig checkEditConfigModel(Map<String, String> params) {
         printParams(params);
         Assert.notEmpty(params, "Config check params is null.");
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
 
         if (systemConfig.getNoticeConfig() == null) {

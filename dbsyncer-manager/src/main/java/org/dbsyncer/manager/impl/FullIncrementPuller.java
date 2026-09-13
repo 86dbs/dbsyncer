@@ -8,7 +8,6 @@ import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
@@ -36,9 +35,6 @@ public final class FullIncrementPuller extends AbstractPuller {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Set<String> running = new CopyOnWriteArraySet<>();
-
-    @Resource
-    private ProfileComponent profileComponent;
 
     @Resource
     private MetaProfile metaProfile;
@@ -182,7 +178,7 @@ public final class FullIncrementPuller extends AbstractPuller {
         meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
         meta.getSnapshot().remove("tableProgress");
-        FullTableProgressUtil.clearAll(profileComponent, metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
-        profileComponent.editConfigModel(meta);
+        FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
+        metaProfile.updateMeta(meta);
     }
 }

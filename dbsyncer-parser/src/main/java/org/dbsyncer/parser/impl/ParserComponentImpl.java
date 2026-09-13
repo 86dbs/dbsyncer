@@ -9,8 +9,9 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
@@ -74,7 +75,10 @@ public class ParserComponentImpl implements ParserComponent {
     private FlushStrategy flushStrategy;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private ApplicationContext applicationContext;
@@ -284,9 +288,9 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     private void setRsaConfig(FullPluginContext context) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        if (systemConfigProfile.getSystemConfig().isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
-            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            context.setRsaConfig(systemConfigProfile.getSystemConfig().getRsaConfig());
         }
     }
 
@@ -324,12 +328,9 @@ public class ParserComponentImpl implements ParserComponent {
 
     /**
      * 获取连接配置
-     *
-     * @param connectorId
-     * @return
      */
     private ConnectorConfig getConnectorConfig(String connectorId) {
-        return profileComponent.getConnector(connectorId).getConfig();
+        return connectorProfile.getConnector(connectorId).getConfig();
     }
 
     /**
@@ -347,7 +348,7 @@ public class ParserComponentImpl implements ParserComponent {
         if (connectorFactory.contains(instanceId)) {
             return connectorFactory.connect(instanceId);
         }
-        Connector connector = profileComponent.getConnector(connectorId);
+        Connector connector = connectorProfile.getConnector(connectorId);
         Assert.notNull(connector, "连接器不存在");
         return connectorFactory.connect(instanceId, connector.getConfig(), catalog, schema);
     }

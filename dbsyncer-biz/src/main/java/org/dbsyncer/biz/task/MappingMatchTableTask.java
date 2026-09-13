@@ -13,8 +13,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -42,7 +42,7 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
 
     private TableGroupService tableGroupService;
 
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     private ParserComponent parserComponent;
 
@@ -66,7 +66,7 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
 
     @Override
     public void execute() {
-        Mapping mapping = profileComponent.getMapping(mappingId);
+        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
         if (mapping == null) {
             logger.warn("Mapping not found, skip match table, mappingId={}", mappingId);
             return;
@@ -115,7 +115,6 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
         task.setMappingId(mapping.getId());
         task.setMetaSnapshot(null);
         task.setParserComponent(parserComponent);
-        task.setProfileComponent(profileComponent);
         task.setTableGroupProfile(tableGroupProfile);
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
@@ -131,8 +130,8 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
         this.tableGroupService = tableGroupService;
     }
 
-    public void setProfileComponent(ProfileComponent profileComponent) {
-        this.profileComponent = profileComponent;
+    public void setTaskProfile(TaskProfile taskProfile) {
+        this.taskProfile = taskProfile;
     }
 
     public void setParserComponent(ParserComponent parserComponent) {

@@ -12,7 +12,6 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
@@ -42,9 +41,9 @@ import java.util.concurrent.Executor;
 /**
  * 全量同步（表级并发，对齐数据迁移：threadNum 控制表并发，单表内读写串行）。
  *
- * @Version 1.0.0
- * @Author AE86
- * @Date 2020-04-26 15:28
+ * @version 1.0.0
+ * @author AE86
+ * @date 2020-04-26 15:28
  */
 @Component
 public final class FullPuller extends AbstractPuller implements ApplicationListener<FullRefreshEvent> {
@@ -58,9 +57,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Resource
     private ParserComponent parserComponent;
-
-    @Resource
-    private ProfileComponent profileComponent;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -184,7 +180,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private void flush(Task task) {
         if (StringUtil.isNotBlank(task.getTableGroupId())) {
             String cursor = StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY);
-            FullTableProgressUtil.save(profileComponent, metaProfile, task.getTableGroupId(),
+            FullTableProgressUtil.save(metaProfile, task.getTableGroupId(),
                     FullTableProgressUtil.runningSnapshot(task.getPageIndex(), cursor));
         }
         synchronized (metaLock(task.getId())) {
@@ -199,23 +195,23 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             if (StringUtil.isBlank(task.getTableGroupId())) {
                 snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(task.getTableGroupIndex()));
             }
-            profileComponent.editConfigModel(meta);
+            metaProfile.updateMeta(meta);
         }
     }
 
     private void markTableDone(Task parent, String tableGroupId) {
-        FullTableProgressUtil.save(profileComponent, metaProfile, tableGroupId, FullTableProgressUtil.doneSnapshot());
+        FullTableProgressUtil.save(metaProfile, tableGroupId, FullTableProgressUtil.doneSnapshot());
         synchronized (metaLock(parent.getId())) {
             Meta meta = metaProfile.getMeta(parent.getId());
             Assert.notNull(meta, "检查meta为空.");
             refreshMetaTotals(meta);
             meta.setUpdateTime(Instant.now().toEpochMilli());
-            profileComponent.editConfigModel(meta);
+            metaProfile.updateMeta(meta);
         }
     }
 
     private void clearFullProgress(Task task, String mappingId) {
-        FullTableProgressUtil.clearAll(profileComponent, metaProfile, tableGroupProfile.listTableGroupIds(mappingId));
+        FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(mappingId));
         synchronized (metaLock(task.getId())) {
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
@@ -227,7 +223,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
             snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(),
                     String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
-            profileComponent.editConfigModel(meta);
+            metaProfile.updateMeta(meta);
         }
     }
 

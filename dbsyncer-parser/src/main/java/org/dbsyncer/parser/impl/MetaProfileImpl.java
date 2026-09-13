@@ -14,7 +14,6 @@ import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -45,7 +44,6 @@ import java.util.zip.ZipOutputStream;
  */
 @Component
 public class MetaProfileImpl implements MetaProfile {
-
 
     @Resource
     private StorageService storageService;
@@ -234,7 +232,7 @@ public class MetaProfileImpl implements MetaProfile {
 
     @Override
     public String addMeta(Meta meta) {
-        return operationTemplate.execute(new OperationConfig(meta, CommandEnum.OPR_ADD));
+        return operationTemplate.execute(meta, CommandEnum.OPR_ADD);
     }
 
     @Override
@@ -248,7 +246,7 @@ public class MetaProfileImpl implements MetaProfile {
 
     @Override
     public String updateMeta(Meta meta) {
-        return operationTemplate.execute(new OperationConfig(meta, CommandEnum.OPR_EDIT));
+        return operationTemplate.execute(meta, CommandEnum.OPR_EDIT);
     }
 
     @Override
@@ -272,7 +270,7 @@ public class MetaProfileImpl implements MetaProfile {
 
     @Override
     public void removeMeta(String id) {
-        operationTemplate.remove(new OperationConfig(id));
+        storageService.remove(StorageEnum.META, id);
     }
 
     @Override

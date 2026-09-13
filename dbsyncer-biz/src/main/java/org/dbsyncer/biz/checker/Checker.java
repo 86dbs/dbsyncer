@@ -13,17 +13,11 @@ public interface Checker {
 
     /**
      * 新增配置
-     *
-     * @param params
-     * @return
      */
     ConfigModel checkAddConfigModel(Map<String, String> params);
 
     /**
      * 修改配置
-     *
-     * @param params
-     * @return
      */
     ConfigModel checkEditConfigModel(Map<String, String> params);
 }

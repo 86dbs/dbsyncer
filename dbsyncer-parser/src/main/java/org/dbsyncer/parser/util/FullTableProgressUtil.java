@@ -8,7 +8,6 @@ import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
@@ -84,13 +83,11 @@ public abstract class FullTableProgressUtil {
      * 覆盖写单表进度到明细 Meta（无则创建）。
      * <p>已存在时经 {@link MetaProfile#updateMetaProgress} 写前重载，避免覆盖原子计数。
      *
-     * @param profileComponent 配置写入口（新建走 addConfigModel）
      * @param metaProfile      Meta 服务
      * @param tableGroupId     表映射 ID
      * @param snapshot         表级快照；null 表示清空快照且 state=READY
      */
-    public static void save(ProfileComponent profileComponent, MetaProfile metaProfile,
-                            String tableGroupId, CommonTaskSnapshot snapshot) {
+    public static void save(MetaProfile metaProfile, String tableGroupId, CommonTaskSnapshot snapshot) {
         if (metaProfile == null || StringUtil.isBlank(tableGroupId)) {
             return;
         }
@@ -103,11 +100,7 @@ public abstract class FullTableProgressUtil {
                 meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
                 meta.setCreateTime(now);
                 apply(meta, snapshot, now);
-                if (profileComponent != null) {
-                    profileComponent.addConfigModel(meta);
-                } else {
-                    metaProfile.addMeta(meta);
-                }
+                metaProfile.addMeta(meta);
                 return;
             }
             Map<String, String> newSnap = TaskSnapshotUtil.writeTableSnapshot(meta.getSnapshot(), snapshot, null);
@@ -121,19 +114,18 @@ public abstract class FullTableProgressUtil {
     /**
      * 清空任务下全部表明细进度（快照清空、state=READY；保留 success/fail 等计数）。
      *
-     * @param profileComponent 配置写入口
      * @param metaProfile      Meta 服务
      * @param tableGroupIds    表映射 ID 列表
      */
-    public static void clearAll(ProfileComponent profileComponent, MetaProfile metaProfile, List<String> tableGroupIds) {
-        if (profileComponent == null || metaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
+    public static void clearAll(MetaProfile metaProfile, List<String> tableGroupIds) {
+        if (metaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
             return;
         }
         for (String tableGroupId : tableGroupIds) {
             if (StringUtil.isBlank(tableGroupId)) {
                 continue;
             }
-            save(profileComponent, metaProfile, tableGroupId, null);
+            save(metaProfile, tableGroupId, null);
         }
     }
 
