@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 /**
- * 校验节点间共享密钥，保护 {@code /cluster/internal/**} 与 {@code /cluster/metrics}。
+ * 校验节点间共享密钥，保护 {@code /cluster/internal/**}。
  * <p>
  * 配置项 {@code dbsyncer.cluster.internal-token} 未设置时一律拒绝（生产默认安全）。
  * 请求须携带头 {@link HttpClientUtil#CLUSTER_TOKEN_HEADER}。
@@ -55,7 +55,7 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
     @PostConstruct
     public void logConfig() {
         if (StringUtil.isBlank(internalToken)) {
-            logger.warn("dbsyncer.cluster.internal-token 未配置，/cluster/internal/** 与 /cluster/metrics 将被拒绝。生产集群必须为各节点配置相同共享密钥，并通过请求头 {} 传递。", HttpClientUtil.CLUSTER_TOKEN_HEADER);
+            logger.warn("dbsyncer.cluster.internal-token 未配置，/cluster/internal/** 将被拒绝。生产集群必须为各节点配置相同共享密钥，并通过请求头 {} 传递。", HttpClientUtil.CLUSTER_TOKEN_HEADER);
             return;
         }
         if (clusterEnabled) {
@@ -68,7 +68,7 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
         // 获取请求路径，避免用户请求/.;之类的字符绕过权限判断，导致绕过权限检查风险。
         String path = urlPathHelper.getLookupPathForRequest(request);
         if (StringUtil.isNotBlank(path)) {
-            return !path.startsWith("/cluster/internal/") && !"/cluster/metrics".equals(path);
+            return !path.startsWith("/cluster/internal/");
         }
         return false;
     }

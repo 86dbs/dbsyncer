@@ -26,7 +26,7 @@ public class ClusterNode {
     private long startTime;
     private int status;
     private boolean local;
-    private long protectRemainSeconds;
+    private long gracePeriodSeconds;
 
     public long getId() {
         return id;
@@ -140,11 +140,11 @@ public class ClusterNode {
         this.local = local;
     }
 
-    public long getProtectRemainSeconds() {
-        return protectRemainSeconds;
+    public long getGracePeriodSeconds() {
+        return gracePeriodSeconds;
     }
 
-    public void setProtectRemainSeconds(long protectRemainSeconds) {
-        this.protectRemainSeconds = protectRemainSeconds;
+    public void setGracePeriodSeconds(long gracePeriodSeconds) {
+        this.gracePeriodSeconds = gracePeriodSeconds;
     }
 }

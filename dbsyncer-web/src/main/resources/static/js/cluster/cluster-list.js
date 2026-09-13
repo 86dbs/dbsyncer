@@ -325,7 +325,7 @@
                 );
             }
             // 保护期内：仅在本机 Leader 行显示「恢复」（调度只能由 Leader 执行）
-            if (Number(item.protectRemainSeconds) > 0) {
+            if (Number(item.gracePeriodSeconds) > 0) {
                 buttons.push(
                     '<button type="button" class="table-action-btn play" title="恢复离线节点任务" data-action="recover">'
                     + '<i class="fa fa-refresh"></i></button>'
@@ -351,9 +351,9 @@
         var statusHtml = '<div class="flex flex-col white-space-none">'
             + '<div>' + formatRole(item.role) + '</div>'
             + '<div class="mt-1">' + formatStatus(item.status) + '</div>';
-        if (Number(item.protectRemainSeconds) > 0) {
+        if (Number(item.gracePeriodSeconds) > 0) {
             statusHtml += '<div class="mt-1 text-warning">等待节点恢复：倒计时 '
-                + Number(item.protectRemainSeconds) + ' 秒</div>';
+                + Number(item.gracePeriodSeconds) + ' 秒</div>';
         }
         statusHtml += '</div>';
         var timeHtml = stackCell([
@@ -461,7 +461,7 @@
             confirmText: '立即恢复',
             body: '<p class="mb-0">立即对离线节点任务换主并补派未分配任务。</p>',
             onConfirm: function () {
-                doPoster('/cluster/internal/forceExpireLeaderGracePeriod', {}, function (res) {
+                doPoster('/cluster/forceExpireGracePeriod', {}, function (res) {
                     if (res.success === true) {
                         bootGrowl(res.data || '已触发恢复', 'success');
                         loadNodeMetrics(false);
@@ -486,7 +486,7 @@
     }
 
     function loadNodeMetrics(refreshTable) {
-        doGetter('/cluster/nodes/metrics', {}, function (res) {
+        doGetter('/cluster/metrics', {}, function (res) {
             if (res.success !== true) {
                 if (refreshTable) {
                     bootGrowl(res.message || '加载节点指标失败', 'warning');

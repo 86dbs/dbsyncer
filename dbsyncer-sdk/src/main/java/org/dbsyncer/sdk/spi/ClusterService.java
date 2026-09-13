@@ -51,33 +51,12 @@ public interface ClusterService {
     default void stop(String taskId) {
     }
 
-    /**
-     * 接收集群节点通知消息，按 type/event 路由。
-     *
-     * @param message JSON 消息正文
-     */
-    default void receiveMessage(String message) {
+    default Object handleMessage(String message) {
+        return null;
     }
 
-    /**
-     * Leader 保护期剩余秒数。
-     *
-     * @return 剩余秒数；非保护期为 0
-     */
-    default long getGracePeriod() {
+    default long forceExpireGracePeriod() {
         return 0L;
-    }
-
-    /**
-     * 结束保护期并通知集群各节点；随后恢复离线/未分配任务。
-     */
-    default void forceExpireLeaderGracePeriod() {
-    }
-
-    /**
-     * 节点间通知：仅结束本机保护期门控（不扇出、不调度）。
-     */
-    default void acceptForceExpireLeaderGracePeriod() {
     }
 
 }

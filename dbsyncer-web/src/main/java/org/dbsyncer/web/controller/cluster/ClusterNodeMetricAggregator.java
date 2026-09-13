@@ -3,9 +3,11 @@
  */
 package org.dbsyncer.web.controller.cluster;
 
+import com.alibaba.fastjson2.JSONObject;
 import org.dbsyncer.biz.vo.ClusterMetricsOverviewVO;
 import org.dbsyncer.biz.vo.ClusterNodeMetricVO;
 import org.dbsyncer.biz.vo.HistoryStackVO;
+import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.model.HttpResult;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -180,20 +182,17 @@ public class ClusterNodeMetricAggregator {
             return unreachable();
         }
         try {
-            HttpResult result = HttpClientUtil.get(base + "/cluster/metrics", HttpClientUtil.clusterTokenHeaders(internalToken), CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
+            HttpResult result = HttpClientUtil.get(base + "/cluster/internal/metrics", HttpClientUtil.clusterTokenHeaders(internalToken), CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
             if (!result.isOk()) {
                 logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), result.getStatusCode());
                 return unreachable();
             }
-            Map root = JsonUtil.jsonToObj(result.getBody(), Map.class);
-            if (root == null || !Boolean.TRUE.equals(root.get("success")) || root.get("data") == null) {
+            RestResult res = JsonUtil.jsonToObj(result.getBody(), RestResult.class);
+            if (res == null || !res.isSuccess()) {
                 return unreachable();
             }
-            String json = root.get("data") instanceof String ? (String) root.get("data") : JsonUtil.objToJson(root.get("data"));
-            ClusterNodeMetricVO vo = JsonUtil.jsonToObj(json, ClusterNodeMetricVO.class);
-            if (vo == null) {
-                return unreachable();
-            }
+            JSONObject json = (JSONObject) res.getData();
+            ClusterNodeMetricVO vo = json.toJavaObject(ClusterNodeMetricVO.class);
             vo.setReachable(true);
             return vo;
         } catch (Exception e) {

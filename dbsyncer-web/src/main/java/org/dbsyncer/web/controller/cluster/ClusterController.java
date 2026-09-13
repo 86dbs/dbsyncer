@@ -53,49 +53,6 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 内部统一消息入口（按 type/event 路由）。须携带 {@code X-Cluster-Token}。
-     */
-    @PostMapping("/internal/message")
-    @ResponseBody
-    public RestResult message(@RequestBody String message) {
-        try {
-            clusterService.receiveMessage(message);
-            return RestResult.restSuccess("ok");
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    /**
-     * 本机运行指标（供集群内节点互拉，须携带 {@code X-Cluster-Token}）。
-     */
-    @GetMapping("/metrics")
-    @ResponseBody
-    public RestResult metrics() {
-        try {
-            return RestResult.restSuccess(localNodeMetricProvider.snapshot());
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    /**
-     * 聚合各节点运行指标（本机直采 + 远端 HTTP）。
-     */
-    @GetMapping("/nodes/metrics")
-    @ResponseBody
-    public RestResult nodesMetrics() {
-        try {
-            return RestResult.restSuccess(clusterNodeMetricAggregator.collectAll());
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    /**
      * 心跳探测（免登录，供节点互探）。
      */
     @GetMapping("/ping")
@@ -149,26 +106,49 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 重写分配离线节点任务
+     * 聚合各节点运行指标（本机直采 + 远端 HTTP）。
      */
-    @PostMapping("/internal/forceExpireLeaderGracePeriod")
+    @GetMapping("/metrics")
     @ResponseBody
-    public RestResult forceExpireLeaderGracePeriod() {
+    public RestResult nodesMetrics() {
         try {
-            clusterService.forceExpireLeaderGracePeriod();
-            return RestResult.restSuccess("已触发恢复离线节点任务");
+            return RestResult.restSuccess(clusterNodeMetricAggregator.collectAll());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
 
-
-    @GetMapping("/internal/getGracePeriod")
+    @PostMapping("/forceExpireGracePeriod")
     @ResponseBody
-    public RestResult getGracePeriod() {
+    public RestResult forceExpireGracePeriod() {
         try {
-            return RestResult.restSuccess(clusterService.getGracePeriod());
+            return RestResult.restSuccess(clusterService.forceExpireGracePeriod());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 内部统一消息入口（按 type/event 路由）。须携带 {@code X-Cluster-Token}。
+     */
+    @PostMapping("/internal/message")
+    @ResponseBody
+    public RestResult message(@RequestBody String message) {
+        try {
+            return RestResult.restSuccess(clusterService.handleMessage(message));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @GetMapping("/internal/metrics")
+    @ResponseBody
+    public RestResult metrics() {
+        try {
+            return RestResult.restSuccess(localNodeMetricProvider.snapshot());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
