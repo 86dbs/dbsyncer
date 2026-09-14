@@ -6,6 +6,8 @@ package org.dbsyncer.manager.deployment;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskRunner;
 
+import javax.annotation.Resource;
+
 /**
  * 单机控制面：本机即执行者，调度方法空操作。
  *
@@ -15,12 +17,8 @@ import org.dbsyncer.sdk.spi.TaskRunner;
  */
 public final class StandaloneService implements ClusterService {
 
+    @Resource
     private TaskRunner taskRunner;
-
-    @Override
-    public void bindTaskRunner(TaskRunner runner) {
-        this.taskRunner = runner;
-    }
 
     @Override
     public void start(String taskId, String model, boolean autoRecovery) {

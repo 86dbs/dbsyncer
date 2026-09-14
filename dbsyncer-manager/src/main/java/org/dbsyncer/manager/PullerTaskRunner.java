@@ -16,7 +16,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Map;
 
@@ -34,9 +33,6 @@ public final class PullerTaskRunner implements TaskRunner {
     private TaskProfile taskProfile;
 
     @Resource
-    private ClusterService clusterService;
-
-    @Resource
     private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
@@ -48,16 +44,11 @@ public final class PullerTaskRunner implements TaskRunner {
     @Resource
     private Map<String, Puller> map;
 
-    @PostConstruct
-    private void init() {
-        clusterService.bindTaskRunner(this);
-    }
-
     @Override
     public void restoreConnector(String taskId) {
-        if (clusterService.isStandalone()) {
-            return;
-        }
+//        if (clusterService.isStandalone()) {
+//            return;
+//        }
         connectorInstanceBinder.restore(requireMapping(taskId));
     }
 
@@ -75,9 +66,9 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Override
     public void releaseConnector(String taskId) {
-        if (clusterService.isStandalone()) {
-            return;
-        }
+//        if (clusterService.isStandalone()) {
+//            return;
+//        }
         Mapping mapping = taskProfile.getTask(taskId, Mapping.class);
         connectorInstanceBinder.release(mapping);
     }

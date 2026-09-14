@@ -42,9 +42,6 @@ public interface ClusterService {
     default void removeNode(String nodeId) {
     }
 
-    default void bindTaskRunner(TaskRunner runner) {
-    }
-
     default void start(String taskId, String model, boolean autoRecovery) {
     }
 

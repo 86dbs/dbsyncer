@@ -324,7 +324,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             try {
                 rows.add(convertMapping2Vo(mapping));
             } catch (Exception e) {
-                logger.error("转换驱动列表行失败, 已跳过. mappingId:{}, name:{}, metaId:{}, error:{}",
+                logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, metaId:{}, error:{}",
                         mapping.getId(), mapping.getName(), mapping.getMetaId(), e.getMessage());
             }
         }
@@ -338,7 +338,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (StringUtil.isBlank(mappingId)) {
             mappingId = params.get("id");
         }
-        Assert.hasText(mappingId, "驱动ID不能为空.");
+        Assert.hasText(mappingId, "同步任务ID不能为空.");
         assertMappingExist(mappingId);
 
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
@@ -358,13 +358,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         synchronized (LOCK) {
             assertRunning(metaId);
-            Assert.isTrue(!dispatchTaskService.isRunning(id), "驱动表映射正在匹配或统计中，请稍候再启动");
+            Assert.isTrue(!dispatchTaskService.isRunning(id), "同步任务表映射正在匹配或统计中，请稍候再启动");
             // 启动
             managerFactory.start(mapping);
 
             log(LogType.MappingLog.RUNNING, mapping);
         }
-        return "驱动启动成功";
+        return "同步任务启动成功";
     }
 
     @Override
@@ -372,7 +372,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
             if (!isRunning(mapping.getMetaId())) {
-                throw new BizException("驱动已停止.");
+                throw new BizException("同步任务已停止.");
             }
             managerFactory.close(mapping);
 
@@ -380,12 +380,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             // 发送关闭驱动通知消息
             MappingStopContent content = new MappingStopContent();
-            content.setTitle("手动停止驱动");
+            content.setTitle("手动停止同步任务");
             content.setName(mapping.getName());
             content.setModel(ModelEnum.getModelEnum(mapping.getModel()));
             sendNotifyMessage(content);
         }
-        return "驱动停止成功";
+        return "同步任务停止成功";
     }
 
     @Override
@@ -595,7 +595,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     /**
-     * 获取驱动任务级 Meta；若 metaId 悬空则重建并回写 mapping。
+     * 获取同步任务任务级 Meta；若 metaId 悬空则重建并回写 mapping。
      */
     private Meta resolveMappingMeta(Mapping mapping) {
         String metaId = mapping.getMetaId();
@@ -603,18 +603,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (meta != null) {
             return meta;
         }
-        logger.warn("驱动 Meta 缺失，尝试重建. mappingId:{}, name:{}, metaId:{}", mapping.getId(), mapping.getName(), metaId);
+        logger.warn("同步任务 Meta 缺失，尝试重建. mappingId:{}, name:{}, metaId:{}", mapping.getId(), mapping.getName(), metaId);
         mappingChecker.addMeta(mapping);
         taskProfile.updateTask(mapping);
         return metaProfile.getMeta(mapping.getMetaId());
     }
 
     /**
-     * 检查是否存在驱动
+     * 检查是否存在同步任务
      */
     private Mapping assertMappingExist(String mappingId) {
         Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
-        Assert.notNull(mapping, "驱动不存在.");
+        Assert.notNull(mapping, "同步任务不存在.");
         return mapping;
     }
 
