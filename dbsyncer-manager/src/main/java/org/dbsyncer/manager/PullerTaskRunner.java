@@ -20,7 +20,7 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * 本机任务执行器：按同步方式路由到对应 Puller，并在启动时注册到控制面。
+ * 本机任务执行器：按同步方式路由到对应 Puller。
  *
  * @author wuji
  * @version 1.0.0

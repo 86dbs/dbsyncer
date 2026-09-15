@@ -35,6 +35,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @version 1.0.0
@@ -153,13 +154,15 @@ public final class FlushStrategyImpl implements FlushStrategy {
         // 与 FullTableProgressUtil.save 共用 tableLock；进度更新走 updateMetaProgress（写前重载），避免覆盖原子计数
         synchronized (MetaLockUtil.lock(writer.getMetaId())) {
             metaProfile.incrementMeta(MetaIncrement.of(writer.getMetaId()).success(success).fail(fail));
+            // 成功/失败累计可能超过预统计总数（并发写入、分片重叠等）；抬高 TOTAL，与 FullPuller.refreshMetaTotals 一致
+            ensureTotalAtLeastFinished(writer.getMetaId());
         }
         incrementTableMeta(writer.getTableGroupId(), success, fail);
     }
 
     /**
      * 同步表级 Meta 计数：taskId=table_group.id，isTaskDetail=1；主键由 ADD 路径生成雪花。
-     * <p>仅原子累加 success/fail，不写 SNAPSHOT；与 {@link FullTableProgressUtil#save} 共用表锁。
+     * <p>原子累加 success/fail，必要时抬高 total；与 {@link FullTableProgressUtil#save} 共用表锁。
      */
     private void incrementTableMeta(String tableGroupId, long success, long fail) {
         if (StringUtil.isBlank(tableGroupId)) {
@@ -175,9 +178,36 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);
                 metaProfile.updateMeta(tableMeta);
+                tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+            }
+            if (tableMeta == null || StringUtil.isBlank(tableMeta.getId())) {
+                return;
             }
             metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).success(success).fail(fail));
+            ensureTotalAtLeastFinished(tableMeta.getId());
         }
+    }
+
+    /**
+     * 若 success+fail 已超过 TOTAL，原子抬高 TOTAL（避免整行 updateMeta 覆盖并发增量）。
+     */
+    private void ensureTotalAtLeastFinished(String metaId) {
+        if (StringUtil.isBlank(metaId)) {
+            return;
+        }
+        Meta meta = metaProfile.getMeta(metaId);
+        if (meta == null) {
+            return;
+        }
+        long finished = counterValue(meta.getSuccess()) + counterValue(meta.getFail());
+        long total = counterValue(meta.getTotal());
+        if (total < finished) {
+            metaProfile.incrementMeta(MetaIncrement.of(metaId).total(finished - total));
+        }
+    }
+
+    private static long counterValue(AtomicLong value) {
+        return value == null ? 0L : value.get();
     }
 
     private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap) {

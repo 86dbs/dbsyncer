@@ -12,6 +12,7 @@ import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
@@ -51,6 +52,8 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
     private ConnectorFactory connectorFactory;
 
     private RsaManager rsaManager;
+
+    private MetaProfile metaProfile;
 
     private DispatchTaskService dispatchTaskService;
 
@@ -119,6 +122,7 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
+        task.setMetaProfile(metaProfile);
         dispatchTaskService.execute(task);
     }
 
@@ -148,6 +152,10 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
 
     public void setRsaManager(RsaManager rsaManager) {
         this.rsaManager = rsaManager;
+    }
+
+    public void setMetaProfile(MetaProfile metaProfile) {
+        this.metaProfile = metaProfile;
     }
 
     public void setDispatchTaskService(DispatchTaskService dispatchTaskService) {

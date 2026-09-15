@@ -178,4 +178,94 @@ public abstract class PrimaryKeyUtil {
         return cursors;
     }
 
+    /**
+     * 比较两组游标，按主键从左到右。
+     *
+     * @param left  左值
+     * @param right 右值
+     * @return 负/零/正
+     */
+    public static int compareCursors(Object[] left, Object[] right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        int size = Math.min(left.length, right.length);
+        for (int i = 0; i < size; i++) {
+            int cmp = compareCursorValue(left[i], right[i]);
+            if (cmp != 0) {
+                return cmp;
+            }
+        }
+        return Integer.compare(left.length, right.length);
+    }
+
+    /**
+     * 当前游标是否已到达结束游标（含）。结束游标为空则永不视为到达。
+     *
+     * @param current 当前游标
+     * @param end     结束游标
+     * @return true 已到达或越过结束
+     */
+    public static boolean reachedEnd(Object[] current, Object[] end) {
+        if (end == null || end.length == 0) {
+            return false;
+        }
+        return compareCursors(current, end) >= 0;
+    }
+
+    /**
+     * 保留游标小于等于结束游标的行（结束游标为空则原样返回）。
+     *
+     * @param data        数据行
+     * @param primaryKeys 主键名
+     * @param end         结束游标
+     * @return 截断后的列表
+     */
+    public static List<Map> trimToEndInclusive(List<Map> data, List<String> primaryKeys, Object[] end) {
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(primaryKeys) || end == null || end.length == 0) {
+            return data;
+        }
+        List<Map> kept = new ArrayList<>(data.size());
+        for (Map row : data) {
+            Object[] cursor = cursorOf(row, primaryKeys);
+            if (compareCursors(cursor, end) <= 0) {
+                kept.add(row);
+            }
+        }
+        return kept;
+    }
+
+    private static Object[] cursorOf(Map row, List<String> primaryKeys) {
+        if (row == null) {
+            return null;
+        }
+        Object[] cursor = new Object[primaryKeys.size()];
+        for (int i = 0; i < primaryKeys.size(); i++) {
+            cursor[i] = row.get(primaryKeys.get(i));
+        }
+        return cursor;
+    }
+
+    private static int compareCursorValue(Object left, Object right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        if (left instanceof Number && right instanceof Number) {
+            return Double.compare(((Number) left).doubleValue(), ((Number) right).doubleValue());
+        }
+        return String.valueOf(left).compareTo(String.valueOf(right));
+    }
+
 }

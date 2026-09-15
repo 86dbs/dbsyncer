@@ -203,6 +203,10 @@ public class ParserComponentImpl implements ParserComponent {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
+            source = PrimaryKeyUtil.trimToEndInclusive(source, primaryKeys, task.getEndCursors());
+            if (CollectionUtils.isEmpty(source)) {
+                break;
+            }
 
             // 2、映射字段
             List<Map> target = picker.pickTargetData(source);
@@ -224,6 +228,9 @@ public class ParserComponentImpl implements ParserComponent {
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
             flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
+            if (PrimaryKeyUtil.reachedEnd(task.getCursors(), task.getEndCursors())) {
+                break;
+            }
 
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
@@ -302,8 +309,9 @@ public class ParserComponentImpl implements ParserComponent {
         result.setEvent(ConnectorConstant.OPERTION_INSERT);
         flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
 
-        // 发布刷新事件给FullExtractor
-        applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+        if (!task.isSkipTableProgressEvent()) {
+            applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+        }
     }
 
     /**

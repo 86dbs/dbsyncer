@@ -528,6 +528,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
+        task.setMetaProfile(metaProfile);
         dispatchTaskService.execute(task);
     }
 
@@ -543,6 +544,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setTableGroupProfile(tableGroupProfile);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
+        task.setMetaProfile(metaProfile);
         task.setDispatchTaskService(dispatchTaskService);
         dispatchTaskService.execute(task);
     }

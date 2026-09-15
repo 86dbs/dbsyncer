@@ -5,14 +5,18 @@ package org.dbsyncer.biz.task;
 
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.rsa.RsaManager;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -21,6 +25,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultMetaContext;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +60,8 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
     protected TableGroupService tableGroupService;
 
     protected ConnectorFactory connectorFactory;
+
+    protected MetaProfile metaProfile;
 
     private RsaManager rsaManager;
 
@@ -94,6 +101,10 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         this.rsaManager = rsaManager;
     }
 
+    public void setMetaProfile(MetaProfile metaProfile) {
+        this.metaProfile = metaProfile;
+    }
+
     protected void updateTableGroupCount(Mapping mapping, TableGroup tableGroup) {
         long now = Instant.now().toEpochMilli();
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
@@ -112,9 +123,31 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         setRsaConfig(metaContext);
 
         long count = connectorService.getCount(connectorInstance, metaContext);
+        // SOURCE_TOTAL 列与 JSON 内 sourceTable.count 同步，供明细查询 / 任务 Meta 汇总
+        tableGroup.setSourceTotal(count);
         tableGroup.getSourceTable().setCount(count);
         tableGroupProfile.editTableGroup(tableGroup);
+        syncTableDetailMetaTotal(tableGroup.getId(), count);
         logger.info("{}表{}, 总数:{}, {}ms", mapping.getName(), tableGroup.getSourceTable().getName(), count, (Instant.now().toEpochMilli() - now));
+    }
+
+    /**
+     * 将表级明细 Meta.TOTAL 对齐到源表统计值（原子增量，避免整行覆盖 success/fail）。
+     */
+    private void syncTableDetailMetaTotal(String tableGroupId, long count) {
+        if (metaProfile == null || StringUtil.isBlank(tableGroupId)) {
+            return;
+        }
+        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        if (tableMeta == null || StringUtil.isBlank(tableMeta.getId())) {
+            return;
+        }
+        long oldTotal = tableMeta.getTotal() == null ? 0L : tableMeta.getTotal().get();
+        long delta = count - oldTotal;
+        if (delta == 0L) {
+            return;
+        }
+        metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).total(delta));
     }
 
     protected boolean shouldStop(Mapping mapping) {
