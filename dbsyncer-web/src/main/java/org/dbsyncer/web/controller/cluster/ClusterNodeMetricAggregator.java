@@ -215,20 +215,24 @@ public class ClusterNodeMetricAggregator {
     }
 
     private Map<String, Integer> resolveFullWorkItemCounts() {
-        return resolveAssignmentCounts(false);
+        // 全量分片：按执行节点统计 dbsyncer_cluster_task_plan 在途行（未完成/运行中）
+        try {
+            String sql = "SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_PLAN_TABLE
+                    + " WHERE NODE_ID IS NOT NULL AND STATUS IN (0, 1) GROUP BY NODE_ID";
+            return toNodeCountMap(storageService.queryList(ExecuteRequest.of(sql)));
+        } catch (Exception e) {
+            logger.warn("加载全量分片统计失败: {}", e.getMessage());
+            return new LinkedHashMap<>();
+        }
     }
 
     private Map<String, Integer> resolveIncrementalCounts() {
-        return resolveAssignmentCounts(true);
-    }
-
-    private Map<String, Integer> resolveAssignmentCounts(boolean incrementTask) {
-        String taskTypeFilter = incrementTask ? " AND TASK_TYPE IN ('increment', 'fullIncrement')" : " AND TASK_TYPE = 'full'";
         try {
-            List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of("SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE + " WHERE NODE_ID IS NOT NULL" + taskTypeFilter + " GROUP BY NODE_ID"));
-            return toNodeCountMap(rows);
+            String sql = "SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE
+                    + " WHERE NODE_ID IS NOT NULL AND TASK_TYPE IN ('increment', 'fullIncrement') GROUP BY NODE_ID";
+            return toNodeCountMap(storageService.queryList(ExecuteRequest.of(sql)));
         } catch (Exception e) {
-            logger.warn("加载集群任务派工统计失败: {}", e.getMessage());
+            logger.warn("加载集群增量任务统计失败: {}", e.getMessage());
             return new LinkedHashMap<>();
         }
     }

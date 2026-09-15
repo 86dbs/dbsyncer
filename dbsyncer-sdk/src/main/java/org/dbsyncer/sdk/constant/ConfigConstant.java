@@ -113,6 +113,7 @@ public class ConfigConstant {
     /**
      * 任务分片计划表(dbsyncer_cluster_task_plan)
      */
+    public static final String CLUSTER_TASK_PLAN_TABLE = "dbsyncer_cluster_task_plan";
     public static final String PLAN_START_CURSOR = "startCursor";
     public static final String PLAN_END_CURSOR = "endCursor";
     public static final String PLAN_LAST_PAGE = "lastPage";
