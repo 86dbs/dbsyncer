@@ -125,6 +125,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private final AtomicLong LAST_EXECUTE_TIME = new AtomicLong(System.currentTimeMillis());
 
+    private static final long FAIL_DETAIL_LOOK_BACK_MS = 3 * 60 * 1000L;
+
     @PostConstruct
     private void init() {
         metricMap.putIfAbsent(BufferActuatorMetricEnum.GENERAL.getCode(), new ValueMetricDetailFormatter());
@@ -399,6 +401,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 预警：仅任务级 Meta，分页扫描
         MappingErrorContent content = new MappingErrorContent();
         long endTime = System.currentTimeMillis();
+        // 下界回看，避免异步落库晚于水位推进导致漏通知
+        long fromTime = Math.max(0L, LAST_EXECUTE_TIME.get() - FAIL_DETAIL_LOOK_BACK_MS);
         metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
             for (Meta meta : page) {
                 Mapping mapping = profileComponent.getMapping(meta.getTaskId());
@@ -412,7 +416,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                 Query query = new Query(1, 1);
                 query.setType(StorageEnum.TASK_DETAIL);
                 query.setMetaId(metaProfile.resolveTaskDetailShardId(meta));
-                query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, LAST_EXECUTE_TIME.longValue());
+                query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, fromTime);
                 query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
                 query.setQueryTotal(true);
                 query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, 0);
