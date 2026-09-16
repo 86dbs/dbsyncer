@@ -188,6 +188,15 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     /**
+     * 本机已登记运行占用的任务 ID 快照。
+     *
+     * @return 任务 ID 集合（只读拷贝）
+     */
+    public Set<String> listAcquiredTaskIds() {
+        return Collections.unmodifiableSet(new HashSet<>(runningTaskConnectors.keySet()));
+    }
+
+    /**
      * 登记本机运行中任务占用的连接器。
      *
      * @param taskId       任务 ID
