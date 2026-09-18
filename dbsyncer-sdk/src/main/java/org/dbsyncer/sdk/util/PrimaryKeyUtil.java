@@ -221,7 +221,8 @@ public abstract class PrimaryKeyUtil {
 
     /**
      * 保留游标小于等于结束游标的行（结束游标为空则原样返回）。
-     * <p>游标分页结果按主键升序；遇到首个越过结束游标的行后截断，避免本页无上界多读导致计数超过片预算。
+     * <p>游标分页结果按主键升序；先比末行 O(1)，仅末行越过时再 stream 过滤截断，
+     * 避免本页无上界多读导致计数超过片预算。
      *
      * @param data        数据行
      * @param primaryKeys 主键名
@@ -232,20 +233,13 @@ public abstract class PrimaryKeyUtil {
         if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(primaryKeys) || end == null || end.length == 0) {
             return data;
         }
-        int keep = 0;
-        for (; keep < data.size(); keep++) {
-            Object[] cursor = cursorOf(data.get(keep), primaryKeys);
-            if (compareCursors(cursor, end) > 0) {
-                break;
-            }
-        }
-        if (keep >= data.size()) {
+        // 升序：末行未越过结束游标 → 整页都在片内
+        if (compareCursors(cursorOf(data.get(data.size() - 1), primaryKeys), end) <= 0) {
             return data;
         }
-        if (keep <= 0) {
-            return Collections.emptyList();
-        }
-        return data.subList(0, keep);
+        return data.stream()
+                .filter(row -> compareCursors(cursorOf(row, primaryKeys), end) <= 0)
+                .collect(Collectors.toList());
     }
 
     private static Object[] cursorOf(Map row, List<String> primaryKeys) {
