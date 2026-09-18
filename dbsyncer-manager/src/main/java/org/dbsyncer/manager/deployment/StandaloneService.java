@@ -3,10 +3,19 @@
  */
 package org.dbsyncer.manager.deployment;
 
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.parser.event.FullRefreshEvent;
+import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Task;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskRunner;
+import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Resource;
+import java.util.Map;
 
 /**
  * 单机控制面：本机即执行者，调度方法空操作。
@@ -20,6 +29,14 @@ public final class StandaloneService implements ClusterService {
     @Resource
     private TaskRunner taskRunner;
 
+    @Resource
+    private FlushStrategy flushStrategy;
+
+    @Resource
+    private ApplicationContext applicationContext;
+
+
+
     @Override
     public void start(String taskId, String model, boolean autoRecovery) {
         taskRunner.start(taskId, autoRecovery);
@@ -28,6 +45,17 @@ public final class StandaloneService implements ClusterService {
     @Override
     public void stop(String taskId) {
         taskRunner.stop(taskId);
+    }
+
+
+    @Override
+    public void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
+        result.setMetaId(task.getId());
+        result.setEvent(ConnectorConstant.OPERTION_INSERT);
+        flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
+        if (!task.isSkipTableProgressEvent()) {
+            applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+        }
     }
 
 }

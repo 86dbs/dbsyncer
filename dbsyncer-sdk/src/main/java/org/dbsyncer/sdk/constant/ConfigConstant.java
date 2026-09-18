@@ -116,6 +116,9 @@ public class ConfigConstant {
     public static final String CLUSTER_TASK_PLAN_TABLE = "dbsyncer_cluster_task_plan";
     public static final String PLAN_START_CURSOR = "startCursor";
     public static final String PLAN_END_CURSOR = "endCursor";
+    public static final String PLAN_LAST_CURSOR = "lastCursor";
+    public static final String PLAN_SUCCESS = "success";
+    public static final String PLAN_FAIL = "fail";
     public static final String PLAN_LAST_PAGE = "lastPage";
     public static final String PLAN_STATUS = "status";
 

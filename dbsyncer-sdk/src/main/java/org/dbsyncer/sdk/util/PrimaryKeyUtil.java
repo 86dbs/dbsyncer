@@ -159,7 +159,7 @@ public abstract class PrimaryKeyUtil {
         Object[] cursors = new Object[primaryKeys.size()];
         int i = 0;
         for (String pk : primaryKeys) {
-            cursors[i++] = last.get(pk);
+            cursors[i++] = rowValue(last, pk);
         }
         return cursors;
     }
@@ -221,6 +221,7 @@ public abstract class PrimaryKeyUtil {
 
     /**
      * 保留游标小于等于结束游标的行（结束游标为空则原样返回）。
+     * <p>游标分页结果按主键升序；遇到首个越过结束游标的行后截断，避免本页无上界多读导致计数超过片预算。
      *
      * @param data        数据行
      * @param primaryKeys 主键名
@@ -231,14 +232,20 @@ public abstract class PrimaryKeyUtil {
         if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(primaryKeys) || end == null || end.length == 0) {
             return data;
         }
-        List<Map> kept = new ArrayList<>(data.size());
-        for (Map row : data) {
-            Object[] cursor = cursorOf(row, primaryKeys);
-            if (compareCursors(cursor, end) <= 0) {
-                kept.add(row);
+        int keep = 0;
+        for (; keep < data.size(); keep++) {
+            Object[] cursor = cursorOf(data.get(keep), primaryKeys);
+            if (compareCursors(cursor, end) > 0) {
+                break;
             }
         }
-        return kept;
+        if (keep >= data.size()) {
+            return data;
+        }
+        if (keep <= 0) {
+            return Collections.emptyList();
+        }
+        return data.subList(0, keep);
     }
 
     private static Object[] cursorOf(Map row, List<String> primaryKeys) {
@@ -247,9 +254,26 @@ public abstract class PrimaryKeyUtil {
         }
         Object[] cursor = new Object[primaryKeys.size()];
         for (int i = 0; i < primaryKeys.size(); i++) {
-            cursor[i] = row.get(primaryKeys.get(i));
+            cursor[i] = rowValue(row, primaryKeys.get(i));
         }
         return cursor;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static Object rowValue(Map row, String primaryKey) {
+        if (StringUtil.isBlank(primaryKey)) {
+            return null;
+        }
+        Object value = row.get(primaryKey);
+        if (value != null || row.containsKey(primaryKey)) {
+            return value;
+        }
+        for (Object key : row.keySet()) {
+            if (key != null && primaryKey.equalsIgnoreCase(String.valueOf(key))) {
+                return row.get(key);
+            }
+        }
+        return null;
     }
 
     private static int compareCursorValue(Object left, Object right) {
@@ -263,7 +287,8 @@ public abstract class PrimaryKeyUtil {
             return 1;
         }
         if (left instanceof Number && right instanceof Number) {
-            return Double.compare(((Number) left).doubleValue(), ((Number) right).doubleValue());
+            return new java.math.BigDecimal(left.toString())
+                    .compareTo(new java.math.BigDecimal(right.toString()));
         }
         return String.valueOf(left).compareTo(String.valueOf(right));
     }

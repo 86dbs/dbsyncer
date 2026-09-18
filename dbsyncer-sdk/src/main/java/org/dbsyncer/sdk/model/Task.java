@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.parser.model;
+package org.dbsyncer.sdk.model;
 
 /**
  * 全量同步任务运行态。

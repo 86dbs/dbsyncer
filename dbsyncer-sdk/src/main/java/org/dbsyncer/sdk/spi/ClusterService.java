@@ -4,7 +4,11 @@
 package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.sdk.model.ClusterNode;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Task;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.util.Map;
 
@@ -56,4 +60,15 @@ public interface ClusterService {
         return 0L;
     }
 
+    /**
+     * 全量页级结果落库。
+     *
+     * @param task                 运行态（分片执行时 id 为分片计划 ID）
+     * @param result               本批写结果
+     * @param targetSchemaResolver 目标库类型解析
+     * @param targetFieldMap       目标字段
+     */
+    default void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
+
+    }
 }

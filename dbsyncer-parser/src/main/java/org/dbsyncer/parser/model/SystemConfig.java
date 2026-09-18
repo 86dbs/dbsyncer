@@ -115,12 +115,7 @@ public class SystemConfig extends ConfigModel {
     private int tableWindowSize = 10;
 
     /**
-     * 分片大小（单片行数预算）
-     */
-    private int shardRowBudget = 100_000;
-
-    /**
-     * 分片总数（与分片行数相除得到每波预切片数）
+     * 分片总数（与任务 readNum×threadNum 相除得到每波预切片数）
      */
     private int shardTotal = 1_000_000;
 
@@ -271,14 +266,6 @@ public class SystemConfig extends ConfigModel {
 
     public void setTableWindowSize(int tableWindowSize) {
         this.tableWindowSize = tableWindowSize;
-    }
-
-    public int getShardRowBudget() {
-        return shardRowBudget;
-    }
-
-    public void setShardRowBudget(int shardRowBudget) {
-        this.shardRowBudget = shardRowBudget;
     }
 
     public int getShardTotal() {

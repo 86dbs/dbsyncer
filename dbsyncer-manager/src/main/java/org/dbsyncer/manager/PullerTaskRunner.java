@@ -10,7 +10,6 @@ import org.dbsyncer.manager.impl.FullIncrementPuller;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -46,9 +45,6 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Override
     public void restoreConnector(String taskId) {
-//        if (clusterService.isStandalone()) {
-//            return;
-//        }
         connectorInstanceBinder.restore(requireMapping(taskId));
     }
 
@@ -66,9 +62,6 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Override
     public void releaseConnector(String taskId) {
-//        if (clusterService.isStandalone()) {
-//            return;
-//        }
         Mapping mapping = taskProfile.getTask(taskId, Mapping.class);
         connectorInstanceBinder.release(mapping);
     }

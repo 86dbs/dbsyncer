@@ -84,17 +84,8 @@
                     </div>
                 </div>
                 <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
-                    <label class="form-label">分片行数<i class="fa fa-question-circle"
-                                                          title="单片最多读取的行数预算"></i><strong
-                            class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <input type="number" class="form-control" min="1000" max="10000000" required
-                               name="shardRowBudget" th:value="${config?.shardRowBudget}"/>
-                    </div>
-                </div>
-                <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
                     <label class="form-label">分片总数<i class="fa fa-question-circle"
-                                                          title="与分片行数相除得到每波预切片数，例如 100万/10万=10；本波全部完成后再切下一波"></i><strong
+                                                          title="与任务单次读取数×线程数相除得到每波预切片数；本波全部完成后再切下一波"></i><strong
                             class="text-primary">*</strong></label>
                     <div class="form-control-area">
                         <input type="number" class="form-control" min="1" max="10000000" required
