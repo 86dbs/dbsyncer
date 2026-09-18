@@ -18,7 +18,6 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
@@ -35,9 +34,11 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.Task;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -85,6 +86,9 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Resource
     private RsaManager rsaManager;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Override
     public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
@@ -203,6 +207,12 @@ public class ParserComponentImpl implements ParserComponent {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 break;
             }
+            // 分页 SQL 无结束上界，本页可能越过 endCursors；必须先截断再写，否则 success 会超过片预算
+            source = PrimaryKeyUtil.trimToEndInclusive(source, primaryKeys, task.getEndCursors());
+            if (CollectionUtils.isEmpty(source)) {
+                break;
+            }
+            boolean hitEnd = PrimaryKeyUtil.reachedEnd(PrimaryKeyUtil.getLastCursors(source, primaryKeys), task.getEndCursors());
 
             // 2、映射字段
             List<Map> target = picker.pickTargetData(source);
@@ -223,8 +233,8 @@ public class ParserComponentImpl implements ParserComponent {
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
-            flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
 
+            clusterService.flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
 
@@ -234,6 +244,9 @@ public class ParserComponentImpl implements ParserComponent {
             }
             if (context.getTargetList() != null) {
                 context.getTargetList().clear();
+            }
+            if (hitEnd) {
+                break;
             }
         }
     }
@@ -302,8 +315,9 @@ public class ParserComponentImpl implements ParserComponent {
         result.setEvent(ConnectorConstant.OPERTION_INSERT);
         flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
 
-        // 发布刷新事件给FullExtractor
-        applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+        if (!task.isSkipTableProgressEvent()) {
+            applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+        }
     }
 
     /**

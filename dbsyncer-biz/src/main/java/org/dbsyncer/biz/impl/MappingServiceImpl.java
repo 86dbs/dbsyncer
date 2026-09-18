@@ -528,6 +528,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
+        task.setMetaProfile(metaProfile);
         dispatchTaskService.execute(task);
     }
 
@@ -543,6 +544,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setTableGroupProfile(tableGroupProfile);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
+        task.setMetaProfile(metaProfile);
         task.setDispatchTaskService(dispatchTaskService);
         dispatchTaskService.execute(task);
     }
@@ -704,11 +706,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private void clearMetaIfFinished(String metaId) {
         Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态
+        // 完成任务则重置状态，便于再次全量
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
             meta.getFail().set(0);
             meta.getSuccess().set(0);
             metaProfile.updateMeta(meta);
+            // 表级明细 Meta/进度一并重置，否则已完成表会被跳过无法重跑
+            if (StringUtil.isNotBlank(meta.getTaskId())) {
+                taskProfile.clearRunData(meta.getTaskId());
+            }
         }
     }
 

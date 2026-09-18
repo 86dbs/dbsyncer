@@ -204,17 +204,28 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private void getMetaTotal(Meta meta, String model) {
         // 全量同步
         if (ModelEnum.isFull(model)) {
-            // 统计tableGroup总条数
+            // 统计tableGroup总条数（优先 SOURCE_TOTAL 列，兼容仅写在 sourceTable.count 的旧数据）
             AtomicLong count = new AtomicLong(0);
             tableGroupProfile.pageScanTableGroups(meta.getTaskId(), ConfigConstant.PAGE_SIZE, groupAll -> {
                 for (TableGroup g : groupAll) {
-                    if (g != null && g.getSourceTable() != null) {
-                        count.getAndAdd(g.getSourceTable().getCount());
+                    if (g == null) {
+                        continue;
                     }
+                    count.getAndAdd(resolveSourceCount(g));
                 }
             });
             meta.setTotal(count);
         }
+    }
+
+    private static long resolveSourceCount(TableGroup group) {
+        if (group.getSourceTotal() > 0) {
+            return group.getSourceTotal();
+        }
+        if (group.getSourceTable() != null) {
+            return group.getSourceTable().getCount();
+        }
+        return 0L;
     }
 
     private void resetTableGroupAllIndex(String mappingId) {
@@ -264,9 +275,11 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         task.setParserComponent(parserComponent);
         task.setTaskProfile(taskProfile);
         task.setTableGroupProfile(tableGroupProfile);
+        task.setConnectorProfile(connectorProfile);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
         task.setTableGroupService(this);
+        task.setMetaProfile(metaProfile);
         dispatchTaskService.execute(task);
     }
 

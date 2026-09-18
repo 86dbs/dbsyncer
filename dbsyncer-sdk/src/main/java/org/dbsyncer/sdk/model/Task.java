@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.parser.model;
+package org.dbsyncer.sdk.model;
 
 /**
  * 全量同步任务运行态。
@@ -18,6 +18,16 @@ public class Task {
     private int pageIndex;
 
     private Object[] cursors;
+
+    /**
+     * 本段结束游标（含）；空表示读到无数据为止
+     */
+    private Object[] endCursors;
+
+    /**
+     * 是否跳过表级进度刷新事件
+     */
+    private boolean skipTableProgressEvent;
 
     /**
      * 父任务（表级子任务时非空）
@@ -89,6 +99,22 @@ public class Task {
 
     public void setCursors(Object[] cursors) {
         this.cursors = cursors;
+    }
+
+    public Object[] getEndCursors() {
+        return endCursors;
+    }
+
+    public void setEndCursors(Object[] endCursors) {
+        this.endCursors = endCursors;
+    }
+
+    public boolean isSkipTableProgressEvent() {
+        return skipTableProgressEvent;
+    }
+
+    public void setSkipTableProgressEvent(boolean skipTableProgressEvent) {
+        this.skipTableProgressEvent = skipTableProgressEvent;
     }
 
     public Task getParent() {

@@ -159,7 +159,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     /**
      * 同步表级 Meta 计数：taskId=table_group.id，isTaskDetail=1；主键由 ADD 路径生成雪花。
-     * <p>仅原子累加 success/fail，不写 SNAPSHOT；与 {@link FullTableProgressUtil#save} 共用表锁。
+     * <p>原子累加 success/fail；与 {@link FullTableProgressUtil#save} 共用表锁。
      */
     private void incrementTableMeta(String tableGroupId, long success, long fail) {
         if (StringUtil.isBlank(tableGroupId)) {
@@ -175,6 +175,10 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);
                 metaProfile.updateMeta(tableMeta);
+                tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+            }
+            if (tableMeta == null || StringUtil.isBlank(tableMeta.getId())) {
+                return;
             }
             metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).success(success).fail(fail));
         }

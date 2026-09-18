@@ -19,7 +19,7 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * 本机任务执行器：按同步方式路由到对应 Puller，并在启动时注册到控制面。
+ * 本机任务执行器：按同步方式路由到对应 Puller。
  *
  * @author wuji
  * @version 1.0.0
@@ -45,9 +45,6 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Override
     public void restoreConnector(String taskId) {
-//        if (clusterService.isStandalone()) {
-//            return;
-//        }
         connectorInstanceBinder.restore(requireMapping(taskId));
     }
 
@@ -65,9 +62,6 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Override
     public void releaseConnector(String taskId) {
-//        if (clusterService.isStandalone()) {
-//            return;
-//        }
         Mapping mapping = taskProfile.getTask(taskId, Mapping.class);
         connectorInstanceBinder.release(mapping);
     }
