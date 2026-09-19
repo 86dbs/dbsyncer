@@ -69,7 +69,7 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
 
     @Override
     public void execute() {
-        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(mappingId);
         if (mapping == null) {
             logger.warn("Mapping not found, skip match table, mappingId={}", mappingId);
             return;

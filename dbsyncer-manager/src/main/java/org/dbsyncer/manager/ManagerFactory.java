@@ -100,7 +100,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         if (meta == null) {
             return;
         }
-        Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
         connectorInstanceBinder.release(mapping);
     }
 }

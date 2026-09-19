@@ -5,6 +5,7 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TaskImportResult;
 
 import java.io.IOException;
@@ -22,11 +23,15 @@ import java.util.zip.ZipFile;
  */
 public interface TaskProfile {
 
-
     /**
      * 按 id 查询一条任务配置。
      */
     <T extends ConfigModel> T getTask(String id, Class<T> clazz);
+
+    /**
+     * 按 id 查询 Mapping 任务配置。
+     */
+    Mapping getMapping(String id);
 
     /**
      * 按模型类型分页查询任务，可选按名称模糊搜索。
@@ -118,7 +123,7 @@ public interface TaskProfile {
     void clearRunData(String taskId);
 
     /**
-     * 预建运行明细分表 {@code dbsyncer_task_detail_{taskId}}。
+     * 预建运行明细分表
      */
     void createRunDetailTable(String taskId);
 

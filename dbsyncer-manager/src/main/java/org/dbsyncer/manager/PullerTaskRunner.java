@@ -62,7 +62,7 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Override
     public void releaseConnector(String taskId) {
-        Mapping mapping = taskProfile.getTask(taskId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(taskId);
         connectorInstanceBinder.release(mapping);
     }
 
@@ -91,7 +91,7 @@ public final class PullerTaskRunner implements TaskRunner {
     }
 
     private Mapping requireMapping(String taskId) {
-        Mapping mapping = taskProfile.getTask(taskId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(taskId);
         Assert.notNull(mapping, String.format("同步任务不存在: %s", taskId));
         return mapping;
     }

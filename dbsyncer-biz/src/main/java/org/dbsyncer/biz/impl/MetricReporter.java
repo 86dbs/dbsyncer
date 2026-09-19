@@ -149,7 +149,7 @@ public class MetricReporter implements ScheduledTaskJob {
         Meta meta = metaProfile.getMeta(metric.getMetaId());
         String group = StringUtil.EMPTY;
         if (meta != null) {
-            Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+            Mapping mapping = taskProfile.getMapping(meta.getTaskId());
             if (mapping != null) {
                 group = mapping.getName();
             }

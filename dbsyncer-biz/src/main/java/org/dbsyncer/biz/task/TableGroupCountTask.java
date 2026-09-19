@@ -29,7 +29,7 @@ public class TableGroupCountTask extends AbstractCountTask {
 
     @Override
     public void execute() throws Exception {
-        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(mappingId);
         if (shouldStop(mapping)) {
             return;
         }
@@ -42,7 +42,7 @@ public class TableGroupCountTask extends AbstractCountTask {
                     logger.warn("驱动被修改, 提前结束任务 ({},{})", mapping.getName(), mapping.getModel());
                     return;
                 }
-                mapping = taskProfile.getTask(mappingId, Mapping.class);
+                mapping = taskProfile.getMapping(mappingId);
                 updateTableGroupCount(mapping, tableGroupProfile.getTableGroup(tableGroupId));
             }
         }

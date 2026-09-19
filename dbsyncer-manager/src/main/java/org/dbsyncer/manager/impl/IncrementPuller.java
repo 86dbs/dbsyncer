@@ -270,7 +270,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (meta == null || StringUtil.isBlank(meta.getTaskId())) {
             return;
         }
-        Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
         connectorInstanceBinder.release(mapping);
     }
 

@@ -231,7 +231,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         Assert.hasText(id, "驱动不存在.");
         Meta meta = metaProfile.getMeta(id);
         Assert.notNull(meta, "驱动不存在.");
-        Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
         Assert.notNull(mapping, "驱动不存在.");
         String shardId = metaProfile.resolveTaskDetailShardId(meta);
 
@@ -398,7 +398,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         long fromTime = Math.max(0L, LAST_EXECUTE_TIME.get() - FAIL_DETAIL_LOOK_BACK_MS);
         metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
             for (Meta meta : page) {
-                Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+                Mapping mapping = taskProfile.getMapping(meta.getTaskId());
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                     continue;
                 }
@@ -453,7 +453,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void writeMappingReport(Meta meta, MappingErrorContent content) {
-        Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
         if (null != mapping) {
             ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
             MappingErrorContent.ErrorItem item = new MappingErrorContent.ErrorItem();
@@ -510,7 +510,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
         metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
             for (Meta meta : page) {
-                Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+                Mapping mapping = taskProfile.getMapping(meta.getTaskId());
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                     continue;
                 }
@@ -581,7 +581,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private MetaVO convertMeta2Vo(Meta meta) {
-        Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
         // 非同步驱动（校验/迁移等）跳过
         if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())
                 || StringUtil.isBlank(mapping.getModel())) {

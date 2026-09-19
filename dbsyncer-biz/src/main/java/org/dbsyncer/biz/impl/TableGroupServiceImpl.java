@@ -78,7 +78,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public String add(Map<String, String> params) {
         String mappingId = params.get("mappingId");
-        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(mappingId);
         assertRunning(mapping);
 
         synchronized (LOCK) {
@@ -118,7 +118,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = taskProfile.getTask(tableGroup.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
         assertRunning(mapping);
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
@@ -143,7 +143,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String remove(String mappingId, String ids) {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(mappingId);
         assertRunning(mapping);
 
         // 批量删除表

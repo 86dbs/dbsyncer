@@ -321,7 +321,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Override
     public Object getPosition(String mappingId) {
-        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(mappingId);
         Assert.notNull(mapping, "Mapping can not be null.");
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
         ConnectorInstance connectorInstance;

@@ -101,7 +101,7 @@ public class MappingChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Mapping mapping = taskProfile.getTask(id, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(id);
         Assert.notNull(mapping, "Can not find mapping.");
 
         // 修改基本配置

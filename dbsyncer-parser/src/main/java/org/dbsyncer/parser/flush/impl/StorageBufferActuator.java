@@ -82,7 +82,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
             meta = metaProfile.getMeta(shardId);
         }
         if (meta != null) {
-            Mapping mapping = taskProfile.getTask(meta.getTaskId(), Mapping.class);
+            Mapping mapping = taskProfile.getMapping(meta.getTaskId());
             if (mapping != null) {
                 logger.info("{}, data={}", mapping.getName(), request.getRow());
             }

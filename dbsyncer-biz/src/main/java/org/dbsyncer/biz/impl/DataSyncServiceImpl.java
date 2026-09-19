@@ -137,7 +137,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
 
         // 4、获取连接器服务
-        Mapping mapping = taskProfile.getTask(tableGroup.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
         ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
@@ -218,7 +218,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Override
     public void syncBatch(DataSyncRequest request) {
-        Mapping mapping = taskProfile.getTask(request.getMappingId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(request.getMappingId());
         Assert.notNull(mapping, "Mapping can not be null.");
         TableGroup tableGroup = tableGroupProfile.getTableGroup(request.getTableGroupId());
         Assert.notNull(tableGroup, "Meta can not be null.");

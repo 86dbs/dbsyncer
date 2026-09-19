@@ -80,6 +80,11 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
+    public Mapping getMapping(String id) {
+        return getTask(id, Mapping.class);
+    }
+
+    @Override
     public <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey) {
         Assert.notNull(clazz, "Task class can not be null.");
         int safePageNum = pageNum > 0 ? pageNum : 1;

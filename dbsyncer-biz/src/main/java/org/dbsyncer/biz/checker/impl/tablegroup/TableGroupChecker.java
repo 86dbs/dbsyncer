@@ -78,7 +78,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
         Assert.hasText(sourceType, "tableGroup sourceType is empty.");
         Assert.hasText(targetType, "tableGroup targetType is empty.");
-        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
         // 检查是否存在重复映射关系（批量新增可由 Service 预检后跳过）
@@ -117,7 +117,7 @@ public class TableGroupChecker extends AbstractChecker {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = taskProfile.getTask(tableGroup.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
         String fieldMappingJson = params.get("fieldMapping");
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
@@ -151,7 +151,7 @@ public class TableGroupChecker extends AbstractChecker {
      * 刷新表字段
      */
     public void refreshTableFields(TableGroup tableGroup) {
-        Mapping mapping = taskProfile.getTask(tableGroup.getTaskId(), Mapping.class);
+        Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
 
         Table sourceTable = tableGroup.getSourceTable();

@@ -57,8 +57,7 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
         if (StringUtil.isBlank(metaId) || sourceTableNames == null) {
             return;
         }
-        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
-        final int maxBufferActuatorSize = systemConfig.getMaxBufferActuatorSize();
+        final int maxBufferActuatorSize = systemConfigProfile.getSystemConfig().getMaxBufferActuatorSize();
         router.computeIfAbsent(metaId, k -> {
             Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
             for (String tableName : sourceTableNames) {

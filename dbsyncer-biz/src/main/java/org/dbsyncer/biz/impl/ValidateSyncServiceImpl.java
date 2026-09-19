@@ -152,7 +152,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         // 关联同步任务
         String mappingId = params.get("mappingId");
         if (StringUtil.isNotBlank(mappingId)) {
-            Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+            Mapping mapping = taskProfile.getMapping(mappingId);
             Assert.notNull(mapping, "mapping is not exist");
             task.setSourceConnectorId(mapping.getSourceConnectorId());
             task.setSourceDatabase(mapping.getSourceDatabase());

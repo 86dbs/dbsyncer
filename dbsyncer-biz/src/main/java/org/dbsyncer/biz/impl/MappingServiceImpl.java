@@ -145,7 +145,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String id = taskProfile.addTask(model);
         // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
         refreshMappingTables(id);
-        Mapping mapping = taskProfile.getTask(id, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(id);
 
         // 匹配相似表（异步）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
@@ -165,7 +165,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String copy(String id) {
-        Mapping mapping = taskProfile.getTask(id, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
 
         String json = JsonUtil.objToJson(mapping);
@@ -258,13 +258,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public MappingVO getMapping(String id) {
-        Mapping mapping = taskProfile.getTask(id, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(id);
         return convertMapping2Vo(mapping);
     }
 
     @Override
     public MappingCustomTableVO getMappingCustomTable(String id, String type) {
-        Mapping mapping = taskProfile.getTask(id, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(id);
         MappingCustomTableVO vo = new MappingCustomTableVO();
         vo.setId(mapping.getId());
         vo.setName(mapping.getName());
@@ -390,7 +390,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String refreshMappingTables(String id) {
-        Mapping mapping = taskProfile.getTask(id, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
         mapping.setSourceTable(updateConnectorTables(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX));
         mapping.setTargetTable(updateConnectorTables(mapping, ConnectorInstanceUtil.TARGET_SUFFIX));
@@ -615,7 +615,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 检查是否存在同步任务
      */
     private Mapping assertMappingExist(String mappingId) {
-        Mapping mapping = taskProfile.getTask(mappingId, Mapping.class);
+        Mapping mapping = taskProfile.getMapping(mappingId);
         Assert.notNull(mapping, "同步任务不存在.");
         return mapping;
     }
