@@ -69,7 +69,7 @@ public final class PullerTaskRunner implements TaskRunner {
     @Override
     public void prepareFullIncrement(String taskId) {
         Mapping mapping = requireMapping(taskId);
-        if (!StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), mapping.getModel())) {
+        if (!StringUtil.equals(ModelEnum.FULL_INCREMENT.getCode(), mapping.getModel())) {
             return;
         }
         fullIncrementPuller.prepareFullPhase(mapping);
@@ -78,7 +78,7 @@ public final class PullerTaskRunner implements TaskRunner {
     @Override
     public void switchToIncrementAfterFull(String taskId) {
         Mapping mapping = requireMapping(taskId);
-        if (!StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), mapping.getModel())) {
+        if (!StringUtil.equals(ModelEnum.FULL_INCREMENT.getCode(), mapping.getModel())) {
             return;
         }
         fullIncrementPuller.switchToIncrement(mapping);

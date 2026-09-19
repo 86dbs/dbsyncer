@@ -7,11 +7,11 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 
 /**
- * 驱动同步方式枚举
+ * 同步方式枚举
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2023-11-16 00:51
+ * @author AE86
+ * @version 1.0.0
+ * @date 2023-11-16 00:51
  */
 public enum ModelEnum {
 
@@ -23,11 +23,10 @@ public enum ModelEnum {
      * 增量
      */
     INCREMENT("increment", "增量"),
-
     /**
      * 全量+增量 (全量+增量)
      */
-    FULLINCREMENT("fullIncrement", "全量+增量");
+    FULL_INCREMENT("fullIncrement", "全量+增量");
 
     private final String code;
     private final String name;
@@ -47,7 +46,7 @@ public enum ModelEnum {
     }
 
     public static boolean isFull(String model) {
-        return StringUtil.equals(FULL.getCode(), model) || StringUtil.equals(FULLINCREMENT.getCode(), model);
+        return StringUtil.equals(FULL.getCode(), model) || StringUtil.equals(FULL_INCREMENT.getCode(), model);
     }
 
     public static boolean isIncrement(String code) {

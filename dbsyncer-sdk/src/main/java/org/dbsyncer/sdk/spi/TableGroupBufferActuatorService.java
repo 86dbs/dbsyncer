@@ -4,9 +4,9 @@
 package org.dbsyncer.sdk.spi;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2024-01-26 00:55
+ * @author AE86
+ * @version 1.0.0
+ * @date 2024-01-26 00:55
  */
 public interface TableGroupBufferActuatorService extends Cloneable {
 

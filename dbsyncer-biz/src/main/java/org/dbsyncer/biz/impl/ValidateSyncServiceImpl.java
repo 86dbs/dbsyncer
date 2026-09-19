@@ -81,7 +81,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-public class ValidateSyncServiceImpl implements ValidateSyncService {
+public final class ValidateSyncServiceImpl implements ValidateSyncService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -132,6 +132,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private DispatchTaskService dispatchTaskService;
+
+    @Resource
+    private ValidateSyncMatchTableTask validateSyncMatchTableTask;
 
     /**
      * 任务启停锁
@@ -233,10 +236,8 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
      * 提交异步匹配相似表任务
      */
     private void submitValidateSyncMatchTableTask(String taskId) {
-        ValidateSyncMatchTableTask task = new ValidateSyncMatchTableTask();
+        ValidateSyncMatchTableTask task = (ValidateSyncMatchTableTask) validateSyncMatchTableTask.clone();
         task.setTaskId(taskId);
-        task.setTaskService(taskService);
-        task.setValidateSyncService(this);
         dispatchTaskService.execute(task);
     }
 

@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz.task;
 
-import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.rsa.RsaManager;
@@ -31,11 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.Map;
 
 /**
- * 抽象类统计驱动总数任务
+ * 抽象类统计同步任务总数任务
  *
  * @author 穿云
  * @version 1.0.0
@@ -45,72 +45,36 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected String mappingId;
-
-    protected ParserComponent parserComponent;
-
-    protected SystemConfigProfile systemConfigProfile;
-
-    protected ConnectorProfile connectorProfile;
-
-    protected TaskProfile taskProfile;
-
-    protected TableGroupProfile tableGroupProfile;
-
-    protected TableGroupService tableGroupService;
-
-    protected ConnectorFactory connectorFactory;
-
-    protected MetaProfile metaProfile;
-
+    @Resource
     private RsaManager rsaManager;
 
-    public void setMappingId(String mappingId) {
-        this.mappingId = mappingId;
-    }
+    @Resource
+    private ParserComponent parserComponent;
 
-    public void setParserComponent(ParserComponent parserComponent) {
-        this.parserComponent = parserComponent;
-    }
+    @Resource
+    private ConnectorFactory connectorFactory;
 
-    public void setSystemConfigProfile(SystemConfigProfile systemConfigProfile) {
-        this.systemConfigProfile = systemConfigProfile;
-    }
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
-    public void setConnectorProfile(ConnectorProfile connectorProfile) {
-        this.connectorProfile = connectorProfile;
-    }
+    @Resource
+    private ConnectorProfile connectorProfile;
 
-    public void setTaskProfile(TaskProfile taskProfile) {
-        this.taskProfile = taskProfile;
-    }
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
-    public void setTableGroupProfile(TableGroupProfile tableGroupProfile) {
-        this.tableGroupProfile = tableGroupProfile;
-    }
+    @Resource
+    private MetaProfile metaProfile;
 
-    public void setTableGroupService(TableGroupService tableGroupService) {
-        this.tableGroupService = tableGroupService;
-    }
-
-    public void setConnectorFactory(ConnectorFactory connectorFactory) {
-        this.connectorFactory = connectorFactory;
-    }
-
-    public void setRsaManager(RsaManager rsaManager) {
-        this.rsaManager = rsaManager;
-    }
-
-    public void setMetaProfile(MetaProfile metaProfile) {
-        this.metaProfile = metaProfile;
-    }
+    @Resource
+    private TaskProfile taskProfile;
 
     protected void updateTableGroupCount(Mapping mapping, TableGroup tableGroup) {
         long now = Instant.now().toEpochMilli();
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
         Map<String, String> command = parserComponent.getCommand(mapping, group);
         String sourceConnectorId = mapping.getSourceConnectorId();
-        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mappingId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
         ConnectorConfig config = connectorProfile.getConnector(sourceConnectorId).getConfig();
         ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         Assert.notNull(command, "command can not null");
@@ -150,8 +114,19 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).total(delta));
     }
 
-    protected boolean shouldStop(Mapping mapping) {
-        return !isRunning() || !ModelEnum.isFull(mapping.getModel());
+    protected boolean shouldStop(String mappingId) {
+        // 运行中
+        if (isRunning()) {
+            return false;
+        }
+
+        // 同步任务类型非全量 TODO 存在性能问题
+        Mapping mapping = taskProfile.getMapping(mappingId);
+        if (!ModelEnum.isFull(mapping.getModel())) {
+            logger.warn("同步任务被修改, 提前结束任务 ({},{})", mapping.getName(), mapping.getModel());
+            return true;
+        }
+        return false;
     }
 
     private void setRsaConfig(DefaultMetaContext context) {

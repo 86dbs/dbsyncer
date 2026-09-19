@@ -49,7 +49,7 @@ public class BaseServiceImpl {
 
     protected void assertRunning(String metaId) {
         synchronized (LOCK) {
-            Assert.isTrue(!isRunning(metaId), "驱动正在运行, 请先停止.");
+            Assert.isTrue(!isRunning(metaId), "任务正在运行, 请先停止.");
         }
     }
 
@@ -67,7 +67,7 @@ public class BaseServiceImpl {
 
     protected void log(LogType log, Mapping mapping) {
         if (null != mapping) {
-            // 新增驱动:知识库(全量)
+            // 新增同步任务:知识库(全量)
             String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
             logService.log(log, "%s%s:%s(%s)", log.getMessage(), log.getName(), mapping.getName(), model);
         }
@@ -77,12 +77,12 @@ public class BaseServiceImpl {
         if (null != tableGroup) {
             Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
             if (null != mapping) {
-                // 新增驱动知识库(全量)映射关系:[My_User] >> [My_User_Target]
+                // 新增同步任务知识库(全量)映射关系:[My_User] >> [My_User_Target]
                 String name = mapping.getName();
                 String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
                 String s = tableGroup.getSourceTable().getName();
                 String t = tableGroup.getTargetTable().getName();
-                logService.log(log, "%s驱动%s(%s)%s:[%s] >> [%s]", log.getMessage(), name, model, log.getName(), s, t);
+                logService.log(log, "%s同步任务%s(%s)%s:[%s] >> [%s]", log.getMessage(), name, model, log.getName(), s, t);
             }
         }
     }

@@ -8,16 +8,12 @@ import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
@@ -52,9 +48,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private TableGroupChecker tableGroupChecker;
 
     @Resource
-    private ConnectorProfile connectorProfile;
-
-    @Resource
     private TaskProfile taskProfile;
 
     @Resource
@@ -64,16 +57,10 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private ParserComponent parserComponent;
-
-    @Resource
-    private ConnectorFactory connectorFactory;
-
-    @Resource
-    private RsaManager rsaManager;
-
-    @Resource
     private DispatchTaskService dispatchTaskService;
+
+    @Resource
+    private TableGroupCountTask tableGroupCountTask;
 
     @Override
     public String add(Map<String, String> params) {
@@ -181,7 +168,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public Meta updateMeta(Mapping mapping, String metaSnapshot) {
         Meta meta = metaProfile.getMeta(mapping.getMetaId());
-        Assert.notNull(meta, "驱动meta不存在.");
+        Assert.notNull(meta, "同步任务meta不存在.");
 
         // 清空状态
         meta.clear();
@@ -266,20 +253,12 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     /**
-     * 提交统计驱动表总数任务
+     * 提交统计同步任务表总数任务
      */
     private void submitTableGroupCountTask(Mapping mapping, List<String> list) {
-        TableGroupCountTask task = new TableGroupCountTask();
+        TableGroupCountTask task = (TableGroupCountTask) tableGroupCountTask.clone();
         task.setMappingId(mapping.getId());
         task.setTableGroups(list);
-        task.setParserComponent(parserComponent);
-        task.setTaskProfile(taskProfile);
-        task.setTableGroupProfile(tableGroupProfile);
-        task.setConnectorProfile(connectorProfile);
-        task.setConnectorFactory(connectorFactory);
-        task.setRsaManager(rsaManager);
-        task.setTableGroupService(this);
-        task.setMetaProfile(metaProfile);
         dispatchTaskService.execute(task);
     }
 

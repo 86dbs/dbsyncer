@@ -6,14 +6,14 @@ package org.dbsyncer.common.enums;
 /**
  * 任务调度类型枚举
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-13 00:00
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-13 00:00
  */
 public enum DispatchTaskEnum {
 
-    /* 统计驱动总数 */
-    MAPPING_COUNT("统计驱动总数"),
+    /* 统计同步任务总数 */
+    MAPPING_COUNT("统计同步任务总数"),
 
     /* 匹配相似表 */
     MAPPING_MATCH_TABLE("匹配相似表"),
@@ -21,8 +21,8 @@ public enum DispatchTaskEnum {
     /* 订正校验匹配相似表 */
     VALIDATE_SYNC_MATCH_TABLE("订正校验匹配相似表"),
 
-    /* 统计驱动表总数 */
-    TABLE_GROUP_COUNT("统计驱动表总数");
+    /* 统计同步任务表总数 */
+    TABLE_GROUP_COUNT("统计同步任务表总数");
 
     DispatchTaskEnum(String name) {
         this.name = name;

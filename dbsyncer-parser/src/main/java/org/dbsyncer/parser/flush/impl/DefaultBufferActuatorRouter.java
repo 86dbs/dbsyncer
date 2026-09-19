@@ -5,7 +5,6 @@ package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.AbstractBufferActuatorRouter;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.model.BufferActuatorMetric;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;

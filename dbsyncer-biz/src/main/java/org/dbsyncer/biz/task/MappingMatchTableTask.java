@@ -8,13 +8,8 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.DispatchTaskEnum;
-import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.SdkException;
@@ -22,40 +17,39 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 异步匹配相似表，完成后提交驱动统计任务
+ * 异步匹配相似表，完成后提交同步任务统计任务
  *
  * @author AE86
  * @version 1.0.0
  * @date 2026/4/8
  */
-public class MappingMatchTableTask extends AbstractDispatchTask {
+@Service
+public final class MappingMatchTableTask extends AbstractDispatchTask {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private String mappingId;
 
+    @Resource
     private TableGroupService tableGroupService;
 
+    @Resource
     private TaskProfile taskProfile;
 
-    private ParserComponent parserComponent;
-
-    private TableGroupProfile tableGroupProfile;
-
-    private ConnectorFactory connectorFactory;
-
-    private RsaManager rsaManager;
-
-    private MetaProfile metaProfile;
-
+    @Resource
     private DispatchTaskService dispatchTaskService;
+
+    @Resource
+    private MappingCountTask mappingCountTask;
 
     @Override
     public DispatchTaskEnum getType() {
@@ -75,7 +69,10 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
             return;
         }
         matchSimilarTableGroups(mapping);
-        submitMappingCountTask(mapping);
+
+        MappingCountTask task = (MappingCountTask) mappingCountTask.clone();
+        task.setMappingId(mapping.getId());
+        dispatchTaskService.execute(task);
     }
 
     private void matchSimilarTableGroups(Mapping mapping) {
@@ -113,52 +110,8 @@ public class MappingMatchTableTask extends AbstractDispatchTask {
         }
     }
 
-    private void submitMappingCountTask(Mapping mapping) {
-        MappingCountTask task = new MappingCountTask();
-        task.setMappingId(mapping.getId());
-        task.setMetaSnapshot(null);
-        task.setParserComponent(parserComponent);
-        task.setTableGroupProfile(tableGroupProfile);
-        task.setTableGroupService(tableGroupService);
-        task.setConnectorFactory(connectorFactory);
-        task.setRsaManager(rsaManager);
-        task.setMetaProfile(metaProfile);
-        dispatchTaskService.execute(task);
-    }
-
     public void setMappingId(String mappingId) {
         this.mappingId = mappingId;
     }
 
-    public void setTableGroupService(TableGroupService tableGroupService) {
-        this.tableGroupService = tableGroupService;
-    }
-
-    public void setTaskProfile(TaskProfile taskProfile) {
-        this.taskProfile = taskProfile;
-    }
-
-    public void setParserComponent(ParserComponent parserComponent) {
-        this.parserComponent = parserComponent;
-    }
-
-    public void setTableGroupProfile(TableGroupProfile tableGroupProfile) {
-        this.tableGroupProfile = tableGroupProfile;
-    }
-
-    public void setConnectorFactory(ConnectorFactory connectorFactory) {
-        this.connectorFactory = connectorFactory;
-    }
-
-    public void setRsaManager(RsaManager rsaManager) {
-        this.rsaManager = rsaManager;
-    }
-
-    public void setMetaProfile(MetaProfile metaProfile) {
-        this.metaProfile = metaProfile;
-    }
-
-    public void setDispatchTaskService(DispatchTaskService dispatchTaskService) {
-        this.dispatchTaskService = dispatchTaskService;
-    }
 }

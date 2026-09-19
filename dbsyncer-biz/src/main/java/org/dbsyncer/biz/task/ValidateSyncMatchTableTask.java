@@ -14,7 +14,9 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,15 +30,18 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2026/4/8
  */
-public class ValidateSyncMatchTableTask extends AbstractDispatchTask {
+@Service
+public final class ValidateSyncMatchTableTask extends AbstractDispatchTask {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private String taskId;
-
+    @Resource
     private TaskService<ValidateSyncTask> taskService;
 
+    @Resource
     private ValidateSyncService validateSyncService;
+
+    private String taskId;
 
     @Override
     public DispatchTaskEnum getType() {
@@ -107,11 +112,4 @@ public class ValidateSyncMatchTableTask extends AbstractDispatchTask {
         this.taskId = taskId;
     }
 
-    public void setTaskService(TaskService<ValidateSyncTask> taskService) {
-        this.taskService = taskService;
-    }
-
-    public void setValidateSyncService(ValidateSyncService validateSyncService) {
-        this.validateSyncService = validateSyncService;
-    }
 }

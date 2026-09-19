@@ -18,7 +18,6 @@ import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
@@ -30,8 +29,6 @@ import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
@@ -99,9 +96,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private SystemConfigProfile systemConfigProfile;
-
-    @Resource
     private TaskProfile taskProfile;
 
     @Resource
@@ -126,16 +120,16 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private TableGroupContext tableGroupContext;
 
     @Resource
-    private ParserComponent parserComponent;
-
-    @Resource
     private PreloadTemplate preloadTemplate;
 
     @Resource
     private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
-    private RsaManager rsaManager;
+    private MappingCountTask mappingCountTask;
+
+    @Resource
+    private MappingMatchTableTask mappingMatchTableTask;
 
     @Override
     public String add(Map<String, String> params) {
@@ -517,18 +511,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 提交统计同比任务总数任务
      */
     private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
-        MappingCountTask task = new MappingCountTask();
+        MappingCountTask task = (MappingCountTask) mappingCountTask.clone();
         task.setMappingId(mapping.getId());
         task.setMetaSnapshot(metaSnapshot);
-        task.setParserComponent(parserComponent);
-        task.setSystemConfigProfile(systemConfigProfile);
-        task.setConnectorProfile(connectorProfile);
-        task.setTaskProfile(taskProfile);
-        task.setTableGroupProfile(tableGroupProfile);
-        task.setTableGroupService(tableGroupService);
-        task.setConnectorFactory(connectorFactory);
-        task.setRsaManager(rsaManager);
-        task.setMetaProfile(metaProfile);
         dispatchTaskService.execute(task);
     }
 
@@ -536,16 +521,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 提交异步匹配相似表任务（结束后会继续提交统计）
      */
     private void submitMappingMatchTableTask(Mapping mapping) {
-        MappingMatchTableTask task = new MappingMatchTableTask();
+        MappingMatchTableTask task = (MappingMatchTableTask) mappingMatchTableTask.clone();
         task.setMappingId(mapping.getId());
-        task.setTableGroupService(tableGroupService);
-        task.setTaskProfile(taskProfile);
-        task.setParserComponent(parserComponent);
-        task.setTableGroupProfile(tableGroupProfile);
-        task.setConnectorFactory(connectorFactory);
-        task.setRsaManager(rsaManager);
-        task.setMetaProfile(metaProfile);
-        task.setDispatchTaskService(dispatchTaskService);
         dispatchTaskService.execute(task);
     }
 
