@@ -3,10 +3,7 @@
  */
 package org.dbsyncer.parser;
 
-import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.impl.DefaultBufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
@@ -19,12 +16,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Primary;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author AE86
@@ -37,12 +30,7 @@ public class ParserSupportConfiguration {
     @Resource
     private ServiceFactory serviceFactory;
 
-    /**
-     * 表执行器原型：开源回落 {@link TableGroupBufferActuator}，企业版 SPI 为 Plus。
-     * 路由 bind 时通过 {@link TableGroupBufferActuatorService#clone()} 派生每表/每管道实例。
-     */
     @Bean
-    @Primary
     @ConditionalOnMissingBean
     @DependsOn(value = "serviceFactory")
     public TableGroupBufferActuatorService tableGroupBufferActuatorService() {
@@ -73,52 +61,6 @@ public class ParserSupportConfiguration {
             return taskService;
         }
         return new TaskService<ConfigModel>() {
-
-            @Override
-            public String add(ConfigModel task) {
-                return StringUtil.EMPTY;
-            }
-
-            @Override
-            public String edit(ConfigModel task) {
-                return StringUtil.EMPTY;
-            }
-
-            @Override
-            public void delete(String id) {
-
-            }
-
-            @Override
-            public void start(String id) {
-
-            }
-
-            @Override
-            public void stop(String id) {
-
-            }
-
-            @Override
-            public ConfigModel get(String id) {
-                return null;
-            }
-
-            @Override
-            public Paging search(Map<String, String> param, CommonTaskTypeEnum commonTaskTypeEnum) {
-                return null;
-            }
-
-            @Override
-            public List<ConfigModel> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum) {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public boolean isRunning(String taskId) {
-                return false;
-            }
-
         };
     }
 
@@ -131,25 +73,6 @@ public class ParserSupportConfiguration {
             return service;
         }
         return new DatabaseSyncDetailService() {
-            @Override
-            public Paging result(Map<String, String> params) {
-                return null;
-            }
-
-            @Override
-            public void syncTaskTableMetaDetails(String taskId) {
-                // open-source 无企业实现时为空操作
-            }
-
-            @Override
-            public void resetTaskDetailsForNewRound(String taskId) {
-                // open-source 无企业实现时为空操作
-            }
-
-            @Override
-            public void markRunningDetailsDone(String taskId) {
-                // open-source 无企业实现时为空操作
-            }
         };
     }
 
@@ -161,32 +84,6 @@ public class ParserSupportConfiguration {
         if (service != null) {
             return service;
         }
-        return new ValidateSyncDetailService() {
-
-            @Override
-            public Paging result(Map<String, String> params) {
-                return null;
-            }
-
-            @Override
-            public Map<String, Object> manualRevise(String taskId, String detailId) {
-                return null;
-            }
-
-            @Override
-            public void syncTaskTableMetaDetails(String taskId) {
-                // open-source 无企业实现时为空操作
-            }
-
-            @Override
-            public void resetTaskDetailsForNewRound(String taskId) {
-                // open-source 无企业实现时为空操作
-            }
-
-            @Override
-            public void markRunningDetailsDone(String taskId) {
-                // open-source 无企业实现时为空操作
-            }
-        };
+        return new ValidateSyncDetailService() {};
     }
 }

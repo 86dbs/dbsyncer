@@ -137,7 +137,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         systemInfo.setGroup(MetricEnum.SYSTEM_ENV.getGroup());
 
         // 间隔10分钟预警
-        scheduledTaskService.start("0 */10 * * * ?", this);
+        scheduledTaskService.start("monitor-notice-task", "0 */10 * * * ?", this);
     }
 
     @Override
@@ -145,7 +145,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 50);
         String searchKey = params.get("searchKey");
-        // 按驱动任务分页，避免扫全量 Meta（含校验/迁移等非同步任务）
+        // 按任务分页，避免扫全量 Meta（含校验/迁移等非同步任务）
         Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
         Paging<MetaVO> result = new Paging<>(pageNum, pageSize);
         if (paging == null) {

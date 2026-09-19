@@ -18,8 +18,8 @@ import java.util.concurrent.ScheduledFuture;
 
 /**
  * @version 1.0.0
- * @Author AE86
- * @Date 2020-05-24 22:06
+ * @author AE86
+ * @date 2020-05-24 22:06
  */
 @Component
 public class ScheduledTaskServiceImpl implements ScheduledTaskService, DisposableBean {
@@ -36,7 +36,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
 
     @Override
     public void start(String key, String cron, ScheduledTaskJob job) {
-        logger.info("[{}], Started task [{}]", cron, job.getClass().getSimpleName());
+        logger.info("[{}], key=[{}], Started task [{}]", cron, key, job.getClass().getSimpleName());
         apply(key, ()->taskScheduler.schedule(job, (trigger)->new CronTrigger(cron).nextExecutionTime(trigger)));
     }
 

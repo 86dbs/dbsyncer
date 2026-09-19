@@ -18,8 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 开源增量路由：每张源表一个执行器，超过上限后走通用执行器。
- *
  * @author wuji
  * @version 1.0.0
  * @date 2026-08-12
@@ -30,7 +28,7 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
     private TableGroupBufferActuatorService tableGroupBufferActuatorService;
 
     /**
-     * 驱动缓存执行路由列表
+     * 执行路由列表
      */
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
 

@@ -6,9 +6,9 @@ package org.dbsyncer.sdk.enums;
 /**
  * 通知类型枚举
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2026-03-05 00:27
+ * @author AE86
+ * @version 1.0.0
+ * @date 2026-03-05 00:27
  */
 public enum NoticeTypeEnum {
     /**

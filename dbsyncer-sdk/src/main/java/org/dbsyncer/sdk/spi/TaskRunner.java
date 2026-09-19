@@ -5,7 +5,6 @@ package org.dbsyncer.sdk.spi;
 
 /**
  * 本机任务执行器：由 Spring 注入，供集群/单机控制面拉起或停止 Puller。
- * <p>内部通知路径只应调用本接口，禁止再走用户启动链。
  *
  * @author wuji
  * @version 1.0.0

@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 import java.util.zip.ZipOutputStream;
 
 /**
- * 任务执行结果表（dbsyncer_meta）查询与计数操作。
+ * 任务执行结果表
  *
  * @author wuji
  * @version 1.0.0

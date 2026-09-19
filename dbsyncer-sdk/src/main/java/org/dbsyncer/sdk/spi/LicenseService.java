@@ -7,9 +7,9 @@ import org.dbsyncer.sdk.enums.EditionEnum;
 import org.dbsyncer.sdk.model.ProductInfo;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2024-05-13 01:17
+ * @author AE86
+ * @version 1.0.0
+ * @date 2024-05-13 01:17
  */
 public interface LicenseService {
 
@@ -25,15 +25,11 @@ public interface LicenseService {
 
     /**
      * 获取授权KEY
-     *
-     * @return
      */
     String getKey();
 
     /**
      * 获取授权信息
-     *
-     * @return
      */
     ProductInfo getProductInfo();
 

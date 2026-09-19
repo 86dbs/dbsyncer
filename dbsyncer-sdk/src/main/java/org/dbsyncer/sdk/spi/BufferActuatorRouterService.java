@@ -9,8 +9,7 @@ import org.dbsyncer.sdk.model.BufferActuatorMetric;
 import java.util.List;
 
 /**
- * 增量缓存执行器路由 SPI。
- * <p>开源：每表一执行器
+ * 增量缓存执行器路由
  *
  * @author wuji
  * @version 1.0.0
@@ -19,9 +18,9 @@ import java.util.List;
 public interface BufferActuatorRouterService {
 
     /**
-     * 绑定驱动的增量执行器。
+     * 绑定同步任务的增量执行器。
      *
-     * @param metaId           驱动 Meta ID
+     * @param metaId           Meta ID
      * @param sourceTableNames 源表名列表
      * @param channelSize      执行器数
      */
@@ -30,14 +29,14 @@ public interface BufferActuatorRouterService {
     /**
      * 解绑并停止该驱动下的执行器。
      *
-     * @param metaId 驱动 Meta ID
+     * @param metaId Meta ID
      */
     void unbind(String metaId);
 
     /**
      * 投递增量变更事件。
      *
-     * @param metaId 驱动 Meta ID
+     * @param metaId Meta ID
      * @param event  变更事件
      */
     void execute(String metaId, ChangedEvent event);
