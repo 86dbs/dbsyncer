@@ -6,7 +6,7 @@ import org.springframework.context.event.ApplicationContextEvent;
 
 public final class FullRefreshEvent extends ApplicationContextEvent {
 
-    private Task task;
+    private final Task task;
 
     /**
      * Create a new ContextStartedEvent.

@@ -1,12 +1,11 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.manager;
+package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.Puller;
 import org.dbsyncer.manager.event.ClosedEvent;
-import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
-import org.dbsyncer.manager.impl.FullIncrementPuller;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.enums.ModelEnum;

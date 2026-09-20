@@ -35,8 +35,6 @@ public final class StandaloneService implements ClusterService {
     @Resource
     private ApplicationContext applicationContext;
 
-
-
     @Override
     public void start(String taskId, String model, boolean autoRecovery) {
         taskRunner.start(taskId, autoRecovery);
@@ -46,7 +44,6 @@ public final class StandaloneService implements ClusterService {
     public void stop(String taskId) {
         taskRunner.stop(taskId);
     }
-
 
     @Override
     public void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {

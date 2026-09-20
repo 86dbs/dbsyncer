@@ -233,8 +233,8 @@ public class ParserComponentImpl implements ParserComponent {
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
-
             clusterService.flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
+
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
 
