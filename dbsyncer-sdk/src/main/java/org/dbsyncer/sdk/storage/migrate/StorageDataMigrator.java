@@ -9,8 +9,10 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +107,20 @@ public abstract class StorageDataMigrator {
                     break;
             }
         }
+        // 拆分完成后清理旧混存：仅保留 system 配置
+        cleanupMigratedConfig();
+    }
+
+    /** dbsyncer_config 仅保留 type=system，其余已迁至独立表。 */
+    private void cleanupMigratedConfig() {
+        if (!tableExists(T_CONFIG)) {
+            return;
+        }
+        Query query = new Query();
+        query.setType(StorageEnum.CONFIG);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.NOT_EQUAL, ConfigConstant.SYSTEM);
+        storage.delete(query);
+        logger.info("存储兼容升级：已清理 dbsyncer_config 非 system 数据");
     }
 
     private void migrateStandaloneMapping() {
