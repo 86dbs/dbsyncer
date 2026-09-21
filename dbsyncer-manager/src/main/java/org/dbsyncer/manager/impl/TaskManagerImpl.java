@@ -3,18 +3,24 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.Puller;
 import org.dbsyncer.manager.event.ClosedEvent;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.sdk.spi.TaskRunner;
+import org.dbsyncer.sdk.service.TaskManager;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -25,13 +31,13 @@ import java.util.Map;
  * @date 2026-09-08
  */
 @Component
-public final class PullerTaskRunner implements TaskRunner {
+public final class TaskManagerImpl implements TaskManager, ApplicationListener<ClosedEvent> {
 
     @Resource
     private TaskProfile taskProfile;
 
     @Resource
-    private ConnectorInstanceBinder connectorInstanceBinder;
+    private MetaProfile metaProfile;
 
     @Resource
     private FullIncrementPuller fullIncrementPuller;
@@ -44,12 +50,11 @@ public final class PullerTaskRunner implements TaskRunner {
 
     @Override
     public void restoreConnector(String taskId) {
-        connectorInstanceBinder.restore(requireMapping(taskId));
     }
 
     @Override
-    public void start(String taskId, boolean autoRecovery) {
-        Mapping mapping = requireMapping(taskId);
+    public void start(ConfigModel configModel, boolean autoRecovery) {
+        Mapping mapping = (Mapping) configModel;
         getPuller(mapping).start(mapping, autoRecovery);
     }
 
@@ -62,7 +67,6 @@ public final class PullerTaskRunner implements TaskRunner {
     @Override
     public void releaseConnector(String taskId) {
         Mapping mapping = taskProfile.getMapping(taskId);
-        connectorInstanceBinder.release(mapping);
     }
 
     @Override
@@ -99,4 +103,41 @@ public final class PullerTaskRunner implements TaskRunner {
         String model = mapping.getModel();
         return map.get(model.concat("Puller"));
     }
+
+    @Override
+    public void onApplicationEvent(ClosedEvent event) {
+        changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
+        // 集群：排空/收口后再回收本机连接（用户停止、自然结束、失败）
+        releaseMappingConnectors(event.getMetaId());
+    }
+
+    public void changeMetaState(String metaId, CommonTaskStatusEnum status) {
+        Meta meta = metaProfile.getMeta(metaId);
+        int code = status.getCode();
+        if (null != meta && meta.getState() != code) {
+            long now = Instant.now().toEpochMilli();
+            meta.setState(code);
+            meta.setUpdateTime(now);
+            // 进入运行中时记录本轮启动时间，供耗时（updateTime - startTime）计算
+            if (CommonTaskStatusEnum.RUNNING == status) {
+                meta.setStartTime(now);
+            }
+            metaProfile.updateMeta(meta);
+        }
+    }
+
+    /**
+     * 集群下任务关闭后释放本机连接。
+     * <p>
+     * todo 去掉
+     *
+     * @param metaId Meta ID
+     */
+    private void releaseMappingConnectors(String metaId) {
+        Meta meta = metaProfile.getMeta(metaId);
+        if (meta == null) {
+            return;
+        }
+    }
+
 }

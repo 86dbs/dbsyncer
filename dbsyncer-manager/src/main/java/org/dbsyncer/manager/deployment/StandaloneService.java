@@ -3,15 +3,18 @@
  */
 package org.dbsyncer.manager.deployment;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.event.FullRefreshEvent;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Task;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.service.TaskManager;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.spi.TaskRunner;
+import org.dbsyncer.sdk.spi.TaskService;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Resource;
@@ -27,7 +30,7 @@ import java.util.Map;
 public final class StandaloneService implements ClusterService {
 
     @Resource
-    private TaskRunner taskRunner;
+    private TaskManager taskManager;
 
     @Resource
     private FlushStrategy flushStrategy;
@@ -35,14 +38,22 @@ public final class StandaloneService implements ClusterService {
     @Resource
     private ApplicationContext applicationContext;
 
+    @Resource
+    private TaskService taskService;
+
     @Override
-    public void start(String taskId, String model, boolean autoRecovery) {
-        taskRunner.start(taskId, autoRecovery);
+    public void start(ConfigModel configModel, boolean autoRecovery) {
+        if (configModel instanceof Mapping) {
+            taskManager.start(configModel, autoRecovery);
+        }else {
+            //todo 转换为 model
+            taskService.start(configModel.getId());
+        }
     }
 
     @Override
     public void stop(String taskId) {
-        taskRunner.stop(taskId);
+        taskManager.stop(taskId);
     }
 
     @Override

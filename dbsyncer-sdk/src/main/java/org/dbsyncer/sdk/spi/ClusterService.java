@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.sdk.model.ClusterNode;
@@ -46,7 +47,7 @@ public interface ClusterService {
     default void removeNode(String nodeId) {
     }
 
-    default void start(String taskId, String model, boolean autoRecovery) {
+    default void start(ConfigModel configModel, boolean autoRecovery) {
     }
 
     default void stop(String taskId) {
@@ -68,7 +69,5 @@ public interface ClusterService {
      * @param targetSchemaResolver 目标库类型解析
      * @param targetFieldMap       目标字段
      */
-    default void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
-
-    }
+    void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap);
 }

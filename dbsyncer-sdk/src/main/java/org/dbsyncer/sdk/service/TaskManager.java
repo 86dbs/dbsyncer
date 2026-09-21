@@ -1,7 +1,9 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.sdk.spi;
+package org.dbsyncer.sdk.service;
+
+import org.dbsyncer.common.model.ConfigModel;
 
 /**
  * 本机任务执行器：由 Spring 注入，供集群/单机控制面拉起或停止 Puller。
@@ -10,15 +12,12 @@ package org.dbsyncer.sdk.spi;
  * @version 1.0.0
  * @date 2026-09-07
  */
-public interface TaskRunner {
+public interface TaskManager {
 
     /**
      * 本机拉起任务执行器。
-     *
-     * @param taskId       任务 ID（Mapping ID）
-     * @param autoRecovery 是否重启自动恢复
      */
-    void start(String taskId, boolean autoRecovery);
+    void start(ConfigModel configModel, boolean autoRecovery);
 
     /**
      * 本机停止任务执行器。

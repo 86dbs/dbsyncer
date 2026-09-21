@@ -10,7 +10,6 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
@@ -21,6 +20,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.impl.DingTalkNoticeService;
 import org.dbsyncer.plugin.impl.HttpNoticeService;
@@ -40,8 +40,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -72,9 +74,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private TaskProfile taskProfile;
 
     @Resource
-    private ManagerFactory managerFactory;
-
-    @Resource
     private ConnectorFactory connectorFactory;
 
     @Resource
@@ -99,9 +98,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private ScheduledScanManager scheduledScanManager;
-
-    @Resource
-    private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -203,7 +199,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         return preloadCompleted;
     }
 
-
     /**
      * 配置导入完成后的收尾：重建连接实例，恢复同步驱动与企业任务。
      */
@@ -249,9 +244,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     reConnect(mapping);
                     // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
-                        managerFactory.start(mapping, true);
+                        clusterService.start(mapping, true);
                     } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
-                        managerFactory.changeMetaState(meta.getId(), CommonTaskStatusEnum.READY);
+                        changeMetaState(meta.getId(), CommonTaskStatusEnum.READY);
                     }
                 } catch (Exception e) {
                     logger.error("恢复同步驱动失败, metaId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
@@ -274,8 +269,14 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     public void reConnect(String uniqueId, String sourceConnectorId, String sourceDatabase, String sourceSchema,
                           String targetConnectorId, String targetDatabase, String targetSchema) {
-        connectorInstanceBinder.bind(uniqueId, sourceConnectorId, sourceDatabase, sourceSchema,
-                targetConnectorId, targetDatabase, targetSchema);
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
+        Connector connector = connectorProfile.getConnector(sourceConnectorId);
+        ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), sourceDatabase, sourceSchema);
+        Assert.notNull(instance, "Source connector instance can not null");
+        connector = connectorProfile.getConnector(targetConnectorId);
+        instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), targetDatabase, targetSchema);
+        Assert.notNull(instance, "Target connector instance can not null");
     }
 
     private void loadConnectorInstance() {
@@ -351,6 +352,21 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             } catch (Exception e) {
                 logger.error("恢复任务失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
             }
+        }
+    }
+
+    private void changeMetaState(String metaId, CommonTaskStatusEnum status) {
+        Meta meta = metaProfile.getMeta(metaId);
+        int code = status.getCode();
+        if (null != meta && meta.getState() != code) {
+            long now = Instant.now().toEpochMilli();
+            meta.setState(code);
+            meta.setUpdateTime(now);
+            // 进入运行中时记录本轮启动时间，供耗时（updateTime - startTime）计算
+            if (CommonTaskStatusEnum.RUNNING == status) {
+                meta.setStartTime(now);
+            }
+            metaProfile.updateMeta(meta);
         }
     }
 }

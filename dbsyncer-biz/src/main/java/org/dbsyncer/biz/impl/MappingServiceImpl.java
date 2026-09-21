@@ -16,6 +16,7 @@ import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -23,8 +24,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.manager.ManagerFactory;
-import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
+import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
@@ -49,6 +49,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
@@ -111,7 +112,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private DispatchTaskService dispatchTaskService;
 
     @Resource
-    private ManagerFactory managerFactory;
+    private ClusterService clusterService;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -121,9 +122,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private PreloadTemplate preloadTemplate;
-
-    @Resource
-    private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
     private MappingCountTask mappingCountTask;
@@ -353,8 +351,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(metaId);
             Assert.isTrue(!dispatchTaskService.isRunning(id), "同步任务表映射正在匹配或统计中，请稍候再启动");
-            // 启动
-            managerFactory.start(mapping);
+
+            // 标记运行中
+            changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
+
+            try {
+                clusterService.start(mapping, false);
+            } catch (Exception e) {
+                // rollback
+                changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
+                throw new ManagerException(e.getMessage());
+            }
 
             log(LogType.MappingLog.RUNNING, mapping);
         }
@@ -368,10 +375,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             if (!isRunning(mapping.getMetaId())) {
                 throw new BizException("同步任务已停止.");
             }
-            managerFactory.close(mapping);
-
+            String metaId = mapping.getMetaId();
+            changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
+            clusterService.stop(mapping.getId());
             log(LogType.MappingLog.STOP, mapping);
-
             // 发送关闭驱动通知消息
             MappingStopContent content = new MappingStopContent();
             content.setTitle("手动停止同步任务");
@@ -544,7 +551,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
         });
 
-        ConnectorInstance connectorInstance = connectorInstanceBinder.ensure(mapping, suffix);
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         tables = connectorFactory.getTables(connectorInstance, context);
         tables.addAll(customTables);
         // 按升序展示表
@@ -702,8 +710,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         boolean isSource = StringUtil.equals("source", type);
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
 
-        ConnectorInstance connectorInstance = connectorInstanceBinder.ensure(mapping,
-                isSource ? ConnectorInstanceUtil.SOURCE_SUFFIX : ConnectorInstanceUtil.TARGET_SUFFIX);
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         ConnectorService connectorService = connectorFactory.getConnectorService(connectorInstance.getConfig());
         ConfigValidator configValidator = connectorService.getConfigValidator();
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
@@ -783,5 +791,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
         }
     }
+
 
 }
