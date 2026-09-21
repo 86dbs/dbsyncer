@@ -32,8 +32,8 @@ import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.notice.MessageService;
+import org.dbsyncer.sdk.service.ScheduledScanManager;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.spi.ConnectorHealthService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +98,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private ClusterService clusterService;
 
     @Resource
-    private ConnectorHealthService connectorHealthService;
+    private ScheduledScanManager scheduledScanManager;
 
     @Resource
     private ConnectorInstanceBinder connectorInstanceBinder;
@@ -120,8 +120,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             // 订正校验 / 整库迁移
             resumeValidateSyncTasks();
             resumeDatabaseSyncTasks();
-            //初始化连接心跳检测
-            connectorHealthService.start();
+            //初始化定时检测任务
+            scheduledScanManager.start();
         } else {
             // 集群：不预热全部连接；由控制面按本机负责任务先恢复连接再启任务
             clusterService.init();

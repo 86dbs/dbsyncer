@@ -20,6 +20,16 @@ public abstract class NumberUtil {
         return NumberUtils.toLong(str, defaultValue);
     }
 
+    public static long toLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return NumberUtil.toLong(String.valueOf(value), 0L);
+    }
+
     public static boolean isCreatable(String str) {
         return NumberUtils.isCreatable(str);
     }

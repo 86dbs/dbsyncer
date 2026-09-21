@@ -5,7 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.sdk.spi.ConnectorHealthService;
+import org.dbsyncer.sdk.service.ScheduledScanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -21,7 +21,7 @@ import javax.annotation.Resource;
  * @date 2026-09-10
  */
 @Service
-public final class ConnectorHealthServiceImpl implements ConnectorHealthService, DisposableBean {
+public final class ConnectorHealthServiceImpl implements ScheduledScanService, DisposableBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

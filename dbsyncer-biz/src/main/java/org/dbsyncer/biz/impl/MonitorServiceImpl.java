@@ -45,6 +45,7 @@ import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.model.MetaIncrement;
+import org.dbsyncer.sdk.service.ScheduledScanService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
@@ -76,7 +77,7 @@ import java.util.stream.Collectors;
  * @date 2020-04-27 10:20
  */
 @Service
-public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob {
+public class MonitorServiceImpl extends BaseServiceImpl implements MonitorService, ScheduledTaskJob, ScheduledScanService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -110,6 +111,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Resource
     private MetricGroupProcessor metricGroupProcessor;
 
+    private static final String CONNECTOR_MONITOR_KEY = "monitor-notice-task";
+
+    private volatile boolean started;
+
     private final Map<String, MetricDetailFormatter> metricMap = new ConcurrentHashMap<>();
 
     private MetricResponse systemInfo;
@@ -135,9 +140,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         systemInfo = new MetricResponse();
         systemInfo.setCode(MetricEnum.SYSTEM_ENV.getCode());
         systemInfo.setGroup(MetricEnum.SYSTEM_ENV.getGroup());
-
-        // 间隔10分钟预警
-        scheduledTaskService.start("monitor-notice-task", "0 */10 * * * ?", this);
     }
 
     @Override
@@ -625,4 +627,23 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }).collect(Collectors.toList());
     }
 
+    @Override
+    public void start() {
+        if (started) {
+            return;
+        }
+        // 间隔10分钟预警
+        scheduledTaskService.start(CONNECTOR_MONITOR_KEY, "0 */10 * * * ?", this);
+        started = true;
+    }
+
+    @Override
+    public void stop() {
+        if (!started) {
+            return;
+        }
+        scheduledTaskService.stop(CONNECTOR_MONITOR_KEY);
+        started = false;
+        logger.info("connector health scheduler stopped");
+    }
 }
