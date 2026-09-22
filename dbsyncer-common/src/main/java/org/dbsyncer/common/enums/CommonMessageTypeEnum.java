@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.common.enums;
 
+import com.alibaba.fastjson2.annotation.JSONCreator;
+import com.alibaba.fastjson2.annotation.JSONField;
+
 /**
  * 消息业务域。
  *
@@ -23,6 +26,23 @@ public enum CommonMessageTypeEnum {
         this.code = code;
     }
 
+    /**
+     * 按 code 解析；未知抛异常（兼作 JSON 反序列化入口）。
+     *
+     * @param code 业务域 code
+     * @return 枚举
+     */
+    @JSONCreator
+    public static CommonMessageTypeEnum getByCode(int code) {
+        for (CommonMessageTypeEnum e : values()) {
+            if (e.code == code) {
+                return e;
+            }
+        }
+        throw new IllegalArgumentException("invalid code: " + code);
+    }
+
+    @JSONField
     public int getCode() {
         return code;
     }
