@@ -347,11 +347,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         final String metaId = mapping.getMetaId();
         // 如果已经完成了，重置状态
         clearMetaIfFinished(metaId);
-
         synchronized (LOCK) {
             assertRunning(metaId);
             Assert.isTrue(!dispatchTaskService.isRunning(id), "同步任务表映射正在匹配或统计中，请稍候再启动");
-
             // 标记运行中
             changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
 

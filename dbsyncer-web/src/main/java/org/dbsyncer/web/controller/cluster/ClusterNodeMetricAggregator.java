@@ -215,10 +215,10 @@ public class ClusterNodeMetricAggregator {
     }
 
     private Map<String, Integer> resolveFullWorkItemCounts() {
-        // 全量分片：按执行节点统计 dbsyncer_cluster_task_plan 在途行（未完成/运行中）
+        // 全量分片：按执行节点统计 dbsyncer_cluster_task_plan（含已完成尚未删行的 DONE）
         try {
             String sql = "SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_PLAN_TABLE
-                    + " WHERE NODE_ID IS NOT NULL AND STATUS IN (0, 1) GROUP BY NODE_ID";
+                    + " WHERE NODE_ID IS NOT NULL AND STATUS IN (0, 1, 2) GROUP BY NODE_ID";
             return toNodeCountMap(storageService.queryList(ExecuteRequest.of(sql)));
         } catch (Exception e) {
             logger.warn("加载全量分片统计失败: {}", e.getMessage());

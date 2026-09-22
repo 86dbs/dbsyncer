@@ -259,14 +259,13 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
             }
             return;
         }
-
         // 仅探测已缓存实例，避免集群下为健康检查全量建连
         Set<String> exist = new HashSet<>();
         for (Connector connector : list) {
             exist.add(connector.getId());
-//            if (!connectorFactory.containsConnector(connector.getId())) {
-//                continue;
-//            }
+            if (connectorFactory.getPool().get(connector.getId()) == null) {
+                connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
+            }
             boolean alive = probeAlive(connector.getId(), connector.getConfig());
             health.put(connector.getId(), alive);
             persistStatusIfChanged(connector, alive);
@@ -300,10 +299,10 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         }
         boolean created = false;
         try {
-//            if (!connectorFactory.containsConnector(id)) {
-//                connectorFactory.connect(id, connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
-//                created = true;
-//            }
+            if (connectorFactory.getPool().get(id) == null) {
+                connectorFactory.connect(id, connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
+                created = true;
+            }
             boolean alive = probeAlive(id, connector.getConfig());
             health.put(id, alive);
             persistStatusIfChanged(connector, alive);
@@ -325,13 +324,9 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         Assert.notNull(mapping, "Mapping can not be null.");
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
         ConnectorInstance connectorInstance;
-//        if (connectorFactory.contains(instanceId)) {
-//            connectorInstance = connectorFactory.connect(instanceId);
-//        } else {
-            Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
-            Assert.notNull(connector, "源连接器不存在");
-            connectorInstance = connectorFactory.connect(instanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
-//        }
+        Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
+        Assert.notNull(connector, "源连接器不存在");
+        connectorInstance = connectorFactory.connect(instanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
         return connectorFactory.getPosition(connectorInstance);
     }
 
@@ -351,9 +346,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
      * @param connectorId 连接器 ID
      */
     private void releaseIdleConnector(String connectorId) {
-//        if (clusterService.isStandalone() || connectorFactory.isAcquired(connectorId)) {
-//            return;
-//        }
         connectorFactory.disconnect(connectorId);
     }
 

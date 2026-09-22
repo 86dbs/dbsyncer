@@ -73,9 +73,9 @@ public class ConnectorFactory implements DisposableBean {
      * 建立连接，返回缓存连接对象
      *
      * @param instanceId 实例ID
-     * @param config 连接配置
-     * @param catalog 目录
-     * @param schema 模式
+     * @param config     连接配置
+     * @param catalog    目录
+     * @param schema     模式
      */
     public ConnectorInstance connect(String instanceId, ConnectorConfig config, String catalog, String schema) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
@@ -89,7 +89,7 @@ public class ConnectorFactory implements DisposableBean {
         if (newInstance == null) {
             throw new ConnectorException("连接配置异常：无法创建连接实例");
         }
-        ConnectorInstance pooledInstance = pool.compute(instanceId, (k, v)-> {
+        ConnectorInstance pooledInstance = pool.compute(instanceId, (k, v) -> {
             if (v != null) {
                 disconnect(v);
             }
@@ -267,7 +267,7 @@ public class ConnectorFactory implements DisposableBean {
             return;
         }
         // 原子性地移除实例，但不在回调中执行阻塞操作
-        pool.computeIfPresent(instanceId, (k, v)->(v == instance) ? null : v);
+        pool.computeIfPresent(instanceId, (k, v) -> (v == instance) ? null : v);
         // 在锁外执行断开连接操作，避免阻塞其他线程
         disconnect(instance);
     }
@@ -277,4 +277,7 @@ public class ConnectorFactory implements DisposableBean {
         getConnectorService(connectorInstance.getConfig()).disconnect(connectorInstance);
     }
 
+    public Map<String, ConnectorInstance> getPool() {
+        return pool;
+    }
 }

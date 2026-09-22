@@ -6,12 +6,14 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.Puller;
 import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.service.TaskManager;
 import org.springframework.context.ApplicationContext;
@@ -46,11 +48,10 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     private ApplicationContext applicationContext;
 
     @Resource
-    private Map<String, Puller> map;
+    private ConnectorFactory connectorFactory;
 
-    @Override
-    public void restoreConnector(String taskId) {
-    }
+    @Resource
+    private Map<String, Puller> map;
 
     @Override
     public void start(ConfigModel configModel, boolean autoRecovery) {
@@ -62,11 +63,6 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     public void stop(String taskId) {
         Mapping mapping = requireMapping(taskId);
         getPuller(mapping).close(mapping.getMetaId());
-    }
-
-    @Override
-    public void releaseConnector(String taskId) {
-        Mapping mapping = taskProfile.getMapping(taskId);
     }
 
     @Override
@@ -127,17 +123,23 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     }
 
     /**
-     * 集群下任务关闭后释放本机连接。
-     * <p>
-     * todo 去掉
+     * 任务关闭后释放本机源/目标连接（与 PreloadTemplate.reConnect 同一套 instanceId）。
      *
      * @param metaId Meta ID
      */
     private void releaseMappingConnectors(String metaId) {
         Meta meta = metaProfile.getMeta(metaId);
-        if (meta == null) {
+        if (meta == null || StringUtil.isBlank(meta.getTaskId())) {
             return;
         }
+        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+        if (mapping == null) {
+            return;
+        }
+        connectorFactory.disconnect(ConnectorInstanceUtil.buildConnectorInstanceId(
+                mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX));
+        connectorFactory.disconnect(ConnectorInstanceUtil.buildConnectorInstanceId(
+                mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX));
     }
 
 }
