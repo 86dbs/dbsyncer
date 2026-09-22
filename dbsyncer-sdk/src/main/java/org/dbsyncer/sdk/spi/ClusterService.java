@@ -57,6 +57,9 @@ public interface ClusterService {
         return null;
     }
 
+    default void pushMessage(String message) {
+    }
+
     default long forceExpireGracePeriod() {
         return 0L;
     }

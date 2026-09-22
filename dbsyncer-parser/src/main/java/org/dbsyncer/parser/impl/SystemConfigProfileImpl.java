@@ -3,11 +3,11 @@
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.common.cache.CacheConstant;
-import org.dbsyncer.common.cache.CacheService;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
@@ -29,7 +29,7 @@ import java.util.List;
  * @version 1.0.0
  */
 @Component
-public class SystemConfigProfileImpl implements SystemConfigProfile {
+public class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemConfig> implements SystemConfigProfile {
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -40,27 +40,9 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
-    @Resource
-    private CacheService cacheService;
-
     @Override
     public SystemConfig getSystemConfig() {
-        SystemConfig cached = cacheService.get(CacheConstant.SYSTEM_CONFIG, SystemConfig.class);
-        if (cached != null) {
-            return cached;
-        }
-        return cacheService.executeWithLock(CacheConstant.SYSTEM_CONFIG_LOCK, () -> {
-            SystemConfig again = cacheService.get(CacheConstant.SYSTEM_CONFIG, SystemConfig.class);
-            if (again != null) {
-                return again;
-            }
-            SystemConfig config = querySystemConfig();
-            if (config != null) {
-                // 配置变更低频，本地常驻；save/remove 时主动刷新
-                cacheService.put(CacheConstant.SYSTEM_CONFIG, config);
-            }
-            return config;
-        });
+        return getCache(null);
     }
 
     @Override
@@ -79,14 +61,7 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
         } else {
             storageService.edit(StorageEnum.CONFIG, ConfigModelUtil.convertModelToMap(config));
         }
-        cacheService.executeWithLock(CacheConstant.SYSTEM_CONFIG_LOCK, () -> {
-            SystemConfig latest = querySystemConfig();
-            if (latest != null) {
-                cacheService.put(CacheConstant.SYSTEM_CONFIG, latest);
-            } else {
-                cacheService.remove(CacheConstant.SYSTEM_CONFIG);
-            }
-        });
+        removeCache(null);
         return config.getId();
     }
 
@@ -109,10 +84,12 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
         }
     }
 
-    private SystemConfig querySystemConfig() {
+    @Override
+    protected ConfigModel getConfigModel(String id) {
         Query condition = new Query();
         condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.SYSTEM);
         List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, condition, SystemConfig.class);
         return CollectionUtils.isEmpty(list) ? null : list.get(0);
     }
+
 }
