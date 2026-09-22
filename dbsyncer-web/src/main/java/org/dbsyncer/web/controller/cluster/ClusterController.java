@@ -137,7 +137,7 @@ public class ClusterController extends BaseController {
     @ResponseBody
     public RestResult message(@RequestBody String message) {
         try {
-            return RestResult.restSuccess(clusterService.handleMessage(message));
+            return RestResult.restSuccess(clusterService.receiveMessage(message));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

@@ -53,7 +53,7 @@ public interface ClusterService {
     default void stop(String taskId) {
     }
 
-    default Object handleMessage(String message) {
+    default Object receiveMessage(String message) {
         return null;
     }
 
