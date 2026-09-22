@@ -77,6 +77,12 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         worker.start();
     }
 
+    @Override
+    public void start(Mapping mapping, boolean autoRecovery) {
+        // 全量不涉及自启动
+        start(mapping);
+    }
+
     /**
      * 同步执行全量任务
      *
