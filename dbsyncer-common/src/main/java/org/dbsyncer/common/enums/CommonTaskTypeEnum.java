@@ -15,6 +15,11 @@ import org.dbsyncer.common.util.StringUtil;
 public enum CommonTaskTypeEnum {
 
     /**
+     * 同步任务类型
+     */
+    MAPPING,
+
+    /**
      * 订正校验
      */
     VALIDATE_SYNC,
