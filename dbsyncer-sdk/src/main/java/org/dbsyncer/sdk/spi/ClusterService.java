@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.message.CommonMessage;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.Result;
@@ -57,7 +58,7 @@ public interface ClusterService {
         return null;
     }
 
-    default void pushMessage(String message) {
+    default void pushMessage(CommonMessage message) {
     }
 
     default long forceExpireGracePeriod() {

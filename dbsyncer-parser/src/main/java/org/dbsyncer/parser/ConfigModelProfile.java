@@ -14,6 +14,8 @@ public interface ConfigModelProfile {
 
     ConfigModel getCache(String id);
 
+    void removeCacheAndNotice(String id);
+
     void removeCache(String id);
 
 }

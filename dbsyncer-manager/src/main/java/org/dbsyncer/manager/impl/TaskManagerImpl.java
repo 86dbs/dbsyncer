@@ -8,7 +8,7 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.Puller;
-import org.dbsyncer.manager.event.ClosedEvent;
+import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;

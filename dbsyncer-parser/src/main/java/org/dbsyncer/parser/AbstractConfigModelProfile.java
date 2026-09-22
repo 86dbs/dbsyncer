@@ -4,9 +4,11 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.cache.CacheService;
+import org.dbsyncer.common.message.impl.RemoveConfigModelCacheMessage;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.impl.OperationTemplate;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -32,6 +34,9 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
 
     @Resource
     private CacheService cacheService;
+
+    @Resource
+    private ClusterService clusterService;
 
     public AbstractConfigModelProfile() {
         int level = 5;
@@ -75,6 +80,15 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
             }
             return config;
         });
+    }
+
+    @Override
+    public void removeCacheAndNotice(String id) {
+        cacheService.remove(buildLockKey(id));
+        RemoveConfigModelCacheMessage message = new RemoveConfigModelCacheMessage();
+        message.setId(id);
+        message.setConfigModelType(configModelType);
+        clusterService.pushMessage(message);
     }
 
     @Override

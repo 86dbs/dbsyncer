@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.event.RemoveSystemConfigCacheEvent;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -16,6 +17,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -29,7 +31,7 @@ import java.util.List;
  * @version 1.0.0
  */
 @Component
-public class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemConfig> implements SystemConfigProfile {
+public class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemConfig> implements SystemConfigProfile, ApplicationListener<RemoveSystemConfigCacheEvent> {
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -61,7 +63,7 @@ public class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemCo
         } else {
             storageService.edit(StorageEnum.CONFIG, ConfigModelUtil.convertModelToMap(config));
         }
-        removeCache(null);
+        removeCacheAndNotice(null);
         return config.getId();
     }
 
@@ -92,4 +94,8 @@ public class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemCo
         return CollectionUtils.isEmpty(list) ? null : list.get(0);
     }
 
+    @Override
+    public void onApplicationEvent(RemoveSystemConfigCacheEvent event) {
+        removeCache(null);
+    }
 }

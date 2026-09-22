@@ -5,11 +5,13 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.config.PackageFormatConfig;
 import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.event.RemoveMetaCacheEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
+import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.enums.CommandEnum;
@@ -21,6 +23,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -43,7 +46,7 @@ import java.util.zip.ZipOutputStream;
  * @version 1.0.0
  */
 @Component
-public class MetaProfileImpl implements MetaProfile {
+public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements MetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
 
     @Resource
     private StorageService storageService;
@@ -53,7 +56,7 @@ public class MetaProfileImpl implements MetaProfile {
 
     @Override
     public Meta getMeta(String metaId) {
-        return operationTemplate.queryObject(Meta.class, metaId);
+        return getCache(metaId);
     }
 
     @Override
@@ -246,7 +249,9 @@ public class MetaProfileImpl implements MetaProfile {
 
     @Override
     public String updateMeta(Meta meta) {
-        return operationTemplate.execute(meta, CommandEnum.OPR_EDIT);
+        String execute = operationTemplate.execute(meta, CommandEnum.OPR_EDIT);
+        removeCacheAndNotice(null);
+        return execute;
     }
 
     @Override
@@ -334,5 +339,10 @@ public class MetaProfileImpl implements MetaProfile {
             return;
         }
         TaskSplitUtil.split(metas, PackageFormatConfig.IMPORT_BATCH_SIZE, this::addMetaBatch);
+    }
+
+    @Override
+    public void onApplicationEvent(RemoveMetaCacheEvent event) {
+        removeCache(event.getCommonMessage().getId());
     }
 }
