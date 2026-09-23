@@ -393,7 +393,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     public String start(String id) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(id) > 0, "任务未配置表映射，无法启动");
         Assert.isTrue(!dispatchTaskService.isRunning(id), "表映射正在匹配中，请稍候再启动");
-        taskService.start(id);
+        taskService.start(taskService.get(id));
         return "启动成功";
     }
 

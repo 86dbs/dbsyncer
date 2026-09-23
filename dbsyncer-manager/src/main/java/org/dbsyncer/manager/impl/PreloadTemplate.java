@@ -347,7 +347,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 meta.setState(CommonTaskStatusEnum.READY.getCode());
                 meta.setUpdateTime(System.currentTimeMillis());
                 metaProfile.updateMeta(meta);
-                taskService.start(task.getId());
+                taskService.start(task);
                 logger.info("已恢复运行中任务: type={}, taskId={}, name={}", task.getType(), task.getId(), task.getName());
             } catch (Exception e) {
                 logger.error("恢复任务失败, taskId={}, err={}", task.getId(), e.getMessage(), e);

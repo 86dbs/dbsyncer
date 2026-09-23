@@ -4,17 +4,16 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.Puller;
-import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.service.TaskManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
@@ -63,30 +62,6 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     public void stop(String taskId) {
         Mapping mapping = requireMapping(taskId);
         getPuller(mapping).close(mapping.getMetaId());
-    }
-
-    @Override
-    public void prepareFullIncrement(String taskId) {
-        Mapping mapping = requireMapping(taskId);
-        if (!StringUtil.equals(ModelEnum.FULL_INCREMENT.getCode(), mapping.getModel())) {
-            return;
-        }
-        fullIncrementPuller.prepareFullPhase(mapping);
-    }
-
-    @Override
-    public void switchToIncrementAfterFull(String taskId) {
-        Mapping mapping = requireMapping(taskId);
-        if (!StringUtil.equals(ModelEnum.FULL_INCREMENT.getCode(), mapping.getModel())) {
-            return;
-        }
-        fullIncrementPuller.switchToIncrement(mapping);
-    }
-
-    @Override
-    public void completeBatchFull(String taskId) {
-        Mapping mapping = requireMapping(taskId);
-        applicationContext.publishEvent(new ClosedEvent(applicationContext, mapping.getMetaId()));
     }
 
     private Mapping requireMapping(String taskId) {

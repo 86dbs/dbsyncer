@@ -45,9 +45,9 @@ public final class StandaloneService implements ClusterService {
     public void start(ConfigModel configModel, boolean autoRecovery) {
         if (configModel instanceof Mapping) {
             taskManager.start(configModel, autoRecovery);
-        }else {
+        } else {
             //todo 转换为 model
-            taskService.start(configModel.getId());
+            taskService.start(configModel);
         }
     }
 

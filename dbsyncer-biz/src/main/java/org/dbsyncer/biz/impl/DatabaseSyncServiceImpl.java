@@ -221,7 +221,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (tableGroupProfile.getTableGroupCount(id) <= 0) {
             throw new BizException("任务未配置库表映射，无法启动");
         }
-        taskService.start(id);
+        taskService.start(task);
         return "启动成功";
     }
 

@@ -21,50 +21,53 @@ public interface TaskService<T extends ConfigModel> {
     /**
      * 新增
      */
-    default String add(T task){
+    default String add(T task) {
         return StringUtil.EMPTY;
     }
 
     /**
      * 修改
      */
-    default String edit(T task){
+    default String edit(T task) {
         return StringUtil.EMPTY;
     }
 
     /**
      * 删除
      */
-    default void delete(String id){}
+    default void delete(String id) {
+    }
 
     /**
      * 启动
      */
-    default void start(String id){}
+    default void start(ConfigModel configModel) {
+    }
 
     /**
      * 停止
      */
-    default void stop(String id){}
+    default void stop(String id) {
+    }
 
     /**
      * 获取任务
      */
-    default T get(String id){
+    default T get(String id) {
         return null;
     }
 
     /**
      * 任务列表
      */
-    default Paging search(Map<String, String> param, CommonTaskTypeEnum commonTaskTypeEnum){
+    default Paging search(Map<String, String> param, CommonTaskTypeEnum commonTaskTypeEnum) {
         return null;
     }
 
     /**
      * 获取所有任务 根据任务类型
      */
-    default List<T> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum){
+    default List<T> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum) {
         return null;
     }
 
