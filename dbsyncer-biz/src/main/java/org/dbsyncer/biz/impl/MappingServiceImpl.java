@@ -17,6 +17,7 @@ import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -584,7 +585,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      */
     private Meta resolveMappingMeta(Mapping mapping) {
         String metaId = mapping.getMetaId();
-        Meta meta = StringUtil.isBlank(metaId) ? null : metaProfile.getMeta(metaId);
+        Meta meta = StringUtil.isBlank(metaId) ? null : metaProfile.getMetaByTaskId(mapping.getId(), TaskLevelEnum.TASK);
         if (meta != null) {
             return meta;
         }

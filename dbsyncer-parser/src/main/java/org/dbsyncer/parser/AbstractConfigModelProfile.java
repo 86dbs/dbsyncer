@@ -63,20 +63,20 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
 
     @Override
     public T getCache(String id) {
-        ConfigModel cached = cacheService.get(configModelType, responseClazz);
+        String cacheKey = buildCacheKey(id);
+        T cached = (T) cacheService.get(cacheKey, responseClazz);
         if (cached != null) {
-            return (T) cached;
+            return cached;
         }
-        String lockKey = buildLockKey(id);
-        return cacheService.executeWithLock(lockKey, () -> {
-            T again = (T) cacheService.get(configModelType, responseClazz);
+        return cacheService.executeWithLock(buildLockKey(id), () -> {
+            T again = (T) cacheService.get(cacheKey, responseClazz);
             if (again != null) {
                 return again;
             }
             T config = (T) getConfigModel(id);
             if (config != null) {
                 // 配置变更低频，本地常驻；save/remove 时主动刷新
-                cacheService.put(configModelType, config);
+                cacheService.put(cacheKey, config);
             }
             return config;
         });
@@ -84,7 +84,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
 
     @Override
     public void removeCacheAndNotice(String id) {
-        cacheService.remove(buildLockKey(id));
+        removeCache(id);
         RemoveConfigModelCacheMessage message = new RemoveConfigModelCacheMessage();
         message.setId(id);
         message.setConfigModelType(configModelType);
@@ -93,7 +93,17 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
 
     @Override
     public void removeCache(String id) {
-        cacheService.remove(buildLockKey(id));
+        cacheService.remove(buildCacheKey(id));
+    }
+
+    /**
+     * 数据缓存 key：有 id 用 type:id，无 id（如 SystemConfig）只用 type。
+     */
+    private String buildCacheKey(String id) {
+        if (StringUtil.isBlank(id)) {
+            return configModelType;
+        }
+        return configModelType + ":" + id;
     }
 
     private String buildLockKey(String id) {

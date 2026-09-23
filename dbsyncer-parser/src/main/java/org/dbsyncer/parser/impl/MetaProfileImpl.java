@@ -250,7 +250,7 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
     @Override
     public String updateMeta(Meta meta) {
         String execute = operationTemplate.execute(meta, CommandEnum.OPR_EDIT);
-        removeCacheAndNotice(null);
+        removeCacheAndNotice(meta.getId());
         return execute;
     }
 
@@ -270,12 +270,18 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
             if (!CollectionUtils.isEmpty(paramsList)) {
                 storageService.editBatch(StorageEnum.META, null, paramsList);
             }
+            for (Meta meta : batch) {
+                if (meta != null && StringUtil.isNotBlank(meta.getId())) {
+                    removeCacheAndNotice(meta.getId());
+                }
+            }
         });
     }
 
     @Override
     public void removeMeta(String id) {
         storageService.remove(StorageEnum.META, id);
+        removeCacheAndNotice(id);
     }
 
     @Override
