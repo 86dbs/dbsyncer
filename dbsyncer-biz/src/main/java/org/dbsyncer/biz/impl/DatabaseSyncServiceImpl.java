@@ -8,8 +8,10 @@ import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseMappingVO;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -37,6 +39,7 @@ import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.util.DatabaseSyncProgressUtil;
@@ -94,6 +97,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Resource
     private TaskService<DatabaseSyncTask> taskService;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Resource
     private DatabaseSyncDetailService databaseSyncDetailService;
@@ -221,14 +227,22 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (tableGroupProfile.getTableGroupCount(id) <= 0) {
             throw new BizException("任务未配置库表映射，无法启动");
         }
-        taskService.start(task);
+        clusterService.start(task, false);
         return "启动成功";
     }
 
     @Override
     public String stop(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        taskService.stop(id);
+        ConfigModel task = taskService.get(id);
+        Assert.notNull(task, "任务不存在");
+        Meta taskMeta = metaProfile.getMetaByTaskId(id, TaskLevelEnum.TASK);
+        if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
+            taskMeta.setState(CommonTaskStatusEnum.STOPPING.getCode());
+            taskMeta.setUpdateTime(System.currentTimeMillis());
+            metaProfile.updateMeta(taskMeta);
+        }
+        clusterService.stop(id);
         return "停止成功";
     }
 
