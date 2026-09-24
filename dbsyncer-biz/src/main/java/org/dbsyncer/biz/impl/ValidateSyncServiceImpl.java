@@ -49,6 +49,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
@@ -89,6 +90,9 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private TaskService<ValidateSyncTask> taskService;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Resource
     private ValidateSyncDetailService validateSyncDetailService;
@@ -393,13 +397,23 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     public String start(String id) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(id) > 0, "任务未配置表映射，无法启动");
         Assert.isTrue(!dispatchTaskService.isRunning(id), "表映射正在匹配中，请稍候再启动");
-        taskService.start(taskService.get(id));
+        ConfigModel task = taskService.get(id);
+        Assert.notNull(task, "任务不存在");
+        clusterService.start(task, false);
         return "启动成功";
     }
 
     @Override
     public String stop(String id) {
-        taskService.stop(id);
+        ConfigModel task = taskService.get(id);
+        Assert.notNull(task, "任务不存在");
+        Meta taskMeta = metaProfile.getMetaByTaskId(id, TaskLevelEnum.TASK);
+        if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
+            taskMeta.setState(CommonTaskStatusEnum.STOPPING.getCode());
+            taskMeta.setUpdateTime(System.currentTimeMillis());
+            metaProfile.updateMeta(taskMeta);
+        }
+        clusterService.stop(id);
         return "停止成功";
     }
 

@@ -53,6 +53,11 @@ public final class StandaloneService implements ClusterService {
 
     @Override
     public void stop(String taskId) {
+        // 订正/迁移等在 TaskService；Mapping 在 TaskManager
+        if (taskService.get(taskId) != null) {
+            taskService.stop(taskId);
+            return;
+        }
         taskManager.stop(taskId);
     }
 
