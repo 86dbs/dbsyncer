@@ -359,9 +359,9 @@ public class ParserComponentImpl implements ParserComponent {
      */
     private ConnectorInstance requireInstance(String uniqueId, String connectorId, String catalog, String schema, String suffix) {
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, connectorId, suffix);
-//        if (connectorFactory.contains(instanceId)) {
-//            return connectorFactory.connect(instanceId);
-//        }
+        if (connectorFactory.contains(instanceId)) {
+            return connectorFactory.connect(instanceId);
+        }
         Connector connector = connectorProfile.getConnector(connectorId);
         Assert.notNull(connector, "连接器不存在");
         return connectorFactory.connect(instanceId, connector.getConfig(), catalog, schema);

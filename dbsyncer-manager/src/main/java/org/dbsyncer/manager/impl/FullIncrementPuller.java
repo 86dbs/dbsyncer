@@ -9,11 +9,13 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.service.FullIncrementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -30,7 +32,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @date 2026-05-18 15:02
  */
 @Component
-public final class FullIncrementPuller extends AbstractPuller {
+public final class FullIncrementPuller extends AbstractPuller implements FullIncrementService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -50,6 +52,9 @@ public final class FullIncrementPuller extends AbstractPuller {
 
     @Resource
     private LogService logService;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Override
     public void start(Mapping mapping) {
@@ -75,23 +80,20 @@ public final class FullIncrementPuller extends AbstractPuller {
 
     /**
      * 批处理全量前准备：可恢复则跳过，否则捕获增量位点。
-     *
-     * @param mapping 驱动
      */
-    public void prepareFullPhase(Mapping mapping) {
-        if (mapping == null) {
-            return;
-        }
+    @Override
+    public void prepareFullPhase(String taskId) {
+        Mapping mapping = taskProfile.getMapping(taskId);
         Meta meta = metaProfile.getMeta(mapping.getMetaId());
         prepareFullPhase(mapping, meta, mapping.getMetaId());
     }
 
     /**
      * 批处理全量完成后标记增量阶段并启动增量。
-     *
-     * @param mapping 驱动
      */
-    public void switchToIncrement(Mapping mapping) {
+    @Override
+    public void switchToIncrement(String taskId) {
+        Mapping mapping = taskProfile.getMapping(taskId);
         if (mapping == null) {
             return;
         }
@@ -181,4 +183,5 @@ public final class FullIncrementPuller extends AbstractPuller {
         FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
         metaProfile.updateMeta(meta);
     }
+
 }

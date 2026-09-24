@@ -70,33 +70,31 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     /**
-     * 建立连接，返回缓存连接对象
+     * 建立连接，返回缓存连接对象。同一 {@code instanceId} 已存在则复用，不新建、不拆除旧实例。
      *
      * @param instanceId 实例ID
      * @param config     连接配置
      * @param catalog    目录
      * @param schema     模式
+     * @return 连接实例（克隆）
      */
     public ConnectorInstance connect(String instanceId, ConnectorConfig config, String catalog, String schema) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
+        Assert.hasText(instanceId, "instanceId can not be blank.");
         ConnectorService connectorService = getConnectorService(config);
 
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
-        context.setCatalog(catalog);
-        context.setSchema(schema);
-        // 创建新连接
-        ConnectorInstance newInstance = connectorService.connect(config, context);
-        if (newInstance == null) {
-            throw new ConnectorException("连接配置异常：无法创建连接实例");
-        }
-        ConnectorInstance pooledInstance = pool.compute(instanceId, (k, v) -> {
-            if (v != null) {
-                disconnect(v);
+        // 仅首次创建；并发下由 computeIfAbsent 保证同一 instanceId 只建一套池
+        ConnectorInstance pooledInstance = pool.computeIfAbsent(instanceId, id -> {
+            DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+            context.setCatalog(catalog);
+            context.setSchema(schema);
+            ConnectorInstance created = connectorService.connect(config, context);
+            if (created == null) {
+                throw new ConnectorException("连接配置异常：无法创建连接实例");
             }
-            return newInstance;
+            return created;
         });
 
-        // 添加到连接池并返回克隆实例
         try {
             ConnectorInstance clone = (ConnectorInstance) pooledInstance.clone();
             clone.setConfig(config);
@@ -104,6 +102,11 @@ public class ConnectorFactory implements DisposableBean {
         } catch (CloneNotSupportedException e) {
             throw new ConnectorException(e);
         }
+    }
+
+    public boolean contains(String instanceId) {
+        return pool.containsKey(instanceId);
+
     }
 
     public ConnectorInstance connect(String instanceId) {
