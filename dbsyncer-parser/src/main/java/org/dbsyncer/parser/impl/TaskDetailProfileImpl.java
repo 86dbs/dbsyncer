@@ -12,6 +12,7 @@ import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.SqlResultRowUtil;
 import org.dbsyncer.parser.util.TaskDetailQuerySupport;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
 import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;
@@ -155,16 +156,20 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         Object fixed = row.get(ConfigConstant.META_FIXED);
         Object state = row.get(ConfigConstant.META_STATE);
 
-        // 明细 DATA 中独立计数优先（结构/数据分两行，不能共用 meta、table_group）
+        // 数据迁移：成功/失败以表级 Meta 为准（集群波次累加）；DATA 可覆盖 sourceTotal
         Map<String, Object> detailContent = TaskDetailUtil.deserializeContent(row.get(ConfigConstant.BINLOG_DATA));
         if (detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL) != null) {
             sourceTotal = detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL);
         }
-        if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL) != null) {
-            success = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
-        }
-        if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL) != null) {
-            fail = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+        boolean rowData = DatabaseMigrationDetailTypeEnum.ROW_DATA.getCode()
+                .equals(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_TYPE)));
+        if (!rowData) {
+            if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL) != null) {
+                success = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
+            }
+            if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL) != null) {
+                fail = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+            }
         }
         // 类型级生命周期优先 DATA.status；表级回退 meta.state
         Object detailStatus = detailContent.get(ConfigConstant.TASK_STATUS);

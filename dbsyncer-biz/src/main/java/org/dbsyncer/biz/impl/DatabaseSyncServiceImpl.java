@@ -5,6 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
+import org.dbsyncer.biz.model.TableProgressBundle;
 import org.dbsyncer.biz.vo.DatabaseMappingVO;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
@@ -35,6 +36,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.DatabaseMapping;
+import org.dbsyncer.sdk.model.DatabaseSyncTableSnapshot;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -264,12 +266,13 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                     boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
                     Map<Integer, Integer> mappingStatus = DatabaseSyncProgressUtil.readMappingStatus(
                             taskMeta == null ? null : taskMeta.getSnapshot());
-                    List<CommonTaskSnapshot> tableSnapshots = collectTableSnapshots(task.getId());
+                    TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
                     vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
-                            task, tableCount, vo.getMappingCount(), roundDone, mappingStatus, tableSnapshots));
+                            task, tableCount, vo.getMappingCount(), roundDone, mappingStatus,
+                            progressBundle.getSnapshots(), progressBundle.getSyncedRows(), progressBundle.getSourceTotal()));
                     vo.setTotalTableCount(tableCount);
                     vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
-                            task, tableCount, roundDone, mappingStatus, tableSnapshots));
+                            task, tableCount, roundDone, mappingStatus, progressBundle.getSnapshots()));
                     vo.setErrorCount(0L);
                     if (taskMeta != null) {
                         if (taskMeta.getFail() != null) {
@@ -541,22 +544,56 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return vo;
     }
 
-    private List<CommonTaskSnapshot> collectTableSnapshots(String taskId) {
+    /**
+     * 汇总表明细快照 + 已同步行 / 源表总行，供列表行级进度。
+     */
+    private TableProgressBundle collectTableProgressBundle(String taskId) {
+        TableProgressBundle bundle = new TableProgressBundle();
         List<String> ids = tableGroupProfile.listTableGroupIds(taskId);
         if (CollectionUtils.isEmpty(ids)) {
-            return Collections.emptyList();
+            return bundle;
         }
+        Map<String, Long> sourceTotalById = new HashMap<>();
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, page -> {
+            if (CollectionUtils.isEmpty(page)) {
+                return;
+            }
+            for (TableGroup tableGroup : page) {
+                if (tableGroup == null || StringUtil.isBlank(tableGroup.getId())) {
+                    continue;
+                }
+                if (tableGroup.getSourceTotal() > 0) {
+                    sourceTotalById.put(tableGroup.getId(), tableGroup.getSourceTotal());
+                }
+            }
+        });
         Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
-        List<CommonTaskSnapshot> snapshots = new ArrayList<>(ids.size());
         for (String groupId : ids) {
             if (StringUtil.isBlank(groupId)) {
-                snapshots.add(null);
+                bundle.getSnapshots().add(null);
                 continue;
             }
             Meta meta = metaMap == null ? null : metaMap.get(groupId);
-            snapshots.add(meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot()));
+            CommonTaskSnapshot snapshot = meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot());
+            bundle.getSnapshots().add(snapshot);
+            long fromMeta = counterValue(meta == null ? null : meta.getSuccess())
+                    + counterValue(meta == null ? null : meta.getFail());
+            long fromSnap = 0L;
+            if (snapshot instanceof DatabaseSyncTableSnapshot) {
+                DatabaseSyncTableSnapshot dts = (DatabaseSyncTableSnapshot) snapshot;
+                fromSnap = Math.max(0L, dts.getSuccessTotal()) + Math.max(0L, dts.getFailTotal());
+            }
+            bundle.addSyncedRows(Math.max(fromMeta, fromSnap));
+            Long sourceTotal = sourceTotalById.get(groupId);
+            if (sourceTotal != null && sourceTotal > 0) {
+                bundle.addSourceTotal(sourceTotal);
+            }
         }
-        return snapshots;
+        return bundle;
+    }
+
+    private static long counterValue(java.util.concurrent.atomic.AtomicLong counter) {
+        return counter == null ? 0L : Math.max(0L, counter.get());
     }
 
     /**
