@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.storage.migrate;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
@@ -183,10 +184,10 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.isBlank(json) ? "{}" : json);
         p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
         p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
-        // 历史 config 无角色列；与离线 SQL 迁移及 Connector 默认值一致，缺省均可作源/目标、在线
+        // 历史 config 无角色列；与离线 SQL 迁移及 Connector 默认值一致，缺省均可作源/目标、在线 todo 状态不用魔法值
         p.put(ConfigConstant.CONNECTOR_IS_SOURCE, 1);
         p.put(ConfigConstant.CONNECTOR_IS_TARGET, 1);
-        p.put(ConfigConstant.CONNECTOR_STATUS, 1);
+        p.put(ConfigConstant.CONNECTOR_STATUS, CommonTaskStatusEnum.RUNNING.getCode());
         storage.add(StorageEnum.CONNECTOR, p);
     }
 
@@ -296,7 +297,9 @@ public abstract class StorageDataMigrator {
         storage.add(StorageEnum.META, p);
     }
 
-    /** 仅补缺：已有任务级 meta 不覆盖（config.meta.state 优先）。 */
+    /**
+     * 仅补缺：已有任务级 meta 不覆盖（config.meta.state 优先）。
+     */
     private void migrateTaskStatusToMeta() {
         if (!tableExists(T_TASK) || !columnExists(T_TASK, "STATUS") || !tableExists(T_META)) {
             return;
