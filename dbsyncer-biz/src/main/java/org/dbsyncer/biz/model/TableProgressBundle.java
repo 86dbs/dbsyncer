@@ -46,4 +46,24 @@ public class TableProgressBundle {
         syncedRowsPerTable.add(Math.max(0L, syncedRows));
         sourceTotalPerTable.add(Math.max(0L, sourceTotal));
     }
+
+    public long sumSyncedRows() {
+        long sum = 0L;
+        for (Long rows : syncedRowsPerTable) {
+            if (rows != null && rows > 0) {
+                sum += rows;
+            }
+        }
+        return sum;
+    }
+
+    public long sumSourceTotal() {
+        long sum = 0L;
+        for (Long rows : sourceTotalPerTable) {
+            if (rows != null && rows > 0) {
+                sum += rows;
+            }
+        }
+        return sum;
+    }
 }

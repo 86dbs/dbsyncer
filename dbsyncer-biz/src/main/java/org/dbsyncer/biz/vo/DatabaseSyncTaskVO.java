@@ -38,8 +38,14 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
     private long errorCount;
     /** 任务总表数（TableGroup 数量） */
     private int totalTableCount;
-    /** 已完成表数（由 Meta 进度换算） */
+    /** 已完成表数（整表终态；仅结构模式列表展示用） */
     private int completedTableCount;
+    /** 结构阶段已完成表数（列表阶段文案用） */
+    private int schemaCompletedCount;
+    /** 已同步行合计（success+fail；有数据阶段时列表展示用） */
+    private long syncedRows;
+    /** 源端总行合计（各表 sourceTotal 缓存之和；有数据阶段时列表展示用） */
+    private long sourceTotal;
     /** 任务级 Meta.state（本轮业务态，含 DONE=3） */
     private Integer metaState;
     /** 本轮执行开始时间（任务级 Meta.startTime） */
@@ -135,6 +141,30 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
 
     public void setCompletedTableCount(int completedTableCount) {
         this.completedTableCount = completedTableCount;
+    }
+
+    public int getSchemaCompletedCount() {
+        return schemaCompletedCount;
+    }
+
+    public void setSchemaCompletedCount(int schemaCompletedCount) {
+        this.schemaCompletedCount = schemaCompletedCount;
+    }
+
+    public long getSyncedRows() {
+        return syncedRows;
+    }
+
+    public void setSyncedRows(long syncedRows) {
+        this.syncedRows = syncedRows;
+    }
+
+    public long getSourceTotal() {
+        return sourceTotal;
+    }
+
+    public void setSourceTotal(long sourceTotal) {
+        this.sourceTotal = sourceTotal;
     }
 
     public Integer getMetaState() {

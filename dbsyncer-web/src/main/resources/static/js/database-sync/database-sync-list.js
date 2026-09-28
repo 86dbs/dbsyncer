@@ -8,7 +8,7 @@
     var META_STATE_DONE = 3;
 
     function databaseSyncStart(taskId) {
-        doPoster('/database-sync/start', { id: taskId }, function (response) {
+        doPoster('/database-sync/start', {id: taskId}, function (response) {
             if (response.success) {
                 bootGrowl(response.data || '启动成功', 'success');
                 refreshIndexList();
@@ -19,7 +19,7 @@
     }
 
     function databaseSyncStop(taskId) {
-        doPoster('/database-sync/stop', { id: taskId }, function (response) {
+        doPoster('/database-sync/stop', {id: taskId}, function (response) {
             if (response.success) {
                 bootGrowl(response.data || '停止成功', 'success');
                 refreshIndexList();
@@ -33,7 +33,7 @@
         if (!confirm('确定删除该任务？')) {
             return;
         }
-        doPoster('/database-sync/remove', { id: taskId }, function (response) {
+        doPoster('/database-sync/remove', {id: taskId}, function (response) {
             if (response.success) {
                 bootGrowl(response.data || '删除成功', 'success');
                 refreshIndexList();
@@ -99,19 +99,90 @@
         return html;
     }
 
-    function renderTableProgressText(task) {
-        var total = Number(task.totalTableCount);
+    function formatCount(n) {
+        if (n === null || n === undefined || isNaN(n)) {
+            return '0';
+        }
+        try {
+            return Number(n).toLocaleString('zh-CN');
+        } catch (e) {
+            return String(n);
+        }
+    }
+
+    /**
+     * 按组合模式与阶段展示：结构 a/b 或 数据 c/d行（分母未齐为「统计中」）。
+     */
+    function renderProgressMetaText(task) {
+        var isRunning = Number(task.metaState) === 1;
+        var tableTotal = Number(task.totalTableCount);
+        var schemaDone = Number(task.schemaCompletedCount);
         var completed = Number(task.completedTableCount);
-        if (isNaN(total) || total <= 0) {
-            return '';
+        var synced = Number(task.syncedRows);
+        var sourceTotal = Number(task.sourceTotal);
+        if (isNaN(tableTotal) || tableTotal < 0) {
+            tableTotal = 0;
+        }
+        if (isNaN(schemaDone) || schemaDone < 0) {
+            schemaDone = 0;
         }
         if (isNaN(completed) || completed < 0) {
             completed = 0;
         }
-        if (completed > total) {
-            completed = total;
+        if (isNaN(synced) || synced < 0) {
+            synced = 0;
         }
-        return '<span class="text-xs text-secondary whitespace-nowrap">' + completed + '/' + total + '张表</span>';
+        if (isNaN(sourceTotal) || sourceTotal < 0) {
+            sourceTotal = 0;
+        }
+        if (schemaDone > tableTotal && tableTotal > 0) {
+            schemaDone = tableTotal;
+        }
+        if (completed > tableTotal && tableTotal > 0) {
+            completed = tableTotal;
+        }
+        if (sourceTotal > 0 && synced > sourceTotal) {
+            synced = sourceTotal;
+        }
+
+        var enableSchema = !!task.enableCopySchema;
+        var enableData = !!task.enableCopyData;
+
+        if (!isRunning) {
+            if (enableData && sourceTotal > 0) {
+                return '<span class="text-xs text-secondary whitespace-nowrap" title="已同步行 / 源端总行">'
+                    + formatCount(synced) + '/' + formatCount(sourceTotal) + '行</span>';
+            }
+            if (tableTotal > 0) {
+                return '<span class="text-xs text-secondary whitespace-nowrap" title="已完成表 / 总表">'
+                    + completed + '/' + tableTotal + '张表</span>';
+            }
+            return '';
+        }
+
+        if (enableSchema && !enableData) {
+            if (tableTotal <= 0) {
+                return '';
+            }
+            return '<span class="text-xs text-secondary whitespace-nowrap" title="结构完成表 / 总表">'
+                + '结构 ' + schemaDone + '/' + tableTotal + '</span>';
+        }
+
+        if (enableSchema && enableData && schemaDone < tableTotal) {
+            if (tableTotal <= 0) {
+                return '';
+            }
+            return '<span class="text-xs text-secondary whitespace-nowrap" title="结构完成表 / 总表">'
+                + '结构 ' + schemaDone + '/' + tableTotal + '</span>';
+        }
+
+        if (enableData) {
+            var totalText = sourceTotal > 0 ? formatCount(sourceTotal) : '统计中';
+            return '<span class="text-xs text-secondary whitespace-nowrap" title="已同步行 / 源端总行">'
+                + '数据 ' + formatCount(synced) + '/' + totalText + '</span>';
+        }
+
+        return '';
     }
 
     function renderTaskDurationText(task) {
@@ -170,7 +241,7 @@
                 + 'onclick="doLoader(\'/database-sync/page/detail?id=' + taskId + '&detailStatus=fail\'); return false;">'
                 + '<span class="badge badge-error">' + n + '</span></a>')
             : '<span class="badge badge-success">正常</span>';
-        var tableProgressHtml = renderTableProgressText(task);
+        var tableProgressHtml = renderProgressMetaText(task);
         var durationHtml = renderTaskDurationText(task);
         var centerParts = [];
         if (tableProgressHtml) {
@@ -239,15 +310,15 @@
         });
 
         const searchInput = initSearch('database-sync-search', function (searchKey) {
-            pagination.doSearch({ searchKey: searchKey }, 1);
+            pagination.doSearch({searchKey: searchKey}, 1);
         });
 
         window.refreshIndexList = function () {
-            pagination.doSearch({ searchKey: searchInput.getValue() }, pagination.currentPage);
+            pagination.doSearch({searchKey: searchInput.getValue()}, pagination.currentPage);
         };
 
         PageRefreshManager.register(function () {
-            pagination.doSearch({ searchKey: searchInput.getValue() }, pagination.currentPage);
+            pagination.doSearch({searchKey: searchInput.getValue()}, pagination.currentPage);
         });
     }
 

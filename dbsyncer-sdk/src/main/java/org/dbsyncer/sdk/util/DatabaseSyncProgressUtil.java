@@ -200,7 +200,7 @@ public final class DatabaseSyncProgressUtil {
         return count;
     }
 
-    private static int countDataDoneTables(List<CommonTaskSnapshot> tableSnapshots) {
+    public static int countDataDoneTables(List<CommonTaskSnapshot> tableSnapshots) {
         if (CollectionUtils.isEmpty(tableSnapshots)) {
             return 0;
         }

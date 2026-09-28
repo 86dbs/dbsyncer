@@ -415,8 +415,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 全窗划界：LIMIT=budget，取末行作 END（末页或无法探点时使用）。
      */
     private CursorBound resolveCursorBoundByFullWindow(DatabaseConnectorInstance connectorInstance, String sql,
-                                                      boolean fromHead, Object[] cursors, int budget,
-                                                      String startCursor, List<String> primaryKeys) {
+                                                       boolean fromHead, Object[] cursors, int budget,
+                                                       String startCursor, List<String> primaryKeys) {
         FullPluginContext pageContext = newBoundPageContext(budget, 1, fromHead ? null : cursors);
         Object[] args = fromHead ? getPageArgs(pageContext) : getPageCursorArgs(pageContext);
         if (args == null) {
@@ -442,7 +442,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     private List<Map<String, Object>> queryBoundRows(DatabaseConnectorInstance connectorInstance,
-                                                       String sql, Object[] args) {
+                                                     String sql, Object[] args) {
         final String finalSql = sql;
         final Object[] finalArgs = args == null ? new Object[0] : args;
         return connectorInstance.execute(
@@ -514,11 +514,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                  * MySQL返回结果：
                  * With ON DUPLICATE KEY UPDATE, the affected-rows value per row is 1 if the row is inserted as a new row, 2 if an existing row is updated, and 0 if an existing row is set to its current values.
                  */
-                if (execute[i] == 1 || execute[i] == 2 || execute[i] == -2) {
+                if (execute[i] == 1 || execute[i] == 2 || execute[i] == -2
+                        || (context.isForceUpdate() && execute[i] == 0)) {
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                if (isInsert(event)){
+                if (isInsert(event)) {
                     result.getFailData().add(data.get(i));
                     if (StringUtil.isBlank(result.getError())) {
                         result.getError().append("目标表数据可能存在");
@@ -663,11 +664,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
+        map.put(SqlBuilderEnum.INSERT.getName(), buildInsertSql(config));
         if (commandConfig.isForceUpdate()) {
             DatabaseConnectorInstance instance = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
             map.put(ConnectorConstant.OPERTION_UPSERT, buildUpsertSql(instance, config));
         } else {
-            map.put(SqlBuilderEnum.INSERT.getName(), buildInsertSql(config));
             buildSql(map, SqlBuilderEnum.UPDATE, config);
         }
         buildSql(map, SqlBuilderEnum.DELETE, config);

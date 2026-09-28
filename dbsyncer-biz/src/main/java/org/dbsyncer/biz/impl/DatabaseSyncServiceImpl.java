@@ -274,6 +274,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                     vo.setTotalTableCount(tableCount);
                     vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
                             task, tableCount, roundDone, mappingStatus, progressBundle.getSnapshots()));
+                    vo.setSchemaCompletedCount(DatabaseSyncProgressUtil.countDataDoneTables(
+                            progressBundle.getSnapshots()));
+                    vo.setSyncedRows(progressBundle.sumSyncedRows());
+                    vo.setSourceTotal(progressBundle.sumSourceTotal());
                     vo.setErrorCount(0L);
                     if (taskMeta != null) {
                         if (taskMeta.getFail() != null) {
