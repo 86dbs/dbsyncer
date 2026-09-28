@@ -11,12 +11,13 @@ import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
  * 整库迁移任务进度：按组合模式计算（仅结构 / 仅数据 / 都同步）。
- * <p>有数据阶段时以行级（已同步行 / 源表总行）为主，结构阶段仍按表；都同步时结构与数据加权混合。
+ * <p>数据阶段按「表等权」汇总各表行级完成度，避免仅少数表回写 sourceTotal 时全局分母偏小导致进度虚高。
  *
  * @author wuji
  * @version 1.0.0
@@ -24,6 +25,7 @@ import java.util.Map;
 public final class DatabaseSyncProgressUtil {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
+    private static final BigDecimal ONE = BigDecimal.ONE;
 
     /**
      * 都同步时结构段权重（其余为数据行级）。
@@ -47,14 +49,15 @@ public final class DatabaseSyncProgressUtil {
      * @param roundDone            任务级 Meta 是否本轮已完成（STATE=DONE）
      * @param mappingStatusByIndex 任务级 Meta 库映射 status 摘要（兼容入参）
      * @param tableSnapshots       各表明细 Meta 快照（可含 null）
-     * @param syncedRows           已同步行合计（success+fail）
-     * @param sourceTotal          源表总行合计（各表 sourceTotal 之和）
+     * @param syncedRowsPerTable   各表已同步行（与 snapshots 同序，可空）
+     * @param sourceTotalPerTable  各表源端总行（与 snapshots 同序，可空；无缓存为 0）
      */
     public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount,
                                                       boolean roundDone,
                                                       Map<Integer, Integer> mappingStatusByIndex,
                                                       List<CommonTaskSnapshot> tableSnapshots,
-                                                      long syncedRows, long sourceTotal) {
+                                                      List<Long> syncedRowsPerTable,
+                                                      List<Long> sourceTotalPerTable) {
         if (task == null) {
             return null;
         }
@@ -69,12 +72,11 @@ public final class DatabaseSyncProgressUtil {
         if (schema && !data) {
             return ratioPercent(countSchemaDoneTables(tableSnapshots), tableGroupSize);
         }
+        BigDecimal dataPart = tableWeightedDataRatio(tableSnapshots, syncedRowsPerTable, sourceTotalPerTable, tableGroupSize);
         if (!schema) {
-            return rowPercent(syncedRows, sourceTotal, tableSnapshots, tableGroupSize);
+            return dataPart.multiply(HUNDRED).setScale(2, RoundingMode.HALF_UP);
         }
-        // 都同步：结构表级 + 数据行级
         BigDecimal schemaPart = ratio(countSchemaDoneTables(tableSnapshots), tableGroupSize);
-        BigDecimal dataPart = rowRatio(syncedRows, sourceTotal, tableSnapshots, tableGroupSize);
         return schemaPart.multiply(SCHEMA_WEIGHT)
                 .add(dataPart.multiply(DATA_WEIGHT))
                 .multiply(HUNDRED)
@@ -82,14 +84,27 @@ public final class DatabaseSyncProgressUtil {
     }
 
     /**
-     * 兼容旧调用：无行数时数据段按「数据阶段完成表 / 总表」退化。
+     * 兼容旧调用：无逐表行数时，数据段按「数据阶段完成表 / 总表」退化。
      */
     public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount,
                                                       boolean roundDone,
                                                       Map<Integer, Integer> mappingStatusByIndex,
                                                       List<CommonTaskSnapshot> tableSnapshots) {
         return calculateProgressPercent(task, tableGroupSize, mappingCount, roundDone, mappingStatusByIndex,
-                tableSnapshots, 0L, 0L);
+                tableSnapshots, Collections.emptyList(), Collections.emptyList());
+    }
+
+    /**
+     * 兼容聚合行数调用：无法还原逐表样本时，退化为完成表比例（避免虚高）。
+     */
+    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount,
+                                                      boolean roundDone,
+                                                      Map<Integer, Integer> mappingStatusByIndex,
+                                                      List<CommonTaskSnapshot> tableSnapshots,
+                                                      long syncedRows, long sourceTotal) {
+        // 聚合分母未齐时不可靠，一律按表完成度退化
+        return calculateProgressPercent(task, tableGroupSize, mappingCount, roundDone, mappingStatusByIndex,
+                tableSnapshots);
     }
 
     /**
@@ -116,23 +131,46 @@ public final class DatabaseSyncProgressUtil {
         return Math.min(count, totalTableCount);
     }
 
-    private static BigDecimal rowPercent(long syncedRows, long sourceTotal,
-                                         List<CommonTaskSnapshot> tableSnapshots, int tableGroupSize) {
-        return rowRatio(syncedRows, sourceTotal, tableSnapshots, tableGroupSize)
-                .multiply(HUNDRED)
-                .setScale(2, RoundingMode.HALF_UP);
+    /**
+     * 数据进度：每张表等权。单表完成度 = 已完成 1；有 sourceTotal 则 synced/source；否则 0。
+     */
+    private static BigDecimal tableWeightedDataRatio(List<CommonTaskSnapshot> tableSnapshots,
+                                                     List<Long> syncedRowsPerTable,
+                                                     List<Long> sourceTotalPerTable,
+                                                     int tableGroupSize) {
+        if (tableGroupSize <= 0) {
+            return BigDecimal.ZERO;
+        }
+        if (CollectionUtils.isEmpty(tableSnapshots)) {
+            return BigDecimal.ZERO;
+        }
+        boolean hasPerTable = !CollectionUtils.isEmpty(syncedRowsPerTable)
+                && !CollectionUtils.isEmpty(sourceTotalPerTable)
+                && syncedRowsPerTable.size() == tableSnapshots.size()
+                && sourceTotalPerTable.size() == tableSnapshots.size();
+        if (!hasPerTable) {
+            return ratio(countDataDoneTables(tableSnapshots), tableGroupSize);
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        int n = Math.min(tableGroupSize, tableSnapshots.size());
+        for (int i = 0; i < n; i++) {
+            sum = sum.add(singleTableDataRatio(tableSnapshots.get(i),
+                    syncedRowsPerTable.get(i), sourceTotalPerTable.get(i)));
+        }
+        return sum.divide(BigDecimal.valueOf(tableGroupSize), 6, RoundingMode.HALF_UP);
     }
 
-    /**
-     * 行级比例；无分母时退化为数据阶段完成表比例，避免长期为 0。
-     */
-    private static BigDecimal rowRatio(long syncedRows, long sourceTotal,
-                                       List<CommonTaskSnapshot> tableSnapshots, int tableGroupSize) {
-        if (sourceTotal > 0) {
-            long capped = Math.min(Math.max(syncedRows, 0L), sourceTotal);
-            return ratio(capped, sourceTotal);
+    private static BigDecimal singleTableDataRatio(CommonTaskSnapshot snapshot, Long syncedRows, Long sourceTotal) {
+        if (snapshot != null
+                && DatabaseMigrationDetailTypeEnum.isDataPhaseDone(snapshot.getStep(), snapshot.getStatus())) {
+            return ONE;
         }
-        return ratio(countDataDoneTables(tableSnapshots), tableGroupSize);
+        long source = sourceTotal == null ? 0L : Math.max(0L, sourceTotal);
+        if (source <= 0L) {
+            return BigDecimal.ZERO;
+        }
+        long synced = syncedRows == null ? 0L : Math.max(0L, syncedRows);
+        return ratio(Math.min(synced, source), source);
     }
 
     private static BigDecimal ratioPercent(long completed, long total) {

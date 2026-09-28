@@ -269,7 +269,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                     TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
                     vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
                             task, tableCount, vo.getMappingCount(), roundDone, mappingStatus,
-                            progressBundle.getSnapshots(), progressBundle.getSyncedRows(), progressBundle.getSourceTotal()));
+                            progressBundle.getSnapshots(), progressBundle.getSyncedRowsPerTable(),
+                            progressBundle.getSourceTotalPerTable()));
                     vo.setTotalTableCount(tableCount);
                     vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
                             task, tableCount, roundDone, mappingStatus, progressBundle.getSnapshots()));
@@ -545,7 +546,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     }
 
     /**
-     * 汇总表明细快照 + 已同步行 / 源表总行，供列表行级进度。
+     * 汇总各表明细快照与行级样本（同序），供列表按表等权计算进度。
      */
     private TableProgressBundle collectTableProgressBundle(String taskId) {
         TableProgressBundle bundle = new TableProgressBundle();
@@ -570,12 +571,11 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
         for (String groupId : ids) {
             if (StringUtil.isBlank(groupId)) {
-                bundle.getSnapshots().add(null);
+                bundle.addTable(null, 0L, 0L);
                 continue;
             }
             Meta meta = metaMap == null ? null : metaMap.get(groupId);
             CommonTaskSnapshot snapshot = meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot());
-            bundle.getSnapshots().add(snapshot);
             long fromMeta = counterValue(meta == null ? null : meta.getSuccess())
                     + counterValue(meta == null ? null : meta.getFail());
             long fromSnap = 0L;
@@ -583,11 +583,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTableSnapshot dts = (DatabaseSyncTableSnapshot) snapshot;
                 fromSnap = Math.max(0L, dts.getSuccessTotal()) + Math.max(0L, dts.getFailTotal());
             }
-            bundle.addSyncedRows(Math.max(fromMeta, fromSnap));
+            long synced = Math.max(fromMeta, fromSnap);
             Long sourceTotal = sourceTotalById.get(groupId);
-            if (sourceTotal != null && sourceTotal > 0) {
-                bundle.addSourceTotal(sourceTotal);
-            }
+            bundle.addTable(snapshot, synced, sourceTotal == null ? 0L : sourceTotal);
         }
         return bundle;
     }
