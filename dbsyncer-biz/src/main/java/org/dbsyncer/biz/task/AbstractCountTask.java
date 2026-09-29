@@ -102,7 +102,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         if (metaProfile == null || StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
         if (tableMeta == null || StringUtil.isBlank(tableMeta.getId())) {
             return;
         }

@@ -28,6 +28,11 @@ public interface MetaProfile {
     Meta getMeta(String taskId);
 
     /**
+     * 获取任务的meta明细
+     */
+    Meta getMetaDetail(String taskId);
+
+    /**
      * 分页查询 Meta。
      *
      * @param isTaskDetail 可选；null 不过滤，0 任务级，1 明细级

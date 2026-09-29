@@ -166,7 +166,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
         synchronized (FullTableProgressUtil.tableLock(tableGroupId)) {
-            Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+            Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
             if (tableMeta == null) {
                 tableMeta = new Meta();
                 tableMeta.setTaskId(tableGroupId);
@@ -175,7 +175,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);
                 metaProfile.updateMeta(tableMeta);
-                tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+                tableMeta = metaProfile.getMetaDetail(tableGroupId);
             }
             if (tableMeta == null || StringUtil.isBlank(tableMeta.getId())) {
                 return;

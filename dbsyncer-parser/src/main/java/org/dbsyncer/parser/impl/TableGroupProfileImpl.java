@@ -305,7 +305,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta existing = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        Meta existing = metaProfile.getMetaDetail(tableGroupId);
         if (existing != null) {
             return;
         }
@@ -404,7 +404,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta byRef = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        Meta byRef = metaProfile.getMetaDetail(tableGroupId);
         if (byRef != null && StringUtil.isNotBlank(byRef.getId())) {
             metaProfile.removeMeta(byRef.getId());
         }

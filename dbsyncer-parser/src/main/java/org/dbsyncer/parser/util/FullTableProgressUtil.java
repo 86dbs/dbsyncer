@@ -39,7 +39,7 @@ public abstract class FullTableProgressUtil {
         if (metaProfile == null || StringUtil.isBlank(tableGroupId)) {
             return null;
         }
-        return metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        return metaProfile.getMetaDetail(tableGroupId);
     }
 
     /**

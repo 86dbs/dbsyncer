@@ -46,7 +46,7 @@ import java.util.zip.ZipOutputStream;
  * @version 1.0.0
  */
 @Component
-public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements MetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
+public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements MetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
 
     @Resource
     private StorageService storageService;
@@ -78,6 +78,19 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
             }
             return newMeta;
         });
+    }
+
+    @Override
+    public Meta getMetaDetail(String taskId) {
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.META);
+        query.addFilter(ConfigConstant.META_TASK_ID, taskId);
+        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, TaskLevelEnum.TASK_DETAIL.getCode());
+        Map row = storageService.queryObject(query);
+        if (row == null) {
+            return null;
+        }
+        return ConfigModelUtil.parseFromRow(row, Meta.class);
     }
 
     @Override
@@ -135,15 +148,7 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
 
     @Override
     public Meta getMetaByTaskId(String taskId, TaskLevelEnum taskLevelEnum) {
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.META);
-        query.addFilter(ConfigConstant.META_TASK_ID, taskId);
-        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, taskLevelEnum.getCode());
-        Map row = storageService.queryObject(query);
-        if (row == null) {
-            return null;
-        }
-        return ConfigModelUtil.parseFromRow(row, Meta.class);
+        return null;
     }
 
     @Override

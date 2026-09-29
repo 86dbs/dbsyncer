@@ -267,7 +267,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void clearTableGroupData(Meta taskMeta, String shardId, String tableGroupId) {
-        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
         long tableSuccess = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
         long tableFail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
         if (tableSuccess != 0 || tableFail != 0) {
@@ -326,7 +326,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void removeTableMeta(String tableGroupId) {
-        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
         if (tableMeta != null) {
             metaProfile.removeMeta(tableMeta.getId());
         }
