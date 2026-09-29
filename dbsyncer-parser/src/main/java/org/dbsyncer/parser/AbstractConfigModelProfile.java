@@ -28,7 +28,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<ConfigModel> responseClazz;
     private String configModelType;
-    private static final long expiredOneHours = 60 * 60 * 1000;
+    public static final long expiredOneHours = 60 * 60 * 1000;
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -56,10 +56,6 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
         } catch (InstantiationException | IllegalAccessException e) {
             logger.error(e.getMessage(), e);
         }
-    }
-
-    protected ConfigModel getConfigModel(String id) {
-        return operationTemplate.queryObject(responseClazz, id);
     }
 
     @Override
@@ -96,17 +92,21 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
         cacheService.remove(buildCacheKey(id));
     }
 
+    protected ConfigModel getConfigModel(String id) {
+        return operationTemplate.queryObject(responseClazz, id);
+    }
+
     /**
      * 数据缓存 key：有 id 用 type:id，无 id（如 SystemConfig）只用 type。
      */
-    public String buildCacheKey(String id) {
+    protected String buildCacheKey(String id) {
         if (StringUtil.isBlank(id)) {
             return configModelType;
         }
         return configModelType + ":" + id;
     }
 
-    private String buildLockKey(String id) {
+    protected String buildLockKey(String id) {
         String key = configModelType + ":lock";
         if (StringUtil.isBlank(id)) {
             return key;

@@ -55,8 +55,29 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
     private OperationTemplate operationTemplate;
 
     @Override
-    public Meta getMeta(String metaId) {
-        return getCache(metaId);
+    public Meta getMeta(String taskId) {
+        return getCache(taskId);
+    }
+
+    @Override
+    public Meta getCache(String taskId) {
+        String cacheKey = buildCacheKey(taskId);
+        Meta cached = cacheService.get(cacheKey, Meta.class);
+        if (cached != null) {
+            return cached;
+        }
+
+        return cacheService.executeWithLock(buildLockKey(taskId), () -> {
+            Meta again = cacheService.get(cacheKey, Meta.class);
+            if (again != null) {
+                return again;
+            }
+            Meta newMeta = getMetaByTaskId(taskId, TaskLevelEnum.TASK);
+            if (newMeta != null) {
+                cacheService.put(cacheKey, newMeta, expiredOneHours);
+            }
+            return newMeta;
+        });
     }
 
     @Override
@@ -113,18 +134,16 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
     }
 
     @Override
-    public Meta getMetaByTaskId(String refId, TaskLevelEnum taskLevelEnum) {
+    public Meta getMetaByTaskId(String taskId, TaskLevelEnum taskLevelEnum) {
         Query query = new Query(1, 1);
         query.setType(StorageEnum.META);
-        query.addFilter(ConfigConstant.META_TASK_ID, refId);
+        query.addFilter(ConfigConstant.META_TASK_ID, taskId);
         query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, taskLevelEnum.getCode());
-        Paging paging = storageService.query(query);
-        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+        Map row = storageService.queryObject(query);
+        if (row == null) {
             return null;
         }
-        Object row = paging.getData().iterator().next();
-        return ConfigModelUtil.parseFromRow((Map) row, Meta.class);
-
+        return ConfigModelUtil.parseFromRow(row, Meta.class);
     }
 
     @Override
@@ -250,7 +269,7 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
     @Override
     public String updateMeta(Meta meta) {
         String execute = operationTemplate.execute(meta, CommandEnum.OPR_EDIT);
-        removeCacheAndNotice(meta.getId());
+        removeCacheAndNotice(meta.getTaskId());
         return execute;
     }
 
@@ -269,11 +288,6 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
             }
             if (!CollectionUtils.isEmpty(paramsList)) {
                 storageService.editBatch(StorageEnum.META, null, paramsList);
-            }
-            for (Meta meta : batch) {
-                if (meta != null && StringUtil.isNotBlank(meta.getId())) {
-                    removeCacheAndNotice(meta.getId());
-                }
             }
         });
     }
@@ -345,6 +359,11 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
             return;
         }
         TaskSplitUtil.split(metas, PackageFormatConfig.IMPORT_BATCH_SIZE, this::addMetaBatch);
+    }
+
+    @Override
+    public void removeMetaCache(String taskId) {
+        removeCache(taskId);
     }
 
     @Override

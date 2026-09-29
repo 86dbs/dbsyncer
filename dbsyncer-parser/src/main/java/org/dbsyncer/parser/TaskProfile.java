@@ -31,6 +31,7 @@ public interface TaskProfile {
     /**
      * 按 id 查询 Mapping 任务配置。
      */
+    @Deprecated
     Mapping getMapping(String id);
 
     /**

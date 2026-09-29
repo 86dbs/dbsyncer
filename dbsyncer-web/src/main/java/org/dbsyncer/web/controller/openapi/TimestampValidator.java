@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
+
 /**
  * 时间窗口与 Nonce 校验，防止 OpenAPI 重放攻击。
  *
@@ -26,11 +28,8 @@ public class TimestampValidator {
      */
     public static final long DEFAULT_TIME_WINDOW = 5 * 60 * 1000L;
 
-    private final CacheService cacheService;
-
-    public TimestampValidator(CacheService cacheService) {
-        this.cacheService = cacheService;
-    }
+    @Resource
+    private CacheService cacheService;
 
     /**
      * 验证时间戳是否在有效时间窗口内。

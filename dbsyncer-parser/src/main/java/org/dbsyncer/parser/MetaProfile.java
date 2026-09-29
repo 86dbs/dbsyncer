@@ -23,9 +23,9 @@ import java.util.zip.ZipOutputStream;
 public interface MetaProfile {
 
     /**
-     * 按 Meta 主键 id 查询
+     * 获取任务的meta缓存
      */
-    Meta getMeta(String metaId);
+    Meta getMeta(String taskId);
 
     /**
      * 分页查询 Meta。
@@ -48,7 +48,7 @@ public interface MetaProfile {
     /**
      * 按关联 ID + 任务层级查询 Meta（任务级：taskId=任务ID；明细级：taskId=table_group.id）。
      */
-    Meta getMetaByTaskId(String refId, TaskLevelEnum taskLevelEnum);
+    Meta getMetaByTaskId(String taskId, TaskLevelEnum taskLevelEnum);
 
     /**
      * 批量按任务 ID 查询任务级 Meta（IS_TASK_DETAIL=0），key=taskId。
@@ -124,4 +124,9 @@ public interface MetaProfile {
      * 从 meta.json 数组批量导入。
      */
     void importMetaFromJson(String json);
+
+    /**
+     * 删除任务meta缓存
+     */
+    void removeMetaCache(String taskId);
 }

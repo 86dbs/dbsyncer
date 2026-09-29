@@ -6,6 +6,7 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.event.RemoveDatabaseSyncCacheEvent;
 import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.DatabaseSyncProfile;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.springframework.context.ApplicationListener;
@@ -24,6 +25,9 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
 
     @Resource
     private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Override
     public DatabaseSyncTask get(String id) {
@@ -56,5 +60,6 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     @Override
     public void onApplicationEvent(RemoveDatabaseSyncCacheEvent event) {
         removeCache(event.getCommonMessage().getId());
+        metaProfile.removeMetaCache(event.getCommonMessage().getId());
     }
 }

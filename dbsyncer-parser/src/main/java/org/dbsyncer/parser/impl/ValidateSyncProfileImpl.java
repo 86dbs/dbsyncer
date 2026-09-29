@@ -5,6 +5,7 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.event.RemoveValidateSyncCacheEvent;
 import org.dbsyncer.parser.AbstractConfigModelProfile;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
@@ -24,6 +25,9 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
 
     @Resource
     private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Override
     public ValidateSyncTask get(String id) {
@@ -56,5 +60,6 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
     @Override
     public void onApplicationEvent(RemoveValidateSyncCacheEvent event) {
         removeCache(event.getCommonMessage().getId());
+        metaProfile.removeMetaCache(event.getCommonMessage().getId());
     }
 }
