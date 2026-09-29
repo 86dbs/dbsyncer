@@ -407,7 +407,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     public String stop(String id) {
         ConfigModel task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "任务不存在");
-        Meta taskMeta = metaProfile.getMetaByTaskId(id, TaskLevelEnum.TASK);
+        Meta taskMeta = metaProfile.getMeta(id);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             taskMeta.setState(CommonTaskStatusEnum.STOPPING.getCode());
             taskMeta.setUpdateTime(System.currentTimeMillis());
@@ -431,7 +431,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
                 ValidateSyncTaskVO vo = convertTask2Vo(t);
                 if (vo != null) {
                     long errorCount = 0L;
-                    Meta taskMeta = metaProfile.getMetaByTaskId(t.getId(), TaskLevelEnum.TASK);
+                    Meta taskMeta = metaProfile.getMeta(t.getId());
                     if (taskMeta != null && taskMeta.getDiff() != null) {
                         errorCount = taskMeta.getDiff().get();
                     }
@@ -734,7 +734,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         Connector t = connectorProfile.getConnector(validateSyncTask.getTargetConnectorId());
         ValidateSyncTaskVO vo = new ValidateSyncTaskVO(s, t);
         BeanUtils.copyProperties(task, vo);
-        Meta taskMeta = metaProfile.getMetaByTaskId(validateSyncTask.getId(), TaskLevelEnum.TASK);
+        Meta taskMeta = metaProfile.getMeta(validateSyncTask.getId());
         if (taskMeta != null) {
             vo.setMetaState(taskMeta.getState());
             vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);

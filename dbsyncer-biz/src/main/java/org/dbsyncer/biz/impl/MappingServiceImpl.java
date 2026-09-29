@@ -586,7 +586,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      */
     private Meta resolveMappingMeta(Mapping mapping) {
         String metaId = mapping.getMetaId();
-        Meta meta = StringUtil.isBlank(metaId) ? null : metaProfile.getMetaByTaskId(mapping.getId(), TaskLevelEnum.TASK);
+        Meta meta = StringUtil.isBlank(metaId) ? null : metaProfile.getMeta(mapping.getId());
         if (meta != null) {
             return meta;
         }

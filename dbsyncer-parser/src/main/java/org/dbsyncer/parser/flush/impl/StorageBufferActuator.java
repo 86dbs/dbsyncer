@@ -77,10 +77,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     @Override
     protected void offerFailed(BlockingQueue<StorageRequest> queue, StorageRequest request) {
         String shardId = request.getTaskDetailShardId();
-        Meta meta = metaProfile.getMetaByTaskId(shardId, TaskLevelEnum.TASK);
-        if (meta == null) {
-            meta = metaProfile.getMeta(shardId);
-        }
+        Meta meta = metaProfile.getMeta(shardId);
         if (meta != null) {
             Mapping mapping = taskProfile.getMapping(meta.getTaskId());
             if (mapping != null) {

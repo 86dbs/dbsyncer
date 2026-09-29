@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
@@ -60,7 +61,7 @@ public class Meta extends ConfigModel {
 
     private void init() {
         this.state = CommonTaskStatusEnum.READY.getCode();
-        this.isTaskDetail = 0;
+        this.isTaskDetail = TaskLevelEnum.TASK.getCode();
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);
         this.fail = new AtomicLong(0);
@@ -68,7 +69,6 @@ public class Meta extends ConfigModel {
         this.fixed = new AtomicLong(0);
         this.snapshot = new HashMap<>();
         this.startTime = 0L;
-        setUpdateTime(0L);
     }
 
     public String getTaskId() {

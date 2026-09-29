@@ -238,7 +238,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Assert.hasText(id, "任务 ID 不能为空");
         ConfigModel task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
         Assert.notNull(task, "任务不存在");
-        Meta taskMeta = metaProfile.getMetaByTaskId(id, TaskLevelEnum.TASK);
+        Meta taskMeta = metaProfile.getMeta(id);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             taskMeta.setState(CommonTaskStatusEnum.STOPPING.getCode());
             taskMeta.setUpdateTime(System.currentTimeMillis());
@@ -262,7 +262,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
                     int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
-                    Meta taskMeta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
+                    Meta taskMeta = metaProfile.getMeta(task.getId());
                     boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
                     TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
                     vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(

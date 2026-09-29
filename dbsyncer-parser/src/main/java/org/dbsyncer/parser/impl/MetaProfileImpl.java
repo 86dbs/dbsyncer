@@ -72,7 +72,7 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
             if (again != null) {
                 return again;
             }
-            Meta newMeta = getMetaByTaskId(taskId, TaskLevelEnum.TASK);
+            Meta newMeta = getMeta(taskId);
             if (newMeta != null) {
                 cacheService.put(cacheKey, newMeta, expiredOneHours);
             }

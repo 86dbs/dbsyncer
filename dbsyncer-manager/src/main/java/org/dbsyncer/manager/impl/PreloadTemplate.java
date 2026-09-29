@@ -338,7 +338,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (task == null || StringUtil.isBlank(task.getId())) {
                 continue;
             }
-            Meta meta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
+            Meta meta = metaProfile.getMeta(task.getId());
             if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
                 continue;
             }

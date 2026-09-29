@@ -436,14 +436,12 @@ public class TaskProfileImpl implements TaskProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        Meta meta = metaProfile.getMetaByTaskId(taskId, TaskLevelEnum.TASK);
+        Meta meta = metaProfile.getMeta(taskId);
         if (meta == null) {
             return;
         }
         zeroTaskMetaCounters(meta);
         meta.clear();
-        meta.setTaskId(taskId);
-        meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
         meta.setUpdateTime(System.currentTimeMillis());
         metaProfile.updateMeta(meta);
     }
