@@ -7,7 +7,6 @@ import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
@@ -15,7 +14,6 @@ import org.dbsyncer.sdk.model.Task;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.service.TaskManager;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.spi.TaskService;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Resource;
@@ -39,25 +37,14 @@ public final class StandaloneService implements ClusterService {
     @Resource
     private ApplicationContext applicationContext;
 
-    @Resource
-    private TaskService<?> taskService;
-
     @Override
     public void start(ConfigModel configModel, boolean autoRecovery) {
-        if (configModel instanceof Mapping) {
-            taskManager.start(configModel, autoRecovery);
-        } else {
-            taskService.start(configModel);
-        }
+        taskManager.start(configModel, autoRecovery);
     }
 
     @Override
     public void stop(String taskId, CommonTaskTypeEnum taskType) {
-        if (taskType == CommonTaskTypeEnum.MAPPING) {
-            taskManager.stop(taskId);
-            return;
-        }
-        taskService.stop(taskId, taskType);
+        taskManager.stop(taskId);
     }
 
     @Override

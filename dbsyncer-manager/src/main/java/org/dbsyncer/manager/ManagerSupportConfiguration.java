@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.manager;
 
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.deployment.StandaloneService;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
@@ -11,7 +10,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.env.Environment;
 
 import javax.annotation.Resource;
 
@@ -29,22 +27,12 @@ public class ManagerSupportConfiguration {
     @Bean
     @ConditionalOnMissingBean(ClusterService.class)
     @DependsOn(value = "serviceFactory")
-    public ClusterService clusterService(Environment environment) {
+    public ClusterService clusterService() {
         ClusterService spi = serviceFactory.get(ClusterService.class);
-        if (spi != null && isClusterEnabled(environment)) {
+        if (spi != null) {
             return spi;
         }
         return new StandaloneService();
     }
 
-    /**
-     * 是否启用集群，暂仅支持MySQL存储
-     *
-     * @param environment 环境配置
-     * @return 是否启用
-     */
-    private boolean isClusterEnabled(Environment environment) {
-        boolean clusterEnabled = environment.getProperty("dbsyncer.cluster.enabled", Boolean.class, Boolean.FALSE);
-        return clusterEnabled && StringUtil.equalsIgnoreCase("MySQL", environment.getProperty("dbsyncer.storage.type"));
-    }
 }
