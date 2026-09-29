@@ -322,9 +322,6 @@ public class LicenseController extends BaseController {
         } catch (HttpHostConnectException e) {
             throw new IllegalArgumentException("网络连接异常，无法激活");
         } catch (Exception e) {
-            if (e.getCause() instanceof HttpHostConnectException) {
-                throw new IllegalArgumentException("网络连接异常，无法激活");
-            }
             if (e instanceof IOException) {
                 throw (IOException) e;
             }

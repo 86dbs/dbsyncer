@@ -15,7 +15,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.service.TaskManager;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -39,12 +38,6 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
 
     @Resource
     private MetaProfile metaProfile;
-
-    @Resource
-    private FullIncrementPuller fullIncrementPuller;
-
-    @Resource
-    private ApplicationContext applicationContext;
 
     @Resource
     private ConnectorFactory connectorFactory;

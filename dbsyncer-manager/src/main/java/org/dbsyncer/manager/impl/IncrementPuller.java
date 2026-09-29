@@ -19,7 +19,6 @@ import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
@@ -95,9 +94,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Resource
     private ConnectorProfile connectorProfile;
-
-    @Resource
-    private TaskProfile taskProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;

@@ -106,7 +106,6 @@ public class ConnectorFactory implements DisposableBean {
 
     public boolean contains(String instanceId) {
         return pool.containsKey(instanceId);
-
     }
 
     public ConnectorInstance connect(String instanceId) {

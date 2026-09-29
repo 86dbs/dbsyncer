@@ -111,7 +111,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (clusterService.isStandalone()) {
             // Load connectorInstances
             loadConnectorInstance();
-            // 同步驱动：按任务级 Meta 恢复 Mapping
+            // 同步任务：按任务级 Meta 恢复 Mapping
             launchSyncMappings();
             // 订正校验 / 整库迁移
             resumeValidateSyncTasks();
@@ -119,7 +119,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             //初始化定时检测任务
             scheduledScanManager.start();
         } else {
-            // 集群：不预热全部连接；由控制面按本机负责任务先恢复连接再启任务
             clusterService.init();
         }
         preloadCompleted = true;

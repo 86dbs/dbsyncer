@@ -12,7 +12,6 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.SystemConfigProfile;
-import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
@@ -37,7 +36,6 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.Task;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -304,19 +302,6 @@ public class ParserComponentImpl implements ParserComponent {
         if (systemConfigProfile.getSystemConfig().isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
             context.setRsaConfig(systemConfigProfile.getSystemConfig().getRsaConfig());
-        }
-    }
-
-    /**
-     * 更新缓存
-     */
-    private void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
-        result.setMetaId(task.getId());
-        result.setEvent(ConnectorConstant.OPERTION_INSERT);
-        flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
-
-        if (!task.isSkipTableProgressEvent()) {
-            applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
         }
     }
 

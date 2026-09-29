@@ -16,7 +16,6 @@ import java.util.List;
 @Component
 public class ScheduledScanManager {
 
-
     @Resource
     private List<ScheduledScanService> scheduledScanServices;
 

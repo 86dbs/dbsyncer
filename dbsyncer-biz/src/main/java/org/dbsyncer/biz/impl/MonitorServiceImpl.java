@@ -628,7 +628,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
         if (started) {
             return;
         }
@@ -638,7 +638,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         if (!started) {
             return;
         }

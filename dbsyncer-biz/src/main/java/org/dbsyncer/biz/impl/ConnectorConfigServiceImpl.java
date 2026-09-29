@@ -26,7 +26,6 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,9 +69,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Resource
     private ConnectorChecker connectorChecker;
-
-    @Resource
-    private ClusterService clusterService;
 
     @Override
     public String add(Map<String, String> params) {
