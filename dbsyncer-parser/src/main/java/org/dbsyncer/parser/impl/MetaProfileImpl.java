@@ -114,17 +114,30 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
 
     @Override
     public Meta getMetaByTaskId(String refId, TaskLevelEnum taskLevelEnum) {
-
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.META);
-        query.addFilter(ConfigConstant.META_TASK_ID, refId);
-        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, taskLevelEnum.getCode());
-        Paging paging = storageService.query(query);
-        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-            return null;
+        // 非任务级别，直接查库，不走缓存
+        if (!taskLevelEnum.isTaskLevel()) {
+            return queryMetaFromDb(refId, taskLevelEnum);
         }
-        Object row = paging.getData().iterator().next();
-        return ConfigModelUtil.parseFromRow((Map) row, Meta.class);
+        // 任务级别：走缓存
+        String cacheKey = buildCacheKey(refId);
+        Object metaCache = cacheService.get(cacheKey);
+        if (metaCache != null) {
+            return (Meta) metaCache;
+        }
+        return cacheService.executeWithLock(cacheKey, () -> {
+            // 双重检查：拿到锁后再查一次缓存，避免锁释放后重复查库
+            Object cached = cacheService.get(cacheKey);
+            if (cached != null) {
+                return (Meta) cached;
+            }
+            Meta meta = queryMetaFromDb(refId, taskLevelEnum);
+            if (meta != null) {
+                // 配置变更低频，本地常驻；save/remove 时主动刷新
+                cacheService.put(cacheKey, meta);
+            }
+            return meta;
+        });
+
     }
 
     @Override
@@ -350,5 +363,23 @@ public class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements
     @Override
     public void onApplicationEvent(RemoveMetaCacheEvent event) {
         removeCache(event.getCommonMessage().getId());
+    }
+
+    /**
+     * 从存储中查询 Meta
+     */
+    private Meta queryMetaFromDb(String refId, TaskLevelEnum taskLevelEnum) {
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.META);
+        query.addFilter(ConfigConstant.META_TASK_ID, refId);
+        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, taskLevelEnum.getCode());
+
+        Paging paging = storageService.query(query);
+        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+            return null;
+        }
+
+        Object row = paging.getData().iterator().next();
+        return ConfigModelUtil.parseFromRow((Map) row, Meta.class);
     }
 }

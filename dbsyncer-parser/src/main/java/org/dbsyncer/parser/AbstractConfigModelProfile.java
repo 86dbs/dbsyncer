@@ -33,7 +33,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
     private OperationTemplate operationTemplate;
 
     @Resource
-    private CacheService cacheService;
+    protected CacheService cacheService;
 
     @Resource
     private ClusterService clusterService;
@@ -99,7 +99,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
     /**
      * 数据缓存 key：有 id 用 type:id，无 id（如 SystemConfig）只用 type。
      */
-    private String buildCacheKey(String id) {
+    public String buildCacheKey(String id) {
         if (StringUtil.isBlank(id)) {
             return configModelType;
         }
