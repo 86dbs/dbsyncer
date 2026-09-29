@@ -40,7 +40,7 @@ public final class StandaloneService implements ClusterService {
     private ApplicationContext applicationContext;
 
     @Resource
-    private TaskService taskService;
+    private TaskService<?> taskService;
 
     @Override
     public void start(ConfigModel configModel, boolean autoRecovery) {

@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.common.event;
 
-import org.dbsyncer.common.message.impl.RemoveConfigModelCacheMessage;
+import org.dbsyncer.common.message.impl.RemoveCacheMessage;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -11,9 +11,9 @@ import org.springframework.context.ApplicationContext;
  * @version 1.0.0
  * @date 2026-09-23 01:14
  */
-public final class RemoveSystemConfigCacheEvent extends RemoveConfigModelCacheEvent {
+public final class RemoveSystemConfigCacheEvent extends RemoveCacheEvent {
 
-    public RemoveSystemConfigCacheEvent(ApplicationContext source, RemoveConfigModelCacheMessage commonMessage) {
+    public RemoveSystemConfigCacheEvent(ApplicationContext source, RemoveCacheMessage commonMessage) {
         super(source, commonMessage);
     }
 }
