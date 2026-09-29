@@ -28,10 +28,10 @@ public enum CommonTaskTypeEnum {
     /**
      * 整库迁移
      */
-    DATABASE_SYNC("VALIDATE_SYNC", "org.dbsyncer.sdk.model.DatabaseSyncTask");
+    DATABASE_SYNC("DATABASE_SYNC", "org.dbsyncer.sdk.model.DatabaseSyncTask");
 
     /**
-     * 配置类型 code（驼峰）
+     * 配置类型 code（与 {@code ConfigModel#type} / 存储 TYPE 列一致）
      */
     private final String code;
 

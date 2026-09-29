@@ -264,17 +264,15 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                     int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
                     Meta taskMeta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
                     boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
-                    Map<Integer, Integer> mappingStatus = DatabaseSyncProgressUtil.readMappingStatus(
-                            taskMeta == null ? null : taskMeta.getSnapshot());
                     TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
                     vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
-                            task, tableCount, vo.getMappingCount(), roundDone, mappingStatus,
+                            task, tableCount, roundDone,
                             progressBundle.getSnapshots(), progressBundle.getSyncedRowsPerTable(),
                             progressBundle.getSourceTotalPerTable()));
                     vo.setTotalTableCount(tableCount);
                     vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
-                            task, tableCount, roundDone, mappingStatus, progressBundle.getSnapshots()));
-                    vo.setSchemaCompletedCount(DatabaseSyncProgressUtil.countDataDoneTables(
+                            task, tableCount, roundDone, progressBundle.getSnapshots()));
+                    vo.setSchemaCompletedCount(DatabaseSyncProgressUtil.countSchemaDoneTables(
                             progressBundle.getSnapshots()));
                     vo.setSyncedRows(progressBundle.sumSyncedRows());
                     vo.setSourceTotal(progressBundle.sumSourceTotal());
