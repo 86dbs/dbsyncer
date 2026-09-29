@@ -9,11 +9,11 @@ import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -67,7 +67,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
     private MetaProfile metaProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     protected void updateTableGroupCount(Mapping mapping, TableGroup tableGroup) {
         long now = Instant.now().toEpochMilli();
@@ -120,8 +120,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
             return false;
         }
 
-        // 同步任务类型非全量 TODO 存在性能问题
-        Mapping mapping = taskProfile.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         if (!ModelEnum.isFull(mapping.getModel())) {
             logger.warn("同步任务被修改, 提前结束任务 ({},{})", mapping.getName(), mapping.getModel());
             return true;
