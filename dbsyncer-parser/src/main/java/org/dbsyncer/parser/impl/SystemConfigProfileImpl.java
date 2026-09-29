@@ -31,7 +31,7 @@ import java.util.List;
  * @version 1.0.0
  */
 @Component
-public class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemConfig> implements SystemConfigProfile, ApplicationListener<RemoveSystemConfigCacheEvent> {
+public final class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemConfig> implements SystemConfigProfile, ApplicationListener<RemoveSystemConfigCacheEvent> {
 
     @Resource
     private OperationTemplate operationTemplate;

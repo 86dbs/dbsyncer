@@ -28,6 +28,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<ConfigModel> responseClazz;
     private String configModelType;
+    private static final long expiredOneHours = 60 * 60 * 1000;
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -75,8 +76,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
             }
             T config = (T) getConfigModel(id);
             if (config != null) {
-                // 配置变更低频，本地常驻；save/remove 时主动刷新
-                cacheService.put(cacheKey, config);
+                cacheService.put(cacheKey, config, expiredOneHours);
             }
             return config;
         });
