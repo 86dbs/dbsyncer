@@ -31,6 +31,11 @@ public interface StorageService {
     Paging query(Query query);
 
     /**
+     * 按主键查询单条记录（不走分页、不统计总数）。
+     */
+    Map queryObject(StorageEnum type, String id);
+
+    /**
      * 根据条件删除
      */
     void delete(Query query);
