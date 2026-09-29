@@ -143,7 +143,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public ValidateSyncTaskVO get(String id) {
-        return convertTask2Vo(taskService.get(id));
+        return convertTask2Vo(taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC));
     }
 
     @Override
@@ -309,7 +309,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String edit(Map<String, String> params) {
-        ValidateSyncTask task = taskService.get(params.get("id"));
+        ValidateSyncTask task = taskService.get(params.get("id"), CommonTaskTypeEnum.VALIDATE_SYNC);
         if (task == null) {
             throw new BizException("任务不存在");
         }
@@ -350,7 +350,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String copy(String id) {
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "Task not found");
         String json = JsonUtil.objToJson(task);
         ValidateSyncTask newTask = JsonUtil.jsonToObj(json, ValidateSyncTask.class);
@@ -397,7 +397,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     public String start(String id) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(id) > 0, "任务未配置表映射，无法启动");
         Assert.isTrue(!dispatchTaskService.isRunning(id), "表映射正在匹配中，请稍候再启动");
-        ConfigModel task = taskService.get(id);
+        ConfigModel task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "任务不存在");
         clusterService.start(task, false);
         return "启动成功";
@@ -405,7 +405,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String stop(String id) {
-        ConfigModel task = taskService.get(id);
+        ConfigModel task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "任务不存在");
         Meta taskMeta = metaProfile.getMetaByTaskId(id, TaskLevelEnum.TASK);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
@@ -413,7 +413,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
             taskMeta.setUpdateTime(System.currentTimeMillis());
             metaProfile.updateMeta(taskMeta);
         }
-        clusterService.stop(id);
+        clusterService.stop(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         return "停止成功";
     }
 
@@ -458,7 +458,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public Paging<TableGroup> searchTableGroup(Map<String, String> params) {
         String id = params.get("id");
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         if (task == null) {
             return null;
         }
@@ -480,7 +480,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         // 是否过滤已配置的表（exclude=1 表示不过滤）
         boolean excludeMapped = NumberUtil.toInt(params.get("exclude"), 0) != 1;
 
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "task not found.");
 
         boolean isSource = !"target".equals(type);
@@ -546,7 +546,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public Object result(String id) {
-        return taskService.get(id);
+        return taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
     }
 
     @Override
@@ -594,7 +594,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
      * 拉取并回写源/目标表列表，返回已刷新的任务对象（供创建后立即匹配使用）。
      */
     private ValidateSyncTask refreshTablesAndGet(String id) {
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "The task id is invalid.");
         task.setSourceTable(updateConnectorTables(task, ConnectorInstanceUtil.SOURCE_SUFFIX));
         task.setTargetTable(updateConnectorTables(task, ConnectorInstanceUtil.TARGET_SUFFIX));
@@ -607,7 +607,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
 
-        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
+        ValidateSyncTask task = taskService.get(tableGroup.getTaskId(), CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "The task id is invalid.");
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
@@ -622,7 +622,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public String addTableGroup(Map<String, String> params) {
         String taskId = params.get("taskId");
-        ValidateSyncTask task = taskService.get(taskId);
+        ValidateSyncTask task = taskService.get(taskId, CommonTaskTypeEnum.VALIDATE_SYNC);
         assertRunning(task.getId());
         synchronized (LOCK) {
             try {
@@ -660,7 +660,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         String tableGroupId = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
+        ValidateSyncTask task = taskService.get(tableGroup.getTaskId(), CommonTaskTypeEnum.VALIDATE_SYNC);
         assertRunning(task.getId());
 
         TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkEditConfigModel(params);
@@ -674,7 +674,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     public String removeTableGroup(String taskId, String ids) {
         Assert.hasText(taskId, "Task id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        ValidateSyncTask task = taskService.get(taskId);
+        ValidateSyncTask task = taskService.get(taskId, CommonTaskTypeEnum.VALIDATE_SYNC);
         assertRunning(taskId);
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {

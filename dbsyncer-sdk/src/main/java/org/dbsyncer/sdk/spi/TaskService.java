@@ -46,14 +46,20 @@ public interface TaskService<T extends ConfigModel> {
 
     /**
      * 停止
+     *
+     * @param id       任务 ID
+     * @param taskType 任务类型
      */
-    default void stop(String id) {
+    default void stop(String id, CommonTaskTypeEnum taskType) {
     }
 
     /**
-     * 获取任务
+     * 按 id 与任务类型获取任务。
+     *
+     * @param id       任务 ID
+     * @param taskType 任务类型
      */
-    default T get(String id) {
+    default T get(String id, CommonTaskTypeEnum taskType) {
         return null;
     }
 

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.manager.deployment;
 
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.event.FullRefreshEvent;
@@ -46,19 +47,17 @@ public final class StandaloneService implements ClusterService {
         if (configModel instanceof Mapping) {
             taskManager.start(configModel, autoRecovery);
         } else {
-            //todo 转换为 model
             taskService.start(configModel);
         }
     }
 
     @Override
-    public void stop(String taskId) {
-        // 订正/迁移等在 TaskService；Mapping 在 TaskManager
-        if (taskService.get(taskId) != null) {
-            taskService.stop(taskId);
+    public void stop(String taskId, CommonTaskTypeEnum taskType) {
+        if (taskType == CommonTaskTypeEnum.MAPPING) {
+            taskManager.stop(taskId);
             return;
         }
-        taskManager.stop(taskId);
+        taskService.stop(taskId, taskType);
     }
 
     @Override

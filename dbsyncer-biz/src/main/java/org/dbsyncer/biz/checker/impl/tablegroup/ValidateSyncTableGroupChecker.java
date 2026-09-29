@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -57,7 +58,7 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
         Assert.hasText(sourceType, "tableGroup sourceType is empty.");
         Assert.hasText(targetType, "tableGroup targetType is empty.");
-        ValidateSyncTask task = taskService.get(taskId);
+        ValidateSyncTask task = taskService.get(taskId, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "task can not be null.");
 
         // 检查是否存在重复映射关系
