@@ -11,9 +11,7 @@ import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 整库迁移任务进度：按组合模式计算（仅结构 / 仅数据 / 都同步）。
@@ -43,18 +41,15 @@ public final class DatabaseSyncProgressUtil {
     /**
      * 计算进度百分比 0~100。
      *
-     * @param task                 任务配置（开关）
-     * @param tableGroupSize       表映射总数
-     * @param mappingCount         库映射数（兼容入参，当前不单独占权）
-     * @param roundDone            任务级 Meta 是否本轮已完成（STATE=DONE）
-     * @param mappingStatusByIndex 任务级 Meta 库映射 status 摘要（兼容入参）
-     * @param tableSnapshots       各表明细 Meta 快照（可含 null）
-     * @param syncedRowsPerTable   各表已同步行（与 snapshots 同序，可空）
-     * @param sourceTotalPerTable  各表源端总行（与 snapshots 同序，可空；无缓存为 0）
+     * @param task                任务配置（开关）
+     * @param tableGroupSize      表映射总数
+     * @param roundDone           任务级 Meta 是否本轮已完成（STATE=DONE）
+     * @param tableSnapshots      各表明细 Meta 快照（可含 null）
+     * @param syncedRowsPerTable  各表已同步行（与 snapshots 同序，可空）
+     * @param sourceTotalPerTable 各表源端总行（与 snapshots 同序，可空；无缓存为 0）
      */
-    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount,
+    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize,
                                                       boolean roundDone,
-                                                      Map<Integer, Integer> mappingStatusByIndex,
                                                       List<CommonTaskSnapshot> tableSnapshots,
                                                       List<Long> syncedRowsPerTable,
                                                       List<Long> sourceTotalPerTable) {
@@ -84,34 +79,9 @@ public final class DatabaseSyncProgressUtil {
     }
 
     /**
-     * 兼容旧调用：无逐表行数时，数据段按「数据阶段完成表 / 总表」退化。
-     */
-    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount,
-                                                      boolean roundDone,
-                                                      Map<Integer, Integer> mappingStatusByIndex,
-                                                      List<CommonTaskSnapshot> tableSnapshots) {
-        return calculateProgressPercent(task, tableGroupSize, mappingCount, roundDone, mappingStatusByIndex,
-                tableSnapshots, Collections.emptyList(), Collections.emptyList());
-    }
-
-    /**
-     * 兼容聚合行数调用：无法还原逐表样本时，退化为完成表比例（避免虚高）。
-     */
-    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount,
-                                                      boolean roundDone,
-                                                      Map<Integer, Integer> mappingStatusByIndex,
-                                                      List<CommonTaskSnapshot> tableSnapshots,
-                                                      long syncedRows, long sourceTotal) {
-        // 聚合分母未齐时不可靠，一律按表完成度退化
-        return calculateProgressPercent(task, tableGroupSize, mappingCount, roundDone, mappingStatusByIndex,
-                tableSnapshots);
-    }
-
-    /**
      * 列表展示的已完成表数：启用阶段均已完成的表。
      */
     public static int countCompletedTables(DatabaseSyncTask task, int totalTableCount, boolean roundDone,
-                                           Map<Integer, Integer> mappingStatusByIndex,
                                            List<CommonTaskSnapshot> tableSnapshots) {
         if (task == null) {
             return 0;
@@ -186,7 +156,7 @@ public final class DatabaseSyncProgressUtil {
                 .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP);
     }
 
-    private static int countSchemaDoneTables(List<CommonTaskSnapshot> tableSnapshots) {
+    public static int countSchemaDoneTables(List<CommonTaskSnapshot> tableSnapshots) {
         if (CollectionUtils.isEmpty(tableSnapshots)) {
             return 0;
         }
@@ -227,13 +197,6 @@ public final class DatabaseSyncProgressUtil {
             return false;
         }
         return task.isEnableCopySchema() || task.isEnableCopyData();
-    }
-
-    /**
-     * 从任务级 Meta.SNAPSHOT 解析库映射 status。
-     */
-    public static Map<Integer, Integer> readMappingStatus(Map<String, String> taskMetaSnapshot) {
-        return TaskSnapshotUtil.readMappingStatusCodes(taskMetaSnapshot);
     }
 
     /**

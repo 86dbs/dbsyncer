@@ -28,6 +28,11 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected abstract Paging select(String sharding, Query query);
 
+    /**
+     * 按主键查询单条。
+     */
+    protected abstract Map selectOne(StorageEnum type, String sharding, String id);
+
     protected abstract void delete(String sharding, Query query);
 
     protected abstract void deleteAll(String sharding);
@@ -64,6 +69,23 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             throw e;
         }
         return new Paging(query.getPageNum(), query.getPageSize());
+    }
+
+    @Override
+    public Map queryObject(StorageEnum type, String id) {
+        Assert.notNull(type, "StorageEnum type can not be null.");
+        Assert.hasText(id, "id can not be empty.");
+        try {
+            return selectOne(type, getSharding(type, null), id);
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
+        } catch (SdkException e) {
+            if (isMissingStorageTable(e)) {
+                return null;
+            }
+            throw e;
+        }
+        return null;
     }
 
     @Override

@@ -199,6 +199,33 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     @Override
+    protected Map selectOne(StorageEnum type, String sharding, String id) {
+        // 读路径：分表不存在时不建表
+        Executor executor = getExecutor(type, sharding, false);
+        if (executor == null) {
+            return null;
+        }
+        try {
+            String sql = executor.getQuery() + " WHERE "
+                    + connector.buildWithQuotation(ConfigConstant.CONFIG_MODEL_ID.toUpperCase()) + " = ?";
+            List<Map<String, Object>> data = connectorInstance.execute(
+                    databaseTemplate -> databaseTemplate.queryForList(sql, new Object[]{id}));
+            if (CollectionUtils.isEmpty(data)) {
+                return null;
+            }
+            data = normalizeResultKeys(data, executor.getFields());
+            return data.get(0);
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                tables.remove(sharding);
+                logger.debug("selectOne skip missing table, sharding={}: {}", sharding, e.getMessage());
+                return null;
+            }
+            throw e instanceof RuntimeException ? (RuntimeException) e : new H2Exception(e);
+        }
+    }
+
+    @Override
     protected void delete(String sharding, Query query) {
         Executor executor = getExecutor(query.getType(), sharding, false);
         if (executor == null) {

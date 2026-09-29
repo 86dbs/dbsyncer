@@ -43,22 +43,19 @@ public final class OperationTemplate {
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
+    /**
+     * 按主键查询单条配置。
+     */
     public <T> T queryObject(Class<T> clazz, String id) {
         if (StringUtil.isBlank(id)) {
             return null;
         }
         StorageEnum type = ConfigModelUtil.getStorageEnum(newInstanceType(clazz));
-        Query query = new Query();
-        query.setType(type);
-        query.setPageNum(1);
-        query.setPageSize(1);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
-        Paging paging = storageService.query(query);
-        List<Map> data = (List<Map>) paging.getData();
-        if (CollectionUtils.isEmpty(data)) {
+        Map row = storageService.queryObject(type, id);
+        if (CollectionUtils.isEmpty(row)) {
             return null;
         }
-        return parseRow(data.get(0), clazz);
+        return parseRow(row, clazz);
     }
 
     public String execute(ConfigModel model, CommandEnum cmd) {
