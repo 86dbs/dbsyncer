@@ -199,17 +199,18 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     @Override
-    protected Map selectOne(StorageEnum type, String sharding, String id) {
+    protected Map selectOne(String sharding, Query query) {
         // 读路径：分表不存在时不建表
-        Executor executor = getExecutor(type, sharding, false);
+        Executor executor = getExecutor(query.getType(), sharding, false);
         if (executor == null) {
             return null;
         }
         try {
-            String sql = executor.getQuery() + " WHERE "
-                    + connector.buildWithQuotation(ConfigConstant.CONFIG_MODEL_ID.toUpperCase()) + " = ?";
+            StringBuilder sql = new StringBuilder(executor.getQuery());
+            List<Object> args = new ArrayList<>();
+            buildQuerySqlWithParams(query, args, sql, null);
             List<Map<String, Object>> data = connectorInstance.execute(
-                    databaseTemplate -> databaseTemplate.queryForList(sql, new Object[]{id}));
+                    databaseTemplate -> databaseTemplate.queryForList(sql.toString(), args.toArray()));
             if (CollectionUtils.isEmpty(data)) {
                 return null;
             }

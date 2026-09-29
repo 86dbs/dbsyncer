@@ -33,7 +33,7 @@ public interface StorageService {
     /**
      * 按主键查询单条记录（不走分页、不统计总数）。
      */
-    Map queryObject(StorageEnum type, String id);
+    Map queryObject(Query query);
 
     /**
      * 根据条件删除

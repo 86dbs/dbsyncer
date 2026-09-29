@@ -29,9 +29,9 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     protected abstract Paging select(String sharding, Query query);
 
     /**
-     * 按主键查询单条。
+     * 按条件查询单条
      */
-    protected abstract Map selectOne(StorageEnum type, String sharding, String id);
+    protected abstract Map selectOne(String sharding, Query query);
 
     protected abstract void delete(String sharding, Query query);
 
@@ -72,11 +72,15 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public Map queryObject(StorageEnum type, String id) {
-        Assert.notNull(type, "StorageEnum type can not be null.");
-        Assert.hasText(id, "id can not be empty.");
+    public Map queryObject(Query query) {
+        Assert.notNull(query, "Query can not be null.");
+        Assert.notNull(query.getType(), "StorageEnum type can not be null.");
+        BooleanFilter filter = query.getBooleanFilter();
+        Assert.isTrue(filter != null
+                        && (!CollectionUtils.isEmpty(filter.getFilters()) || !CollectionUtils.isEmpty(filter.getClauses())),
+                "queryObject must contain filter conditions.");
         try {
-            return selectOne(type, getSharding(type, null), id);
+            return selectOne(getSharding(query.getType(), query.getMetaId()), query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
         } catch (SdkException e) {

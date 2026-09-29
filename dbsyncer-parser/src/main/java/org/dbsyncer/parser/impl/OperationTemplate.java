@@ -51,7 +51,10 @@ public final class OperationTemplate {
             return null;
         }
         StorageEnum type = ConfigModelUtil.getStorageEnum(newInstanceType(clazz));
-        Map row = storageService.queryObject(type, id);
+        Query query = new Query();
+        query.setType(type);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        Map row = storageService.queryObject(query);
         if (CollectionUtils.isEmpty(row)) {
             return null;
         }
