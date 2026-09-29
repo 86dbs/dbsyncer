@@ -4,7 +4,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.cache.CacheService;
-import org.dbsyncer.common.message.impl.RemoveConfigModelCacheMessage;
+import org.dbsyncer.common.message.impl.RemoveCacheMessage;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.impl.OperationTemplate;
@@ -85,7 +85,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
     @Override
     public void removeCacheAndNotice(String id) {
         removeCache(id);
-        RemoveConfigModelCacheMessage message = new RemoveConfigModelCacheMessage();
+        RemoveCacheMessage message = new RemoveCacheMessage();
         message.setId(id);
         message.setConfigModelType(configModelType);
         clusterService.pushMessage(message);
