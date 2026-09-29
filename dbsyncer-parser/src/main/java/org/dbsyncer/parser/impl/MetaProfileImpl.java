@@ -82,7 +82,7 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
 
     @Override
     public Meta getMetaDetail(String taskId) {
-        Query query = new Query(1, 1);
+        Query query = new Query();
         query.setType(StorageEnum.META);
         query.addFilter(ConfigConstant.META_TASK_ID, taskId);
         query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, TaskLevelEnum.TASK_DETAIL.getCode());
@@ -144,11 +144,6 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
             }
             pageNum++;
         }
-    }
-
-    @Override
-    public Meta getMetaByTaskId(String taskId, TaskLevelEnum taskLevelEnum) {
-        return null;
     }
 
     @Override

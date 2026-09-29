@@ -80,6 +80,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
                         && (!CollectionUtils.isEmpty(filter.getFilters()) || !CollectionUtils.isEmpty(filter.getClauses())),
                 "queryObject must contain filter conditions.");
         try {
+            query.setPageNum(1);
+            query.setPageSize(1);
             return selectOne(getSharding(query.getType(), query.getMetaId()), query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试

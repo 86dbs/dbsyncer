@@ -51,11 +51,6 @@ public interface MetaProfile {
     void pageScanMetas(Integer isTaskDetail, int pageSize, Consumer<List<Meta>> pageConsumer);
 
     /**
-     * 按关联 ID + 任务层级查询 Meta（任务级：taskId=任务ID；明细级：taskId=table_group.id）。
-     */
-    Meta getMetaByTaskId(String taskId, TaskLevelEnum taskLevelEnum);
-
-    /**
      * 批量按任务 ID 查询任务级 Meta（IS_TASK_DETAIL=0），key=taskId。
      */
     Map<String, Meta> getTaskMetaMap(List<String> taskIds);
