@@ -17,6 +17,7 @@ import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
@@ -376,7 +377,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
             String metaId = mapping.getMetaId();
             changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
-            clusterService.stop(mapping.getId());
+            clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
             log(LogType.MappingLog.STOP, mapping);
             // 发送关闭驱动通知消息
             MappingStopContent content = new MappingStopContent();

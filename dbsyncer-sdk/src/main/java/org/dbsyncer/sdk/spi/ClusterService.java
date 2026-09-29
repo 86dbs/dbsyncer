@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.message.CommonMessage;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
@@ -51,7 +52,13 @@ public interface ClusterService {
     default void start(ConfigModel configModel, boolean autoRecovery) {
     }
 
-    default void stop(String taskId) {
+    /**
+     * 停止任务。
+     *
+     * @param taskId   任务 ID
+     * @param taskType 任务类型
+     */
+    default void stop(String taskId, CommonTaskTypeEnum taskType) {
     }
 
     default Object receiveMessage(String message) {

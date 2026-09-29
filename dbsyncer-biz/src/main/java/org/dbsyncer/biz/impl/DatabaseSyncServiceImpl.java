@@ -111,7 +111,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
         Assert.notNull(task, "任务不存在");
         return convertTask2Vo(task);
     }
@@ -157,7 +157,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String edit(Map<String, String> params) {
         String id = params.get("id");
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
         Assert.notNull(task, "任务不存在");
         if (taskService.isRunning(id)) {
             throw new BizException("任务正在运行，请先停止");
@@ -221,7 +221,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String start(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
         Assert.notNull(task, "任务不存在");
         if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             throw new BizException("任务未配置库映射，无法启动");
@@ -236,7 +236,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String stop(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        ConfigModel task = taskService.get(id);
+        ConfigModel task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
         Assert.notNull(task, "任务不存在");
         Meta taskMeta = metaProfile.getMetaByTaskId(id, TaskLevelEnum.TASK);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
@@ -244,7 +244,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             taskMeta.setUpdateTime(System.currentTimeMillis());
             metaProfile.updateMeta(taskMeta);
         }
-        clusterService.stop(id);
+        clusterService.stop(id, CommonTaskTypeEnum.DATABASE_SYNC);
         return "停止成功";
     }
 
