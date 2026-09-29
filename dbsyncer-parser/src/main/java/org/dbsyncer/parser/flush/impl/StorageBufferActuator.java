@@ -4,7 +4,6 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
@@ -26,8 +25,8 @@ import java.util.concurrent.Executor;
 /**
  * 持久化执行器
  *
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2023-03-27 16:50
  */
 @Component

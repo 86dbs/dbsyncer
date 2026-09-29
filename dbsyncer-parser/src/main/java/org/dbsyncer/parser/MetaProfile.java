@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.parser;
 
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.model.MetaIncrement;
@@ -70,15 +69,21 @@ public interface MetaProfile {
      */
     void updateMetaProgress(String metaId, int state, Map<String, String> snapshot);
 
+    /**
+     * 删除所有 任务明细级别
+     */
     void deleteMetaByTableGroupIds(List<String> tableGroupIds);
 
     /**
+     * todo 可以去掉 直接返回的是任务id
      * 明细分表分片键：任务级 Meta 的 {@code taskId}（任务/Mapping ID）。
      * <p>入参必须为任务级 Meta（{@code isTaskDetail=0}）；表级 Meta 会抛异常。
      */
     String resolveTaskDetailShardId(Meta meta);
 
     /**
+     * todo 这个方法也可以去掉
+     * <p>
      * 按 Meta 主键解析明细分表分片键（先查 Meta，再取 taskId）。
      */
     String resolveTaskDetailShardId(String metaId);
