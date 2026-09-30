@@ -105,7 +105,6 @@
 
     function initMappingEventsPage() {
         var mappingId = getPageAttr('data-mapping-id');
-        var metaId = getPageAttr('data-meta-id');
         var tableGroupId = getPageAttr('data-table-group-id');
         var statusSelect;
         var pagination;
@@ -116,7 +115,7 @@
 
         function params() {
             return {
-                id: metaId || '',
+                id: mappingId || '',
                 status: (statusSelect && statusSelect.getValues()[0]) || '',
                 tableGroupId: tableGroupId || ''
             };
