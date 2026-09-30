@@ -4,9 +4,8 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
-import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -45,7 +44,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     private Executor storageExecutor;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -79,7 +78,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
         String shardId = request.getTaskDetailShardId();
         Meta meta = metaProfile.getMeta(shardId);
         if (meta != null) {
-            Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+            Mapping mapping = mappingProfile.get(meta.getTaskId());
             if (mapping != null) {
                 logger.info("{}, data={}", mapping.getName(), request.getRow());
             }

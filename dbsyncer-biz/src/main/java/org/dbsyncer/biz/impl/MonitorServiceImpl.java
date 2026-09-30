@@ -29,9 +29,9 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -88,7 +88,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private MetaProfile metaProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -148,7 +148,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 50);
         String searchKey = params.get("searchKey");
         // 按任务分页，避免扫全量 Meta（含校验/迁移等非同步任务）
-        Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
+        Paging<Mapping> paging = mappingProfile.query(pageNum, pageSize, searchKey);
         Paging<MetaVO> result = new Paging<>(pageNum, pageSize);
         if (paging == null) {
             return result;
@@ -230,17 +230,17 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public String clearData(String id, String tableGroupId) {
-        Assert.hasText(id, "驱动不存在.");
+        Assert.hasText(id, "同步任务不存在.");
         Meta meta = metaProfile.getMeta(id);
-        Assert.notNull(meta, "驱动不存在.");
-        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
-        Assert.notNull(mapping, "驱动不存在.");
+        Assert.notNull(meta, "同步任务不存在.");
+        Mapping mapping = mappingProfile.get(meta.getTaskId());
+        Assert.notNull(mapping, "同步任务不存在.");
         String shardId = metaProfile.resolveTaskDetailShardId(meta);
 
         if (StringUtil.isNotBlank(tableGroupId)) {
             TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
             Assert.notNull(tableGroup, "表映射不存在.");
-            Assert.isTrue(StringUtil.equals(tableGroup.getTaskId(), mapping.getId()), "表映射不属于当前驱动.");
+            Assert.isTrue(StringUtil.equals(tableGroup.getTaskId(), mapping.getId()), "表映射不属于当前同步任务.");
             clearTableGroupData(meta, shardId, tableGroupId);
             LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
             String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
@@ -400,7 +400,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         long fromTime = Math.max(0L, LAST_EXECUTE_TIME.get() - FAIL_DETAIL_LOOK_BACK_MS);
         metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
             for (Meta meta : page) {
-                Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+                Mapping mapping = mappingProfile.get(meta.getTaskId());
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                     continue;
                 }
@@ -455,7 +455,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void writeMappingReport(Meta meta, MappingErrorContent content) {
-        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+        Mapping mapping = mappingProfile.get(meta.getTaskId());
         if (null != mapping) {
             ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
             MappingErrorContent.ErrorItem item = new MappingErrorContent.ErrorItem();
@@ -512,7 +512,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
         metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
             for (Meta meta : page) {
-                Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+                Mapping mapping = mappingProfile.get(meta.getTaskId());
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                     continue;
                 }
@@ -583,7 +583,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private MetaVO convertMeta2Vo(Meta meta) {
-        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+        Mapping mapping = mappingProfile.get(meta.getTaskId());
         // 非同步驱动（校验/迁移等）跳过
         if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())
                 || StringUtil.isBlank(mapping.getModel())) {

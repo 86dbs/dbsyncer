@@ -7,8 +7,8 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -23,7 +23,7 @@ import java.time.Instant;
 public class BaseServiceImpl {
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -76,7 +76,7 @@ public class BaseServiceImpl {
 
     protected void log(LogType log, TableGroup tableGroup) {
         if (null != tableGroup) {
-            Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
+            Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
             if (null != mapping) {
                 // 新增同步任务知识库(全量)映射关系:[My_User] >> [My_User_Target]
                 String name = mapping.getName();

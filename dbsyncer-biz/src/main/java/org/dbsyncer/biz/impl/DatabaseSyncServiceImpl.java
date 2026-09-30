@@ -11,7 +11,6 @@ import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -20,10 +19,10 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -83,7 +82,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private DatabaseSyncProfile databaseSyncProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -147,7 +146,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException(e.getMessage(), e);
         }
         // 预建明细分表并对齐明细行，详情页 JOIN 查询不依赖任务是否已写出数据
-        taskProfile.createRunDetailTable(taskId);
+        databaseSyncProfile.createRunDetailTable(taskId);
         databaseSyncDetailService.syncTaskTableMetaDetails(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
@@ -184,8 +183,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException(e.getMessage(), e);
         }
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
-        taskProfile.clearRunData(id);
-        taskProfile.resetRunProgress(id);
+        databaseSyncProfile.clearRunData(id);
+        metaProfile.reset(id);
         String editedId = taskService.edit(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
         databaseSyncDetailService.syncTaskTableMetaDetails(editedId);

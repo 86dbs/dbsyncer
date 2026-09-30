@@ -13,12 +13,12 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
@@ -87,7 +87,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private ParserComponent parserComponent;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -165,7 +165,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         }
         // 打印trace信息
         printTraceInfo(response);
-        final Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+        final Mapping mapping = mappingProfile.get(meta.getTaskId());
         List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
 
         switch (response.getTypeEnum()) {

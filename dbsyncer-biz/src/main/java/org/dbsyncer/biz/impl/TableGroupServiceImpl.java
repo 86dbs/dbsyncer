@@ -13,9 +13,9 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -48,7 +48,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private TableGroupChecker tableGroupChecker;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -65,7 +65,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public String add(Map<String, String> params) {
         String mappingId = params.get("mappingId");
-        Mapping mapping = taskProfile.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         assertRunning(mapping);
 
         synchronized (LOCK) {
@@ -105,7 +105,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
+        Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
         assertRunning(mapping);
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
@@ -130,7 +130,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String remove(String mappingId, String ids) {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        Mapping mapping = taskProfile.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         assertRunning(mapping);
 
         // 批量删除表
@@ -249,7 +249,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         });
         mapping.setSourceColumn(holder[0]);
         mapping.setTargetColumn(holder[1]);
-        taskProfile.updateTask(mapping);
+        mappingProfile.update(mapping);
     }
 
     /**

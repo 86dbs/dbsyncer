@@ -14,7 +14,6 @@ import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -26,10 +25,11 @@ import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
-import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
 import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 import org.dbsyncer.parser.model.Connector;
@@ -98,7 +98,10 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     private ValidateSyncDetailService validateSyncDetailService;
 
     @Resource
-    private TaskProfile taskProfile;
+    private ValidateSyncProfile validateSyncProfile;
+
+    @Resource
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -155,7 +158,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         // 关联同步任务
         String mappingId = params.get("mappingId");
         if (StringUtil.isNotBlank(mappingId)) {
-            Mapping mapping = taskProfile.getMapping(mappingId);
+            Mapping mapping = mappingProfile.get(mappingId);
             Assert.notNull(mapping, "mapping is not exist");
             task.setSourceConnectorId(mapping.getSourceConnectorId());
             task.setSourceDatabase(mapping.getSourceDatabase());
@@ -186,7 +189,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
             // 合并任务公共字段
             mergeTaskColumn(task);
             String id = taskService.add(task);
-            taskProfile.createRunDetailTable(id);
+            validateSyncProfile.createRunDetailTable(id);
             validateSyncDetailService.syncTaskTableMetaDetails(id);
             preloadTemplate.reConnect(task);
             return id;
@@ -201,7 +204,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
             task.setTargetSchema(params.get("targetSchema"));
             // 先持久化再建连，才能拉取到所有表
             String id = taskService.add(task);
-            taskProfile.createRunDetailTable(id);
+            validateSyncProfile.createRunDetailTable(id);
             preloadTemplate.reConnect(task);
             ValidateSyncTask validateSyncTask = refreshTablesAndGet(id);
             // 勾选「匹配相似表」时异步自动匹配，否则解析自定义表映射文本
@@ -315,8 +318,8 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         }
         assertRunning(task.getId());
         checkTask(task, params);
-        taskProfile.clearRunData(task.getId());
-        taskProfile.resetRunProgress(task.getId());
+        mappingProfile.clearRunData(task.getId());
+        metaProfile.reset(task.getId());
         String sortedIds = params.get("sortedTableGroupIds");
         if (StringUtil.isNotBlank(sortedIds)) {
             List<TableGroup> groupAll = new ArrayList<>();
@@ -381,7 +384,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
             }
         });
         preloadTemplate.reConnect(newTask);
-        taskProfile.createRunDetailTable(newId);
+        validateSyncProfile.createRunDetailTable(newId);
         validateSyncDetailService.syncTaskTableMetaDetails(newId);
         return newId;
     }

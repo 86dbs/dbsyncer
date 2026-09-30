@@ -18,9 +18,9 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
@@ -70,7 +70,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private BufferActuatorRouterService bufferActuatorRouter;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -137,7 +137,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
 
         // 4、获取连接器服务
-        Mapping mapping = taskProfile.getMapping(tableGroup.getTaskId());
+        Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
         ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
@@ -218,7 +218,7 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Override
     public void syncBatch(DataSyncRequest request) {
-        Mapping mapping = taskProfile.getMapping(request.getMappingId());
+        Mapping mapping = mappingProfile.get(request.getMappingId());
         Assert.notNull(mapping, "Mapping can not be null.");
         TableGroup tableGroup = tableGroupProfile.getTableGroup(request.getTableGroupId());
         Assert.notNull(tableGroup, "Meta can not be null.");

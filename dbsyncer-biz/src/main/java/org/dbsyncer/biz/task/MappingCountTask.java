@@ -6,8 +6,8 @@ package org.dbsyncer.biz.task;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.enums.DispatchTaskEnum;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -31,7 +31,7 @@ public final class MappingCountTask extends AbstractCountTask {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -55,7 +55,7 @@ public final class MappingCountTask extends AbstractCountTask {
 
     @Override
     public void execute() {
-        Mapping mapping = taskProfile.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         int groupCount = tableGroupProfile.getTableGroupCount(mappingId);
         logger.info("正在统计:{}, {}张表", mapping.getName(), groupCount);
         if (groupCount > 0) {

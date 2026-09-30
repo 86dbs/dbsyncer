@@ -18,7 +18,6 @@ import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -30,10 +29,10 @@ import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -99,7 +98,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -133,13 +132,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String add(Map<String, String> params) {
-        ConfigModel model = mappingChecker.checkAddConfigModel(params);
+        Mapping model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, model);
 
-        String id = taskProfile.addTask(model);
+        String id = mappingProfile.add(model);
         // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
         refreshMappingTables(id);
-        Mapping mapping = taskProfile.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
 
         // 匹配相似表（异步）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
@@ -159,7 +158,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String copy(String id) {
-        Mapping mapping = taskProfile.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
 
         String json = JsonUtil.objToJson(mapping);
@@ -169,7 +168,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
         mappingChecker.addMeta(newMapping);
 
-        taskProfile.addTask(newMapping);
+        mappingProfile.add(newMapping);
         preloadTemplate.reConnect(newMapping);
         log(LogType.MappingLog.COPY, newMapping);
 
@@ -202,13 +201,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(mapping.getMetaId());
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
-            taskProfile.clearRunData(id);
-            taskProfile.resetRunProgress(id);
+            mappingProfile.clearRunData(id);
+            metaProfile.reset(id);
             log(LogType.MappingLog.UPDATE, model);
 
             // 更新meta
             tableGroupService.updateMeta(mapping, metaSnapshot);
-            taskProfile.updateTask(model);
+            mappingProfile.update(model);
         }
         // 统计总数
         submitMappingCountTask(mapping, metaSnapshot);
@@ -227,7 +226,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MetaLog.CLEAR, meta);
 
             // 条件删除 table_group + 明细 Meta，并清运行结果
-            taskProfile.clearRunData(id);
+            mappingProfile.clearRunData(id);
             tableGroupProfile.removeTableGroupsByTaskId(id);
 
             // 删除任务级 meta
@@ -243,8 +242,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             connectorFactory.disconnect(sourceInstanceId);
             connectorFactory.disconnect(targetInstanceId);
 
-            // 删除驱动
-            taskProfile.deleteTask(id);
+            // 删除同步任务
+            mappingProfile.delete(id);
             log(LogType.MappingLog.DELETE, mapping);
         }
         return "驱动删除成功";
@@ -252,13 +251,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public MappingVO getMapping(String id) {
-        Mapping mapping = taskProfile.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         return convertMapping2Vo(mapping);
     }
 
     @Override
     public MappingCustomTableVO getMappingCustomTable(String id, String type) {
-        Mapping mapping = taskProfile.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         MappingCustomTableVO vo = new MappingCustomTableVO();
         vo.setId(mapping.getId());
         vo.setName(mapping.getName());
@@ -301,7 +300,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
+        Paging<Mapping> paging = mappingProfile.query(pageNum, pageSize, searchKey);
         Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
         if (paging == null) {
             return result;
@@ -391,11 +390,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Override
     public String refreshMappingTables(String id) {
-        Mapping mapping = taskProfile.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
         mapping.setSourceTable(updateConnectorTables(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX));
         mapping.setTargetTable(updateConnectorTables(mapping, ConnectorInstanceUtil.TARGET_SUFFIX));
-        taskProfile.updateTask(mapping);
+        mappingProfile.update(mapping);
         return "刷新同步任务表成功";
     }
 
@@ -495,7 +494,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             saveCustomTable(mapping, params);
-            taskProfile.updateTask(mapping);
+            mappingProfile.update(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
@@ -508,7 +507,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             removeCustomTable(mapping, params);
-            taskProfile.updateTask(mapping);
+            mappingProfile.update(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
@@ -592,7 +591,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         }
         logger.warn("同步任务 Meta 缺失，尝试重建. mappingId:{}, name:{}, metaId:{}", mapping.getId(), mapping.getName(), metaId);
         mappingChecker.addMeta(mapping);
-        taskProfile.updateTask(mapping);
+        mappingProfile.update(mapping);
         return metaProfile.getMeta(mapping.getMetaId());
     }
 
@@ -600,7 +599,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 检查是否存在同步任务
      */
     private Mapping assertMappingExist(String mappingId) {
-        Mapping mapping = taskProfile.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         Assert.notNull(mapping, "同步任务不存在.");
         return mapping;
     }
@@ -698,7 +697,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             metaProfile.updateMeta(meta);
             // 表级明细 Meta/进度一并重置，否则已完成表会被跳过无法重跑
             if (StringUtil.isNotBlank(meta.getTaskId())) {
-                taskProfile.clearRunData(meta.getTaskId());
+                mappingProfile.clearRunData(meta.getTaskId());
             }
         }
     }

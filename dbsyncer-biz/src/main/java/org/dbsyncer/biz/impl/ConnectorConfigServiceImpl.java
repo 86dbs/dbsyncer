@@ -13,9 +13,11 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -59,7 +61,13 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
+
+    @Resource
+    private ValidateSyncProfile validateSyncProfile;
+
+    @Resource
+    private DatabaseSyncProfile databaseSyncProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -133,10 +141,10 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     }
 
     /**
-     * 删除前校验：同步驱动、订正校验、整库迁移任务均不可仍引用该连接器。
+     * 删除前校验：同步任务、订正校验、整库迁移任务均不可仍引用该连接器。
      */
     private void assertConnectorNotInUse(String id) {
-        taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappingAll -> {
+        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappingAll -> {
             if (CollectionUtils.isEmpty(mappingAll)) {
                 return;
             }
@@ -151,7 +159,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
                 }
             }
         });
-        taskProfile.pageScanTasks(ValidateSyncTask.class, ConfigConstant.PAGE_SIZE, tasks -> {
+        validateSyncProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, tasks -> {
             if (CollectionUtils.isEmpty(tasks)) {
                 return;
             }
@@ -166,7 +174,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
                 }
             }
         });
-        taskProfile.pageScanTasks(DatabaseSyncTask.class, ConfigConstant.PAGE_SIZE, tasks -> {
+        databaseSyncProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, tasks -> {
             if (CollectionUtils.isEmpty(tasks)) {
                 return;
             }
@@ -316,7 +324,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Override
     public Object getPosition(String mappingId) {
-        Mapping mapping = taskProfile.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         Assert.notNull(mapping, "Mapping can not be null.");
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
         ConnectorInstance connectorInstance;

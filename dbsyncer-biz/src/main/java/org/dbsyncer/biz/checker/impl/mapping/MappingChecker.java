@@ -13,9 +13,9 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -49,7 +49,7 @@ public class MappingChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -73,7 +73,7 @@ public class MappingChecker extends AbstractChecker {
     private LicenseService licenseService;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public Mapping checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         Assert.hasText(name, "驱动名称不能为空");
@@ -101,7 +101,7 @@ public class MappingChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Mapping mapping = taskProfile.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "Can not find mapping.");
 
         // 修改基本配置

@@ -27,7 +27,6 @@ import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
-import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -49,8 +48,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 /**
- * {@link TaskProfile} 实现。
- *
  * @author wuji
  * @version 1.0.0
  */
@@ -77,11 +74,6 @@ public class TaskProfileImpl implements TaskProfile {
     @Override
     public <T extends ConfigModel> T getTask(String id, Class<T> clazz) {
         return operationTemplate.queryObject(clazz, id);
-    }
-
-    @Override
-    public Mapping getMapping(String id) {
-        return getTask(id, Mapping.class);
     }
 
     @Override
@@ -429,38 +421,6 @@ public class TaskProfileImpl implements TaskProfile {
         for (String taskId : taskIds) {
             createRunDetailTable(taskId);
         }
-    }
-
-    @Override
-    public void resetRunProgress(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return;
-        }
-        Meta meta = metaProfile.getMeta(taskId);
-        if (meta == null) {
-            return;
-        }
-        zeroTaskMetaCounters(meta);
-        meta.clear();
-        meta.setUpdateTime(System.currentTimeMillis());
-        metaProfile.updateMeta(meta);
-    }
-
-    private void zeroTaskMetaCounters(Meta meta) {
-        long total = counterValue(meta.getTotal());
-        long success = counterValue(meta.getSuccess());
-        long fail = counterValue(meta.getFail());
-        long diff = counterValue(meta.getDiff());
-        long fixed = counterValue(meta.getFixed());
-        if (total == 0L && success == 0L && fail == 0L && diff == 0L && fixed == 0L) {
-            return;
-        }
-        metaProfile.incrementMeta(MetaIncrement.of(meta.getId())
-                .total(-total)
-                .success(-success)
-                .fail(-fail)
-                .diff(-diff)
-                .fixed(-fixed));
     }
 
     private static long counterValue(AtomicLong value) {

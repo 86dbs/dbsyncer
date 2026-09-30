@@ -9,8 +9,8 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.Puller;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -34,7 +34,7 @@ import java.util.Map;
 public final class TaskManagerImpl implements TaskManager, ApplicationListener<ClosedEvent> {
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -58,7 +58,7 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     }
 
     private Mapping requireMapping(String taskId) {
-        Mapping mapping = taskProfile.getMapping(taskId);
+        Mapping mapping = mappingProfile.get(taskId);
         Assert.notNull(mapping, String.format("同步任务不存在: %s", taskId));
         return mapping;
     }
@@ -100,7 +100,7 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
         if (meta == null || StringUtil.isBlank(meta.getTaskId())) {
             return;
         }
-        Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+        Mapping mapping = mappingProfile.get(meta.getTaskId());
         if (mapping == null) {
             return;
         }

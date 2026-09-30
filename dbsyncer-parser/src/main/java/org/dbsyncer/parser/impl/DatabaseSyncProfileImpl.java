@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.event.RemoveDatabaseSyncCacheEvent;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.MetaProfile;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * @author 穿云
@@ -55,6 +57,26 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     public void delete(String id) {
         taskProfile.deleteTask(id);
         removeCacheAndNotice(id);
+    }
+
+    @Override
+    public void clearRunData(String id) {
+        taskProfile.clearRunData(id);
+    }
+
+    @Override
+    public Paging<DatabaseSyncTask> query(int pageNum, int pageSize, String searchKey) {
+        return taskProfile.queryTasks(DatabaseSyncTask.class, pageNum, pageSize, searchKey);
+    }
+
+    @Override
+    public void pageScanTasks(int pageSize, Consumer<List<DatabaseSyncTask>> pageConsumer) {
+        taskProfile.pageScanTasks(DatabaseSyncTask.class, pageSize, pageConsumer);
+    }
+
+    @Override
+    public void createRunDetailTable(String taskId) {
+        taskProfile.createRunDetailTable(taskId);
     }
 
     @Override
