@@ -32,7 +32,6 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
-import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
@@ -44,7 +43,6 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
-import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.service.ScheduledScanService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
@@ -217,55 +215,16 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "同步任务不存在.");
 
-        if (StringUtil.isNotBlank(tableGroupId)) {
-            clearTableGroupData(id, tableGroupId);
-            LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
-            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-            logService.log(log, "%s:%s(%s) tableGroup=%s", log.getMessage(), mapping.getName(), model, tableGroupId);
-            return "清空当前表同步数据成功";
-        }
-
-        // 任务 Meta：success/fail 一并归零
-        taskMetaProfile.reset(id);
-        // 表级 Meta 删除
-        List<String> groupIds = tableGroupProfile.listTableGroupIds(mapping.getId());
-        if (!CollectionUtils.isEmpty(groupIds)) {
-            for (String groupId : groupIds) {
-                if (StringUtil.isNotBlank(groupId)) {
-                    removeTableMeta(groupId);
-                }
-            }
-        }
-        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
-        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-        logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        storageService.clear(StorageEnum.TASK_DETAIL, id);
-        return "清空同步数据成功";
-    }
-
-    private void clearTableGroupData(String shardId, String tableGroupId) {
-        Meta tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
-        long tableSuccess = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
-        long tableFail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
-        if (tableSuccess != 0 || tableFail != 0) {
-            taskMetaProfile.incrementMeta(MetaIncrement.of(shardId)
-                    .success(-tableSuccess)
-                    .fail(-tableFail));
-        }
-        removeTableMeta(tableGroupId);
-
         Query query = new Query();
         query.setType(StorageEnum.TASK_DETAIL);
-        query.setTaskId(shardId);
+        query.setTaskId(id);
         query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
         storageService.delete(query);
-    }
 
-    private void removeTableMeta(String tableGroupId) {
-        Meta tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
-        if (tableMeta != null) {
-            taskMetaProfile.removeMeta(tableMeta.getId());
-        }
+        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        logService.log(log, "%s:%s(%s) tableGroup=%s", log.getMessage(), mapping.getName(), model, tableGroupId);
+        return "清空当前表同步数据成功";
     }
 
     @Override

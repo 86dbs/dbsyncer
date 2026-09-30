@@ -352,32 +352,8 @@ public class TaskProfileImpl implements TaskProfile {
         if (CollectionUtils.isEmpty(groupIds)) {
             return;
         }
-        // 就地重置已有明细 Meta，避免 delete + insert 写放大；缺失的再补插
-        Map<String, Meta> existing = taskMetaProfile.getDetailMetaMap(groupIds);
-        long now = System.currentTimeMillis();
-        List<Meta> toUpdate = new ArrayList<>();
-        List<Meta> toAdd = new ArrayList<>();
-        for (String groupId : groupIds) {
-            Meta meta = existing.get(groupId);
-            if (meta != null) {
-                if (isDetailMetaClean(meta)) {
-                    continue;
-                }
-                resetDetailMeta(meta, groupId, now);
-                toUpdate.add(meta);
-            } else {
-                Meta created = new Meta();
-                resetDetailMeta(created, groupId, now);
-                created.setCreateTime(now);
-                toAdd.add(created);
-            }
-        }
-        if (!CollectionUtils.isEmpty(toUpdate)) {
-            taskMetaProfile.updateMetaBatch(toUpdate);
-        }
-        if (!CollectionUtils.isEmpty(toAdd)) {
-            TaskSplitUtil.split(toAdd, ConfigConstant.PAGE_SIZE, taskMetaProfile::addMetaBatch);
-        }
+        // 批量删除表粒度meta数据
+        taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
     }
 
     /**

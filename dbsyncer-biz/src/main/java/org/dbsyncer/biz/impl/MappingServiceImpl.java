@@ -675,6 +675,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return name;
     }
 
+    // TODO 启动单独重置
     private void clearMetaIfFinished(String taskId) {
         Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
