@@ -311,7 +311,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 rows.add(convertMapping2Vo(mapping));
             } catch (Exception e) {
                 logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, metaId:{}, error:{}",
-                        mapping.getId(), mapping.getName(), mapping.getMetaId(), e.getMessage());
+                        mapping.getId(), mapping.getName(), mapping.getId(), e.getMessage());
             }
         }
         result.setData(rows);
@@ -484,7 +484,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
+            assertRunning(mapping.getId());
             saveCustomTable(mapping, params);
             mappingProfile.update(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
@@ -497,7 +497,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
+            assertRunning(mapping.getId());
             removeCustomTable(mapping, params);
             mappingProfile.update(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
@@ -557,7 +557,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         // 元信息（历史数据可能出现 mapping.metaId 悬空，列表不应整页失败）
         Meta meta = resolveMappingMeta(mapping);
-        Assert.notNull(meta, String.format("Meta can not be null. mappingId:%s, metaId:%s", mapping.getId(), mapping.getMetaId()));
+        Assert.notNull(meta, String.format("Meta can not be null. mappingId:%s, metaId:%s", mapping.getId(), mapping.getId()));
         MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
@@ -583,7 +583,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         logger.warn("同步任务 Meta 缺失，尝试重建. mappingId:{}, name:{}, taskId:{}", mapping.getId(), mapping.getName(), mapping.getId());
         mappingChecker.addMeta(mapping);
         mappingProfile.update(mapping);
-        return metaProfile.getMeta(mapping.getMetaId());
+        return metaProfile.getMeta(mapping.getId());
     }
 
     /**

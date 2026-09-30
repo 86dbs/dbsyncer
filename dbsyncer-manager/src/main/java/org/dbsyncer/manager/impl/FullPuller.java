@@ -91,20 +91,20 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
      */
     public void runSync(Mapping mapping, boolean publishClosed) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "映射关系不能为空");
-        final String metaId = mapping.getMetaId();
+        final String taskId = mapping.getId();
         try {
-            Task task = map.computeIfAbsent(metaId, k -> new Task(metaId));
-            logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
+            Task task = map.computeIfAbsent(taskId, k -> new Task(taskId));
+            logger.info("开始全量同步：{}, {}", taskId, mapping.getName());
             doTask(task, mapping);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
         } finally {
-            map.remove(metaId);
+            map.remove(taskId);
             if (publishClosed) {
-                publishClosedEvent(metaId);
+                publishClosedEvent(taskId);
             }
-            logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
+            logger.info("结束全量同步：{}, {}", taskId, mapping.getName());
         }
     }
 

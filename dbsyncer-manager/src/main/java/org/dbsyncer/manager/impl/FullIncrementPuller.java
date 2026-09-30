@@ -84,7 +84,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
     @Override
     public void prepareFullPhase(String taskId) {
         Mapping mapping = mappingProfile.get(taskId);
-        Meta meta = metaProfile.getMeta(mapping.getMetaId());
+        Meta meta = metaProfile.getMeta(taskId);
         prepareFullPhase(mapping, meta);
     }
 

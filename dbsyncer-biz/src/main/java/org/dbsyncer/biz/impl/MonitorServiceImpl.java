@@ -158,7 +158,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
         List<MetaVO> rows = new ArrayList<>(paging.getData().size());
         for (Mapping mapping : paging.getData()) {
-            if (mapping == null || StringUtil.isBlank(mapping.getMetaId())) {
+            if (mapping == null) {
                 continue;
             }
             Meta meta = metaProfile.getMeta(mapping.getId());

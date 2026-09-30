@@ -6,13 +6,11 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.model.DataSyncRequest;
-import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
-import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +74,6 @@ public class MappingController extends BaseController {
             MappingVO mapping = mappingService.getMapping(id);
             model.put("mappingId", id);
             model.put("mapping", mapping);
-            model.put("metaId", mapping.getMetaId());
             model.put("tableGroupId", tableGroupId == null ? "" : tableGroupId.trim());
             String dataStatus = status;
             if (StringUtil.isBlank(dataStatus)) {
