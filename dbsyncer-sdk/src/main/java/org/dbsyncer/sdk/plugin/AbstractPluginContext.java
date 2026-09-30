@@ -124,18 +124,6 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     }
 
     @Override
-    public String getSourceTableName() {
-        logger.warn("方法已过时，请尽快替换为getSourceTable().getName()");
-        return getSourceTable().getName();
-    }
-
-    @Override
-    public String getTargetTableName() {
-        logger.warn("方法已过时，请尽快替换为getTargetTable().getName()");
-        return getTargetTable().getName();
-    }
-
-    @Override
     public String getEvent() {
         return event;
     }
