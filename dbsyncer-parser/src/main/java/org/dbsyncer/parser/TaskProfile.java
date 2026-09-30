@@ -104,13 +104,6 @@ public interface TaskProfile {
      */
     String exportTaskDetailSchemasJson(List<String> taskIds);
 
-    // ---------- 任务运行结果 ----------
-
-    /**
-     * 删除任务下各表映射的运行 Meta（按 table_group.id）。
-     */
-    void deleteTableRunMeta(String taskId);
-
     /**
      * 清空任务运行数据：删表级 Meta、清空 TASK_DETAIL；表映射仍在时补回空明细 Meta。
      */

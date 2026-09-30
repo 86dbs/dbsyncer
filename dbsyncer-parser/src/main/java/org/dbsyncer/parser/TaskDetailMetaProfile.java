@@ -5,6 +5,8 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.parser.model.Meta;
 
+import java.util.List;
+
 /**
  * 任务明细meta执行结果表
  *
@@ -16,7 +18,7 @@ public interface TaskDetailMetaProfile {
     /**
      * 获取任务的meta缓存
      */
-    Meta getMeta(String taskId);
+    Meta getMeta(String tableGroupId);
 
     /**
      * 添加 Meta。
@@ -31,15 +33,20 @@ public interface TaskDetailMetaProfile {
     /**
      * 删除 Meta。
      */
-    void remove(String taskId);
+    void remove(String tableGroupId);
 
     /**
      * 重置meta状态
      */
-    void reset(String taskId);
+    void reset(String tableGroupId);
 
     /**
      * 清空表, 删除task_detail_{任务id}数据
      */
-    void clearData(String id);
+    void clearData(String taskId);
+
+    /**
+     * 删除所有 任务明细级别
+     */
+    void deleteMetaByTableGroupIds(List<String> tableGroupIds);
 }

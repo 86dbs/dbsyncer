@@ -224,18 +224,6 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
     }
 
     @Override
-    public void deleteMetaByTableGroupIds(List<String> tableGroupIds) {
-        if (CollectionUtils.isEmpty(tableGroupIds)) {
-            return;
-        }
-        Query query = new Query();
-        query.setType(StorageEnum.META);
-        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, TaskLevelEnum.TASK_DETAIL.getCode());
-        query.addFilter(ConfigConstant.META_TASK_ID, FilterEnum.IN, StringUtil.join(tableGroupIds, StringUtil.COMMA));
-        storageService.delete(query);
-    }
-
-    @Override
     public String addMeta(Meta meta) {
         return operationTemplate.execute(meta, CommandEnum.OPR_ADD);
     }

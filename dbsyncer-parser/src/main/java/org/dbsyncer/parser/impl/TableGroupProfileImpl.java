@@ -10,6 +10,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
@@ -82,6 +83,9 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
     private TaskMetaProfile taskMetaProfile;
 
     @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
+
+    @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Override
@@ -138,7 +142,7 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
             List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
             // 批量删除表meta数据
-            taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
+            taskDetailMetaProfile.deleteMetaByTableGroupIds(groupIds);
         });
 
         Query deleteQuery = new Query();

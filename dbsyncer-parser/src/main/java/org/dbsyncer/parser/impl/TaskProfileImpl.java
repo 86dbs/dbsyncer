@@ -339,11 +339,6 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public void deleteTableRunMeta(String taskId) {
-        taskMetaProfile.deleteMetaByTableGroupIds(tableGroupProfile.listTableGroupIds(taskId));
-    }
-
-    @Override
     public void clearRunData(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
@@ -356,7 +351,7 @@ public class TaskProfileImpl implements TaskProfile {
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
             List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
             // 批量删除表meta数据
-            taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
+            taskDetailMetaProfile.deleteMetaByTableGroupIds(groupIds);
         });
     }
 

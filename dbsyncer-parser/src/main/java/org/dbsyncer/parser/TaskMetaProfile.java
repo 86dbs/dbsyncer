@@ -70,11 +70,6 @@ public interface TaskMetaProfile {
     void updateMetaProgress(String metaId, int state, Map<String, String> snapshot);
 
     /**
-     * 删除所有 任务明细级别
-     */
-    void deleteMetaByTableGroupIds(List<String> tableGroupIds);
-
-    /**
      * 添加 Meta。
      */
     String addMeta(Meta meta);
