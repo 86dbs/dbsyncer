@@ -12,6 +12,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2026-05-29 13:46
  */
+@Deprecated
 public interface DatabaseSyncDetailService {
 
     default Paging result(Map<String, String> params) {

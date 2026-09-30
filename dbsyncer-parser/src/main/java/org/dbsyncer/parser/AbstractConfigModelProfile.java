@@ -28,7 +28,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<ConfigModel> responseClazz;
     private String configModelType;
-    public static final long expiredOneHours = 60 * 60 * 1000;
+    public static final long EXPIRED_1_HOURS = 60 * 60 * 1000;
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -72,7 +72,7 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
             }
             T config = (T) getConfigModel(id);
             if (config != null) {
-                cacheService.put(cacheKey, config, expiredOneHours);
+                cacheService.put(cacheKey, config, EXPIRED_1_HOURS);
             }
             return config;
         });
