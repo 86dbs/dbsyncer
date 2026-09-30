@@ -45,7 +45,7 @@ import java.util.function.Consumer;
  * @version 1.0.0
  */
 @Component
-public class TableGroupProfileImpl implements TableGroupProfile {
+public final class TableGroupProfileImpl implements TableGroupProfile {
 
     private static final String RESULT_SELECT_COLUMNS =
             "tg.ID AS tableGroupId, "

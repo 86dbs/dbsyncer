@@ -4,7 +4,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="form-container">
     <div class="card-header">
-        <h3 class="card-title text-center">[[${meta?.mappingName}]]</h3>
+        <h3 class="card-title text-center">[[${mapping?.name}]]</h3>
     </div>
     <div class="card-body">
         <!-- 驱动同步关系 -->
@@ -31,7 +31,6 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
         <form id="editDataForm">
             <div>
-                <input type="hidden" name="metaId" th:value="${meta?.id}"/>
                 <input type="hidden" name="messageId" th:value="${message?.id}"/>
                 <input type="hidden" name="mappingId" th:value="${mapping?.id}"/>
                 <input type="hidden" name="retryDataParams"/>

@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  */
 @Component
-public class UserProfileImpl implements UserProfile {
+public final class UserProfileImpl implements UserProfile {
 
     @Resource
     private StorageService storageService;

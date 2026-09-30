@@ -233,7 +233,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             metaProfile.removeMeta(taskId);
             log(LogType.MetaLog.DELETE, meta);
 
-            // 删除驱动表映射关系
+            // 删除同步表映射关系
             tableGroupContext.clear(taskId);
 
             // 释放连接池
@@ -246,7 +246,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             mappingProfile.delete(id);
             log(LogType.MappingLog.DELETE, mapping);
         }
-        return "驱动删除成功";
+        return "同步任务删除成功";
     }
 
     @Override

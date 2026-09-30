@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
@@ -13,6 +14,9 @@ import org.dbsyncer.parser.util.SqlResultRowUtil;
 import org.dbsyncer.parser.util.TaskDetailQuerySupport;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.FieldResolver;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;
@@ -22,8 +26,10 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link TaskDetailProfile} 实现：task_detail JOIN meta / table_group，存储侧分页。
@@ -33,7 +39,7 @@ import java.util.Map;
  * @date 2026-07-20 15:00
  */
 @Component
-public class TaskDetailProfileImpl implements TaskDetailProfile {
+public final class TaskDetailProfileImpl implements TaskDetailProfile {
 
     private static final String SELECT_COLUMNS =
             "d.ID AS id, d.CREATE_TIME AS createTime, "
@@ -119,6 +125,23 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
             return null;
         }
         return toDisplayRow(rows.get(0));
+    }
+
+    @Override
+    public void delete(String taskId, String id) {
+        storageService.remove(StorageEnum.TASK_DETAIL, taskId, id);
+    }
+
+    @Override
+    public Map getData(String taskId, String id) {
+        Query query = new Query();
+        Map<String, FieldResolver> fieldResolvers = new HashMap<>();
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        query.setFieldResolverMap(fieldResolvers);
+        query.setTaskId(taskId);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        query.setType(StorageEnum.TASK_DETAIL);
+        return storageService.queryObject(query);
     }
 
     private long queryCount(String detailTable, String where, List<Object> args) {

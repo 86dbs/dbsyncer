@@ -29,15 +29,7 @@ public interface MonitorService {
     Paging<MetaVO> queryMeta(Map<String, String> params);
 
     /**
-     * 获取驱动元信息
-     *
-     * @param taskId
-     * @return
-     */
-    MetaVO getMetaVo(String taskId);
-
-    /**
-     * 查询驱动同步数据
+     * 查询同步数据
      *
      * @param params
      * @return

@@ -4,7 +4,6 @@
 package org.dbsyncer.biz.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.model.DataSyncEvent;
 import org.dbsyncer.biz.model.DataSyncRequest;
@@ -20,6 +19,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
@@ -28,16 +28,12 @@ import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.filter.FieldResolver;
-import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -50,7 +46,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -75,10 +70,10 @@ public class DataSyncServiceImpl implements DataSyncService {
     private MetaProfile metaProfile;
 
     @Resource
-    private TableGroupProfile tableGroupProfile;
+    private TaskDetailProfile taskDetailProfile;
 
     @Resource
-    private StorageService storageService;
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -89,7 +84,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         Assert.hasText(messageId, "The messageId is null.");
         MessageVO messageVo = new MessageVO();
         try {
-            Map row = getData(taskId, messageId);
+            Map row = taskDetailProfile.getData(taskId, messageId);
             Map binlogData = getBinlogData(row, true);
             String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
             TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
@@ -175,13 +170,11 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Override
     public String sync(Map<String, String> params) throws InvalidProtocolBufferException {
-        String metaId = params.get("metaId");
         String messageId = params.get("messageId");
         String taskId = params.get("mappingId");
-        Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
 
-        Map row = getData(metaId, messageId);
+        Map row = taskDetailProfile.getData(taskId, messageId);
         Map binlogData = getBinlogData(row, false);
         if (CollectionUtils.isEmpty(binlogData)) {
             return messageId;
@@ -202,13 +195,13 @@ public class DataSyncServiceImpl implements DataSyncService {
         RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null);
 
         // 执行同步是否成功
-        bufferActuatorRouter.execute(messageId, changedEvent);
+        bufferActuatorRouter.execute(taskId, changedEvent);
         // 明细分表：从该任务分表(dbsyncer_task_detail_{taskId})删除该条同步数据
+        taskDetailProfile.delete(taskId, messageId);
         Meta meta = metaProfile.getMeta(taskId);
         Assert.notNull(meta, "Meta can not be null.");
-        storageService.remove(StorageEnum.TASK_DETAIL, taskId, messageId);
         // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
-        metaProfile.incrementMeta(MetaIncrement.of(metaId).fail(-1L));
+        metaProfile.incrementMeta(MetaIncrement.of(meta.getId()).fail(-1L));
         return messageId;
     }
 
@@ -229,17 +222,6 @@ public class DataSyncServiceImpl implements DataSyncService {
             // 执行同步是否成功
             bufferActuatorRouter.execute(meta.getTaskId(), changedEvent);
         }
-    }
-
-    private Map getData(String taskId, String messageId) {
-        Query query = new Query();
-        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
-        query.setFieldResolverMap(fieldResolvers);
-        query.setTaskId(taskId);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
-        query.setType(StorageEnum.TASK_DETAIL);
-        return storageService.queryObject(query);
     }
 
     private Object convertValue(Object oldValue, String newValue) {

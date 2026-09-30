@@ -104,9 +104,7 @@ public class MonitorController extends BaseController {
 
     @GetMapping("/page/retry")
     public String page(ModelMap model, String taskId, String messageId) {
-        MetaVO metaVo = monitorService.getMetaVo(taskId);
-        model.put("meta", metaVo);
-        model.put("mapping", mappingService.getMapping(metaVo.getTaskId()));
+        model.put("mapping", mappingService.getMapping(taskId));
         model.put("message", dataSyncService.getMessageVo(taskId, messageId));
         return "monitor/retry.html";
     }

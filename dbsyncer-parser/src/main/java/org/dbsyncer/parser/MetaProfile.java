@@ -111,7 +111,7 @@ public interface MetaProfile {
     /**
      * 删除 Meta。
      */
-    void removeMeta(String id);
+    void removeMeta(String taskId);
 
     /**
      * Meta 总数。

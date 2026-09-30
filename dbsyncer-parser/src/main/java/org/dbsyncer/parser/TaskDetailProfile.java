@@ -32,4 +32,14 @@ public interface TaskDetailProfile {
      * @return 展示行，不存在时 null
      */
     Map<String, Object> getDetail(TaskDetailQuery query);
+
+    /**
+     * 删除任务明细数据
+     */
+    void delete(String taskId, String id);
+
+    /**
+     * 获取任务明细数据
+     */
+    Map getData(String taskId, String messageId);
 }

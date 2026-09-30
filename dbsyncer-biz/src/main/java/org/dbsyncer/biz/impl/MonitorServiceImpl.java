@@ -175,15 +175,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public MetaVO getMetaVo(String taskId) {
-        Meta meta = metaProfile.getMeta(taskId);
-        Assert.notNull(meta, "The meta is null.");
-        MetaVO vo = convertMeta2Vo(meta);
-        Assert.notNull(vo, String.format("驱动不存在. metaId:%s, taskId:%s", meta.getId(), meta.getTaskId()));
-        return vo;
-    }
-
-    @Override
     public Paging queryData(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Assert.notNull(id, "The taskId is null.");

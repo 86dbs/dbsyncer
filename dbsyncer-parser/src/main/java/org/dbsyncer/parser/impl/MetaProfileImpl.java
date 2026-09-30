@@ -294,9 +294,12 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
     }
 
     @Override
-    public void removeMeta(String id) {
-        storageService.remove(StorageEnum.META, id);
-        removeCacheAndNotice(id);
+    public void removeMeta(String taskId) {
+        Meta meta = getMeta(taskId);
+        if (meta != null) {
+            storageService.remove(StorageEnum.META, meta.getId());
+        }
+        removeCacheAndNotice(taskId);
     }
 
     @Override
@@ -401,6 +404,6 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
 
     @Override
     public void onApplicationEvent(RemoveMetaCacheEvent event) {
-        removeCache(event.getCommonMessage().getId());
+        removeMetaCache(event.getCommonMessage().getId());
     }
 }
