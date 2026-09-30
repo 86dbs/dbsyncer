@@ -13,7 +13,7 @@ import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.SqlResultRowUtil;
 import org.dbsyncer.parser.util.TaskDetailQuerySupport;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
+import org.dbsyncer.sdk.enums.DatabaseSyncDetailTypeEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link TaskDetailProfile} 实现：task_detail JOIN meta / table_group，存储侧分页。
@@ -184,7 +183,7 @@ public final class TaskDetailProfileImpl implements TaskDetailProfile {
         if (detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL) != null) {
             sourceTotal = detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL);
         }
-        boolean rowData = DatabaseMigrationDetailTypeEnum.ROW_DATA.getCode()
+        boolean rowData = DatabaseSyncDetailTypeEnum.ROW_DATA.getCode()
                 .equals(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_TYPE)));
         if (!rowData) {
             if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL) != null) {

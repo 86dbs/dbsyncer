@@ -123,15 +123,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         }
     }
 
-    @Override
-    public void ensure(StorageEnum type, String metaId) {
-        try {
-            ensureShard(type, getSharding(type, metaId));
-        } catch (NullExecutorException e) {
-            // 未知存储类型等，忽略
-        }
-    }
-
     /**
      * 确保分片物理表存在（仅 DDL，不写数据）。
      *

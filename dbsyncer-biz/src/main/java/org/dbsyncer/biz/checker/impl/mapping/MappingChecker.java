@@ -7,7 +7,6 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.enums.TaskLevelEnum;
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -193,9 +192,7 @@ public class MappingChecker extends AbstractChecker {
         meta.setTaskId(mapping.getId());
         meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
         this.modifyConfigModel(meta, new HashMap<>());
-
-        String id = metaProfile.addMeta(meta);
-        mapping.setMetaId(id);
+        metaProfile.addMeta(meta);
     }
 
     /**

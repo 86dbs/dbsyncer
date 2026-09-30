@@ -5,7 +5,7 @@ package org.dbsyncer.sdk.util;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
+import org.dbsyncer.sdk.enums.DatabaseSyncDetailTypeEnum;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
@@ -132,7 +132,7 @@ public final class DatabaseSyncProgressUtil {
 
     private static BigDecimal singleTableDataRatio(CommonTaskSnapshot snapshot, Long syncedRows, Long sourceTotal) {
         if (snapshot != null
-                && DatabaseMigrationDetailTypeEnum.isDataPhaseDone(snapshot.getStep(), snapshot.getStatus())) {
+                && DatabaseSyncDetailTypeEnum.isDataPhaseDone(snapshot.getStep(), snapshot.getStatus())) {
             return ONE;
         }
         long source = sourceTotal == null ? 0L : Math.max(0L, sourceTotal);
@@ -163,7 +163,7 @@ public final class DatabaseSyncProgressUtil {
         int count = 0;
         for (CommonTaskSnapshot tableSnapshot : tableSnapshots) {
             if (tableSnapshot != null
-                    && DatabaseMigrationDetailTypeEnum.isSchemaPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
+                    && DatabaseSyncDetailTypeEnum.isSchemaPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
                 count++;
             }
         }
@@ -177,7 +177,7 @@ public final class DatabaseSyncProgressUtil {
         int count = 0;
         for (CommonTaskSnapshot tableSnapshot : tableSnapshots) {
             if (tableSnapshot != null
-                    && DatabaseMigrationDetailTypeEnum.isDataPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
+                    && DatabaseSyncDetailTypeEnum.isDataPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
                 count++;
             }
         }
@@ -189,11 +189,11 @@ public final class DatabaseSyncProgressUtil {
             return false;
         }
         if (task.isEnableCopySchema()
-                && !DatabaseMigrationDetailTypeEnum.isSchemaPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
+                && !DatabaseSyncDetailTypeEnum.isSchemaPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
             return false;
         }
         if (task.isEnableCopyData()
-                && !DatabaseMigrationDetailTypeEnum.isDataPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
+                && !DatabaseSyncDetailTypeEnum.isDataPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
             return false;
         }
         return task.isEnableCopySchema() || task.isEnableCopyData();

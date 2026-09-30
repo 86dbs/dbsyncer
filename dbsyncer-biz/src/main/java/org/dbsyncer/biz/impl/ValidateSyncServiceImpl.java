@@ -190,7 +190,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
             mergeTaskColumn(task);
             String id = taskService.add(task);
             validateSyncProfile.createRunDetailTable(id);
-            validateSyncDetailService.syncTaskTableMetaDetails(id);
+            validateSyncProfile.syncTaskTableMetaDetails(id);
             preloadTemplate.reConnect(task);
             return id;
         } else {
@@ -220,7 +220,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
                 if (StringUtil.isNotBlank(tableGroups)) {
                     matchCustomizedTableGroups(validateSyncTask, tableGroups);
                 }
-                validateSyncDetailService.syncTaskTableMetaDetails(id);
+                validateSyncProfile.syncTaskTableMetaDetails(id);
             }
             return id;
         }
@@ -347,7 +347,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         }
         String id = taskService.edit(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐明细
-        validateSyncDetailService.syncTaskTableMetaDetails(id);
+        validateSyncProfile.syncTaskTableMetaDetails(id);
         return id;
     }
 
@@ -385,7 +385,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         });
         preloadTemplate.reConnect(newTask);
         validateSyncProfile.createRunDetailTable(newId);
-        validateSyncDetailService.syncTaskTableMetaDetails(newId);
+        validateSyncProfile.syncTaskTableMetaDetails(newId);
         return newId;
     }
 
@@ -653,7 +653,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
                 return 1 < tableSize ? String.valueOf(tableSize) : id;
             } finally {
                 // 表映射变更后对齐明细
-                validateSyncDetailService.syncTaskTableMetaDetails(taskId);
+                validateSyncProfile.syncTaskTableMetaDetails(taskId);
             }
         }
     }
@@ -690,7 +690,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         // 重置排序
         resetTableGroupAllIndex(taskId);
         // 对齐删除已无表映射的明细
-        validateSyncDetailService.syncTaskTableMetaDetails(taskId);
+        validateSyncProfile.syncTaskTableMetaDetails(taskId);
         return taskId;
     }
 

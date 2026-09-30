@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.sdk.model;
 
-import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
+import org.dbsyncer.sdk.enums.DatabaseSyncDetailTypeEnum;
 
 /**
  * 整库迁移单表阶段终态明细。
@@ -14,7 +14,7 @@ import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
  */
 public class DatabaseSyncDetail {
 
-    private DatabaseMigrationDetailTypeEnum type;
+    private DatabaseSyncDetailTypeEnum type;
     private int tableIndex;
     private String sourceDatabase;
     private String sourceSchema;
@@ -27,7 +27,7 @@ public class DatabaseSyncDetail {
     private long failTotal;
     private String content;
 
-    public static DatabaseSyncDetail of(DatabaseMigrationDetailTypeEnum type, int tableIndex) {
+    public static DatabaseSyncDetail of(DatabaseSyncDetailTypeEnum type, int tableIndex) {
         DatabaseSyncDetail detail = new DatabaseSyncDetail();
         detail.type = type;
         detail.tableIndex = tableIndex;
@@ -36,19 +36,19 @@ public class DatabaseSyncDetail {
 
     public static DatabaseSyncDetail schemaSuccess(int tableIndex) {
         // 结构迁移按「一张表」计：源端行数/成功数均为 1
-        return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex).sourceTotal(1L).success(1L);
+        return of(DatabaseSyncDetailTypeEnum.TABLE_SCHEMA, tableIndex).sourceTotal(1L).success(1L);
     }
 
     public static DatabaseSyncDetail schemaSkipped(int tableIndex) {
-        return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex).sourceTotal(1L);
+        return of(DatabaseSyncDetailTypeEnum.TABLE_SCHEMA, tableIndex).sourceTotal(1L);
     }
 
     public static DatabaseSyncDetail rowData(int tableIndex) {
-        return of(DatabaseMigrationDetailTypeEnum.ROW_DATA, tableIndex);
+        return of(DatabaseSyncDetailTypeEnum.ROW_DATA, tableIndex);
     }
 
     public DatabaseSyncDetail namespace(String sourceDatabase, String sourceSchema,
-                                       String targetDatabase, String targetSchema) {
+                                        String targetDatabase, String targetSchema) {
         this.sourceDatabase = sourceDatabase;
         this.sourceSchema = sourceSchema;
         this.targetDatabase = targetDatabase;
@@ -82,7 +82,7 @@ public class DatabaseSyncDetail {
         return this;
     }
 
-    public DatabaseMigrationDetailTypeEnum getType() {
+    public DatabaseSyncDetailTypeEnum getType() {
         return type;
     }
 

@@ -15,23 +15,19 @@ import java.util.Map;
 @Deprecated
 public interface ValidateSyncDetailService {
 
-    default Paging result(Map<String, String> params){
+    default Paging result(Map<String, String> params) {
         return null;
     }
 
-    default Map<String, Object> manualRevise(String taskId, String detailId){
+    default Map<String, Object> manualRevise(String taskId, String detailId) {
         return null;
     }
-
-    default void syncTaskTableMetaDetails(String taskId){
-
-    }
-
-    default void resetTaskDetailsForNewRound(String taskId){
+    
+    default void resetTaskDetailsForNewRound(String taskId) {
 
     }
 
-    default void markRunningDetailsDone(String taskId){
+    default void markRunningDetailsDone(String taskId) {
 
     }
 }

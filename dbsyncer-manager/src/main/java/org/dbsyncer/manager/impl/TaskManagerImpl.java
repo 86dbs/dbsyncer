@@ -53,7 +53,7 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     @Override
     public void stop(String taskId) {
         Mapping mapping = requireMapping(taskId);
-        getPuller(mapping).close(mapping.getMetaId());
+        getPuller(mapping).close(taskId);
     }
 
     private Mapping requireMapping(String taskId) {

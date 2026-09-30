@@ -266,7 +266,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         // 5、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
         result.setTargetTableGroupName(context.getTargetTable().getName());
-        result.setTaskId(mapping.getMetaId());
+        result.setTaskId(mapping.getId());
         result.setEvent(response.getEvent());
         ConnectorConfig targetConfig = getConnectorConfig(mapping.getTargetConnectorId());
         ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetConfig);
@@ -303,7 +303,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 // 2.持久化增量事件数据
                 result.setTableGroupId(tableGroup.getId());
                 result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
-                result.setTaskId(mapping.getMetaId());
+                result.setTaskId(mapping.getId());
                 result.setEvent(response.getEvent());
                 flushStrategy.flushIncrementData(result, connectorService.getSchemaResolver(), null);
             }

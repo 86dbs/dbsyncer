@@ -12,16 +12,20 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
  * @version 1.0.0
  * @date 2026-05-29 16:00
  */
-public enum DatabaseMigrationDetailTypeEnum {
+public enum DatabaseSyncDetailTypeEnum {
 
-    /** 结构迁移 */
+    /**
+     * 结构迁移
+     */
     TABLE_SCHEMA("tableSchema"),
-    /** 数据迁移 */
+    /**
+     * 数据迁移
+     */
     ROW_DATA("rowData");
 
     private final String code;
 
-    DatabaseMigrationDetailTypeEnum(String code) {
+    DatabaseSyncDetailTypeEnum(String code) {
         this.code = code;
     }
 
@@ -29,11 +33,11 @@ public enum DatabaseMigrationDetailTypeEnum {
         return code;
     }
 
-    public static DatabaseMigrationDetailTypeEnum ofCode(String code) {
+    public static DatabaseSyncDetailTypeEnum ofCode(String code) {
         if (code == null) {
             return null;
         }
-        for (DatabaseMigrationDetailTypeEnum value : values()) {
+        for (DatabaseSyncDetailTypeEnum value : values()) {
             if (value.code.equals(code)) {
                 return value;
             }
@@ -62,7 +66,7 @@ public enum DatabaseMigrationDetailTypeEnum {
      * 根据阶段编码判断结构阶段是否已结束。
      */
     public static boolean isSchemaPhaseDone(String stepCode, int status) {
-        DatabaseMigrationDetailTypeEnum step = ofCode(stepCode);
+        DatabaseSyncDetailTypeEnum step = ofCode(stepCode);
         return step != null && step.isSchemaPhaseDone(status);
     }
 
@@ -70,7 +74,7 @@ public enum DatabaseMigrationDetailTypeEnum {
      * 根据阶段编码判断数据阶段是否已结束。
      */
     public static boolean isDataPhaseDone(String stepCode, int status) {
-        DatabaseMigrationDetailTypeEnum step = ofCode(stepCode);
+        DatabaseSyncDetailTypeEnum step = ofCode(stepCode);
         return step != null && step.isDataPhaseDone(status);
     }
 }
