@@ -74,7 +74,7 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
             }
             Meta newMeta = getMeta(taskId);
             if (newMeta != null) {
-                cacheService.put(cacheKey, newMeta, expiredOneHours);
+                cacheService.put(cacheKey, newMeta, EXPIRED_1_HOURS);
             }
             return newMeta;
         });
@@ -134,7 +134,7 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
         int pageNum = 1;
         while (true) {
             Paging<Meta> paging = queryMeta(isTaskDetail, pageNum, safePageSize);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+            if (CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
             List<Meta> page = new ArrayList<>(paging.getData());

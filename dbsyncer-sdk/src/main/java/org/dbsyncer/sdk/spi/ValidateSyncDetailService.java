@@ -12,6 +12,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2026-06-04 18:00
  */
+@Deprecated
 public interface ValidateSyncDetailService {
 
     default Paging result(Map<String, String> params){
