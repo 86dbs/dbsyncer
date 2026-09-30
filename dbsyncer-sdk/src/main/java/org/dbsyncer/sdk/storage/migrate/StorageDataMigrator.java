@@ -488,7 +488,7 @@ public abstract class StorageDataMigrator {
                 continue;
             }
             try {
-                storage.ensure(StorageEnum.TASK_DETAIL, taskId);
+                storage.clear(StorageEnum.TASK_DETAIL, taskId);
             } catch (Exception e) {
                 logger.warn("预建 task_detail 失败 {}: {}", taskId, e.getMessage());
             }

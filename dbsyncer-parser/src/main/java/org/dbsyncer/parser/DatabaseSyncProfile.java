@@ -61,4 +61,9 @@ public interface DatabaseSyncProfile {
      */
     void createRunDetailTable(String taskId);
 
+    /**
+     * 重置任务详情表
+     */
+    void syncTaskTableMetaDetails(String taskId);
+
 }

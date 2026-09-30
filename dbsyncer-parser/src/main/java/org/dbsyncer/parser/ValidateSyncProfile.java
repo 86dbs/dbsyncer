@@ -61,4 +61,9 @@ public interface ValidateSyncProfile {
      */
     void createRunDetailTable(String taskId);
 
+    /**
+     * 保存/编辑时重建明细分表骨架行（先清空再按当前表映射写入）。
+     */
+    void syncTaskTableMetaDetails(String taskId);
+
 }

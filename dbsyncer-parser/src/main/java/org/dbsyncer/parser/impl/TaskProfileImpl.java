@@ -123,7 +123,7 @@ public class TaskProfileImpl implements TaskProfile {
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         int pageNum = 1;
         while (true) {
-            Paging<T> paging = queryTasks(clazz, pageNum, safePageSize,null);
+            Paging<T> paging = queryTasks(clazz, pageNum, safePageSize, null);
             if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
@@ -410,7 +410,7 @@ public class TaskProfileImpl implements TaskProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        storageService.ensure(StorageEnum.TASK_DETAIL, taskId);
+        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
     }
 
     @Override
