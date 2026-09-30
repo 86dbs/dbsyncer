@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.parser.impl;
 
-import com.scxhtb.dbsyncer.platform.enums.ValidateSyncDetailTypeEnum;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.event.RemoveValidateSyncCacheEvent;
 import org.dbsyncer.common.model.Paging;
@@ -17,6 +16,7 @@ import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.enums.ValidateSyncDetailTypeEnum;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;

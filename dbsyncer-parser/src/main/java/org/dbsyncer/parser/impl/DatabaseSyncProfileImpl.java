@@ -15,7 +15,7 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
+import org.dbsyncer.sdk.enums.DatabaseSyncDetailTypeEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -147,10 +147,10 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     private List<String> resolveEnabledDetailTypes(DatabaseSyncTask task) {
         List<String> types = new ArrayList<>(2);
         if (task.isEnableCopySchema()) {
-            types.add(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA.getCode());
+            types.add(DatabaseSyncDetailTypeEnum.TABLE_SCHEMA.getCode());
         }
         if (task.isEnableCopyData()) {
-            types.add(DatabaseMigrationDetailTypeEnum.ROW_DATA.getCode());
+            types.add(DatabaseSyncDetailTypeEnum.ROW_DATA.getCode());
         }
         return types;
     }
