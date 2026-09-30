@@ -65,11 +65,6 @@ public interface TaskProfile {
     int countTasks(String type);
 
     /**
-     * 任务 id 是否存在于 {@code dbsyncer_task}。
-     */
-    boolean existsTask(String id);
-
-    /**
      * 全部任务行数。
      */
     int countAllTasks();
@@ -107,7 +102,7 @@ public interface TaskProfile {
     /**
      * 清空任务运行数据：删表级 Meta、清空 TASK_DETAIL；表映射仍在时补回空明细 Meta。
      */
-    void clearRunData(String taskId);
+    void deleteRunData(String taskId);
 
     /**
      * 预建运行明细分表

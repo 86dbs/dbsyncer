@@ -680,7 +680,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态，便于再次全量
-        if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
+        if (!CommonTaskStatusEnum.isRunning(meta.getState())) {
             meta.getFail().set(0);
             meta.getSuccess().set(0);
             taskMetaProfile.updateMeta(meta);

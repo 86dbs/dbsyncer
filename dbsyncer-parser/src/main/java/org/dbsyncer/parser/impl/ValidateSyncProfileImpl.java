@@ -87,7 +87,7 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
 
     @Override
     public void clearRunData(String id) {
-        taskProfile.clearRunData(id);
+        taskProfile.deleteRunData(id);
     }
 
     @Override

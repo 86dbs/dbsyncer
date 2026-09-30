@@ -87,7 +87,7 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
 
     @Override
     public void clearRunData(String id) {
-        taskProfile.clearRunData(id);
+        taskProfile.deleteRunData(id);
     }
 
     @Override

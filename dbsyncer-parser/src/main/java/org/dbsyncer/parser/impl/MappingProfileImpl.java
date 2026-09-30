@@ -61,7 +61,7 @@ public final class MappingProfileImpl extends AbstractConfigModelProfile<Mapping
 
     @Override
     public void clearRunData(String id) {
-        taskProfile.clearRunData(id);
+        taskProfile.deleteRunData(id);
     }
 
     @Override

@@ -47,7 +47,7 @@ import java.util.zip.ZipOutputStream;
  * @version 1.0.0
  */
 @Component
-public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements TaskMetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
+public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> implements TaskMetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
 
     @Resource
     private StorageService storageService;

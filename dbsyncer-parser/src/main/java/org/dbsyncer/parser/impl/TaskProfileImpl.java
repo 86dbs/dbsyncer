@@ -190,18 +190,6 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public boolean existsTask(String id) {
-        if (StringUtil.isBlank(id)) {
-            return false;
-        }
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.TASK);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
-        Paging paging = storageService.query(query);
-        return paging != null && !CollectionUtils.isEmpty(paging.getData());
-    }
-
-    @Override
     public int countAllTasks() {
         return countTasks(null);
     }
@@ -339,7 +327,7 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public void clearRunData(String taskId) {
+    public void deleteRunData(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
