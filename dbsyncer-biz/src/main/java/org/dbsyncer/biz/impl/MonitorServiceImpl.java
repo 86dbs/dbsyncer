@@ -30,9 +30,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
@@ -84,7 +84,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private MetricReporter metricReporter;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private MappingProfile mappingProfile;
@@ -164,7 +164,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             if (mapping == null) {
                 continue;
             }
-            Meta meta = metaProfile.getMeta(mapping.getId());
+            Meta meta = taskMetaProfile.getMeta(mapping.getId());
             if (meta == null) {
                 continue;
             }
@@ -226,7 +226,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
 
         // 任务 Meta：success/fail 一并归零
-        metaProfile.reset(id);
+        taskMetaProfile.reset(id);
         // 表级 Meta 删除
         List<String> groupIds = tableGroupProfile.listTableGroupIds(mapping.getId());
         if (!CollectionUtils.isEmpty(groupIds)) {
@@ -244,11 +244,11 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void clearTableGroupData(String shardId, String tableGroupId) {
-        Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
+        Meta tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
         long tableSuccess = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
         long tableFail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
         if (tableSuccess != 0 || tableFail != 0) {
-            metaProfile.incrementMeta(MetaIncrement.of(shardId)
+            taskMetaProfile.incrementMeta(MetaIncrement.of(shardId)
                     .success(-tableSuccess)
                     .fail(-tableFail));
         }
@@ -262,9 +262,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void removeTableMeta(String tableGroupId) {
-        Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
+        Meta tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
         if (tableMeta != null) {
-            metaProfile.removeMeta(tableMeta.getId());
+            taskMetaProfile.removeMeta(tableMeta.getId());
         }
     }
 
@@ -334,7 +334,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         long endTime = System.currentTimeMillis();
         // 下界回看，避免异步落库晚于水位推进导致漏通知
         long fromTime = Math.max(0L, LAST_EXECUTE_TIME.get() - FAIL_DETAIL_LOOK_BACK_MS);
-        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+        taskMetaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
             for (Meta meta : page) {
                 Mapping mapping = mappingProfile.get(meta.getTaskId());
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
@@ -440,7 +440,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 明细分表：逐个任务分表按过期时间清理
         int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
         long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
-        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+        taskMetaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
             for (Meta meta : page) {
                 Mapping mapping = mappingProfile.get(meta.getTaskId());
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {

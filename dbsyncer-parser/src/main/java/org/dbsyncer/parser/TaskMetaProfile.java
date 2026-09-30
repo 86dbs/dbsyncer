@@ -19,7 +19,7 @@ import java.util.zip.ZipOutputStream;
  * @author wuji
  * @version 1.0.0
  */
-public interface MetaProfile {
+public interface TaskMetaProfile {
 
     /**
      * 获取任务的meta缓存

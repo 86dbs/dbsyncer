@@ -11,8 +11,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
@@ -53,7 +53,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private SystemConfigProfile systemConfigProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private LogService logService;
@@ -151,7 +151,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
         // 与 FullTableProgressUtil.save 共用 tableLock；进度更新走 updateMetaProgress（写前重载），避免覆盖原子计数
         synchronized (MetaLockUtil.lock(writer.getTaskId())) {
-            metaProfile.incrementMeta(MetaIncrement.of(writer.getTaskId()).success(success).fail(fail));
+            taskMetaProfile.incrementMeta(MetaIncrement.of(writer.getTaskId()).success(success).fail(fail));
         }
         incrementTableMeta(writer.getTableGroupId(), success, fail);
     }
@@ -165,7 +165,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
         synchronized (FullTableProgressUtil.tableLock(tableGroupId)) {
-            Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
+            Meta tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
             if (tableMeta == null) {
                 tableMeta = new Meta();
                 tableMeta.setTaskId(tableGroupId);
@@ -173,10 +173,10 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 long now = Instant.now().toEpochMilli();
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);
-                metaProfile.updateMeta(tableMeta);
-                tableMeta = metaProfile.getMetaDetail(tableGroupId);
+                taskMetaProfile.updateMeta(tableMeta);
+                tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
             }
-            metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).success(success).fail(fail));
+            taskMetaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).success(success).fail(fail));
         }
     }
 

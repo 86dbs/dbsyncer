@@ -22,8 +22,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -56,7 +56,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private MappingProfile mappingProfile;
@@ -131,7 +131,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         if (mappingPaging != null && !CollectionUtils.isEmpty(mappingPaging.getData())) {
             list.addAll(mappingPaging.getData());
         }
-        Paging<Meta> metaPaging = metaProfile.queryMeta(TaskLevelEnum.TASK.getCode(), 1, 5);
+        Paging<Meta> metaPaging = taskMetaProfile.queryMeta(TaskLevelEnum.TASK.getCode(), 1, 5);
         if (metaPaging != null && !CollectionUtils.isEmpty(metaPaging.getData())) {
             list.addAll(metaPaging.getData());
         }

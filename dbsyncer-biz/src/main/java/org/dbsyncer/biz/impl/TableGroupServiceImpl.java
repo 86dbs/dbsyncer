@@ -14,8 +14,8 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -51,7 +51,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -167,7 +167,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public Meta updateMeta(Mapping mapping, String metaSnapshot) {
-        Meta meta = metaProfile.getMeta(mapping.getId());
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "同步任务meta不存在.");
 
         // 清空状态
@@ -184,7 +184,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         getMetaTotal(meta, mapping.getModel());
 
         meta.setUpdateTime(Instant.now().toEpochMilli());
-        metaProfile.updateMeta(meta);
+        taskMetaProfile.updateMeta(meta);
         return meta;
     }
 

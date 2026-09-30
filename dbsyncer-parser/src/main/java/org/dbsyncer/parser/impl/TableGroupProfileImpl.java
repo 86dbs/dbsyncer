@@ -9,8 +9,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -78,7 +78,7 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
     private StorageService storageService;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Override
     public String addTableGroup(TableGroup model) {
@@ -109,7 +109,7 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
                 metas.add(meta);
             }
             if (!CollectionUtils.isEmpty(metas)) {
-                metaProfile.addMetaBatch(metas);
+                taskMetaProfile.addMetaBatch(metas);
             }
         });
     }
@@ -132,7 +132,7 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         }
         List<String> groupIds = listTableGroupIds(taskId);
         //删除所有子任务
-        metaProfile.deleteMetaByTableGroupIds(groupIds);
+        taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
         Query deleteQuery = new Query();
         deleteQuery.setType(StorageEnum.TABLE_GROUP);
         deleteQuery.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
@@ -305,7 +305,7 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta existing = metaProfile.getMetaDetail(tableGroupId);
+        Meta existing = taskMetaProfile.getMetaDetail(tableGroupId);
         if (existing != null) {
             return;
         }
@@ -315,7 +315,7 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         long now = System.currentTimeMillis();
         meta.setCreateTime(now);
         meta.setUpdateTime(now);
-        metaProfile.addMeta(meta);
+        taskMetaProfile.addMeta(meta);
     }
 
     /**
@@ -404,9 +404,9 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta byRef = metaProfile.getMetaDetail(tableGroupId);
+        Meta byRef = taskMetaProfile.getMetaDetail(tableGroupId);
         if (byRef != null && StringUtil.isNotBlank(byRef.getId())) {
-            metaProfile.removeMeta(byRef.getId());
+            taskMetaProfile.removeMeta(byRef.getId());
         }
     }
 

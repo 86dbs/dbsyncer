@@ -8,7 +8,7 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -26,7 +26,7 @@ public class BaseServiceImpl {
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private LogService logService;
@@ -40,7 +40,7 @@ public class BaseServiceImpl {
     protected final static Object LOCK = new Object();
 
     protected boolean isRunning(String taskId) {
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         if (null != meta) {
             int state = meta.getState();
             return CommonTaskStatusEnum.isRunning(state);
@@ -91,7 +91,7 @@ public class BaseServiceImpl {
     }
 
     protected void changeMetaState(String taskId, CommonTaskStatusEnum status) {
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
             long now = Instant.now().toEpochMilli();
@@ -101,7 +101,7 @@ public class BaseServiceImpl {
             if (CommonTaskStatusEnum.RUNNING == status) {
                 meta.setStartTime(now);
             }
-            metaProfile.updateMeta(meta);
+            taskMetaProfile.updateMeta(meta);
         }
     }
 }

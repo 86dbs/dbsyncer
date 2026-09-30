@@ -12,8 +12,8 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.AbstractConfigModelProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.ConfigModelUtil;
@@ -41,13 +41,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * {@link MetaProfile} 实现（dbsyncer_meta）。
+ * {@link TaskMetaProfile} 实现（dbsyncer_meta）。
  *
  * @author wuji
  * @version 1.0.0
  */
 @Component
-public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements MetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
+public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> implements TaskMetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
 
     @Resource
     private StorageService storageService;

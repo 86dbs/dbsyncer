@@ -28,9 +28,9 @@ import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -99,7 +99,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -197,7 +197,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             mappingProfile.clearRunData(id);
-            metaProfile.reset(id);
+            taskMetaProfile.reset(id);
             log(LogType.MappingLog.UPDATE, model);
 
             // 更新meta
@@ -221,7 +221,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             tableGroupProfile.removeTableGroupsByTaskId(taskId);
 
             // 删除任务级 meta
-            metaProfile.removeMeta(taskId);
+            taskMetaProfile.removeMeta(taskId);
 
             // 删除同步表映射关系
             tableGroupContext.clear(taskId);
@@ -281,7 +281,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             vo.setMainTables(mainTables.stream().sorted(Comparator.comparing(Table::getName)).collect(Collectors.toList()));
         }
         // 元信息
-        vo.setMeta(metaProfile.getMeta(mapping.getId()));
+        vo.setMeta(taskMetaProfile.getMeta(mapping.getId()));
         return vo;
     }
 
@@ -573,14 +573,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 获取同步任务任务级 Meta；若 metaId 悬空则重建并回写 mapping。
      */
     private Meta resolveMappingMeta(Mapping mapping) {
-        Meta meta = metaProfile.getMeta(mapping.getId());
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
         if (meta != null) {
             return meta;
         }
         logger.warn("同步任务 Meta 缺失，尝试重建. mappingId:{}, name:{}, taskId:{}", mapping.getId(), mapping.getName(), mapping.getId());
         mappingChecker.addMeta(mapping);
         mappingProfile.update(mapping);
-        return metaProfile.getMeta(mapping.getId());
+        return taskMetaProfile.getMeta(mapping.getId());
     }
 
     /**
@@ -676,13 +676,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private void clearMetaIfFinished(String taskId) {
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态，便于再次全量
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
             meta.getFail().set(0);
             meta.getSuccess().set(0);
-            metaProfile.updateMeta(meta);
+            taskMetaProfile.updateMeta(meta);
             // 表级明细 Meta/进度一并重置，否则已完成表会被跳过无法重跑
             mappingProfile.clearRunData(meta.getTaskId());
         }

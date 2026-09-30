@@ -7,7 +7,7 @@ import org.dbsyncer.common.event.RemoveMappingCacheEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.springframework.context.ApplicationListener;
@@ -29,7 +29,7 @@ public final class MappingProfileImpl extends AbstractConfigModelProfile<Mapping
     private TaskProfile taskProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Override
     public Mapping get(String id) {
@@ -77,6 +77,6 @@ public final class MappingProfileImpl extends AbstractConfigModelProfile<Mapping
     @Override
     public void onApplicationEvent(RemoveMappingCacheEvent event) {
         removeCache(event.getCommonMessage().getId());
-        metaProfile.removeMetaCache(event.getCommonMessage().getId());
+        taskMetaProfile.removeMetaCache(event.getCommonMessage().getId());
     }
 }

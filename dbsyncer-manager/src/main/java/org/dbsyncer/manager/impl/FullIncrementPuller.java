@@ -8,8 +8,8 @@ import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -39,7 +39,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
     private final Set<String> running = new CopyOnWriteArraySet<>();
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -84,7 +84,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
     @Override
     public void prepareFullPhase(String taskId) {
         Mapping mapping = mappingProfile.get(taskId);
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         prepareFullPhase(mapping, meta);
     }
 
@@ -104,7 +104,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
 
     private void runFullIncrementSync(Mapping mapping, String taskId, boolean autoRecovery) {
         try {
-            Meta meta = metaProfile.getMeta(taskId);
+            Meta meta = taskMetaProfile.getMeta(taskId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
                 incrementPuller.start(mapping, autoRecovery);
                 return;
@@ -161,7 +161,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
             return false;
         }
 
-        return FullTableProgressUtil.hasIncomplete(metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()))
+        return FullTableProgressUtil.hasIncomplete(taskMetaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()))
                 || processed > 0;
     }
 
@@ -169,7 +169,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
      * 标记状态
      */
     private void markFullIncrementPhase(String taskId, String phase) {
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), phase);
 
         //清除全量标记
@@ -177,8 +177,8 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
         meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_PROGRESS.getCode());
-        FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
-        metaProfile.updateMeta(meta);
+        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
+        taskMetaProfile.updateMeta(meta);
     }
 
 }

@@ -9,8 +9,8 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.AbstractConfigModelProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.model.TableGroup;
@@ -46,7 +46,7 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
     private TaskProfile taskProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private StorageService storageService;
@@ -108,7 +108,7 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
     @Override
     public void onApplicationEvent(RemoveValidateSyncCacheEvent event) {
         removeCache(event.getCommonMessage().getId());
-        metaProfile.removeMetaCache(event.getCommonMessage().getId());
+        taskMetaProfile.removeMetaCache(event.getCommonMessage().getId());
     }
 
     /**

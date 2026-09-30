@@ -23,7 +23,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -76,7 +76,7 @@ public class MetricReporter implements ScheduledTaskJob {
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private BufferActuator generalBufferActuator;
@@ -146,7 +146,7 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     private MetricResponseInfo collect(BufferActuatorMetric metric, String code) {
-        Meta meta = metaProfile.getMeta(metric.getTaskId());
+        Meta meta = taskMetaProfile.getMeta(metric.getTaskId());
         String group = StringUtil.EMPTY;
         if (meta != null) {
             Mapping mapping = mappingProfile.get(meta.getTaskId());
@@ -207,7 +207,7 @@ public class MetricReporter implements ScheduledTaskJob {
                         taskIds.add(mapping.getId());
                     }
                 }
-                Map<String, Meta> metaMap = metaProfile.getTaskMetaMap(taskIds);
+                Map<String, Meta> metaMap = taskMetaProfile.getTaskMetaMap(taskIds);
                 if (!CollectionUtils.isEmpty(metaMap)) {
                     metaAll.addAll(metaMap.values());
                 }

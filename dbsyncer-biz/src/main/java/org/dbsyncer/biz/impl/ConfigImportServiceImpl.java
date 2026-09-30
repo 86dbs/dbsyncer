@@ -15,9 +15,9 @@ import org.dbsyncer.common.util.PackageZipUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.model.TableGroup;
@@ -64,7 +64,7 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -101,7 +101,7 @@ public class ConfigImportServiceImpl implements ConfigImportService {
             }
 
             importTableGroupsFromZip(zip);
-            metaProfile.importMetaFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.META));
+            taskMetaProfile.importMetaFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.META));
             taskProfile.importTaskDetailSchemasFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.TASK_DETAIL));
 
             preloadTemplate.afterConfigImport();

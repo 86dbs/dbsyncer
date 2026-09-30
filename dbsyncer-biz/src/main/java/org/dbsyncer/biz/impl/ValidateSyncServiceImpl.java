@@ -26,9 +26,9 @@ import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
 import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
@@ -104,7 +104,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -319,7 +319,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         assertRunning(task.getId());
         checkTask(task, params);
         mappingProfile.clearRunData(task.getId());
-        metaProfile.reset(task.getId());
+        taskMetaProfile.reset(task.getId());
         String sortedIds = params.get("sortedTableGroupIds");
         if (StringUtil.isNotBlank(sortedIds)) {
             List<TableGroup> groupAll = new ArrayList<>();
@@ -410,11 +410,11 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
     public String stop(String id) {
         ConfigModel task = taskService.get(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         Assert.notNull(task, "任务不存在");
-        Meta taskMeta = metaProfile.getMeta(id);
+        Meta taskMeta = taskMetaProfile.getMeta(id);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             taskMeta.setState(CommonTaskStatusEnum.STOPPING.getCode());
             taskMeta.setUpdateTime(System.currentTimeMillis());
-            metaProfile.updateMeta(taskMeta);
+            taskMetaProfile.updateMeta(taskMeta);
         }
         clusterService.stop(id, CommonTaskTypeEnum.VALIDATE_SYNC);
         return "停止成功";
@@ -434,7 +434,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
                 ValidateSyncTaskVO vo = convertTask2Vo(t);
                 if (vo != null) {
                     long errorCount = 0L;
-                    Meta taskMeta = metaProfile.getMeta(t.getId());
+                    Meta taskMeta = taskMetaProfile.getMeta(t.getId());
                     if (taskMeta != null && taskMeta.getDiff() != null) {
                         errorCount = taskMeta.getDiff().get();
                     }
@@ -737,7 +737,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         Connector t = connectorProfile.getConnector(validateSyncTask.getTargetConnectorId());
         ValidateSyncTaskVO vo = new ValidateSyncTaskVO(s, t);
         BeanUtils.copyProperties(task, vo);
-        Meta taskMeta = metaProfile.getMeta(validateSyncTask.getId());
+        Meta taskMeta = taskMetaProfile.getMeta(validateSyncTask.getId());
         if (taskMeta != null) {
             vo.setMetaState(taskMeta.getState());
             vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
@@ -823,7 +823,7 @@ public final class ValidateSyncServiceImpl implements ValidateSyncService {
         if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
         }
-        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
+        Map<String, Meta> metaMap = taskMetaProfile.getDetailMetaMap(ids);
         List<CommonTaskSnapshot> snapshots = new ArrayList<>(ids.size());
         for (String groupId : ids) {
             if (StringUtil.isBlank(groupId)) {

@@ -5,7 +5,7 @@ package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -25,8 +25,8 @@ import java.util.concurrent.Executor;
 /**
  * 持久化执行器
  *
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2023-03-27 16:50
  */
 @Component
@@ -47,7 +47,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @PostConstruct
     private void init() {
@@ -76,7 +76,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     @Override
     protected void offerFailed(BlockingQueue<StorageRequest> queue, StorageRequest request) {
         String shardId = request.getTaskDetailShardId();
-        Meta meta = metaProfile.getMeta(shardId);
+        Meta meta = taskMetaProfile.getMeta(shardId);
         if (meta != null) {
             Mapping mapping = mappingProfile.get(meta.getTaskId());
             if (mapping != null) {

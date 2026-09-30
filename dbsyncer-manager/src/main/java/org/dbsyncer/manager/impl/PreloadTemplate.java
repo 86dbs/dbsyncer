@@ -13,8 +13,8 @@ import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -67,7 +67,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private SystemConfigProfile systemConfigProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private MappingProfile mappingProfile;
@@ -226,7 +226,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     taskIds.add(mapping.getId());
                 }
             }
-            Map<String, Meta> metaMap = metaProfile.getTaskMetaMap(taskIds);
+            Map<String, Meta> metaMap = taskMetaProfile.getTaskMetaMap(taskIds);
             if (CollectionUtils.isEmpty(metaMap)) {
                 return;
             }
@@ -337,14 +337,14 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (task == null || StringUtil.isBlank(task.getId())) {
                 continue;
             }
-            Meta meta = metaProfile.getMeta(task.getId());
+            Meta meta = taskMetaProfile.getMeta(task.getId());
             if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
                 continue;
             }
             try {
                 meta.setState(CommonTaskStatusEnum.READY.getCode());
                 meta.setUpdateTime(System.currentTimeMillis());
-                metaProfile.updateMeta(meta);
+                taskMetaProfile.updateMeta(meta);
                 taskService.start(task);
                 logger.info("已恢复运行中任务: type={}, taskId={}, name={}", task.getType(), task.getId(), task.getName());
             } catch (Exception e) {
@@ -354,7 +354,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     private void changeMetaState(String metaId, CommonTaskStatusEnum status) {
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = taskMetaProfile.getMeta(metaId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
             long now = Instant.now().toEpochMilli();
@@ -364,7 +364,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (CommonTaskStatusEnum.RUNNING == status) {
                 meta.setStartTime(now);
             }
-            metaProfile.updateMeta(meta);
+            taskMetaProfile.updateMeta(meta);
         }
     }
 }

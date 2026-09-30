@@ -15,10 +15,10 @@ import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
@@ -99,7 +99,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -135,7 +135,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mappingId);
-        Meta meta = metaProfile.getMeta(mappingId);
+        Meta meta = taskMetaProfile.getMeta(mappingId);
         Assert.notNull(meta, "Meta不能为空.");
 
         Thread worker = new Thread(() -> {
@@ -145,7 +145,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     long now = Instant.now().toEpochMilli();
                     meta.setStartTime(now);
                     meta.setUpdateTime(now);
-                    metaProfile.updateMeta(meta);
+                    taskMetaProfile.updateMeta(meta);
                     tableGroupContext.put(mapping, list);
                     return buildListener(mapping, connector, targetConnector, list, meta);
                 });
@@ -202,7 +202,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mapping.getId());
-        Meta meta = metaProfile.getMeta(mapping.getId());
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "Meta不能为空.");
         Listener listener = buildListener(mapping, connector, targetConnector, list, meta);
         Map<String, String> snapshot = meta.getSnapshot();
@@ -212,10 +212,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         snapshot.remove(ParserEnum.TABLE_PROGRESS.getCode());
-        FullTableProgressUtil.clearAll(metaProfile, tableGroupProfile.listTableGroupIds(mapping.getId()));
+        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile.listTableGroupIds(mapping.getId()));
         meta.getSuccess().set(0);
         meta.getFail().set(0);
-        metaProfile.updateMeta(meta);
+        taskMetaProfile.updateMeta(meta);
         logger.info("全量+增量模式已保存增量位点：{}, {}", mapping.getName(), snapshot);
     }
 
@@ -245,7 +245,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (StringUtil.isBlank(taskId)) {
             return false;
         }
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         return meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode();
     }
 
@@ -272,7 +272,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, metaProfile, pluginFactory, logService, meta.getId(),
+        listener.register(new ParserConsumer(bufferActuatorRouter, taskMetaProfile, pluginFactory, logService, meta.getId(),
                 list, mapping.getChannelSize()));
 
         // 默认定时抽取

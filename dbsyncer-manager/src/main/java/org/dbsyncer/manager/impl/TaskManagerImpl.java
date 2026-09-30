@@ -9,7 +9,7 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.Puller;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -36,7 +36,7 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -75,7 +75,7 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     }
 
     public void changeMetaState(String taskId, CommonTaskStatusEnum status) {
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
             long now = Instant.now().toEpochMilli();
@@ -85,7 +85,7 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
             if (CommonTaskStatusEnum.RUNNING == status) {
                 meta.setStartTime(now);
             }
-            metaProfile.updateMeta(meta);
+            taskMetaProfile.updateMeta(meta);
         }
     }
 

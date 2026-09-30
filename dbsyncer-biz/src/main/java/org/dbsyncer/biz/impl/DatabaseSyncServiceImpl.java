@@ -20,9 +20,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.DatabaseSyncProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -83,7 +83,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private DatabaseSyncProfile databaseSyncProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -153,7 +153,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Assert.hasText(id, "任务 ID 不能为空");
         DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
-        Meta taskMeta = metaProfile.getMeta(id);
+        Meta taskMeta = taskMetaProfile.getMeta(id);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             throw new BizException("任务正在运行，请先停止");
         }
@@ -180,7 +180,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
         databaseSyncProfile.clearRunData(id);
-        metaProfile.reset(id);
+        taskMetaProfile.reset(id);
         String editedId = databaseSyncProfile.update(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
         databaseSyncDetailService.syncTaskTableMetaDetails(editedId);
@@ -206,7 +206,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        Meta taskMeta = metaProfile.getMeta(id);
+        Meta taskMeta = taskMetaProfile.getMeta(id);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             throw new BizException("任务正在运行，请先停止");
         }
@@ -234,11 +234,11 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Assert.hasText(id, "任务 ID 不能为空");
         ConfigModel task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
-        Meta taskMeta = metaProfile.getMeta(id);
+        Meta taskMeta = taskMetaProfile.getMeta(id);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             taskMeta.setState(CommonTaskStatusEnum.STOPPING.getCode());
             taskMeta.setUpdateTime(System.currentTimeMillis());
-            metaProfile.updateMeta(taskMeta);
+            taskMetaProfile.updateMeta(taskMeta);
         }
         clusterService.stop(id, CommonTaskTypeEnum.DATABASE_SYNC);
         return "停止成功";
@@ -261,7 +261,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
                     int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
-                    Meta taskMeta = metaProfile.getMeta(task.getId());
+                    Meta taskMeta = taskMetaProfile.getMeta(task.getId());
                     boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
                     TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
                     vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
@@ -560,7 +560,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 }
             }
         });
-        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
+        Map<String, Meta> metaMap = taskMetaProfile.getDetailMetaMap(ids);
         for (String groupId : ids) {
             if (StringUtil.isBlank(groupId)) {
                 bundle.addTable(null, 0L, 0L);

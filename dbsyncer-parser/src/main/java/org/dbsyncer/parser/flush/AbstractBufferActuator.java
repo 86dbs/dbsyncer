@@ -8,8 +8,8 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private ScheduledTaskService scheduledTaskService;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TimeRegistry timeRegistry;
@@ -108,7 +108,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @return
      */
     public boolean isRunning(BufferRequest request) {
-        Meta meta = metaProfile.getMeta(request.getTaskId());
+        Meta meta = taskMetaProfile.getMeta(request.getTaskId());
         return meta != null && CommonTaskStatusEnum.isRunning(meta.getState());
     }
 

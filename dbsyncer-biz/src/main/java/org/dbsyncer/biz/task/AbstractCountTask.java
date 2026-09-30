@@ -9,10 +9,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -63,7 +63,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private MappingProfile mappingProfile;
@@ -98,10 +98,10 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
      * 将表级明细 Meta.TOTAL 对齐到源表统计值（原子增量，避免整行覆盖 success/fail）。
      */
     private void syncTableDetailMetaTotal(String tableGroupId, long count) {
-        if (metaProfile == null || StringUtil.isBlank(tableGroupId)) {
+        if (taskMetaProfile == null || StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
+        Meta tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
         if (tableMeta == null || StringUtil.isBlank(tableMeta.getId())) {
             return;
         }
@@ -110,7 +110,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         if (delta == 0L) {
             return;
         }
-        metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).total(delta));
+        taskMetaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).total(delta));
     }
 
     protected boolean shouldStop(String mappingId) {

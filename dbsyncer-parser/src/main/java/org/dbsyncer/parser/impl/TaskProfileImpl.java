@@ -14,9 +14,9 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.PackageZipUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -60,7 +60,7 @@ public class TaskProfileImpl implements TaskProfile {
     private OperationTemplate operationTemplate;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -339,7 +339,7 @@ public class TaskProfileImpl implements TaskProfile {
 
     @Override
     public void deleteTableRunMeta(String taskId) {
-        metaProfile.deleteMetaByTableGroupIds(tableGroupProfile.listTableGroupIds(taskId));
+        taskMetaProfile.deleteMetaByTableGroupIds(tableGroupProfile.listTableGroupIds(taskId));
     }
 
     @Override
@@ -353,7 +353,7 @@ public class TaskProfileImpl implements TaskProfile {
             return;
         }
         // 就地重置已有明细 Meta，避免 delete + insert 写放大；缺失的再补插
-        Map<String, Meta> existing = metaProfile.getDetailMetaMap(groupIds);
+        Map<String, Meta> existing = taskMetaProfile.getDetailMetaMap(groupIds);
         long now = System.currentTimeMillis();
         List<Meta> toUpdate = new ArrayList<>();
         List<Meta> toAdd = new ArrayList<>();
@@ -373,10 +373,10 @@ public class TaskProfileImpl implements TaskProfile {
             }
         }
         if (!CollectionUtils.isEmpty(toUpdate)) {
-            metaProfile.updateMetaBatch(toUpdate);
+            taskMetaProfile.updateMetaBatch(toUpdate);
         }
         if (!CollectionUtils.isEmpty(toAdd)) {
-            TaskSplitUtil.split(toAdd, ConfigConstant.PAGE_SIZE, metaProfile::addMetaBatch);
+            TaskSplitUtil.split(toAdd, ConfigConstant.PAGE_SIZE, taskMetaProfile::addMetaBatch);
         }
     }
 

@@ -7,7 +7,7 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
@@ -31,26 +31,26 @@ public abstract class FullTableProgressUtil {
     /**
      * 解析表级 Meta。
      *
-     * @param metaProfile  Meta 服务
-     * @param tableGroupId 表映射 ID
+     * @param taskMetaProfile Meta 服务
+     * @param tableGroupId    表映射 ID
      * @return 明细 Meta，可能为 null
      */
-    public static Meta resolve(MetaProfile metaProfile, String tableGroupId) {
-        if (metaProfile == null || StringUtil.isBlank(tableGroupId)) {
+    public static Meta resolve(TaskMetaProfile taskMetaProfile, String tableGroupId) {
+        if (taskMetaProfile == null || StringUtil.isBlank(tableGroupId)) {
             return null;
         }
-        return metaProfile.getMetaDetail(tableGroupId);
+        return taskMetaProfile.getMetaDetail(tableGroupId);
     }
 
     /**
      * 表是否已完成
      *
-     * @param metaProfile  Meta 服务
-     * @param tableGroupId 表映射 ID
+     * @param taskMetaProfile Meta 服务
+     * @param tableGroupId    表映射 ID
      * @return true 已完成
      */
-    public static boolean isDone(MetaProfile metaProfile, String tableGroupId) {
-        Meta meta = resolve(metaProfile, tableGroupId);
+    public static boolean isDone(TaskMetaProfile taskMetaProfile, String tableGroupId) {
+        Meta meta = resolve(taskMetaProfile, tableGroupId);
         if (meta == null) {
             return false;
         }
@@ -64,12 +64,12 @@ public abstract class FullTableProgressUtil {
     /**
      * 读取或初始化单表进度（不写库）。
      *
-     * @param metaProfile  Meta 服务
-     * @param tableGroupId 表映射 ID
+     * @param taskMetaProfile Meta 服务
+     * @param tableGroupId    表映射 ID
      * @return 进度，不会为 null
      */
-    public static CommonTaskSnapshot getOrInit(MetaProfile metaProfile, String tableGroupId) {
-        Meta meta = resolve(metaProfile, tableGroupId);
+    public static CommonTaskSnapshot getOrInit(TaskMetaProfile taskMetaProfile, String tableGroupId) {
+        Meta meta = resolve(taskMetaProfile, tableGroupId);
         if (meta != null) {
             CommonTaskSnapshot snap = TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot());
             if (snap != null) {
@@ -81,18 +81,18 @@ public abstract class FullTableProgressUtil {
 
     /**
      * 覆盖写单表进度到明细 Meta（无则创建）。
-     * <p>已存在时经 {@link MetaProfile#updateMetaProgress} 写前重载，避免覆盖原子计数。
+     * <p>已存在时经 {@link TaskMetaProfile#updateMetaProgress} 写前重载，避免覆盖原子计数。
      *
-     * @param metaProfile      Meta 服务
-     * @param tableGroupId     表映射 ID
-     * @param snapshot         表级快照；null 表示清空快照且 state=READY
+     * @param taskMetaProfile Meta 服务
+     * @param tableGroupId    表映射 ID
+     * @param snapshot        表级快照；null 表示清空快照且 state=READY
      */
-    public static void save(MetaProfile metaProfile, String tableGroupId, CommonTaskSnapshot snapshot) {
-        if (metaProfile == null || StringUtil.isBlank(tableGroupId)) {
+    public static void save(TaskMetaProfile taskMetaProfile, String tableGroupId, CommonTaskSnapshot snapshot) {
+        if (taskMetaProfile == null || StringUtil.isBlank(tableGroupId)) {
             return;
         }
         synchronized (tableLock(tableGroupId)) {
-            Meta meta = resolve(metaProfile, tableGroupId);
+            Meta meta = resolve(taskMetaProfile, tableGroupId);
             long now = System.currentTimeMillis();
             if (meta == null || StringUtil.isBlank(meta.getId())) {
                 meta = new Meta();
@@ -100,51 +100,51 @@ public abstract class FullTableProgressUtil {
                 meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
                 meta.setCreateTime(now);
                 apply(meta, snapshot, now);
-                metaProfile.addMeta(meta);
+                taskMetaProfile.addMeta(meta);
                 return;
             }
             Map<String, String> newSnap = TaskSnapshotUtil.writeTableSnapshot(meta.getSnapshot(), snapshot, null);
             int state = snapshot == null
                     ? CommonTaskStatusEnum.READY.getCode()
                     : snapshot.getStatus();
-            metaProfile.updateMetaProgress(meta.getId(), state, newSnap);
+            taskMetaProfile.updateMetaProgress(meta.getId(), state, newSnap);
         }
     }
 
     /**
      * 清空任务下全部表明细进度（快照清空、state=READY；保留 success/fail 等计数）。
      *
-     * @param metaProfile      Meta 服务
-     * @param tableGroupIds    表映射 ID 列表
+     * @param taskMetaProfile Meta 服务
+     * @param tableGroupIds   表映射 ID 列表
      */
-    public static void clearAll(MetaProfile metaProfile, List<String> tableGroupIds) {
-        if (metaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
+    public static void clearAll(TaskMetaProfile taskMetaProfile, List<String> tableGroupIds) {
+        if (taskMetaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
             return;
         }
         for (String tableGroupId : tableGroupIds) {
             if (StringUtil.isBlank(tableGroupId)) {
                 continue;
             }
-            save(metaProfile, tableGroupId, null);
+            save(taskMetaProfile, tableGroupId, null);
         }
     }
 
     /**
      * 是否存在未完成的表进度（有快照且非 DONE，或 state 为运行中/停止中）。
      *
-     * @param metaProfile   Meta 服务
-     * @param tableGroupIds 表映射 ID 列表
+     * @param taskMetaProfile Meta 服务
+     * @param tableGroupIds   表映射 ID 列表
      * @return true 存在未完成进度
      */
-    public static boolean hasIncomplete(MetaProfile metaProfile, List<String> tableGroupIds) {
-        if (metaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
+    public static boolean hasIncomplete(TaskMetaProfile taskMetaProfile, List<String> tableGroupIds) {
+        if (taskMetaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
             return false;
         }
         for (String tableGroupId : tableGroupIds) {
-            if (StringUtil.isBlank(tableGroupId) || isDone(metaProfile, tableGroupId)) {
+            if (StringUtil.isBlank(tableGroupId) || isDone(taskMetaProfile, tableGroupId)) {
                 continue;
             }
-            Meta meta = resolve(metaProfile, tableGroupId);
+            Meta meta = resolve(taskMetaProfile, tableGroupId);
             if (meta == null) {
                 continue;
             }

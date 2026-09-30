@@ -17,9 +17,9 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
@@ -67,7 +67,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TaskDetailProfile taskDetailProfile;
@@ -198,10 +198,10 @@ public class DataSyncServiceImpl implements DataSyncService {
         bufferActuatorRouter.execute(taskId, changedEvent);
         // 明细分表：从该任务分表(dbsyncer_task_detail_{taskId})删除该条同步数据
         taskDetailProfile.delete(taskId, messageId);
-        Meta meta = metaProfile.getMeta(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Meta can not be null.");
         // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
-        metaProfile.incrementMeta(MetaIncrement.of(taskId).fail(-1L));
+        taskMetaProfile.incrementMeta(MetaIncrement.of(taskId).fail(-1L));
         return messageId;
     }
 
@@ -211,7 +211,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         Assert.notNull(mapping, "Mapping can not be null.");
         TableGroup tableGroup = tableGroupProfile.getTableGroup(request.getTableGroupId());
         Assert.notNull(tableGroup, "Meta can not be null.");
-        Meta meta = metaProfile.getMeta(mapping.getId());
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "Meta can not be null.");
         List<DataSyncEvent> dataList = request.getDataList();
         Assert.notEmpty(dataList, "DataList can not be null.");
