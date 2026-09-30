@@ -30,6 +30,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -100,6 +101,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -341,6 +345,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Assert.isTrue(!dispatchTaskService.isRunning(taskId), "同步任务表映射正在匹配或统计中，请稍候再启动");
             // 如果已经完成了，重置状态
             clearMetaIfFinished(taskId);
+
+            taskMetaProfile.reset(taskId);
             // 标记运行中
             changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
 
@@ -675,17 +681,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return name;
     }
 
-    // TODO 启动单独重置
     private void clearMetaIfFinished(String taskId) {
         Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态，便于再次全量
         if (!CommonTaskStatusEnum.isRunning(meta.getState())) {
-            meta.getFail().set(0);
-            meta.getSuccess().set(0);
-            taskMetaProfile.updateMeta(meta);
-            // 表级明细 Meta/进度一并重置，否则已完成表会被跳过无法重跑
-            mappingProfile.clearRunData(meta.getTaskId());
+            taskMetaProfile.reset(taskId);
+            taskDetailMetaProfile.clearData(taskId);
         }
     }
 
