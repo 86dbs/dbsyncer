@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 通用配置存储模板（无领域编排；任务见 {@link org.dbsyncer.parser.TaskProfile}，
+ * 通用配置存储模板
  * 用户/连接器/表映射/Meta 见各自 Profile）。
  *
  * @author AE86

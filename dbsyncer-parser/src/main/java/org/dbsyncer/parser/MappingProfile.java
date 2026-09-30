@@ -3,9 +3,11 @@
  */
 package org.dbsyncer.parser;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Mapping;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 同步任务
@@ -39,5 +41,19 @@ public interface MappingProfile {
      * 删除任务配置
      */
     void delete(String id);
+
+    void clearRunData(String id);
+
+    /**
+     * 按模型类型分页查询任务，可选按名称模糊搜索。
+     *
+     * @param searchKey 可选；非空时对 {@code name} 做 LIKE
+     */
+    Paging<Mapping> query(int pageNum, int pageSize, String searchKey);
+
+    /**
+     * 按模型类型分页回调遍历全部任务。
+     */
+    void pageScanTasks(int pageSize, Consumer<List<Mapping>> pageConsumer);
 
 }

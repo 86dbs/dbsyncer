@@ -134,4 +134,9 @@ public interface MetaProfile {
      * 删除任务meta缓存
      */
     void removeMetaCache(String taskId);
+
+    /**
+     * 重置meta状态
+     */
+    void reset(String taskId);
 }

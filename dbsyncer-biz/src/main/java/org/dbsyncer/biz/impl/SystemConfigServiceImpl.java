@@ -21,9 +21,9 @@ import org.dbsyncer.common.util.RSAUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -59,7 +59,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private MetaProfile metaProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private PreloadTemplate preloadTemplate;
@@ -127,7 +127,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());
         list.addAll(connectorProfile.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
-        Paging<Mapping> mappingPaging = taskProfile.queryTasks(Mapping.class, 1, 5, null);
+        Paging<Mapping> mappingPaging = mappingProfile.query(1, 5, null);
         if (mappingPaging != null && !CollectionUtils.isEmpty(mappingPaging.getData())) {
             list.addAll(mappingPaging.getData());
         }

@@ -5,7 +5,6 @@ package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -13,9 +12,9 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -71,7 +70,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private MetaProfile metaProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -217,7 +216,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * 避免一次性加载全部 Meta。明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
      */
     private void launchSyncMappings() {
-        taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappings -> {
+        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappings -> {
             if (CollectionUtils.isEmpty(mappings)) {
                 return;
             }

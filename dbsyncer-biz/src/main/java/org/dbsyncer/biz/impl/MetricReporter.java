@@ -22,8 +22,8 @@ import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -73,7 +73,7 @@ public class MetricReporter implements ScheduledTaskJob {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -149,7 +149,7 @@ public class MetricReporter implements ScheduledTaskJob {
         Meta meta = metaProfile.getMeta(metric.getMetaId());
         String group = StringUtil.EMPTY;
         if (meta != null) {
-            Mapping mapping = taskProfile.getMapping(meta.getTaskId());
+            Mapping mapping = mappingProfile.get(meta.getTaskId());
             if (mapping != null) {
                 group = mapping.getName();
             }
@@ -197,7 +197,7 @@ public class MetricReporter implements ScheduledTaskJob {
             running = true;
             // 先分页扫描同步任务(Mapping)，再按任务 ID 批量 IN 查任务级 Meta
             final List<Meta> metaAll = new ArrayList<>();
-            taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappings -> {
+            mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappings -> {
                 if (CollectionUtils.isEmpty(mappings)) {
                     return;
                 }

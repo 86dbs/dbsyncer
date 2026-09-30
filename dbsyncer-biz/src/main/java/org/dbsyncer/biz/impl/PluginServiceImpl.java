@@ -11,9 +11,9 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
@@ -43,7 +43,7 @@ public class PluginServiceImpl implements PluginService {
     private PluginFactory pluginFactory;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -111,7 +111,7 @@ public class PluginServiceImpl implements PluginService {
 
     private Map<String, List<String>> getPluginClassNameMap() {
         Map<String, List<String>> map = new ConcurrentHashMap<>();
-        taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappingAll -> {
+        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappingAll -> {
             if (CollectionUtils.isEmpty(mappingAll)) {
                 return;
             }

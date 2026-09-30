@@ -7,9 +7,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -54,7 +54,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
     private LogService logService;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Override
     public void start(Mapping mapping) {
@@ -83,7 +83,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
      */
     @Override
     public void prepareFullPhase(String taskId) {
-        Mapping mapping = taskProfile.getMapping(taskId);
+        Mapping mapping = mappingProfile.get(taskId);
         Meta meta = metaProfile.getMeta(mapping.getMetaId());
         prepareFullPhase(mapping, meta, mapping.getMetaId());
     }
@@ -93,7 +93,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
      */
     @Override
     public void switchToIncrement(String taskId) {
-        Mapping mapping = taskProfile.getMapping(taskId);
+        Mapping mapping = mappingProfile.get(taskId);
         if (mapping == null) {
             return;
         }

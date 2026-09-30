@@ -10,7 +10,7 @@ import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.DispatchTaskEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -43,7 +43,7 @@ public final class MappingMatchTableTask extends AbstractDispatchTask {
     private TableGroupService tableGroupService;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
     private DispatchTaskService dispatchTaskService;
@@ -63,7 +63,7 @@ public final class MappingMatchTableTask extends AbstractDispatchTask {
 
     @Override
     public void execute() {
-        Mapping mapping = taskProfile.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         if (mapping == null) {
             logger.warn("Mapping not found, skip match table, mappingId={}", mappingId);
             return;
