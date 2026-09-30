@@ -62,7 +62,7 @@ public interface DatabaseSyncProfile {
     void createRunDetailTable(String taskId);
 
     /**
-     * 重置任务详情表
+     * 预建运行明细分表
      */
     void syncTaskTableMetaDetails(String taskId);
 

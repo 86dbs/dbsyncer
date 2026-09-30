@@ -141,8 +141,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException(e.getMessage(), e);
         }
         // 预建明细分表并对齐明细行，详情页 JOIN 查询不依赖任务是否已写出数据
-        databaseSyncProfile.createRunDetailTable(taskId);
-        databaseSyncDetailService.syncTaskTableMetaDetails(taskId);
+//        databaseSyncProfile.createRunDetailTable(taskId);
+        databaseSyncProfile.syncTaskTableMetaDetails(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -183,7 +183,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         taskMetaProfile.reset(id);
         String editedId = databaseSyncProfile.update(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
-        databaseSyncDetailService.syncTaskTableMetaDetails(editedId);
+        databaseSyncProfile.syncTaskTableMetaDetails(editedId);
         return editedId;
     }
 
