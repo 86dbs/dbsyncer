@@ -15,7 +15,7 @@ public class BufferActuatorMetric {
     /**
      * 驱动 Meta ID
      */
-    private String metaId;
+    private String taskId;
 
     /**
      * 展示名：开源为源表名，商业版为管道名
@@ -42,18 +42,19 @@ public class BufferActuatorMetric {
      */
     private int maxPoolSize;
 
+    public String getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
+    }
+
     /**
      * 写线程池已完成任务数
      */
+
     private long completedTaskCount;
-
-    public String getMetaId() {
-        return metaId;
-    }
-
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
-    }
 
     public String getName() {
         return name;

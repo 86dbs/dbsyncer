@@ -14,5 +14,5 @@ public interface Puller {
      */
     void start(Mapping mapping, boolean autoRecovery);
 
-    void close(String metaId);
+    void close(String taskId);
 }

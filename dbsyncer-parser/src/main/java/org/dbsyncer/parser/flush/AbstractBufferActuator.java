@@ -4,20 +4,18 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.config.BufferActuatorConfig;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.model.Meta;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
 import java.util.Map;
@@ -110,7 +108,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @return
      */
     public boolean isRunning(BufferRequest request) {
-        Meta meta = metaProfile.getMeta(request.getMetaId());
+        Meta meta = metaProfile.getMeta(request.getTaskId());
         return meta != null && CommonTaskStatusEnum.isRunning(meta.getState());
     }
 
@@ -138,7 +136,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @param map
      */
     protected void process(Map<String, Response> map) {
-        map.forEach((key, response)-> {
+        map.forEach((key, response) -> {
             long now = Instant.now().toEpochMilli();
             try {
                 pull(response);
@@ -230,7 +228,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
-            Response response = map.compute(key, (k, v)-> {
+            Response response = map.compute(key, (k, v) -> {
                 if (v == null) {
                     try {
                         return responseClazz.newInstance();

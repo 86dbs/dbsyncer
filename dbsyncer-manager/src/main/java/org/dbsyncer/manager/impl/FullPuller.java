@@ -41,8 +41,8 @@ import java.util.concurrent.Executor;
 /**
  * 全量同步（表级并发，对齐数据迁移：threadNum 控制表并发，单表内读写串行）。
  *
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2020-04-26 15:28
  */
 @Component
@@ -109,8 +109,8 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     @Override
-    public void close(String metaId) {
-        map.computeIfPresent(metaId, (k, task) -> {
+    public void close(String taskId) {
+        map.computeIfPresent(taskId, (k, task) -> {
             task.stop();
             return null;
         });

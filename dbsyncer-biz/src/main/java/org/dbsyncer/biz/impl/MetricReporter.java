@@ -127,7 +127,7 @@ public class MetricReporter implements ScheduledTaskJob {
             List<MetricResponseInfo> tableList = new ArrayList<>();
             String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
             for (BufferActuatorMetric metric : metrics) {
-                if (StringUtil.isNotBlank(searchMetaId) && !StringUtil.equals(searchMetaId, metric.getMetaId())) {
+                if (StringUtil.isNotBlank(searchMetaId) && !StringUtil.equals(searchMetaId, metric.getTaskId())) {
                     continue;
                 }
                 if (StringUtil.isNotBlank(searchKey) && !StringUtil.contains(metric.getName(), searchKey)) {
@@ -146,7 +146,7 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     private MetricResponseInfo collect(BufferActuatorMetric metric, String code) {
-        Meta meta = metaProfile.getMeta(metric.getMetaId());
+        Meta meta = metaProfile.getMeta(metric.getTaskId());
         String group = StringUtil.EMPTY;
         if (meta != null) {
             Mapping mapping = mappingProfile.get(meta.getTaskId());
@@ -230,7 +230,7 @@ public class MetricReporter implements ScheduledTaskJob {
             AtomicLong fail = new AtomicLong();
             AtomicLong lastWeek = new AtomicLong();
             long lastWeekTime = Timestamp.valueOf(LocalDateTime.now().minusWeeks(1)).getTime();
-            metaAll.forEach(meta-> {
+            metaAll.forEach(meta -> {
                 // 统计上周任务总数
                 if (meta.getCreateTime() <= lastWeekTime) {
                     lastWeek.incrementAndGet();
@@ -307,8 +307,8 @@ public class MetricReporter implements ScheduledTaskJob {
         long oneMin = now.minus(1, ChronoUnit.MINUTES).toEpochMilli();
         // 只显示1分钟内
         Map<String, Long> map = new HashMap<>();
-        Stream.of(buckets).filter(b->b.getTime() >= oneMin).sorted(Comparator.comparing(Bucket::getTime))
-                .forEach(b->map.put(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.HH_MM_SS), b.get()));
+        Stream.of(buckets).filter(b -> b.getTime() >= oneMin).sorted(Comparator.comparing(Bucket::getTime))
+                .forEach(b -> map.put(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.HH_MM_SS), b.get()));
         for (int i = 0; i < buckets.length; i++) {
             long milli = now.minus(buckets.length - i, ChronoUnit.SECONDS).toEpochMilli();
             String key = DateFormatUtil.timestampToString(new Timestamp(milli), DateFormatUtil.HH_MM_SS);
@@ -343,7 +343,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingSuccess(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
     }
 
     /**
@@ -353,7 +353,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingFail(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
     }
 
     /**
@@ -365,7 +365,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingDataCount(List<Meta> metaAll, long time, StorageDataStatusEnum status) {
-        return queryMappingMetricCount(metaAll, (query)-> {
+        return queryMappingMetricCount(metaAll, (query) -> {
             LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, time);
             IntFilter success = new IntFilter(ConfigConstant.DETAIL_IS_SUCCESS, status.getValue());
             query.setBooleanFilter(new BooleanFilter().add(filter).add(success));
@@ -379,7 +379,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingYesterdayAll(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)-> {
+        return queryMappingMetricCount(metaAll, (query) -> {
             long yesterday = Timestamp.valueOf(LocalDateTime.now().minusDays(1)).getTime();
             LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, yesterday);
             query.setBooleanFilter(new BooleanFilter().add(filter));
@@ -393,7 +393,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingInsert(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_INSERT));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_INSERT));
     }
 
     /**
@@ -403,7 +403,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingUpdate(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_UPDATE));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_UPDATE));
     }
 
     /**
@@ -413,7 +413,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingDelete(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_DELETE));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_DELETE));
     }
 
     /**
@@ -423,7 +423,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingDll(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_ALTER));
+        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_ALTER));
     }
 
     private long queryMappingMetricCount(List<Meta> metaAll, Consumer<Query> operation) {
@@ -436,7 +436,7 @@ public class MetricReporter implements ScheduledTaskJob {
             Query query = new Query(1, 1);
             query.setQueryTotal(true);
             query.setType(StorageEnum.TASK_DETAIL);
-            query.setMetaId(StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : meta.getId());
+            query.setTaskId(meta.getTaskId());
             operation.accept(query);
             Paging paging = storageService.query(query);
             total += paging.getTotal();

@@ -23,8 +23,8 @@
         });
     }
 
-    function showRetryDetail(metaId, messageId) {
-        doLoader('/monitor/page/retry?metaId=' + encodeURIComponent(metaId)
+    function showRetryDetail(taskId, messageId) {
+        doLoader('/monitor/page/retry?taskId=' + encodeURIComponent(taskId)
             + '&messageId=' + encodeURIComponent(messageId));
     }
 
@@ -70,8 +70,8 @@
         return $content;
     }
 
-    window.showMappingDataDetail = function (metaId, messageId) {
-        doPoster('/monitor/getDataDetail', { metaId: metaId, messageId: messageId }, function (response) {
+    window.showMappingDataDetail = function (taskId, messageId) {
+        doPoster('/monitor/getDataDetail', {taskId: taskId, messageId: messageId}, function (response) {
             if (!response.success) {
                 bootGrowl(response.message || '加载数据失败', 'danger');
                 return;
@@ -96,10 +96,10 @@
 
     function renderDataState(success) {
         var state = {
-            0: { class: 'badge-error', text: '失败' },
-            1: { class: 'badge-success', text: '成功' }
+            0: {class: 'badge-error', text: '失败'},
+            1: {class: 'badge-success', text: '成功'}
         };
-        var config = state[success] || { class: 'badge-info', text: '-' };
+        var config = state[success] || {class: 'badge-info', text: '-'};
         return '<span class="badge ' + config.class + '">' + config.text + '</span>';
     }
 
@@ -134,10 +134,10 @@
         function renderDataButton(row) {
             var content = [];
             content.push('<button class="table-action-btn view" title="查看数据" onclick="showMappingDataDetail(\''
-                + metaId + '\',\'' + row.id + '\')"><i class="fa fa-eye"></i></button>');
+                + mappingId + '\',\'' + row.id + '\')"><i class="fa fa-eye"></i></button>');
             if (row.success === 0) {
                 content.push('<button class="table-action-btn play" title="重试" onclick="showRetryDetail(\''
-                    + metaId + '\',\'' + row.id + '\')"><i class="fa fa-refresh"></i></button>');
+                    + mappingId + '\',\'' + row.id + '\')"><i class="fa fa-refresh"></i></button>');
             }
             return content.join(' ');
         }
@@ -180,7 +180,7 @@
                 confirmType: 'danger',
                 onConfirm: function () {
                     doPoster('/monitor/clearData', {
-                        id: metaId || '',
+                        id: mappingId || '',
                         tableGroupId: tableGroupId || ''
                     }, function (response) {
                         if (response.success) {

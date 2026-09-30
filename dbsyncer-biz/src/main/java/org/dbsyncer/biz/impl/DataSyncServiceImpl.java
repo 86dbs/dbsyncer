@@ -11,7 +11,6 @@ import org.dbsyncer.biz.model.DataSyncRequest;
 import org.dbsyncer.biz.vo.BinlogColumnVO;
 import org.dbsyncer.biz.vo.MessageVO;
 import org.dbsyncer.common.binlog.proto.BinlogMap;
-import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
@@ -85,12 +84,12 @@ public class DataSyncServiceImpl implements DataSyncService {
     private ConnectorFactory connectorFactory;
 
     @Override
-    public MessageVO getMessageVo(String metaId, String messageId) {
-        Assert.hasText(metaId, "The metaId is null.");
+    public MessageVO getMessageVo(String taskId, String messageId) {
+        Assert.hasText(taskId, "The taskId is null.");
         Assert.hasText(messageId, "The messageId is null.");
         MessageVO messageVo = new MessageVO();
         try {
-            Map row = getData(metaId, messageId);
+            Map row = getData(taskId, messageId);
             Map binlogData = getBinlogData(row, true);
             String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
             TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
@@ -178,6 +177,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     public String sync(Map<String, String> params) throws InvalidProtocolBufferException {
         String metaId = params.get("metaId");
         String messageId = params.get("messageId");
+        String taskId = params.get("mappingId");
         Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
 
@@ -202,15 +202,11 @@ public class DataSyncServiceImpl implements DataSyncService {
         RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null);
 
         // 执行同步是否成功
-        bufferActuatorRouter.execute(metaId, changedEvent);
+        bufferActuatorRouter.execute(messageId, changedEvent);
         // 明细分表：从该任务分表(dbsyncer_task_detail_{taskId})删除该条同步数据
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(taskId);
         Assert.notNull(meta, "Meta can not be null.");
-        String shardId = StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : metaId;
-        storageService.remove(StorageEnum.TASK_DETAIL, shardId, messageId);
-        if (!StringUtil.equals(shardId, metaId)) {
-            storageService.remove(StorageEnum.TASK_DETAIL, metaId, messageId);
-        }
+        storageService.remove(StorageEnum.TASK_DETAIL, taskId, messageId);
         // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
         metaProfile.incrementMeta(MetaIncrement.of(metaId).fail(-1L));
         return messageId;
@@ -222,7 +218,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         Assert.notNull(mapping, "Mapping can not be null.");
         TableGroup tableGroup = tableGroupProfile.getTableGroup(request.getTableGroupId());
         Assert.notNull(tableGroup, "Meta can not be null.");
-        Meta meta = metaProfile.getMeta(mapping.getMetaId());
+        Meta meta = metaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "Meta can not be null.");
         List<DataSyncEvent> dataList = request.getDataList();
         Assert.notEmpty(dataList, "DataList can not be null.");
@@ -231,36 +227,19 @@ public class DataSyncServiceImpl implements DataSyncService {
             String sourceTableName = tableGroup.getSourceTable().getName();
             RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, changedData.getEvent(), changedData.getData(), null, null);
             // 执行同步是否成功
-            bufferActuatorRouter.execute(meta.getId(), changedEvent);
+            bufferActuatorRouter.execute(meta.getTaskId(), changedEvent);
         }
     }
 
-    private Map getData(String metaId, String messageId) {
-        Query query = new Query(1, 1);
+    private Map getData(String taskId, String messageId) {
+        Query query = new Query();
         Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
-        // 明细分表：定位到该任务分表(dbsyncer_task_detail_{taskId})，按 ID 命中同步数据
-        Meta meta = metaProfile.getMeta(metaId);
-        String shardId = meta != null && StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : metaId;
-        query.setMetaId(shardId);
+        query.setTaskId(taskId);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
         query.setType(StorageEnum.TASK_DETAIL);
-        Paging paging = storageService.query(query);
-        if (!CollectionUtils.isEmpty(paging.getData())) {
-            List<Map> data = (List<Map>) paging.getData();
-            return data.get(0);
-        }
-        // 兼容历史雪花主键分表
-        if (!StringUtil.equals(shardId, metaId)) {
-            query.setMetaId(metaId);
-            paging = storageService.query(query);
-            if (!CollectionUtils.isEmpty(paging.getData())) {
-                List<Map> data = (List<Map>) paging.getData();
-                return data.get(0);
-            }
-        }
-        return Collections.EMPTY_MAP;
+        return storageService.queryObject(query);
     }
 
     private Object convertValue(Object oldValue, String newValue) {

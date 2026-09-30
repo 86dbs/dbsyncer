@@ -62,7 +62,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -162,7 +161,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             if (mapping == null || StringUtil.isBlank(mapping.getMetaId())) {
                 continue;
             }
-            Meta meta = metaProfile.getMeta(mapping.getMetaId());
+            Meta meta = metaProfile.getMeta(mapping.getId());
             if (meta == null) {
                 continue;
             }
@@ -176,8 +175,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public MetaVO getMetaVo(String metaId) {
-        Meta meta = metaProfile.getMeta(metaId);
+    public MetaVO getMetaVo(String taskId) {
+        Meta meta = metaProfile.getMeta(taskId);
         Assert.notNull(meta, "The meta is null.");
         MetaVO vo = convertMeta2Vo(meta);
         Assert.notNull(vo, String.format("驱动不存在. metaId:%s, taskId:%s", meta.getId(), meta.getTaskId()));
@@ -185,14 +184,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public String getDefaultMetaId(Map<String, String> params) {
-        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        return getDefaultMetaId(id);
-    }
-
-    @Override
     public Paging queryData(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        Assert.notNull(id, "The taskId is null.");
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String error = params.get(ConfigConstant.DATA_ERROR);
@@ -202,7 +196,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             tableGroupId = params.get("tableGroupId");
         }
 
-        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status, tableGroupId);
+        Paging paging = queryData(id, pageNum, pageSize, error, status, tableGroupId);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVO> list = new ArrayList<>();
         for (Map row : data) {
@@ -293,7 +287,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private void deleteTableGroupDetailsByShard(String shardId, String tableGroupId) {
         Query query = new Query();
         query.setType(StorageEnum.TASK_DETAIL);
-        query.setMetaId(shardId);
+        query.setTaskId(shardId);
         query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
         storageService.delete(query);
     }
@@ -410,7 +404,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                 }
                 Query query = new Query(1, 1);
                 query.setType(StorageEnum.TASK_DETAIL);
-                query.setMetaId(metaProfile.resolveTaskDetailShardId(meta));
+                query.setTaskId(meta.getTaskId());
                 query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, fromTime);
                 query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
                 query.setQueryTotal(true);
@@ -470,11 +464,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
     }
 
-    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String status, String tableGroupId) {
-        // 没有驱动
-        if (StringUtil.isBlank(metaId)) {
-            return new Paging(pageNum, pageSize);
-        }
+    private Paging queryData(String taskId, int pageNum, int pageSize, String error, String status, String tableGroupId) {
         Query query = new Query(pageNum, pageSize);
         // 列表不查 DATA blob，详情弹窗再按 id 拉取
         Set<String> selectFields = new HashSet<>();
@@ -488,9 +478,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         selectFields.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         query.setSelectFlied(selectFields);
 
-        // 明细分表：查询 dbsyncer_task_detail_{taskId}
-        Meta meta = metaProfile.getMeta(metaId);
-        query.setMetaId(meta != null ? metaProfile.resolveTaskDetailShardId(meta) : metaId);
+        query.setTaskId(taskId);
         // 查询异常信息
         if (StringUtil.isNotBlank(error)) {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
@@ -532,7 +520,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private void deleteExpiredTaskDetailsByShard(String shardId, long expiredTime) {
         Query query = new Query();
         query.setType(StorageEnum.TASK_DETAIL);
-        query.setMetaId(shardId);
+        query.setTaskId(shardId);
         query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
         storageService.delete(query);
     }
@@ -597,19 +585,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private <T> T convert2Vo(Map map, Class<T> clazz) {
         return JsonUtil.jsonToObj(JsonUtil.objToJson(map), clazz);
-    }
-
-    private String getDefaultMetaId(String id) {
-        if (StringUtil.isBlank(id)) {
-            Map<String, String> params = new HashMap<>();
-            params.put("pageNum", "1");
-            params.put("pageSize", "1");
-            Paging<MetaVO> paging = queryMeta(params);
-            if (paging != null && !CollectionUtils.isEmpty(paging.getData())) {
-                return paging.getData().iterator().next().getId();
-            }
-        }
-        return id;
     }
 
     private List<MetricResponseVO> metricResponseToVo(Collection<MetricResponse> metrics) {

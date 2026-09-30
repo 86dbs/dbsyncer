@@ -12,7 +12,7 @@ public final class ChangedOffset {
     /**
      * 驱动ID
      */
-    private String metaId;
+    private String taskId;
 
     /**
      * 增量文件名称
@@ -29,12 +29,12 @@ public final class ChangedOffset {
      */
     private long seq;
 
-    public String getMetaId() {
-        return metaId;
+    public String getTaskId() {
+        return taskId;
     }
 
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 
     public String getNextFileName() {

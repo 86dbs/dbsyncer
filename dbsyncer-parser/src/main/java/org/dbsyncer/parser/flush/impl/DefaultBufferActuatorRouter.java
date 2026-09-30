@@ -33,10 +33,10 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
 
     @Override
-    public void execute(String metaId, ChangedEvent event) {
-        event.getChangedOffset().setMetaId(metaId);
+    public void execute(String taskId, ChangedEvent event) {
+        event.getChangedOffset().setTaskId(taskId);
         printTraceInfo(event);
-        Map<String, TableGroupBufferActuator> processor = router.get(metaId);
+        Map<String, TableGroupBufferActuator> processor = router.get(taskId);
         if (processor == null) {
             offer(generalBufferActuator, event);
             return;
@@ -50,16 +50,16 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
     }
 
     @Override
-    public void bind(String metaId, List<String> sourceTableNames, int channelSize) {
-        if (StringUtil.isBlank(metaId) || sourceTableNames == null) {
+    public void bind(String taskId, List<String> sourceTableNames, int channelSize) {
+        if (StringUtil.isBlank(taskId) || sourceTableNames == null) {
             return;
         }
         final int maxBufferActuatorSize = systemConfigProfile.getSystemConfig().getMaxBufferActuatorSize();
-        router.computeIfAbsent(metaId, k -> {
+        router.computeIfAbsent(taskId, k -> {
             Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
             for (String tableName : sourceTableNames) {
                 if (StringUtil.isBlank(tableName)) {
-                    logger.warn("Skip bind tableGroup with empty source table, metaId={}", metaId);
+                    logger.warn("Skip bind tableGroup with empty source table, taskId={}", taskId);
                     continue;
                 }
                 if (processor.size() >= maxBufferActuatorSize) {
@@ -84,8 +84,8 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
     }
 
     @Override
-    public void unbind(String metaId) {
-        router.computeIfPresent(metaId, (k, processor) -> {
+    public void unbind(String taskId) {
+        router.computeIfPresent(taskId, (k, processor) -> {
             processor.values().forEach(this::stopActuator);
             return null;
         });
@@ -117,8 +117,8 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
             return Collections.emptyList();
         }
         List<BufferActuatorMetric> metrics = new ArrayList<>();
-        router.forEach((metaId, group) -> group.forEach((tableName, actuator) ->
-                metrics.add(toMetric(metaId, actuator.getTableName(), actuator))));
+        router.forEach((taskId, group) -> group.forEach((tableName, actuator) ->
+                metrics.add(toMetric(taskId, actuator.getTableName(), actuator))));
         return metrics;
     }
 }

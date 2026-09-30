@@ -31,18 +31,10 @@ public interface MonitorService {
     /**
      * 获取驱动元信息
      *
-     * @param metaId
+     * @param taskId
      * @return
      */
-    MetaVO getMetaVo(String metaId);
-
-    /**
-     * 获取驱动默认元信息id
-     *
-     * @param params
-     * @return
-     */
-    String getDefaultMetaId(Map<String, String> params);
+    MetaVO getMetaVo(String taskId);
 
     /**
      * 查询驱动同步数据

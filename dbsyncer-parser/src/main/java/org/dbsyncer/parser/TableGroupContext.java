@@ -20,7 +20,7 @@ public interface TableGroupContext {
 
     void update(Mapping mapping, List<TableGroup> tableGroups);
 
-    List<TableGroupPicker> getTableGroupPickers(String metaId, String tableName);
+    List<TableGroupPicker> getTableGroupPickers(String taskId, String tableName);
 
-    void clear(String metaId);
+    void clear(String taskId);
 }

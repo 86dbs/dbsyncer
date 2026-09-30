@@ -33,7 +33,7 @@ public class Query {
      * 存储分片键。对 {@link StorageEnum#TASK_DETAIL} 为任务 ID（{@code dbsyncer_task_detail_{taskId}}）；
      * 历史字段名 metaId 仍保留兼容，语义上等同 {@link #getTaskDetailShardId()} / {@link #setTaskDetailShardId(String)}。
      */
-    private String metaId;
+    private String taskId;
 
     private BooleanFilter booleanFilter = new BooleanFilter();
 
@@ -109,26 +109,26 @@ public class Query {
         this.type = type;
     }
 
-    public String getMetaId() {
-        return metaId;
+    public String getTaskId() {
+        return taskId;
     }
 
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 
     /**
-     * 明细分表分片键（任务 ID），与 {@link #getMetaId()} 同字段。
+     * 明细分表分片键（任务 ID），与 {@link #getTaskId()} ()} 同字段。
      */
     public String getTaskDetailShardId() {
-        return metaId;
+        return taskId;
     }
 
     /**
-     * 设置明细分表分片键（任务 ID），与 {@link #setMetaId(String)} 同字段。
+     * 设置明细分表分片键（任务 ID），与 {@link #setTaskId(String)} 同字段。
      */
     public void setTaskDetailShardId(String shardId) {
-        this.metaId = shardId;
+        this.taskId = shardId;
     }
 
     public BooleanFilter getBooleanFilter() {

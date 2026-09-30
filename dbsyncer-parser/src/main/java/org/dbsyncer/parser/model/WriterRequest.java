@@ -24,12 +24,12 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
         this.row = event.getChangedRow();
     }
 
-    @Override
-    public String getMetaId() {
-        return getChangedOffset().getMetaId();
-    }
-
     public List<Object> getRow() {
         return row;
+    }
+
+    @Override
+    public String getTaskId() {
+        return getChangedOffset().getTaskId();
     }
 }

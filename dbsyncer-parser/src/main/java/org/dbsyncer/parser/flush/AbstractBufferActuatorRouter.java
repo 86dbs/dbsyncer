@@ -83,14 +83,13 @@ public abstract class AbstractBufferActuatorRouter implements BufferActuatorRout
     /**
      * 组装单个执行器监控快照。
      *
-     * @param metaId   驱动 Meta ID
      * @param name     展示名
      * @param actuator 执行器
      * @return 快照
      */
-    protected BufferActuatorMetric toMetric(String metaId, String name, AbstractBufferActuator actuator) {
+    protected BufferActuatorMetric toMetric(String taskId, String name, AbstractBufferActuator actuator) {
         BufferActuatorMetric metric = new BufferActuatorMetric();
-        metric.setMetaId(metaId);
+        metric.setTaskId(taskId);
         metric.setName(name);
         if (actuator == null) {
             return metric;

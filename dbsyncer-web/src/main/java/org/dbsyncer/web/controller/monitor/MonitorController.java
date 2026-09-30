@@ -103,11 +103,11 @@ public class MonitorController extends BaseController {
     }
 
     @GetMapping("/page/retry")
-    public String page(ModelMap model, String metaId, String messageId) {
-        MetaVO metaVo = monitorService.getMetaVo(metaId);
+    public String page(ModelMap model, String taskId, String messageId) {
+        MetaVO metaVo = monitorService.getMetaVo(taskId);
         model.put("meta", metaVo);
         model.put("mapping", mappingService.getMapping(metaVo.getTaskId()));
-        model.put("message", dataSyncService.getMessageVo(metaId, messageId));
+        model.put("message", dataSyncService.getMessageVo(taskId, messageId));
         return "monitor/retry.html";
     }
 
@@ -198,9 +198,9 @@ public class MonitorController extends BaseController {
      */
     @PostMapping("/getDataDetail")
     @ResponseBody
-    public RestResult getDataDetail(String metaId, String messageId) {
+    public RestResult getDataDetail(String taskId, String messageId) {
         try {
-            return RestResult.restSuccess(dataSyncService.getMessageVo(metaId, messageId));
+            return RestResult.restSuccess(dataSyncService.getMessageVo(taskId, messageId));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -223,7 +223,7 @@ public class MonitorController extends BaseController {
     public RestResult metric() {
         try {
             AppReportMetric reportMetric = monitorService
-                    .queryAppMetric(Stream.of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK).map(m->getMetricResponse(m.getCode())).collect(Collectors.toList()));
+                    .queryAppMetric(Stream.of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK).map(m -> getMetricResponse(m.getCode())).collect(Collectors.toList()));
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
             reportMetric.setDisk(disk);
@@ -350,7 +350,7 @@ public class MonitorController extends BaseController {
         metricResponse.setMetricName(metricEnum.getMetricName());
         if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
             List<Sample> measurements = new ArrayList<>();
-            metric.getMeasurements().forEach(s->measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
+            metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
             metricResponse.setMeasurements(measurements);
         }
         return metricResponse;

@@ -63,19 +63,19 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
 
     @Override
     public void start(Mapping mapping, boolean autoRecovery) {
-        final String metaId = mapping.getMetaId();
-        running.add(metaId);
-        Thread worker = new Thread(() -> runFullIncrementSync(mapping, metaId, autoRecovery));
+        final String taskId = mapping.getId();
+        running.add(taskId);
+        Thread worker = new Thread(() -> runFullIncrementSync(mapping, taskId, autoRecovery));
         worker.setName("full-increment-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
     }
 
     @Override
-    public void close(String metaId) {
-        running.remove(metaId);
-        fullPuller.close(metaId);
-        incrementPuller.close(metaId);
+    public void close(String taskId) {
+        running.remove(taskId);
+        fullPuller.close(taskId);
+        incrementPuller.close(taskId);
     }
 
     /**
@@ -85,7 +85,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
     public void prepareFullPhase(String taskId) {
         Mapping mapping = mappingProfile.get(taskId);
         Meta meta = metaProfile.getMeta(mapping.getMetaId());
-        prepareFullPhase(mapping, meta, mapping.getMetaId());
+        prepareFullPhase(mapping, meta);
     }
 
     /**
@@ -97,49 +97,46 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
         if (mapping == null) {
             return;
         }
-        String metaId = mapping.getMetaId();
-        markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-        logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+        markFullIncrementPhase(mapping.getId(), ModelEnum.INCREMENT.getCode());
+        logger.info("开始增量同步： {}", mapping.getName());
         incrementPuller.start(mapping, false);
     }
 
-    private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
+    private void runFullIncrementSync(Mapping mapping, String taskId, boolean autoRecovery) {
         try {
-            Meta meta = metaProfile.getMeta(metaId);
+            Meta meta = metaProfile.getMeta(taskId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
                 incrementPuller.start(mapping, autoRecovery);
                 return;
             }
-            prepareFullPhase(mapping, meta, metaId);
-            logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
+            prepareFullPhase(mapping, meta);
+            logger.info("开始全量同步： {}", mapping.getName());
             fullPuller.runSync(mapping, false);
-            if (!isRunning(metaId)) {
+            if (!isRunning(taskId)) {
                 return;
             }
-            markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-            logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+            markFullIncrementPhase(taskId, ModelEnum.INCREMENT.getCode());
             incrementPuller.start(mapping, autoRecovery);
         } catch (Exception e) {
-            logger.error("全量+增量同步失败：{}, {}", metaId, e.getMessage(), e);
+            logger.error("全量+增量同步失败：{}, {}", taskId, e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
-            incrementPuller.close(metaId);
-            publishClosedEvent(metaId);
+            incrementPuller.close(taskId);
+            publishClosedEvent(taskId);
         } finally {
-            running.remove(metaId);
+            running.remove(taskId);
         }
     }
 
-    private void prepareFullPhase(Mapping mapping, Meta meta, String metaId) {
+    private void prepareFullPhase(Mapping mapping, Meta meta) {
         if (shouldResumeFullPhase(meta)) {
-            logger.info("恢复全量阶段：{}, {}", metaId, mapping.getName());
             return;
         }
         //重新开始，获取增量位点信息
         incrementPuller.captureAndSaveOffset(mapping);
     }
 
-    private boolean isRunning(String metaId) {
-        return running.contains(metaId);
+    private boolean isRunning(String taskId) {
+        return running.contains(taskId);
     }
 
     private String getFullIncrementPhase(Meta meta) {
@@ -171,8 +168,8 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
     /**
      * 标记状态
      */
-    private void markFullIncrementPhase(String metaId, String phase) {
-        Meta meta = metaProfile.getMeta(metaId);
+    private void markFullIncrementPhase(String taskId, String phase) {
+        Meta meta = metaProfile.getMeta(taskId);
         meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), phase);
 
         //清除全量标记

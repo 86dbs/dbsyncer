@@ -217,12 +217,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
-        String metaId = mapping.getMetaId();
-        Meta meta = metaProfile.getMeta(metaId);
+        String taskId = mapping.getId();
+        Meta meta = metaProfile.getMeta(taskId);
         synchronized (LOCK) {
-            assertRunning(metaId);
+            assertRunning(taskId);
             // 删除数据
-            monitorService.clearData(metaId);
+            monitorService.clearData(taskId);
             log(LogType.MetaLog.CLEAR, meta);
 
             // 条件删除 table_group + 明细 Meta，并清运行结果
@@ -230,11 +230,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             tableGroupProfile.removeTableGroupsByTaskId(id);
 
             // 删除任务级 meta
-            metaProfile.removeMeta(metaId);
+            metaProfile.removeMeta(taskId);
             log(LogType.MetaLog.DELETE, meta);
 
             // 删除驱动表映射关系
-            tableGroupContext.clear(metaId);
+            tableGroupContext.clear(taskId);
 
             // 释放连接池
             String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
@@ -291,7 +291,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             vo.setMainTables(mainTables.stream().sorted(Comparator.comparing(Table::getName)).collect(Collectors.toList()));
         }
         // 元信息
-        vo.setMeta(metaProfile.getMeta(mapping.getMetaId()));
+        vo.setMeta(metaProfile.getMeta(mapping.getId()));
         return vo;
     }
 
@@ -345,20 +345,20 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         //校验映射关系是否存在
         assertTableGroupExist(id);
-        final String metaId = mapping.getMetaId();
+        final String taskId = mapping.getId();
         // 如果已经完成了，重置状态
-        clearMetaIfFinished(metaId);
+        clearMetaIfFinished(taskId);
         synchronized (LOCK) {
-            assertRunning(metaId);
+            assertRunning(taskId);
             Assert.isTrue(!dispatchTaskService.isRunning(id), "同步任务表映射正在匹配或统计中，请稍候再启动");
             // 标记运行中
-            changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
+            changeMetaState(mapping.getId(), CommonTaskStatusEnum.RUNNING);
 
             try {
                 clusterService.start(mapping, false);
             } catch (Exception e) {
                 // rollback
-                changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
+                changeMetaState(mapping.getId(), CommonTaskStatusEnum.READY);
                 throw new ManagerException(e.getMessage());
             }
 
@@ -371,11 +371,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String stop(String id) {
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
-            if (!isRunning(mapping.getMetaId())) {
+            if (!isRunning(mapping.getId())) {
                 throw new BizException("同步任务已停止.");
             }
-            String metaId = mapping.getMetaId();
-            changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
+            changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
             clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
             log(LogType.MappingLog.STOP, mapping);
             // 发送关闭驱动通知消息
@@ -584,12 +583,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 获取同步任务任务级 Meta；若 metaId 悬空则重建并回写 mapping。
      */
     private Meta resolveMappingMeta(Mapping mapping) {
-        String metaId = mapping.getMetaId();
-        Meta meta = StringUtil.isBlank(metaId) ? null : metaProfile.getMeta(mapping.getId());
+        Meta meta = metaProfile.getMeta(mapping.getId());
         if (meta != null) {
             return meta;
         }
-        logger.warn("同步任务 Meta 缺失，尝试重建. mappingId:{}, name:{}, metaId:{}", mapping.getId(), mapping.getName(), metaId);
+        logger.warn("同步任务 Meta 缺失，尝试重建. mappingId:{}, name:{}, taskId:{}", mapping.getId(), mapping.getName(), mapping.getId());
         mappingChecker.addMeta(mapping);
         mappingProfile.update(mapping);
         return metaProfile.getMeta(mapping.getMetaId());
@@ -687,8 +685,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return name;
     }
 
-    private void clearMetaIfFinished(String metaId) {
-        Meta meta = metaProfile.getMeta(metaId);
+    private void clearMetaIfFinished(String taskId) {
+        Meta meta = metaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态，便于再次全量
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {

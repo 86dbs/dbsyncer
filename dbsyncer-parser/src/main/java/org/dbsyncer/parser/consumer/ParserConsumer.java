@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2023-11-12 01:32
  */
 public final class ParserConsumer implements Watcher {
@@ -31,17 +31,17 @@ public final class ParserConsumer implements Watcher {
     private final MetaProfile metaProfile;
     private final PluginFactory pluginFactory;
     private final LogService logService;
-    private final String metaId;
+    private final String taskId;
 
     public ParserConsumer(BufferActuatorRouterService bufferActuatorRouter, MetaProfile metaProfile,
-                          PluginFactory pluginFactory, LogService logService, String metaId,
+                          PluginFactory pluginFactory, LogService logService, String taskId,
                           List<TableGroup> tableGroups, int channelSize) {
         this.bufferActuatorRouter = bufferActuatorRouter;
         this.metaProfile = metaProfile;
         this.pluginFactory = pluginFactory;
         this.logService = logService;
-        this.metaId = metaId;
-        bufferActuatorRouter.bind(metaId, extractSourceTableNames(tableGroups), channelSize);
+        this.taskId = taskId;
+        bufferActuatorRouter.bind(taskId, extractSourceTableNames(tableGroups), channelSize);
     }
 
     @Override
@@ -51,12 +51,12 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public void changeEvent(ChangedEvent event) {
-        bufferActuatorRouter.execute(metaId, event);
+        bufferActuatorRouter.execute(taskId, event);
     }
 
     @Override
     public void flushEvent(Map<String, String> snapshot) {
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(taskId);
         if (meta != null) {
             meta.setSnapshot(snapshot);
             metaProfile.updateMeta(meta);
@@ -70,7 +70,7 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public long getMetaUpdateTime() {
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(taskId);
         return meta != null ? meta.getUpdateTime() : 0L;
     }
 

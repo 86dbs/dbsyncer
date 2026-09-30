@@ -5,7 +5,7 @@ package org.dbsyncer.parser.flush;
 
 /**
  * 缓冲请求。
- * <p>对明细分表写入场景，{@link #getMetaId()} 实际返回任务分片键（任务 ID），不是 Meta 主键。
+ * <p>对明细分表写入场景，{@link #getTaskId()} 实际返回任务分片键（任务 ID），不是 Meta 主键。
  *
  * @author AE86
  * @version 1.0.0
@@ -18,5 +18,5 @@ public interface BufferRequest {
      *
      * @return 分区键
      */
-    String getMetaId();
+    String getTaskId();
 }

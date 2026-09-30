@@ -134,7 +134,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         assertRunning(mapping);
 
         // 批量删除表
-        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id-> {
+        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
             TableGroup model = tableGroupProfile.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
             tableGroupProfile.removeTableGroup(id);
@@ -167,7 +167,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public Meta updateMeta(Mapping mapping, String metaSnapshot) {
-        Meta meta = metaProfile.getMeta(mapping.getMetaId());
+        Meta meta = metaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "同步任务meta不存在.");
 
         // 清空状态

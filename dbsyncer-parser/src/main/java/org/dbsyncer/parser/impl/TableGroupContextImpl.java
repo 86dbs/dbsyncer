@@ -8,7 +8,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TableGroupPicker;
 import org.dbsyncer.parser.util.PickerUtil;
-
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -31,9 +30,9 @@ public final class TableGroupContextImpl implements TableGroupContext {
 
     @Override
     public void put(Mapping mapping, List<TableGroup> tableGroups) {
-        tableGroupMap.computeIfAbsent(mapping.getMetaId(), k-> {
+        tableGroupMap.computeIfAbsent(mapping.getId(), k -> {
             InnerMapping innerMap = new InnerMapping();
-            tableGroups.forEach(tableGroup-> {
+            tableGroups.forEach(tableGroup -> {
                 String sourceTableName = tableGroup.getSourceTable().getName();
                 innerMap.add(sourceTableName, PickerUtil.mergeTableGroupConfig(mapping, tableGroup));
             });
@@ -43,10 +42,10 @@ public final class TableGroupContextImpl implements TableGroupContext {
 
     @Override
     public void update(Mapping mapping, List<TableGroup> tableGroups) {
-        tableGroupMap.computeIfPresent(mapping.getMetaId(), (k, innerMap)-> {
+        tableGroupMap.computeIfPresent(mapping.getId(), (k, innerMap) -> {
             // 先清空表映射关系，再更新表映射关系
-            tableGroups.stream().findFirst().ifPresent(tableGroup->innerMap.remove(tableGroup.getSourceTable().getName()));
-            tableGroups.forEach(tableGroup-> {
+            tableGroups.stream().findFirst().ifPresent(tableGroup -> innerMap.remove(tableGroup.getSourceTable().getName()));
+            tableGroups.forEach(tableGroup -> {
                 String sourceTableName = tableGroup.getSourceTable().getName();
                 innerMap.add(sourceTableName, PickerUtil.mergeTableGroupConfig(mapping, tableGroup));
             });
@@ -55,10 +54,10 @@ public final class TableGroupContextImpl implements TableGroupContext {
     }
 
     @Override
-    public List<TableGroupPicker> getTableGroupPickers(String metaId, String tableName) {
+    public List<TableGroupPicker> getTableGroupPickers(String taskId, String tableName) {
         List<TableGroupPicker> list = new ArrayList<>();
-        tableGroupMap.computeIfPresent(metaId, (k, innerMapping)-> {
-            innerMapping.pickerMap.computeIfPresent(tableName, (x, pickers)-> {
+        tableGroupMap.computeIfPresent(taskId, (k, innerMapping) -> {
+            innerMapping.pickerMap.computeIfPresent(tableName, (x, pickers) -> {
                 list.addAll(pickers);
                 return pickers;
             });
@@ -68,8 +67,8 @@ public final class TableGroupContextImpl implements TableGroupContext {
     }
 
     @Override
-    public void clear(String metaId) {
-        tableGroupMap.remove(metaId);
+    public void clear(String taskId) {
+        tableGroupMap.remove(taskId);
     }
 
     static final class InnerMapping {
@@ -77,7 +76,7 @@ public final class TableGroupContextImpl implements TableGroupContext {
         Map<String, List<TableGroupPicker>> pickerMap = new ConcurrentHashMap<>();
 
         public void add(String tableName, TableGroup tableGroup) {
-            pickerMap.computeIfAbsent(tableName, k->new ArrayList<>()).add(new TableGroupPicker(tableGroup));
+            pickerMap.computeIfAbsent(tableName, k -> new ArrayList<>()).add(new TableGroupPicker(tableGroup));
         }
 
         public void remove(String tableName) {

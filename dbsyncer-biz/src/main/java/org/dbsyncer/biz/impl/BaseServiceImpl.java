@@ -39,8 +39,8 @@ public class BaseServiceImpl {
      */
     protected final static Object LOCK = new Object();
 
-    protected boolean isRunning(String metaId) {
-        Meta meta = metaProfile.getMeta(metaId);
+    protected boolean isRunning(String taskId) {
+        Meta meta = metaProfile.getMeta(taskId);
         if (null != meta) {
             int state = meta.getState();
             return CommonTaskStatusEnum.isRunning(state);
@@ -48,9 +48,9 @@ public class BaseServiceImpl {
         return false;
     }
 
-    protected void assertRunning(String metaId) {
+    protected void assertRunning(String taskId) {
         synchronized (LOCK) {
-            Assert.isTrue(!isRunning(metaId), "任务正在运行, 请先停止.");
+            Assert.isTrue(!isRunning(taskId), "任务正在运行, 请先停止.");
         }
     }
 
@@ -95,8 +95,8 @@ public class BaseServiceImpl {
         messageService.sendMessage(content);
     }
 
-    protected void changeMetaState(String metaId, CommonTaskStatusEnum status) {
-        Meta meta = metaProfile.getMeta(metaId);
+    protected void changeMetaState(String taskId, CommonTaskStatusEnum status) {
+        Meta meta = metaProfile.getMeta(taskId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
             long now = Instant.now().toEpochMilli();

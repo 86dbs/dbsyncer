@@ -6,7 +6,6 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.event.ClosedEvent;
 import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.Puller;
 import org.dbsyncer.parser.MappingProfile;
@@ -70,13 +69,13 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
 
     @Override
     public void onApplicationEvent(ClosedEvent event) {
-        changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
+        changeMetaState(event.getTaskId(), CommonTaskStatusEnum.READY);
         // 集群：排空/收口后再回收本机连接（用户停止、自然结束、失败）
-        releaseMappingConnectors(event.getMetaId());
+        releaseMappingConnectors(event.getTaskId());
     }
 
-    public void changeMetaState(String metaId, CommonTaskStatusEnum status) {
-        Meta meta = metaProfile.getMeta(metaId);
+    public void changeMetaState(String taskId, CommonTaskStatusEnum status) {
+        Meta meta = metaProfile.getMeta(taskId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
             long now = Instant.now().toEpochMilli();
@@ -93,14 +92,10 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     /**
      * 任务关闭后释放本机源/目标连接（与 PreloadTemplate.reConnect 同一套 instanceId）。
      *
-     * @param metaId Meta ID
+     * @param taskId
      */
-    private void releaseMappingConnectors(String metaId) {
-        Meta meta = metaProfile.getMeta(metaId);
-        if (meta == null || StringUtil.isBlank(meta.getTaskId())) {
-            return;
-        }
-        Mapping mapping = mappingProfile.get(meta.getTaskId());
+    private void releaseMappingConnectors(String taskId) {
+        Mapping mapping = mappingProfile.get(taskId);
         if (mapping == null) {
             return;
         }

@@ -65,8 +65,8 @@ import java.util.stream.Collectors;
 /**
  * 通用执行器（单线程消费，多线程批量写，按序执行）
  *
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2022-03-27 16:50
  */
 @Component
@@ -159,7 +159,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     public void pull(WriterResponse response) {
-        Meta meta = metaProfile.getMeta(response.getChangedOffset().getMetaId());
+        Meta meta = metaProfile.getMeta(response.getChangedOffset().getTaskId());
         if (meta == null) {
             return;
         }
@@ -170,17 +170,17 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         switch (response.getTypeEnum()) {
             case DDL:
-                tableGroupContext.update(mapping, pickers.stream().map(picker-> {
+                tableGroupContext.update(mapping, pickers.stream().map(picker -> {
                     TableGroup tableGroup = tableGroupProfile.getTableGroup(picker.getTableGroup().getId());
                     parseDDl(response, mapping, tableGroup);
                     return tableGroup;
                 }).collect(Collectors.toList()));
                 break;
             case SCAN:
-                pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
+                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
                 break;
             case ROW:
-                pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
+                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
                 if (shouldPublishOffsetRefresh()) {
                     publishOffsetRefresh(response.getChangedOffset());
                 }

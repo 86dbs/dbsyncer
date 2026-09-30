@@ -128,20 +128,20 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Override
     public void start(Mapping mapping, boolean autoRecovery) {
         final String mappingId = mapping.getId();
-        final String metaId = mapping.getMetaId();
+//        final String metaId = mapping.getMetaId();
         Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
         Connector targetConnector = connectorProfile.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mappingId);
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(mappingId);
         Assert.notNull(meta, "Meta不能为空.");
 
         Thread worker = new Thread(() -> {
             try {
-                Listener listener = map.computeIfAbsent(metaId, k -> {
-                    logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+                Listener listener = map.computeIfAbsent(mappingId, k -> {
+                    logger.info("开始增量同步：{}, {}", mappingId, mapping.getName());
                     long now = Instant.now().toEpochMilli();
                     meta.setStartTime(now);
                     meta.setUpdateTime(now);
@@ -149,12 +149,12 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     tableGroupContext.put(mapping, list);
                     return buildListener(mapping, connector, targetConnector, list, meta);
                 });
-                startListener(mapping, metaId, listener, autoRecovery);
+                startListener(mapping, mappingId, listener, autoRecovery);
             } catch (Exception e) {
-                close(metaId);
-                publishClosedEvent(metaId);
+                close(mappingId);
+                publishClosedEvent(mappingId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, String.format("启动驱动失败：[%s], %s", mapping.getName(), e.getMessage()));
-                logger.error("运行异常，结束增量同步：{}", metaId, e);
+                logger.error("运行异常，结束增量同步：{}", mappingId, e);
             }
         });
         worker.setName("increment-worker-" + mapping.getId());
@@ -166,7 +166,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
      * 启动监听。自动恢复（服务重启）时，为避免数据库晚于本服务启动导致 CDC 监听连接失败，
      * 按 {@link IncrementRecoveryConfig} 配置的次数与间隔重试；手动启动仅尝试一次。
      */
-    private void startListener(Mapping mapping, String metaId, Listener listener, boolean autoRecovery) throws Exception {
+    private void startListener(Mapping mapping, String taskId, Listener listener, boolean autoRecovery) throws Exception {
         int maxAttempts = autoRecovery ? incrementRecoveryConfig.getRetryTimes() : 1;
         for (int i = 1; i <= maxAttempts; i++) {
             try {
@@ -182,8 +182,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 }
                 logger.error("增量同步启动失败，任务名称:{} {}ms后重试", mapping.getName(), incrementRecoveryConfig.getRetryInterval(), e);
                 TimeUnit.MILLISECONDS.sleep(incrementRecoveryConfig.getRetryInterval());
-                if (!map.containsKey(metaId)) {
-                    logger.info("增量同步任务已关闭，终止重试：{}, {}", metaId, mapping.getName());
+                if (!map.containsKey(taskId)) {
+                    logger.info("增量同步任务已关闭，终止重试：{}, {}", taskId, mapping.getName());
                     return;
                 }
             }
@@ -196,14 +196,13 @@ public final class IncrementPuller extends AbstractPuller implements Application
      * @param mapping 驱动
      */
     public void captureAndSaveOffset(Mapping mapping) {
-        final String metaId = mapping.getMetaId();
         Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
         Connector targetConnector = connectorProfile.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mapping.getId());
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "Meta不能为空.");
         Listener listener = buildListener(mapping, connector, targetConnector, list, meta);
         Map<String, String> snapshot = meta.getSnapshot();
@@ -217,21 +216,21 @@ public final class IncrementPuller extends AbstractPuller implements Application
         meta.getSuccess().set(0);
         meta.getFail().set(0);
         metaProfile.updateMeta(meta);
-        logger.info("全量+增量模式已保存增量位点：{}, {}", metaId, snapshot);
+        logger.info("全量+增量模式已保存增量位点：{}, {}", mapping.getName(), snapshot);
     }
 
     @Override
-    public void close(String metaId) {
-        map.compute(metaId, (k, listener) -> {
+    public void close(String taskId) {
+        map.compute(taskId, (k, listener) -> {
             if (listener != null) {
                 listener.close();
             }
-            bufferActuatorRouter.unbind(metaId);
-            tableGroupContext.clear(metaId);
-            if (shouldPublishClosedAfterStop(metaId)) {
-                publishClosedEvent(metaId);
+            bufferActuatorRouter.unbind(taskId);
+            tableGroupContext.clear(taskId);
+            if (shouldPublishClosedAfterStop(taskId)) {
+                publishClosedEvent(taskId);
             }
-            logger.info("关闭成功:{}", metaId);
+            logger.info("关闭成功:{}", taskId);
             return null;
         });
     }
@@ -239,22 +238,22 @@ public final class IncrementPuller extends AbstractPuller implements Application
     /**
      * 用户停止后 Meta 为 STOPPING，需 ClosedEvent 收口；本机围栏停止不发。
      *
-     * @param metaId Meta ID
+     * @param taskId
      * @return true 应发布 ClosedEvent
      */
-    private boolean shouldPublishClosedAfterStop(String metaId) {
-        if (StringUtil.isBlank(metaId)) {
+    private boolean shouldPublishClosedAfterStop(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
             return false;
         }
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(taskId);
         return meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode();
     }
 
     @Override
     public void onApplicationEvent(RefreshOffsetEvent event) {
         ChangedOffset offset = event.getChangedOffset();
-        if (offset != null && map.containsKey(offset.getMetaId())) {
-            map.get(offset.getMetaId()).refreshEvent(offset);
+        if (offset != null && map.containsKey(offset.getTaskId())) {
+            map.get(offset.getTaskId()).refreshEvent(offset);
         }
     }
 

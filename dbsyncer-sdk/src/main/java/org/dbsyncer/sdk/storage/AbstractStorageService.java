@@ -57,7 +57,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     @Override
     public Paging query(Query query) {
         try {
-            String sharding = getSharding(query.getType(), query.getMetaId());
+            String sharding = getSharding(query.getType(), query.getTaskId());
             return select(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
@@ -82,7 +82,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         try {
             query.setPageNum(1);
             query.setPageSize(1);
-            return selectOne(getSharding(query.getType(), query.getMetaId()), query);
+            return selectOne(getSharding(query.getType(), query.getTaskId()), query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
         } catch (SdkException e) {
@@ -102,7 +102,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         }
 
         try {
-            String sharding = getSharding(query.getType(), query.getMetaId());
+            String sharding = getSharding(query.getType(), query.getTaskId());
             delete(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试

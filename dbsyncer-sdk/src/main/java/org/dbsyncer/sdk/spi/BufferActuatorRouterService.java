@@ -29,17 +29,17 @@ public interface BufferActuatorRouterService {
     /**
      * 解绑并停止该驱动下的执行器。
      *
-     * @param metaId Meta ID
+     * @param taskId Meta ID
      */
-    void unbind(String metaId);
+    void unbind(String taskId);
 
     /**
      * 投递增量变更事件。
      *
-     * @param metaId Meta ID
+     * @param taskId Meta ID
      * @param event  变更事件
      */
-    void execute(String metaId, ChangedEvent event);
+    void execute(String taskId, ChangedEvent event);
 
     /**
      * 路由内所有执行器队列堆积总数（不含通用执行器）。
