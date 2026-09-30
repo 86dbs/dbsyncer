@@ -37,14 +37,6 @@ public interface MonitorService {
     Paging queryData(Map<String, String> params);
 
     /**
-     * 清空驱动同步数据
-     *
-     * @param id 任务 Meta ID
-     * @return
-     */
-    String clearData(String id);
-
-    /**
      * 清空驱动同步数据；tableGroupId 非空时仅清空该表映射下明细与表级 Meta。
      *
      * @param id           任务 Meta ID

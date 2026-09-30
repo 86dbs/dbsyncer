@@ -275,8 +275,8 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
         Meta meta = getMeta(taskId);
         if (meta != null) {
             storageService.remove(StorageEnum.META, meta.getId());
+            removeCacheAndNotice(taskId);
         }
-        removeCacheAndNotice(taskId);
     }
 
     @Override

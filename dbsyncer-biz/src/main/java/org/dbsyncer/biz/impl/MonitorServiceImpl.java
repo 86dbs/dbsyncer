@@ -32,9 +32,9 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -97,6 +97,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private StorageService storageService;
+
+    @Resource
+    private TaskDetailProfile taskDetailProfile;
 
     @Resource
     private LogService logService;
@@ -209,31 +212,21 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public String clearData(String id) {
-        return clearData(id, null);
-    }
-
-    @Override
     public String clearData(String id, String tableGroupId) {
         Assert.hasText(id, "同步任务不存在.");
-        Meta meta = metaProfile.getMeta(id);
-        Assert.notNull(meta, "同步任务不存在.");
-        Mapping mapping = mappingProfile.get(meta.getTaskId());
+        Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "同步任务不存在.");
 
         if (StringUtil.isNotBlank(tableGroupId)) {
-            TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
-            Assert.notNull(tableGroup, "表映射不存在.");
-            Assert.isTrue(StringUtil.equals(tableGroup.getTaskId(), mapping.getId()), "表映射不属于当前同步任务.");
-            clearTableGroupData(meta.getTaskId(), tableGroupId);
+            clearTableGroupData(id, tableGroupId);
             LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
             String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
             logService.log(log, "%s:%s(%s) tableGroup=%s", log.getMessage(), mapping.getName(), model, tableGroupId);
             return "清空当前表同步数据成功";
         }
+
         // 任务 Meta：success/fail 一并归零
-        meta.clear();
-        metaProfile.updateMeta(meta);
+        metaProfile.reset(id);
         // 表级 Meta 删除
         List<String> groupIds = tableGroupProfile.listTableGroupIds(mapping.getId());
         if (!CollectionUtils.isEmpty(groupIds)) {
@@ -246,8 +239,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        storageService.clear(StorageEnum.TASK_DETAIL, meta.getTaskId());
-
+        storageService.clear(StorageEnum.TASK_DETAIL, id);
         return "清空同步数据成功";
     }
 
@@ -261,13 +253,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                     .fail(-tableFail));
         }
         removeTableMeta(tableGroupId);
-        deleteTableGroupDetailsByShard(shardId, tableGroupId);
-    }
 
-    private void deleteTableGroupDetailsByShard(String taskId, String tableGroupId) {
         Query query = new Query();
         query.setType(StorageEnum.TASK_DETAIL);
-        query.setTaskId(taskId);
+        query.setTaskId(shardId);
         query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
         storageService.delete(query);
     }
@@ -457,17 +446,13 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                     continue;
                 }
-                deleteExpiredTaskDetailsByShard(meta.getTaskId(), expiredTime);
+                Query query = new Query();
+                query.setType(StorageEnum.TASK_DETAIL);
+                query.setTaskId(meta.getTaskId());
+                query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
+                storageService.delete(query);
             }
         });
-    }
-
-    private void deleteExpiredTaskDetailsByShard(String taskId, long expiredTime) {
-        Query query = new Query();
-        query.setType(StorageEnum.TASK_DETAIL);
-        query.setTaskId(taskId);
-        query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
-        storageService.delete(query);
     }
 
     private void deleteExpiredLog() {

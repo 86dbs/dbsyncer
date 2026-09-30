@@ -24,7 +24,6 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
@@ -214,17 +213,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
         String taskId = mapping.getId();
-        Meta meta = metaProfile.getMeta(taskId);
         synchronized (LOCK) {
             assertRunning(taskId);
-            log(LogType.MetaLog.CLEAR, meta);
             // 条件删除 table_group + 明细 Meta，并清运行结果
             mappingProfile.clearRunData(id);
+            log(LogType.MetaLog.CLEAR, mapping);
             tableGroupProfile.removeTableGroupsByTaskId(taskId);
 
             // 删除任务级 meta
             metaProfile.removeMeta(taskId);
-            log(LogType.MetaLog.DELETE, meta);
 
             // 删除同步表映射关系
             tableGroupContext.clear(taskId);
@@ -339,20 +336,20 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         //校验映射关系是否存在
         assertTableGroupExist(id);
         final String taskId = mapping.getId();
-        // 如果已经完成了，重置状态
-        clearMetaIfFinished(taskId);
         synchronized (LOCK) {
             assertRunning(taskId);
-            Assert.isTrue(!dispatchTaskService.isRunning(id), "同步任务表映射正在匹配或统计中，请稍候再启动");
+            Assert.isTrue(!dispatchTaskService.isRunning(taskId), "同步任务表映射正在匹配或统计中，请稍候再启动");
+            // 如果已经完成了，重置状态
+            clearMetaIfFinished(taskId);
             // 标记运行中
-            changeMetaState(mapping.getId(), CommonTaskStatusEnum.RUNNING);
+            changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
 
             try {
                 clusterService.start(mapping, false);
             } catch (Exception e) {
                 // rollback
-                changeMetaState(mapping.getId(), CommonTaskStatusEnum.READY);
-                throw new ManagerException(e.getMessage());
+                changeMetaState(taskId, CommonTaskStatusEnum.READY);
+                throw new BizException(e.getMessage());
             }
 
             log(LogType.MappingLog.RUNNING, mapping);
@@ -687,9 +684,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             meta.getSuccess().set(0);
             metaProfile.updateMeta(meta);
             // 表级明细 Meta/进度一并重置，否则已完成表会被跳过无法重跑
-            if (StringUtil.isNotBlank(meta.getTaskId())) {
-                mappingProfile.clearRunData(meta.getTaskId());
-            }
+            mappingProfile.clearRunData(meta.getTaskId());
         }
     }
 
@@ -781,6 +776,5 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
         }
     }
-
 
 }

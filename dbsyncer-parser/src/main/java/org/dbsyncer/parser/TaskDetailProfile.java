@@ -42,4 +42,5 @@ public interface TaskDetailProfile {
      * 获取任务明细数据
      */
     Map getData(String taskId, String messageId);
+
 }
