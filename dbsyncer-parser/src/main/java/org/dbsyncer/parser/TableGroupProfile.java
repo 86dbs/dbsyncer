@@ -97,6 +97,7 @@ public interface TableGroupProfile {
      */
     boolean existTableGroup(String taskId, String sourceTable, String targetTable);
 
+    @Deprecated
     List<String> listTableGroupIds(String taskId);
 
     /**

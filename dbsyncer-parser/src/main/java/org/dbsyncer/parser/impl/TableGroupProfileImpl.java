@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * {@link TableGroupProfile} 实现（dbsyncer_table_group）。
@@ -79,6 +80,9 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Override
     public String addTableGroup(TableGroup model) {
@@ -130,9 +134,13 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        List<String> groupIds = listTableGroupIds(taskId);
-        //删除所有子任务
-        taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
+        // 删除表关联的meta
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
+            List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
+            // 批量删除表meta数据
+            taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
+        });
+
         Query deleteQuery = new Query();
         deleteQuery.setType(StorageEnum.TABLE_GROUP);
         deleteQuery.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);

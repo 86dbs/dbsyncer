@@ -228,14 +228,11 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
         if (CollectionUtils.isEmpty(tableGroupIds)) {
             return;
         }
-        TaskSplitUtil.split(tableGroupIds, ConfigConstant.PAGE_SIZE, (batch) -> {
-            Query query = new Query();
-            query.setType(StorageEnum.META);
-            query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 1);
-            query.addFilter(ConfigConstant.META_TASK_ID, FilterEnum.IN, StringUtil.join(batch, StringUtil.COMMA));
-            storageService.delete(query);
-        });
-
+        Query query = new Query();
+        query.setType(StorageEnum.META);
+        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, TaskLevelEnum.TASK_DETAIL.getCode());
+        query.addFilter(ConfigConstant.META_TASK_ID, FilterEnum.IN, StringUtil.join(tableGroupIds, StringUtil.COMMA));
+        storageService.delete(query);
     }
 
     @Override

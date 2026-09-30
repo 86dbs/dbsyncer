@@ -4,9 +4,7 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.config.PackageFormatConfig;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -16,10 +14,11 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TaskImportResult;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -42,7 +41,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
@@ -61,6 +59,9 @@ public class TaskProfileImpl implements TaskProfile {
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -347,38 +348,16 @@ public class TaskProfileImpl implements TaskProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        List<String> groupIds = tableGroupProfile.listTableGroupIds(taskId);
-        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
-        if (CollectionUtils.isEmpty(groupIds)) {
-            return;
-        }
-        // 批量删除表粒度meta数据
-        taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
-    }
 
-    /**
-     * 明细 Meta 归零：状态 READY、计数清零、快照清空。{@link Meta#clear()} 会把 isTaskDetail 置 0，须再写回明细层级。
-     */
-    private void resetDetailMeta(Meta meta, String groupId, long now) {
-        meta.clear();
-        meta.setTaskId(groupId);
-        meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
-        meta.setUpdateTime(now);
-    }
+        // 删除明细表数据
+        taskDetailMetaProfile.clearData(taskId);
 
-    private boolean isDetailMetaClean(Meta meta) {
-        if (meta == null) {
-            return false;
-        }
-        if (meta.getState() != CommonTaskStatusEnum.READY.getCode()) {
-            return false;
-        }
-        if (counterValue(meta.getTotal()) != 0L || counterValue(meta.getSuccess()) != 0L
-                || counterValue(meta.getFail()) != 0L || counterValue(meta.getDiff()) != 0L
-                || counterValue(meta.getFixed()) != 0L) {
-            return false;
-        }
-        return meta.getSnapshot() == null || meta.getSnapshot().isEmpty();
+        // 删除表关联的meta
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
+            List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
+            // 批量删除表meta数据
+            taskMetaProfile.deleteMetaByTableGroupIds(groupIds);
+        });
     }
 
     @Override
@@ -397,9 +376,5 @@ public class TaskProfileImpl implements TaskProfile {
         for (String taskId : taskIds) {
             createRunDetailTable(taskId);
         }
-    }
-
-    private static long counterValue(AtomicLong value) {
-        return value == null ? 0L : value.get();
     }
 }
