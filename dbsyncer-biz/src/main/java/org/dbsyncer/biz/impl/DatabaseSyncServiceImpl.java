@@ -22,10 +22,14 @@ import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
+import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
+import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.DatabaseSyncMappingUtil;
@@ -41,7 +45,6 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.util.DatabaseSyncProgressUtil;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -86,6 +89,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private TaskMetaProfile taskMetaProfile;
 
     @Resource
+    private TaskDetailProfile taskDetailProfile;
+
+    @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
@@ -96,9 +102,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Resource
     private ClusterService clusterService;
-
-    @Resource
-    private DatabaseSyncDetailService databaseSyncDetailService;
 
     @Resource
     private ParserComponent parserComponent;
@@ -294,7 +297,17 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Override
     public Paging searchResult(Map<String, String> params) {
-        return databaseSyncDetailService.result(params);
+        String taskId = params.get("taskId");
+        Assert.hasText(taskId, "任务ID不能为空");
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String detailType = StringUtil.trimToEmpty(params.get("detailType"));
+        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
+        return taskDetailProfile.queryResults(TaskDetailQuery.of(taskId)
+                .setPage(pageNum, pageSize)
+                .setDetailType(StringUtil.isBlank(detailType) ? null : detailType)
+                .setDetailStatus(TaskDetailStatusEnum.from(detailStatus))
+                .setStatusMetric(TaskDetailMetricEnum.FAIL));
     }
 
     @Override

@@ -260,7 +260,7 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         int pageNum = 1;
         while (true) {
             Paging<TableGroup> paging = queryTableGroup(mappingId, null, pageNum, safePageSize);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+            if (CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
             List<TableGroup> page = new ArrayList<>(paging.getData());
