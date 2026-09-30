@@ -37,8 +37,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2021-11-18 22:22
  */
 @Component
@@ -85,15 +85,14 @@ public final class FlushStrategyImpl implements FlushStrategy {
     }
 
     private void asyncWrite(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean success, List<Map> data, String error) {
-        String metaId = result.getMetaId();
+        String metaId = result.getTaskId();
         // 明细分表键用任务级 Meta.taskId；metaId 仍用于任务级 Meta 计数增量
-        String shardId = metaProfile.resolveTaskDetailShardId(metaId);
         String event = result.getEvent();
         String tableGroupId = result.getTableGroupId();
         String targetTableGroupName = result.getTargetTableGroupName();
 
         long now = Instant.now().toEpochMilli();
-        data.forEach(r-> {
+        data.forEach(r -> {
             Map<String, Object> row = new HashMap<>();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             // 明细分表：TABLE_GROUP_ID 关联表映射；事件写入 TYPE；成功状态写入 IS_SUCCESS
@@ -114,13 +113,13 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 });
                 logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化。字段类型详情: {}", typeInfo, e);
             }
-            storageBufferActuator.offer(new StorageRequest(shardId, row));
+            storageBufferActuator.offer(new StorageRequest(metaId, row));
         });
     }
 
     private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data, Map<String, Field> fieldMap) {
         BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
-        data.forEach((k, v)-> {
+        data.forEach((k, v) -> {
             if (null != v) {
                 // DDL
                 if (fieldMap == null) {
@@ -151,8 +150,8 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
         // 与 FullTableProgressUtil.save 共用 tableLock；进度更新走 updateMetaProgress（写前重载），避免覆盖原子计数
-        synchronized (MetaLockUtil.lock(writer.getMetaId())) {
-            metaProfile.incrementMeta(MetaIncrement.of(writer.getMetaId()).success(success).fail(fail));
+        synchronized (MetaLockUtil.lock(writer.getTaskId())) {
+            metaProfile.incrementMeta(MetaIncrement.of(writer.getTaskId()).success(success).fail(fail));
         }
         incrementTableMeta(writer.getTableGroupId(), success, fail);
     }
@@ -177,10 +176,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 metaProfile.updateMeta(tableMeta);
                 tableMeta = metaProfile.getMetaDetail(tableGroupId);
             }
-            if (tableMeta == null || StringUtil.isBlank(tableMeta.getId())) {
-                return;
-            }
-            metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).success(success).fail(fail));
+            metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).success(success).fail(fail));
         }
     }
 

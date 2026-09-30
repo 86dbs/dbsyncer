@@ -220,21 +220,20 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         Assert.notNull(meta, "同步任务不存在.");
         Mapping mapping = mappingProfile.get(meta.getTaskId());
         Assert.notNull(mapping, "同步任务不存在.");
-        String shardId = metaProfile.resolveTaskDetailShardId(meta);
 
         if (StringUtil.isNotBlank(tableGroupId)) {
             TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
             Assert.notNull(tableGroup, "表映射不存在.");
             Assert.isTrue(StringUtil.equals(tableGroup.getTaskId(), mapping.getId()), "表映射不属于当前同步任务.");
-            clearTableGroupData(meta, shardId, tableGroupId);
+            clearTableGroupData(meta.getTaskId(), tableGroupId);
             LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
             String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
             logService.log(log, "%s:%s(%s) tableGroup=%s", log.getMessage(), mapping.getName(), model, tableGroupId);
             return "清空当前表同步数据成功";
         }
-
         // 任务 Meta：success/fail 一并归零
-        resetMetaCounters(meta);
+        meta.clear();
+        metaProfile.updateMeta(meta);
         // 表级 Meta 删除
         List<String> groupIds = tableGroupProfile.listTableGroupIds(mapping.getId());
         if (!CollectionUtils.isEmpty(groupIds)) {
@@ -247,67 +246,30 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        clearTaskDetailShards(meta);
+        storageService.clear(StorageEnum.TASK_DETAIL, meta.getTaskId());
+
         return "清空同步数据成功";
     }
 
-    private void clearTableGroupData(Meta taskMeta, String shardId, String tableGroupId) {
+    private void clearTableGroupData(String shardId, String tableGroupId) {
         Meta tableMeta = metaProfile.getMetaDetail(tableGroupId);
         long tableSuccess = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
         long tableFail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
         if (tableSuccess != 0 || tableFail != 0) {
-            metaProfile.incrementMeta(MetaIncrement.of(taskMeta.getId())
+            metaProfile.incrementMeta(MetaIncrement.of(shardId)
                     .success(-tableSuccess)
                     .fail(-tableFail));
         }
         removeTableMeta(tableGroupId);
-
-        deleteTableGroupDetails(taskMeta, shardId, tableGroupId);
-    }
-
-    /**
-     * 删除表级同步明细；兼容历史雪花主键分表。
-     */
-    private void deleteTableGroupDetails(Meta taskMeta, String shardId, String tableGroupId) {
         deleteTableGroupDetailsByShard(shardId, tableGroupId);
-        if (taskMeta != null && StringUtil.isNotBlank(taskMeta.getId()) && !StringUtil.equals(taskMeta.getId(), shardId)) {
-            deleteTableGroupDetailsByShard(taskMeta.getId(), tableGroupId);
-        }
     }
 
-    private void deleteTableGroupDetailsByShard(String shardId, String tableGroupId) {
+    private void deleteTableGroupDetailsByShard(String taskId, String tableGroupId) {
         Query query = new Query();
         query.setType(StorageEnum.TASK_DETAIL);
-        query.setTaskId(shardId);
+        query.setTaskId(taskId);
         query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
         storageService.delete(query);
-    }
-
-    /**
-     * 清空明细分表；兼容历史雪花主键分表。
-     */
-    private void clearTaskDetailShards(Meta meta) {
-        if (meta == null) {
-            return;
-        }
-        String shardId = metaProfile.resolveTaskDetailShardId(meta);
-        storageService.clear(StorageEnum.TASK_DETAIL, shardId);
-        if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
-            storageService.clear(StorageEnum.TASK_DETAIL, meta.getId());
-        }
-    }
-
-    private void resetMetaCounters(Meta meta) {
-        if (meta == null) {
-            return;
-        }
-        long success = meta.getSuccess() != null ? meta.getSuccess().get() : 0L;
-        long fail = meta.getFail() != null ? meta.getFail().get() : 0L;
-        if (success != 0 || fail != 0) {
-            metaProfile.incrementMeta(MetaIncrement.of(meta.getId())
-                    .success(-success)
-                    .fail(-fail));
-        }
     }
 
     private void removeTableMeta(String tableGroupId) {
@@ -495,23 +457,15 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                 if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                     continue;
                 }
-                deleteExpiredTaskDetails(meta, expiredTime);
+                deleteExpiredTaskDetailsByShard(meta.getTaskId(), expiredTime);
             }
         });
     }
 
-    private void deleteExpiredTaskDetails(Meta meta, long expiredTime) {
-        String shardId = metaProfile.resolveTaskDetailShardId(meta);
-        deleteExpiredTaskDetailsByShard(shardId, expiredTime);
-        if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
-            deleteExpiredTaskDetailsByShard(meta.getId(), expiredTime);
-        }
-    }
-
-    private void deleteExpiredTaskDetailsByShard(String shardId, long expiredTime) {
+    private void deleteExpiredTaskDetailsByShard(String taskId, long expiredTime) {
         Query query = new Query();
         query.setType(StorageEnum.TASK_DETAIL);
-        query.setTaskId(shardId);
+        query.setTaskId(taskId);
         query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
         storageService.delete(query);
     }

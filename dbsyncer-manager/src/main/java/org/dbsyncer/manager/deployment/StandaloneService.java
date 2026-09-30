@@ -49,7 +49,7 @@ public final class StandaloneService implements ClusterService {
 
     @Override
     public void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
-        result.setMetaId(task.getId());
+        result.setTaskId(task.getId());
         result.setEvent(ConnectorConstant.OPERTION_INSERT);
         flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
         if (!task.isSkipTableProgressEvent()) {

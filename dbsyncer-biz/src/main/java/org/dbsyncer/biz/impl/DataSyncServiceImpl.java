@@ -201,7 +201,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         Meta meta = metaProfile.getMeta(taskId);
         Assert.notNull(meta, "Meta can not be null.");
         // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
-        metaProfile.incrementMeta(MetaIncrement.of(meta.getId()).fail(-1L));
+        metaProfile.incrementMeta(MetaIncrement.of(taskId).fail(-1L));
         return messageId;
     }
 

@@ -64,7 +64,7 @@ public class MySQLStorageService extends AbstractStorageService {
     private final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
     private final String DROP_TABLE = "DROP TABLE IF EXISTS %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
-    private final String QUERY_INDEX_EXISTS ="SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?";
+    private final String QUERY_INDEX_EXISTS = "SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?";
     private final MySQLConnector connector = new MySQLConnector();
     private final Map<String, Executor> tables = new ConcurrentHashMap<>();
     private DatabaseConnectorInstance connectorInstance;
@@ -309,7 +309,7 @@ public class MySQLStorageService extends AbstractStorageService {
             sql.append(", ").append(connector.buildWithQuotation(updateTimeColumn)).append(" = ?");
             args.add(System.currentTimeMillis());
         }
-        sql.append(" WHERE ").append(connector.buildWithQuotation(ConfigConstant.CONFIG_MODEL_ID.toUpperCase())).append(" = ?");
+        sql.append(" WHERE ").append(connector.buildWithQuotation(ConfigConstant.TABLE_GROUP_TASK_ID.toUpperCase())).append(" = ?");
         args.add(id);
         final List<Object[]> batchArgs = new ArrayList<>();
         batchArgs.add(args.toArray());
