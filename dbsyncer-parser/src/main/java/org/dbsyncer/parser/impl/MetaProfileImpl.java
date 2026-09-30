@@ -190,14 +190,14 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
 
     @Override
     public void incrementMeta(MetaIncrement increment) {
-        if (increment == null || StringUtil.isBlank(increment.getMetaId())) {
+        if (increment == null || StringUtil.isBlank(increment.getTaskId())) {
             return;
         }
         Map<String, Long> deltas = increment.toDeltaMap();
         if (deltas.isEmpty()) {
             return;
         }
-        storageService.increment(StorageEnum.META, increment.getMetaId(), deltas);
+        storageService.increment(StorageEnum.META, increment.getTaskId(), deltas);
     }
 
     @Override
@@ -228,29 +228,6 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
             storageService.delete(query);
         });
 
-    }
-
-    @Override
-    public String resolveTaskDetailShardId(Meta meta) {
-        if (meta == null) {
-            return null;
-        }
-        if (meta.isTaskDetail()) {
-            throw new ParserException("明细分表分片键须使用任务级 Meta，不能传入表级 Meta");
-        }
-        return StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : meta.getId();
-    }
-
-    @Override
-    public String resolveTaskDetailShardId(String metaId) {
-        if (StringUtil.isBlank(metaId)) {
-            return metaId;
-        }
-        Meta meta = getMeta(metaId);
-        if (meta != null) {
-            return resolveTaskDetailShardId(meta);
-        }
-        return metaId;
     }
 
     @Override
@@ -387,7 +364,7 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
         if (total == 0L && success == 0L && fail == 0L && diff == 0L && fixed == 0L) {
             return;
         }
-        incrementMeta(MetaIncrement.of(meta.getId())
+        incrementMeta(MetaIncrement.of(meta.getTaskId())
                 .total(-total)
                 .success(-success)
                 .fail(-fail)

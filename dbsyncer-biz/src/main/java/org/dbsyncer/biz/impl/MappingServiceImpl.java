@@ -221,10 +221,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Meta meta = metaProfile.getMeta(taskId);
         synchronized (LOCK) {
             assertRunning(taskId);
-            // 删除数据
-            monitorService.clearData(taskId);
             log(LogType.MetaLog.CLEAR, meta);
-
             // 条件删除 table_group + 明细 Meta，并清运行结果
             mappingProfile.clearRunData(id);
             tableGroupProfile.removeTableGroupsByTaskId(id);

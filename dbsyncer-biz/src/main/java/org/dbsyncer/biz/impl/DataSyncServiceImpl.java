@@ -208,7 +208,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         Assert.notNull(meta, "Meta can not be null.");
         storageService.remove(StorageEnum.TASK_DETAIL, taskId, messageId);
         // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
-        metaProfile.incrementMeta(MetaIncrement.of(metaId).fail(-1L));
+        metaProfile.incrementMeta(MetaIncrement.of(taskId).fail(-1L));
         return messageId;
     }
 

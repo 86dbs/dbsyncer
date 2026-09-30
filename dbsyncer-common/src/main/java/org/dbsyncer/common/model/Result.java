@@ -33,7 +33,7 @@ public class Result<T> {
     /**
      * 同步任务metaId
      */
-    private String metaId;
+    private String taskId;
 
     /**
      * 事件
@@ -95,12 +95,12 @@ public class Result<T> {
         this.targetTableGroupName = targetTableGroupName;
     }
 
-    public String getMetaId() {
-        return metaId;
+    public String getTaskId() {
+        return taskId;
     }
 
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 
     public String getEvent() {

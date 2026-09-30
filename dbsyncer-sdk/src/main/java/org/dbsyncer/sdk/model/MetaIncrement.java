@@ -18,22 +18,34 @@ import java.util.Map;
  */
 public class MetaIncrement {
 
-    /** 元数据ID */
-    private String metaId;
-    /** 总量增量 */
+    /**
+     * 元数据ID
+     */
+    private String taskId;
+    /**
+     * 总量增量
+     */
     private long totalDelta;
-    /** 成功数量增量 */
+    /**
+     * 成功数量增量
+     */
     private long successDelta;
-    /** 失败数量增量 */
+    /**
+     * 失败数量增量
+     */
     private long failDelta;
-    /** 差异数量增量 */
+    /**
+     * 差异数量增量
+     */
     private long diffDelta;
-    /** 修复数量增量 */
+    /**
+     * 修复数量增量
+     */
     private long fixedDelta;
 
-    public static MetaIncrement of(String metaId) {
+    public static MetaIncrement of(String taskId) {
         MetaIncrement increment = new MetaIncrement();
-        increment.metaId = metaId;
+        increment.taskId = taskId;
         return increment;
     }
 
@@ -62,12 +74,12 @@ public class MetaIncrement {
         return this;
     }
 
-    public String getMetaId() {
-        return metaId;
+    public String getTaskId() {
+        return taskId;
     }
 
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 
     public long getTotalDelta() {
@@ -110,7 +122,7 @@ public class MetaIncrement {
         this.fixedDelta = fixedDelta;
     }
 
-     /**
+    /**
      * 转为存储增量 Map：key 与 {@link ConfigConstant} Meta 列名一致（total/success/fail/diff/fixed），值为 0 的项不入表。
      *
      * @return 非空增量；全为 0 时返回空 Map

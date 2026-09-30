@@ -4,7 +4,6 @@
 package org.dbsyncer.biz.task;
 
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
@@ -111,7 +110,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         if (delta == 0L) {
             return;
         }
-        metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).total(delta));
+        metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).total(delta));
     }
 
     protected boolean shouldStop(String mappingId) {
