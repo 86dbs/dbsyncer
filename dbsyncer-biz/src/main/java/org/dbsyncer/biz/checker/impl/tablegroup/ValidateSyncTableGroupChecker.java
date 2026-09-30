@@ -3,11 +3,11 @@
  */
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
-import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
@@ -16,7 +16,6 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
-import org.dbsyncer.sdk.spi.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,7 +39,7 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private TaskService<ValidateSyncTask> taskService;
+    private ValidateSyncProfile validateSyncProfile;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -58,7 +57,7 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
         Assert.hasText(sourceType, "tableGroup sourceType is empty.");
         Assert.hasText(targetType, "tableGroup targetType is empty.");
-        ValidateSyncTask task = taskService.get(taskId, CommonTaskTypeEnum.VALIDATE_SYNC);
+        ValidateSyncTask task = validateSyncProfile.get(taskId);
         Assert.notNull(task, "task can not be null.");
 
         // 检查是否存在重复映射关系

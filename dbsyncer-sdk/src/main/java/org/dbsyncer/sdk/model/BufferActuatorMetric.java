@@ -53,7 +53,6 @@ public class BufferActuatorMetric {
     /**
      * 写线程池已完成任务数
      */
-
     private long completedTaskCount;
 
     public String getName() {

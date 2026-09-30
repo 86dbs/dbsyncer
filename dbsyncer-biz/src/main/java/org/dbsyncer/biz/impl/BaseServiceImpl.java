@@ -54,11 +54,6 @@ public class BaseServiceImpl {
         }
     }
 
-    protected void assertRunning(Mapping mapping) {
-        Assert.notNull(mapping, "mapping can not be null.");
-        assertRunning(mapping.getMetaId());
-    }
-
     protected void log(LogType log, ConfigModel model) {
         if (null != model) {
             // 新增连接器:知识库

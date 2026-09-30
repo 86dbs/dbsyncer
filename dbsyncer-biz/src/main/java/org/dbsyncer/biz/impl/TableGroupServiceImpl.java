@@ -66,7 +66,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String add(Map<String, String> params) {
         String mappingId = params.get("mappingId");
         Mapping mapping = mappingProfile.get(mappingId);
-        assertRunning(mapping);
+        assertRunning(mapping.getId());
 
         synchronized (LOCK) {
             // table1, table2
@@ -106,7 +106,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
         Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
-        assertRunning(mapping);
+        assertRunning(mapping.getId());
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
@@ -131,7 +131,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
         Mapping mapping = mappingProfile.get(mappingId);
-        assertRunning(mapping);
+        assertRunning(mapping.getId());
 
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {

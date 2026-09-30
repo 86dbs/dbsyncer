@@ -5,7 +5,6 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
@@ -107,9 +106,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private MonitorService monitorService;
-
-    @Resource
     private DispatchTaskService dispatchTaskService;
 
     @Resource
@@ -198,8 +194,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
-            Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
+            assertRunning(mapping.getId());
+            Mapping model = mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             mappingProfile.clearRunData(id);
             metaProfile.reset(id);
@@ -224,7 +220,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MetaLog.CLEAR, meta);
             // 条件删除 table_group + 明细 Meta，并清运行结果
             mappingProfile.clearRunData(id);
-            tableGroupProfile.removeTableGroupsByTaskId(id);
+            tableGroupProfile.removeTableGroupsByTaskId(taskId);
 
             // 删除任务级 meta
             metaProfile.removeMeta(taskId);

@@ -6,6 +6,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.checker.impl.connector.ConnectorChecker;
+import org.dbsyncer.common.enums.YesNoEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -112,7 +113,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         if (connector.isTarget()) {
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, "1");
         }
-
         Connector model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);
 
@@ -233,6 +233,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     public Paging<Connector> search(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        int relationOnly = NumberUtil.toInt(params.get("relationOnly"), 0);
         String searchKey = params.get("searchKey");
         // 过滤源库或目标库类型
         String role = params.get("role");
@@ -241,7 +242,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
             return null;
         }
         // 整库迁移场景，暂仅支持关系性数据库
-        if (StringUtil.equals("1", params.get("relationOnly")) && !CollectionUtils.isEmpty(paging.getData())) {
+        if (YesNoEnum.YES.getCode() == relationOnly && !CollectionUtils.isEmpty(paging.getData())) {
             paging.setData(paging.getData().stream().filter(this::isRelationalDatabaseConnector).collect(Collectors.toList()));
         }
         return paging;
@@ -282,11 +283,11 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
      * 健康状态变化时回写连接器 {@code STATUS}（含 JSON），未变化则跳过，避免每拍写库。
      */
     private void persistStatusIfChanged(Connector connector, boolean alive) {
-        int newStatus = alive ? 1 : 0;
-        if (connector.getStatus() == newStatus) {
+        YesNoEnum newStatus = YesNoEnum.of(alive);
+        if (connector.getStatus() == newStatus.getCode()) {
             return;
         }
-        connector.setStatus(newStatus);
+        connector.setStatus(newStatus.getCode());
         connector.setUpdateTime(System.currentTimeMillis());
         try {
             connectorProfile.updateConnector(connector);

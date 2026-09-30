@@ -84,11 +84,6 @@ public interface DatabaseSyncService {
     TablePreviewVO previewTables(Map<String, String> params);
 
     /**
-     * 全部任务（详情页任务下拉）
-     */
-    List<DatabaseSyncTaskVO> getAll();
-
-    /**
      * 分页查询迁移结果明细
      */
     Paging searchResult(Map<String, String> params);

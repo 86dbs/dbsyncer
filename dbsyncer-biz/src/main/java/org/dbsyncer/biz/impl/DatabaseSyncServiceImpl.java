@@ -42,7 +42,6 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
-import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.util.DatabaseSyncProgressUtil;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -62,7 +61,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -97,9 +95,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private TaskService<DatabaseSyncTask> taskService;
-
-    @Resource
     private ClusterService clusterService;
 
     @Resource
@@ -110,7 +105,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
-        DatabaseSyncTask task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
+        DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
         return convertTask2Vo(task);
     }
@@ -134,12 +129,12 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillTaskOnAdd(task, params);
         task.setDatabaseMappings(toPersistMappings(mappings));
         // 任务需先落库（含任务级 Meta）才能按 taskId 建连与写 table_group；失败则整单回滚
-        String taskId = taskService.add(task);
+        String taskId = databaseSyncProfile.add(task);
         try {
             tableGroupProfile.addTableGroupBatch(buildTableGroups(taskId, mappings));
         } catch (Exception e) {
             try {
-                taskService.delete(taskId);
+                databaseSyncProfile.delete(taskId);
             } catch (Exception cleanupEx) {
                 logger.error("整库迁移任务创建失败后回滚删除失败: id={}", taskId, cleanupEx);
             }
@@ -156,9 +151,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String edit(Map<String, String> params) {
         String id = params.get("id");
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
+        DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
-        if (taskService.isRunning(id)) {
+        Meta taskMeta = metaProfile.getMeta(id);
+        if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             throw new BizException("任务正在运行，请先停止");
         }
         List<DatabaseMappingVO> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
@@ -185,7 +181,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
         databaseSyncProfile.clearRunData(id);
         metaProfile.reset(id);
-        String editedId = taskService.edit(task);
+        String editedId = databaseSyncProfile.update(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
         databaseSyncDetailService.syncTaskTableMetaDetails(editedId);
         return editedId;
@@ -210,17 +206,18 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        if (taskService.isRunning(id)) {
+        Meta taskMeta = metaProfile.getMeta(id);
+        if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
             throw new BizException("任务正在运行，请先停止");
         }
-        taskService.delete(id);
+        databaseSyncProfile.delete(id);
         return "删除成功";
     }
 
     @Override
     public String start(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
+        DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
         if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             throw new BizException("任务未配置库映射，无法启动");
@@ -235,7 +232,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String stop(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        ConfigModel task = taskService.get(id, CommonTaskTypeEnum.DATABASE_SYNC);
+        ConfigModel task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
         Meta taskMeta = metaProfile.getMeta(id);
         if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
@@ -249,7 +246,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Override
     public Paging<DatabaseSyncTaskVO> search(Map<String, String> params) {
-        Paging paging = taskService.search(params, CommonTaskTypeEnum.DATABASE_SYNC);
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String searchKey = params.get("searchKey");
+        Paging paging = databaseSyncProfile.query(pageNum, pageSize, searchKey);
         Collection data = paging.getData();
         if (CollectionUtils.isEmpty(data)) {
             return paging;
@@ -290,15 +290,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         });
         paging.setData(list);
         return paging;
-    }
-
-    @Override
-    public List<DatabaseSyncTaskVO> getAll() {
-        return taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC).stream()
-                .filter(Objects::nonNull)
-                .map(this::convertTask2Vo)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
     }
 
     @Override

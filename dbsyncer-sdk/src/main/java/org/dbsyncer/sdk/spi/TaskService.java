@@ -16,6 +16,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2025-05-12 23:36
  */
+@Deprecated
 public interface TaskService<T extends ConfigModel> {
 
     /**

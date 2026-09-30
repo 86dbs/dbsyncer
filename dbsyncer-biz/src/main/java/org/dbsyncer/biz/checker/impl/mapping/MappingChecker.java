@@ -97,7 +97,7 @@ public class MappingChecker extends AbstractChecker {
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public Mapping checkEditConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
