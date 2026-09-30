@@ -73,7 +73,15 @@ public final class MetaProfileImpl extends AbstractConfigModelProfile<Meta> impl
             if (again != null) {
                 return again;
             }
-            Meta newMeta = getMeta(taskId);
+
+            Query query = new Query();
+            query.setType(StorageEnum.META);
+            query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
+            Map row = storageService.queryObject(query);
+            if (CollectionUtils.isEmpty(row)) {
+                return null;
+            }
+            Meta newMeta = ConfigModelUtil.parseFromRow(row, Meta.class);
             if (newMeta != null) {
                 cacheService.put(cacheKey, newMeta, EXPIRED_1_HOURS);
             }

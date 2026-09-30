@@ -309,7 +309,8 @@ public class MySQLStorageService extends AbstractStorageService {
             sql.append(", ").append(connector.buildWithQuotation(updateTimeColumn)).append(" = ?");
             args.add(System.currentTimeMillis());
         }
-        sql.append(" WHERE ").append(connector.buildWithQuotation(ConfigConstant.TABLE_GROUP_TASK_ID.toUpperCase())).append(" = ?");
+        String taskId = resolveColumn(executor, ConfigConstant.TABLE_GROUP_TASK_ID);
+        sql.append(" WHERE ").append(connector.buildWithQuotation(taskId)).append(" = ?");
         args.add(id);
         final List<Object[]> batchArgs = new ArrayList<>();
         batchArgs.add(args.toArray());
