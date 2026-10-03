@@ -113,6 +113,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Resource
     private IncrementRecoveryConfig incrementRecoveryConfig;
 
+    @Resource
+    private ParserConsumer parserConsumer;
+
     private final Map<String, Listener> map = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -128,7 +131,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Override
     public void start(Mapping mapping, boolean autoRecovery) {
         final String mappingId = mapping.getId();
-//        final String metaId = mapping.getMetaId();
         Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
         Connector targetConnector = connectorProfile.getConnector(mapping.getTargetConnectorId());
@@ -272,8 +274,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, taskMetaProfile, pluginFactory, logService, meta.getId(),
-                list, mapping.getChannelSize()));
+        ParserConsumer consumer = parserConsumer.clone();
+        consumer.build(meta.getTaskId(), list, mapping.getChannelSize());
+        listener.register(consumer);
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {

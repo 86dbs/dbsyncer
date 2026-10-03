@@ -15,7 +15,9 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.QuartzListenerContext;
 import org.dbsyncer.sdk.listener.Watcher;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,21 +27,24 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2023-11-12 01:32
  */
-public final class ParserConsumer implements Watcher {
+@Component
+public final class ParserConsumer implements Watcher, Cloneable {
 
-    private final BufferActuatorRouterService bufferActuatorRouter;
-    private final TaskMetaProfile taskMetaProfile;
-    private final PluginFactory pluginFactory;
-    private final LogService logService;
-    private final String taskId;
+    @Resource
+    private BufferActuatorRouterService bufferActuatorRouter;
 
-    public ParserConsumer(BufferActuatorRouterService bufferActuatorRouter, TaskMetaProfile taskMetaProfile,
-                          PluginFactory pluginFactory, LogService logService, String taskId,
-                          List<TableGroup> tableGroups, int channelSize) {
-        this.bufferActuatorRouter = bufferActuatorRouter;
-        this.taskMetaProfile = taskMetaProfile;
-        this.pluginFactory = pluginFactory;
-        this.logService = logService;
+    @Resource
+    private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private PluginFactory pluginFactory;
+
+    @Resource
+    private LogService logService;
+
+    private String taskId;
+
+    public void build(String taskId, List<TableGroup> tableGroups, int channelSize) {
         this.taskId = taskId;
         bufferActuatorRouter.bind(taskId, extractSourceTableNames(tableGroups), channelSize);
     }
@@ -72,6 +77,15 @@ public final class ParserConsumer implements Watcher {
     public long getMetaUpdateTime() {
         Meta meta = taskMetaProfile.getMeta(taskId);
         return meta != null ? meta.getUpdateTime() : 0L;
+    }
+
+    @Override
+    public ParserConsumer clone() {
+        try {
+            return (ParserConsumer) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 
     private List<String> extractSourceTableNames(List<TableGroup> tableGroups) {

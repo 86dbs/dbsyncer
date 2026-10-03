@@ -6,13 +6,12 @@ package org.dbsyncer.biz.task;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.common.enums.DispatchTaskEnum;
-import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
-import org.dbsyncer.sdk.spi.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,10 +36,10 @@ public final class ValidateSyncMatchTableTask extends AbstractDispatchTask {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private TaskService<ValidateSyncTask> taskService;
+    private ValidateSyncService validateSyncService;
 
     @Resource
-    private ValidateSyncService validateSyncService;
+    private ValidateSyncProfile validateSyncProfile;
 
     private String taskId;
 
@@ -56,7 +55,7 @@ public final class ValidateSyncMatchTableTask extends AbstractDispatchTask {
 
     @Override
     public void execute() {
-        ValidateSyncTask task = taskService.get(taskId, CommonTaskTypeEnum.VALIDATE_SYNC);
+        ValidateSyncTask task = validateSyncProfile.get(taskId);
         if (task == null) {
             logger.warn("ValidateSyncTask not found, skip match table, taskId={}", taskId);
             return;

@@ -20,6 +20,7 @@ import org.dbsyncer.biz.vo.LogVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.enums.YesNoEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -30,8 +31,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -89,16 +88,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private MappingProfile mappingProfile;
 
     @Resource
-    private TableGroupProfile tableGroupProfile;
-
-    @Resource
     private ScheduledTaskService scheduledTaskService;
 
     @Resource
     private StorageService storageService;
-
-    @Resource
-    private TaskDetailProfile taskDetailProfile;
 
     @Resource
     private LogService logService;
@@ -334,7 +327,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             // 采集连接离线状态
             ConnectorOfflineContent content = new ConnectorOfflineContent();
             connectorConfigService.getConnectorAll().forEach(connector -> {
-                if (connector.getStatus() != 1) {
+                if (connector.getStatus() != YesNoEnum.YES.getCode()) {
                     ConnectorOfflineContent.ErrorItem item = new ConnectorOfflineContent.ErrorItem();
                     item.setName(connector.getName());
                     item.setType(connector.getConfig().getConnectorType());

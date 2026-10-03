@@ -8,7 +8,6 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.model.Table;
 
-import java.util.List;
 import java.util.Map;
 
 public interface ValidateSyncService {
@@ -90,13 +89,6 @@ public interface ValidateSyncService {
      *
      */
     String refreshFields(String id);
-
-    /**
-     * 获取所有任务列表（用于下拉选择）
-     *
-     * @return 任务VO列表
-     */
-    List<ValidateSyncTaskVO> getAll();
 
     /**
      * 分页查询校验结果明细

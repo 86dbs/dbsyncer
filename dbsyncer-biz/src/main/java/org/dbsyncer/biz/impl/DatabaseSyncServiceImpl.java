@@ -75,7 +75,7 @@ import java.util.stream.Collectors;
  * @date 2026-05-22 00:00
  */
 @Service
-public class DatabaseSyncServiceImpl implements DatabaseSyncService {
+public class DatabaseSyncServiceImpl extends BaseServiceImpl implements DatabaseSyncService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -144,7 +144,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException(e.getMessage(), e);
         }
         // 预建明细分表并对齐明细行，详情页 JOIN 查询不依赖任务是否已写出数据
-//        databaseSyncProfile.createRunDetailTable(taskId);
         databaseSyncProfile.syncTaskTableMetaDetails(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
@@ -156,10 +155,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Assert.hasText(id, "任务 ID 不能为空");
         DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
-        Meta taskMeta = taskMetaProfile.getMeta(id);
-        if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
-            throw new BizException("任务正在运行，请先停止");
-        }
+        assertRunning(task.getId());
         List<DatabaseMappingVO> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
         checkDatabaseMapping(mappings);
         if (CollectionUtils.isEmpty(mappings)) {
@@ -209,10 +205,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        Meta taskMeta = taskMetaProfile.getMeta(id);
-        if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
-            throw new BizException("任务正在运行，请先停止");
-        }
+        assertRunning(id);
         databaseSyncProfile.delete(id);
         return "删除成功";
     }

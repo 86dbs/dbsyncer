@@ -7,8 +7,6 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.model.Table;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -19,8 +17,6 @@ import java.util.Map;
  * @date 2022/6/30 16:00
  */
 public abstract class AbstractPluginContext extends AbstractBaseContext implements PluginContext, Cloneable {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 是否终止任务

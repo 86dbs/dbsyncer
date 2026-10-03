@@ -373,7 +373,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
             clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
             log(LogType.MappingLog.STOP, mapping);
-            // 发送关闭驱动通知消息
+            // 发送关闭通知消息
             MappingStopContent content = new MappingStopContent();
             content.setTitle("手动停止同步任务");
             content.setName(mapping.getName());
