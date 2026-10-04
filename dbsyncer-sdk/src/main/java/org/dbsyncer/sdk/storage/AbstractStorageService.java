@@ -110,9 +110,9 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void clear(StorageEnum type, String metaId) {
+    public void clear(StorageEnum type, String taskId) {
         try {
-            String sharding = getSharding(type, metaId);
+            String sharding = getSharding(type, taskId);
             deleteAll(sharding);
             // 动态明细分表：清空后预建空表，避免详情 JOIN 查询报 Table not found
             if (type == StorageEnum.TASK_DETAIL) {
@@ -137,14 +137,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void add(StorageEnum type, String metaId, Map params) {
-        addBatch(type, metaId, newArrayList(params));
+    public void add(StorageEnum type, String taskId, Map params) {
+        addBatch(type, taskId, newArrayList(params));
     }
 
     @Override
-    public void addBatch(StorageEnum type, String metaId, List<Map> list) {
+    public void addBatch(StorageEnum type, String taskId, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
-            batchInsert(type, getSharding(type, metaId), list);
+            batchInsert(type, getSharding(type, taskId), list);
         }
     }
 
@@ -154,14 +154,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void edit(StorageEnum type, String metaId, Map params) {
-        editBatch(type, metaId, newArrayList(params));
+    public void edit(StorageEnum type, String taskId, Map params) {
+        editBatch(type, taskId, newArrayList(params));
     }
 
     @Override
-    public void editBatch(StorageEnum type, String metaId, List<Map> list) {
+    public void editBatch(StorageEnum type, String taskId, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
-            batchUpdate(type, getSharding(type, metaId), list);
+            batchUpdate(type, getSharding(type, taskId), list);
         }
     }
 
@@ -171,14 +171,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void remove(StorageEnum type, String metaId, String id) {
-        removeBatch(type, metaId, newArrayList(id));
+    public void remove(StorageEnum type, String taskId, String id) {
+        removeBatch(type, taskId, newArrayList(id));
     }
 
     @Override
-    public void removeBatch(StorageEnum type, String metaId, List<String> ids) {
+    public void removeBatch(StorageEnum type, String taskId, List<String> ids) {
         if (!CollectionUtils.isEmpty(ids)) {
-            batchDelete(type, getSharding(type, metaId), ids);
+            batchDelete(type, getSharding(type, taskId), ids);
         }
     }
 

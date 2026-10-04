@@ -144,7 +144,7 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Override
     public void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor) {
-        final String metaId = task.getId();
+        final String taskId = task.getId();
         final String sourceConnectorId = mapping.getSourceConnectorId();
         final String targetConnectorId = mapping.getTargetConnectorId();
 
@@ -191,7 +191,7 @@ public class ParserComponentImpl implements ParserComponent {
 
         for (; ; ) {
             if (!task.isRunning()) {
-                logger.warn("任务被中止:{}", metaId);
+                logger.warn("任务被中止:{}", taskId);
                 break;
             }
 
@@ -202,7 +202,7 @@ public class ParserComponentImpl implements ParserComponent {
             Result reader = connectorFactory.reader(context);
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
-                logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
+                logger.info("完成全量同步任务:{}, [{}] >> [{}]", taskId, sTableName, tTableName);
                 break;
             }
             // 分页 SQL 无结束上界，本页可能越过 endCursors；必须先截断再写，否则 success 会超过片预算

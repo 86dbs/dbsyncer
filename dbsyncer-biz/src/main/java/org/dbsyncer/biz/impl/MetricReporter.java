@@ -120,14 +120,14 @@ public class MetricReporter implements ScheduledTaskJob {
         return list.stream().map(MetricResponseInfo::getResponse).collect(Collectors.toList());
     }
 
-    public Paging<MetricResponse> queryActuator(String searchMetaId, String searchKey, int pageNum, int pageSize) {
+    public Paging<MetricResponse> queryActuator(String taskId, String searchKey, int pageNum, int pageSize) {
         Paging<MetricResponse> paging = new Paging<>(pageNum, pageSize);
         List<BufferActuatorMetric> metrics = bufferActuatorRouter.listMetrics();
         if (!CollectionUtils.isEmpty(metrics)) {
             List<MetricResponseInfo> tableList = new ArrayList<>();
             String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
             for (BufferActuatorMetric metric : metrics) {
-                if (StringUtil.isNotBlank(searchMetaId) && !StringUtil.equals(searchMetaId, metric.getTaskId())) {
+                if (StringUtil.isNotBlank(taskId) && !StringUtil.equals(taskId, metric.getTaskId())) {
                     continue;
                 }
                 if (StringUtil.isNotBlank(searchKey) && !StringUtil.contains(metric.getName(), searchKey)) {

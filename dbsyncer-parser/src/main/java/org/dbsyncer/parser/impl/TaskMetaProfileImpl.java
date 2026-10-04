@@ -209,11 +209,11 @@ public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> 
     }
 
     @Override
-    public void updateMetaProgress(String metaId, int state, Map<String, String> snapshot) {
-        if (StringUtil.isBlank(metaId)) {
+    public void updateMetaProgress(String taskId, int state, Map<String, String> snapshot) {
+        if (StringUtil.isBlank(taskId)) {
             return;
         }
-        Meta meta = getMeta(metaId);
+        Meta meta = getMeta(taskId);
         if (meta == null) {
             return;
         }

@@ -67,7 +67,7 @@ public interface TaskMetaProfile {
     /**
      * 更新 Meta 进度
      */
-    void updateMetaProgress(String metaId, int state, Map<String, String> snapshot);
+    void updateMetaProgress(String taskId, int state, Map<String, String> snapshot);
 
     /**
      * 添加 Meta。

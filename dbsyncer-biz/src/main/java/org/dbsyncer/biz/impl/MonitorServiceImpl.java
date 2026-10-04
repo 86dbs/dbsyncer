@@ -275,9 +275,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     public Paging<MetricResponse> queryActuator(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
-        String metaId = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        String taskId = params.get(ConfigConstant.CONFIG_MODEL_ID);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
-        return metricReporter.queryActuator(metaId, name, pageNum, pageSize);
+        return metricReporter.queryActuator(taskId, name, pageNum, pageSize);
     }
 
     @Override

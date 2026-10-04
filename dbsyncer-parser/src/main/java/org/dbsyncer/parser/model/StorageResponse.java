@@ -12,7 +12,6 @@ import java.util.Map;
 
 /**
  * 明细分表批量写入响应。
- * <p>{@code taskDetailShardId} 为任务 ID；{@link #getMetaId()}/{@link #setMetaId(String)} 为兼容别名。
  *
  * @author AE86
  * @version 1.0.0
@@ -25,20 +24,6 @@ public class StorageResponse implements BufferResponse {
      */
     private String taskDetailShardId;
     private List<Map> dataList = new LinkedList<>();
-
-    /**
-     * BufferRequest 兼容：返回明细分表分片键（任务 ID）。
-     */
-    public String getMetaId() {
-        return taskDetailShardId;
-    }
-
-    /**
-     * BufferRequest 兼容：设置明细分表分片键（任务 ID）。
-     */
-    public void setMetaId(String taskDetailShardId) {
-        this.taskDetailShardId = taskDetailShardId;
-    }
 
     public String getTaskDetailShardId() {
         return taskDetailShardId;

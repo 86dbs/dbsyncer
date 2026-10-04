@@ -806,11 +806,7 @@ function renderLicenseProductList($dropdownMenu, $productDivider, products) {
     $productDivider.removeClass("hidden");
 }
 
-// ******************* 驱动表格展示内容 ***************************
-function showMappingError(metaId){
-    // 兼容旧调用：失败明细已迁移到同步任务详情
-    doLoader('/mapping/list');
-}
+// ******************* 同步任务表格展示内容 ***************************
 
 function getStateConfig(mappingId) {
     return {

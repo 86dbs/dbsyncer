@@ -15,8 +15,8 @@ function showMessageDetail($message, icon, title) {
 }
 
 // 打开重试页面
-function showRetryDetail(metaId, messageId) {
-    doLoader("/monitor/page/retry?metaId=" + metaId + "&messageId=" + messageId);
+function showRetryDetail(taskId, messageId) {
+    doLoader("/monitor/page/retry?taskId=" + taskId + "&messageId=" + messageId);
 }
 
 // 将 JSON 对象转换为表格 HTML

@@ -31,7 +31,6 @@ public class Query {
 
     /**
      * 存储分片键。对 {@link StorageEnum#TASK_DETAIL} 为任务 ID（{@code dbsyncer_task_detail_{taskId}}）；
-     * 历史字段名 metaId 仍保留兼容，语义上等同 {@link #getTaskDetailShardId()} / {@link #setTaskDetailShardId(String)}。
      */
     private String taskId;
 

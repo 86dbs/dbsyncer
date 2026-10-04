@@ -240,7 +240,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
     }
 
-    private Object metaLock(String metaId) {
-        return MetaLockUtil.lock(metaId);
+    private Object metaLock(String taskId) {
+        return MetaLockUtil.lock(taskId);
     }
 }

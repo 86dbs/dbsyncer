@@ -14,15 +14,10 @@ public final class ClosedEvent extends ApplicationContextEvent {
 
     private final String taskId;
 
-    public ClosedEvent(ApplicationContext source, String metaId) {
+    public ClosedEvent(ApplicationContext source, String taskId) {
         super(source);
-        this.taskId = metaId;
+        this.taskId = taskId;
     }
-
-//    public String getMetaId() {
-//        return metaId;
-//    }
-//
 
     public String getTaskId() {
         return taskId;

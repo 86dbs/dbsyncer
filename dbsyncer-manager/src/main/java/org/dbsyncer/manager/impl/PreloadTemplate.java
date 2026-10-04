@@ -247,7 +247,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                         changeMetaState(meta.getId(), CommonTaskStatusEnum.READY);
                     }
                 } catch (Exception e) {
-                    logger.error("恢复同步驱动失败, metaId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
+                    logger.error("恢复同步驱动失败, taskId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
                 }
             }
         });
@@ -353,8 +353,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
     }
 
-    private void changeMetaState(String metaId, CommonTaskStatusEnum status) {
-        Meta meta = taskMetaProfile.getMeta(metaId);
+    private void changeMetaState(String taskId, CommonTaskStatusEnum status) {
+        Meta meta = taskMetaProfile.getMeta(taskId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
             long now = Instant.now().toEpochMilli();

@@ -311,7 +311,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             try {
                 rows.add(convertMapping2Vo(mapping));
             } catch (Exception e) {
-                logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, metaId:{}, error:{}",
+                logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, taskId:{}, error:{}",
                         mapping.getId(), mapping.getName(), mapping.getId(), e.getMessage());
             }
         }
@@ -558,9 +558,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notNull(mapping, "Mapping can not be null.");
         String model = mapping.getModel();
 
-        // 元信息（历史数据可能出现 mapping.metaId 悬空，列表不应整页失败）
         Meta meta = resolveMappingMeta(mapping);
-        Assert.notNull(meta, String.format("Meta can not be null. mappingId:%s, metaId:%s", mapping.getId(), mapping.getId()));
+        Assert.notNull(meta, String.format("Meta can not be null. mappingId:%s, taskId:%s", mapping.getId(), mapping.getId()));
         MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
@@ -576,7 +575,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     /**
-     * 获取同步任务任务级 Meta；若 metaId 悬空则重建并回写 mapping。
+     * 获取同步任务任务级 Meta
      */
     private Meta resolveMappingMeta(Mapping mapping) {
         Meta meta = taskMetaProfile.getMeta(mapping.getId());

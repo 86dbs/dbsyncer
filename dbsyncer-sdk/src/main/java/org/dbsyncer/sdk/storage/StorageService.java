@@ -43,7 +43,7 @@ public interface StorageService {
     /**
      * 清空数据/日志
      */
-    void clear(StorageEnum type, String metaId);
+    void clear(StorageEnum type, String taskId);
     
     /**
      * 添加
@@ -53,12 +53,12 @@ public interface StorageService {
     /**
      * 添加
      */
-    void add(StorageEnum type, String metaId, Map params);
+    void add(StorageEnum type, String taskId, Map params);
 
     /**
      * 批量添加
      */
-    void addBatch(StorageEnum type, String metaId, List<Map> list);
+    void addBatch(StorageEnum type, String taskId, List<Map> list);
 
     /**
      * 修改
@@ -68,12 +68,12 @@ public interface StorageService {
     /**
      * 修改
      */
-    void edit(StorageEnum type, String metaId, Map params);
+    void edit(StorageEnum type, String taskId, Map params);
 
     /**
      * 批量修改
      */
-    void editBatch(StorageEnum type, String metaId, List<Map> list);
+    void editBatch(StorageEnum type, String taskId, List<Map> list);
 
     /**
      * 删除
@@ -83,12 +83,12 @@ public interface StorageService {
     /**
      * 删除
      */
-    void remove(StorageEnum type, String metaId, String id);
+    void remove(StorageEnum type, String taskId, String id);
 
     /**
      * 批量删除
      */
-    void removeBatch(StorageEnum type, String metaId, List<String> ids);
+    void removeBatch(StorageEnum type, String taskId, List<String> ids);
 
     /**
      * 原子增量更新（按列自增，如 COL = GREATEST(COL + ?, 0)），用于严格走库下的 Meta 计数；结果小于 0 时钳为 0

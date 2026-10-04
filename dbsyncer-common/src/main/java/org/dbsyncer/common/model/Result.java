@@ -31,7 +31,7 @@ public class Result<T> {
     private String targetTableGroupName;
 
     /**
-     * 同步任务metaId
+     * 同步任务ID
      */
     private String taskId;
 

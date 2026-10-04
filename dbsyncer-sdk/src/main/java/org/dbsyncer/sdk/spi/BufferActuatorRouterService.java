@@ -20,23 +20,23 @@ public interface BufferActuatorRouterService {
     /**
      * 绑定同步任务的增量执行器。
      *
-     * @param metaId           Meta ID
+     * @param taskId           同步任务ID
      * @param sourceTableNames 源表名列表
      * @param channelSize      执行器数
      */
-    void bind(String metaId, List<String> sourceTableNames, int channelSize);
+    void bind(String taskId, List<String> sourceTableNames, int channelSize);
 
     /**
      * 解绑并停止该驱动下的执行器。
      *
-     * @param taskId Meta ID
+     * @param taskId 同步任务ID
      */
     void unbind(String taskId);
 
     /**
      * 投递增量变更事件。
      *
-     * @param taskId Meta ID
+     * @param taskId 同步任务ID
      * @param event  变更事件
      */
     void execute(String taskId, ChangedEvent event);

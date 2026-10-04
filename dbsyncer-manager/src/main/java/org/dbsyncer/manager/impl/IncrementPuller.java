@@ -314,7 +314,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setSourceTable(sourceTable);
             abstractListener.setCustomTable(customTable);
             abstractListener.setSnapshot(meta.getSnapshot());
-            abstractListener.setMetaId(meta.getId());
+            abstractListener.setTaskId(meta.getId());
         }
 
         listener.init();

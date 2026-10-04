@@ -33,7 +33,7 @@ public interface MessageDecoder {
 
     void withSlotOption(ChainedLogicalStreamBuilder builder);
 
-    void setMetaId(String metaId);
+    void setTaskId(String taskId);
 
     void setConfig(DatabaseConfig config);
 

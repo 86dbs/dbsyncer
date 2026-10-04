@@ -138,7 +138,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
             worker.setName("cdc-parser-" + serverName + "_" + worker.hashCode());
             worker.setDaemon(false);
             worker.start();
-            LsnPuller.addExtractor(metaId, this);
+            LsnPuller.addExtractor(taskId, this);
         } catch (Exception e) {
             close();
             logger.error("启动失败:{}", e.getMessage());
@@ -151,7 +151,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     @Override
     public void close() {
         if (connected) {
-            LsnPuller.removeExtractor(metaId);
+            LsnPuller.removeExtractor(taskId);
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
                 worker = null;

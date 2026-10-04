@@ -14,7 +14,7 @@ public interface DataSyncService {
     /**
      * 获取同步数据
      */
-    MessageVO getMessageVo(String metaId, String messageId);
+    MessageVO getMessageVo(String taskId, String messageId);
 
     /**
      * 获取Binlog

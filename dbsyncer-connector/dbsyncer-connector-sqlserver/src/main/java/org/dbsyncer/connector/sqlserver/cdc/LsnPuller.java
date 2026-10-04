@@ -50,12 +50,12 @@ public class LsnPuller {
         worker.start();
     }
 
-    public static void addExtractor(String metaId, SqlServerListener listener) {
-        getInstance().map.put(metaId, listener);
+    public static void addExtractor(String taskId, SqlServerListener listener) {
+        getInstance().map.put(taskId, listener);
     }
 
-    public static void removeExtractor(String metaId) {
-        getInstance().map.remove(metaId);
+    public static void removeExtractor(String taskId) {
+        getInstance().map.remove(taskId);
     }
 
     final class Worker extends Thread {
