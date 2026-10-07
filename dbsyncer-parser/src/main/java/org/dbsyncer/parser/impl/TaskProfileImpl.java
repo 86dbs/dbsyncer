@@ -15,7 +15,6 @@ import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
-import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -56,9 +55,6 @@ public class TaskProfileImpl implements TaskProfile {
 
     @Resource
     private OperationTemplate operationTemplate;
-
-    @Resource
-    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TaskDetailMetaProfile taskDetailMetaProfile;

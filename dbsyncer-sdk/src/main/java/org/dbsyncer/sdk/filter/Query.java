@@ -116,20 +116,6 @@ public class Query {
         this.taskId = taskId;
     }
 
-    /**
-     * 明细分表分片键（任务 ID），与 {@link #getTaskId()} ()} 同字段。
-     */
-    public String getTaskDetailShardId() {
-        return taskId;
-    }
-
-    /**
-     * 设置明细分表分片键（任务 ID），与 {@link #setTaskId(String)} 同字段。
-     */
-    public void setTaskDetailShardId(String shardId) {
-        this.taskId = shardId;
-    }
-
     public BooleanFilter getBooleanFilter() {
         return booleanFilter;
     }

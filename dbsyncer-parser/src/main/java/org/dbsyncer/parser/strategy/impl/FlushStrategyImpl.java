@@ -172,7 +172,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 long now = Instant.now().toEpochMilli();
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);
-                taskMetaProfile.updateMeta(tableMeta);
+                taskMetaProfile.addMeta(tableMeta);
                 tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
             }
             taskMetaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).success(success).fail(fail));

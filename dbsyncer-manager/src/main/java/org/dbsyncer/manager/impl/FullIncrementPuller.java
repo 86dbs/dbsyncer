@@ -110,7 +110,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
                 return;
             }
             prepareFullPhase(mapping, meta);
-            logger.info("开始全量同步： {}", mapping.getName());
+            logger.info("开始全量同步：{}", mapping.getName());
             fullPuller.runSync(mapping, false);
             if (!isRunning(taskId)) {
                 return;

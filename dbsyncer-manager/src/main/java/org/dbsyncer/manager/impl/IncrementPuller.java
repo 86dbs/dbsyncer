@@ -31,7 +31,6 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -100,9 +99,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
-
-    @Resource
-    private PluginFactory pluginFactory;
 
     @Resource
     private LogService logService;

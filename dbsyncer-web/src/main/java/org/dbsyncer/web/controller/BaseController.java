@@ -1,9 +1,9 @@
 package org.dbsyncer.web.controller;
 
 import org.dbsyncer.biz.ConditionService;
-import org.dbsyncer.biz.ConvertService;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
+import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.springframework.ui.ModelMap;
 
@@ -11,6 +11,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,9 +24,6 @@ public abstract class BaseController {
 
     @Resource
     private ConditionService filterService;
-
-    @Resource
-    private ConvertService convertService;
 
     @Resource
     private PluginService pluginService;
@@ -48,7 +46,7 @@ public abstract class BaseController {
      */
     protected void initConfig(ModelMap model) {
         model.put("condition", filterService.getCondition());
-        model.put("convert", convertService.getConvertEnumAll());
+        model.put("convert", Arrays.asList(ConvertEnum.values()));
         model.put("plugin", pluginService.listPlugins());
     }
 

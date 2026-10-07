@@ -245,6 +245,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
+        // TODO 应该明确查询的类型范围
         Paging paging = databaseSyncProfile.query(pageNum, pageSize, searchKey);
         Collection data = paging.getData();
         if (CollectionUtils.isEmpty(data)) {

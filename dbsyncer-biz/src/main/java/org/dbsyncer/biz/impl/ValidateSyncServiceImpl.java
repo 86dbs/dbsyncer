@@ -418,6 +418,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
+        // TODO 应该明确查询的类型范围
         Paging search = validateSyncProfile.query(pageNum, pageSize, searchKey);
         Collection data = search.getData();
         if (CollectionUtils.isEmpty(data)) {

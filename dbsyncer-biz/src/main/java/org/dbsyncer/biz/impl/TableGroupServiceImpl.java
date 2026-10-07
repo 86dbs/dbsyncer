@@ -205,7 +205,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         }
     }
 
-    private static long resolveSourceCount(TableGroup group) {
+    private long resolveSourceCount(TableGroup group) {
         if (group.getSourceTotal() > 0) {
             return group.getSourceTotal();
         }

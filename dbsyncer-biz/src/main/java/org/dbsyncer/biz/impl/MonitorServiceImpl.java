@@ -45,7 +45,6 @@ import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.service.ScheduledScanService;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -58,7 +57,6 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -248,11 +246,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         deleteExpiredData();
         deleteExpiredLog();
         deleteExpiredFileLog();
-    }
-
-    @Override
-    public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
-        return Arrays.asList(StorageDataStatusEnum.values());
     }
 
     @Override

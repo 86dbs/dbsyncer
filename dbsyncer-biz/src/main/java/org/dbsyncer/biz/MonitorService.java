@@ -8,7 +8,6 @@ import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
 import java.util.Map;
@@ -64,13 +63,6 @@ public interface MonitorService {
      * 删除过期的数据和日志
      */
     void deleteExpiredDataAndLog();
-
-    /**
-     * 获取所有同步数据状态类型
-     *
-     * @return
-     */
-    List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
 
     /**
      * 获取应用报告
