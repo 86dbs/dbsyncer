@@ -18,7 +18,6 @@ import org.dbsyncer.sdk.notice.MessageService;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.time.Instant;
 
 public class BaseServiceImpl {
 
@@ -90,18 +89,4 @@ public class BaseServiceImpl {
         messageService.sendMessage(content);
     }
 
-    protected void changeMetaState(String taskId, CommonTaskStatusEnum status) {
-        Meta meta = taskMetaProfile.getMeta(taskId);
-        int code = status.getCode();
-        if (null != meta && meta.getState() != code) {
-            long now = Instant.now().toEpochMilli();
-            meta.setState(code);
-            meta.setUpdateTime(now);
-            // 进入运行中时记录本轮启动时间，供耗时（updateTime - startTime）计算
-            if (CommonTaskStatusEnum.RUNNING == status) {
-                meta.setStartTime(now);
-            }
-            taskMetaProfile.updateMeta(meta);
-        }
-    }
 }

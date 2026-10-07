@@ -244,7 +244,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
                         clusterService.start(mapping, true);
                     } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
-                        changeMetaState(meta.getId(), CommonTaskStatusEnum.READY);
+                        changeMetaState(meta, CommonTaskStatusEnum.READY);
                     }
                 } catch (Exception e) {
                     logger.error("恢复同步驱动失败, taskId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
@@ -353,12 +353,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
     }
 
-    private void changeMetaState(String taskId, CommonTaskStatusEnum status) {
-        Meta meta = taskMetaProfile.getMeta(taskId);
-        int code = status.getCode();
-        if (null != meta && meta.getState() != code) {
+    public void changeMetaState(Meta meta, CommonTaskStatusEnum status) {
+        if (null != meta && meta.getState() != status.getCode()) {
             long now = Instant.now().toEpochMilli();
-            meta.setState(code);
+            meta.setState(status.getCode());
             meta.setUpdateTime(now);
             // 进入运行中时记录本轮启动时间，供耗时（updateTime - startTime）计算
             if (CommonTaskStatusEnum.RUNNING == status) {
@@ -366,5 +364,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             }
             taskMetaProfile.updateMeta(meta);
         }
+    }
+
+    public void changeMetaState(String taskId, CommonTaskStatusEnum status) {
+        Meta meta = taskMetaProfile.getMeta(taskId);
+        changeMetaState(meta, status);
     }
 }

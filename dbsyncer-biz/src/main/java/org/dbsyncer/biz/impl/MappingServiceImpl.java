@@ -348,13 +348,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             taskMetaProfile.reset(taskId);
             // 标记运行中
-            changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
+            preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
 
             try {
                 clusterService.start(mapping, false);
             } catch (Exception e) {
                 // rollback
-                changeMetaState(taskId, CommonTaskStatusEnum.READY);
+                preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.READY);
                 throw new BizException(e.getMessage());
             }
 
@@ -370,7 +370,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             if (!isRunning(mapping.getId())) {
                 throw new BizException("同步任务已停止.");
             }
-            changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
+            preloadTemplate.changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
             clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
             log(LogType.MappingLog.STOP, mapping);
             // 发送关闭通知消息
