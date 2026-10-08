@@ -23,6 +23,8 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +50,7 @@ import java.util.zip.ZipOutputStream;
 @Component
 public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> implements TaskMetaProfile, ApplicationListener<RemoveMetaCacheEvent> {
 
+    private static final Logger log = LoggerFactory.getLogger(TaskMetaProfileImpl.class);
     @Resource
     private StorageService storageService;
 

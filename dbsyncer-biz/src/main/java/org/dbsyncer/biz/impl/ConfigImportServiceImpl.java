@@ -15,6 +15,7 @@ import org.dbsyncer.common.util.PackageZipUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
@@ -23,6 +24,7 @@ import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TaskImportResult;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +75,9 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     @Resource
     private ValidateSyncProfile validateSyncProfile;
 
+    @Resource
+    private DatabaseSyncProfile databaseSyncProfile;
+
     @Override
     public void importConfig(File file) {
         Assert.notNull(file, "the config file is null.");
@@ -98,7 +103,11 @@ public class ConfigImportServiceImpl implements ConfigImportService {
 
             TaskImportResult taskResult = taskProfile.importTasksFromZip(zip);
             for (ConfigModel task : taskResult.getEnterpriseTasks()) {
-                validateSyncProfile.update((ValidateSyncTask) task);
+                if (task instanceof ValidateSyncTask) {
+                    validateSyncProfile.update((ValidateSyncTask) task);
+                } else if (task instanceof DatabaseSyncTask) {
+                    databaseSyncProfile.update((DatabaseSyncTask) task);
+                }
             }
 
             importTableGroupsFromZip(zip);

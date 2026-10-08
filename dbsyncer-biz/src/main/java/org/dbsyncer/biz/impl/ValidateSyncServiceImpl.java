@@ -430,6 +430,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             if (vo != null) {
                 long errorCount = 0L;
                 Meta taskMeta = taskMetaProfile.getMeta(task.getId());
+
                 if (taskMeta != null && taskMeta.getDiff() != null) {
                     errorCount = taskMeta.getDiff().get();
                 }
@@ -806,21 +807,20 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     }
 
     private List<CommonTaskSnapshot> collectValidateTableSnapshots(String taskId) {
-        // TODO 待优化
-        List<String> ids = tableGroupProfile.listTableGroupIds(taskId);
-        if (CollectionUtils.isEmpty(ids)) {
-            return Collections.emptyList();
-        }
-        Map<String, Meta> metaMap = taskMetaProfile.getDetailMetaMap(ids);
-        List<CommonTaskSnapshot> snapshots = new ArrayList<>(ids.size());
-        for (String groupId : ids) {
-            if (StringUtil.isBlank(groupId)) {
-                snapshots.add(null);
-                continue;
+        List<CommonTaskSnapshot> snapshots = new ArrayList<>();
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, groups -> {
+            List<String> ids = groups.stream().map(TableGroup::getId).collect(Collectors.toList());
+            Map<String, Meta> metaMap = taskMetaProfile.getDetailMetaMap(ids);
+            for (String groupId : ids) {
+                if (StringUtil.isBlank(groupId)) {
+                    snapshots.add(null);
+                    continue;
+                }
+                Meta meta = metaMap.get(groupId);
+                snapshots.add(meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot()));
             }
-            Meta meta = metaMap == null ? null : metaMap.get(groupId);
-            snapshots.add(meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot()));
-        }
+
+        });
         return snapshots;
     }
 

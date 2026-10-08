@@ -77,6 +77,7 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     public void delete(String id) {
         taskProfile.dropTaskDetalTable(id);
         taskProfile.deleteTask(id);
+        tableGroupProfile.removeTableGroupsByTaskId(id);
         removeCacheAndNotice(id);
     }
 
