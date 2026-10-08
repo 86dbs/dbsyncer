@@ -179,7 +179,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         }
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
         databaseSyncProfile.clearRunData(id);
-        taskMetaProfile.reset(id);
+        taskMetaProfile.clearMeta(id);
         String editedId = databaseSyncProfile.update(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
         databaseSyncProfile.syncTaskTableMetaDetails(editedId);
@@ -245,48 +245,47 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        // TODO 应该明确查询的类型范围
-        Paging paging = databaseSyncProfile.query(pageNum, pageSize, searchKey);
-        Collection data = paging.getData();
+        Paging<DatabaseSyncTask> paging = databaseSyncProfile.query(pageNum, pageSize, searchKey);
+        Collection<DatabaseSyncTask> data = paging.getData();
         if (CollectionUtils.isEmpty(data)) {
-            return paging;
+            return null;
         }
         List<DatabaseSyncTaskVO> list = new ArrayList<>();
         data.forEach(item -> {
-            if (item instanceof DatabaseSyncTask) {
-                DatabaseSyncTask task = (DatabaseSyncTask) item;
-                DatabaseSyncTaskVO vo = convertTask2Vo(task);
-                if (vo != null) {
-                    int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
-                    Meta taskMeta = taskMetaProfile.getMeta(task.getId());
-                    boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
-                    TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
-                    vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
-                            task, tableCount, roundDone,
-                            progressBundle.getSnapshots(), progressBundle.getSyncedRowsPerTable(),
-                            progressBundle.getSourceTotalPerTable()));
-                    vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
-                            task, tableCount, roundDone, progressBundle.getSnapshots()));
-                    vo.setSchemaCompletedCount(DatabaseSyncProgressUtil.countSchemaDoneTables(
-                            progressBundle.getSnapshots()));
-                    vo.setSyncedRows(progressBundle.sumSyncedRows());
-                    vo.setSourceTotal(progressBundle.sumSourceTotal());
-                    vo.setErrorCount(0L);
-                    if (taskMeta != null) {
-                        if (taskMeta.getFail() != null) {
-                            vo.setErrorCount(taskMeta.getFail().get());
-                        }
-                        vo.setMetaState(taskMeta.getState());
-                        vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
-                        vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
+            DatabaseSyncTask task = item;
+            DatabaseSyncTaskVO vo = convertTask2Vo(task);
+            if (vo != null) {
+                int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
+                Meta taskMeta = taskMetaProfile.getMeta(task.getId());
+                boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
+                TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
+                vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
+                        task, tableCount, roundDone,
+                        progressBundle.getSnapshots(), progressBundle.getSyncedRowsPerTable(),
+                        progressBundle.getSourceTotalPerTable()));
+                vo.setTotalTableCount(tableCount);
+                vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
+                        task, tableCount, roundDone, progressBundle.getSnapshots()));
+                vo.setSchemaCompletedCount(DatabaseSyncProgressUtil.countSchemaDoneTables(
+                        progressBundle.getSnapshots()));
+                vo.setSyncedRows(progressBundle.sumSyncedRows());
+                vo.setSourceTotal(progressBundle.sumSourceTotal());
+                vo.setErrorCount(0L);
+                if (taskMeta != null) {
+                    if (taskMeta.getFail() != null) {
+                        vo.setErrorCount(taskMeta.getFail().get());
                     }
-                    list.add(vo);
+                    vo.setMetaState(taskMeta.getState());
+                    vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
+                    vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
                 }
+                list.add(vo);
             }
         });
-        paging.setData(list);
-        return paging;
+        Paging<DatabaseSyncTaskVO> result = new Paging<>(paging.getPageNum(), paging.getPageSize());
+        result.setTotal(paging.getTotal());
+        result.setData(list);
+        return result;
     }
 
     @Override

@@ -28,11 +28,6 @@ public interface ValidateSyncProfile {
     String add(ValidateSyncTask task);
 
     /**
-     * 批量新增任务配置。
-     */
-    void addBatch(List<ValidateSyncTask> task);
-
-    /**
      * 修改任务配置。
      */
     String update(ValidateSyncTask tasks);
@@ -41,8 +36,6 @@ public interface ValidateSyncProfile {
      * 删除任务配置
      */
     void delete(String id);
-
-    void clearRunData(String id);
 
     /**
      * 按模型类型分页查询任务，可选按名称模糊搜索。

@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -341,35 +340,23 @@ public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> 
     }
 
     @Override
-    public void reset(String taskId) {
+    public void clearMeta(String taskId) {
         Meta meta = getMeta(taskId);
         if (meta != null) {
-            zeroTaskMetaCounters(meta);
             meta.clear();
             meta.setUpdateTime(System.currentTimeMillis());
             updateMeta(meta);
         }
     }
 
-    private void zeroTaskMetaCounters(Meta meta) {
-        long total = counterValue(meta.getTotal());
-        long success = counterValue(meta.getSuccess());
-        long fail = counterValue(meta.getFail());
-        long diff = counterValue(meta.getDiff());
-        long fixed = counterValue(meta.getFixed());
-        if (total == 0L && success == 0L && fail == 0L && diff == 0L && fixed == 0L) {
-            return;
+    @Override
+    public void resetMeta(String taskId) {
+        Meta meta = getMeta(taskId);
+        if (meta != null) {
+            meta.reset();
+            meta.setUpdateTime(System.currentTimeMillis());
+            updateMeta(meta);
         }
-        incrementMeta(MetaIncrement.of(meta.getTaskId())
-                .total(-total)
-                .success(-success)
-                .fail(-fail)
-                .diff(-diff)
-                .fixed(-fixed));
-    }
-
-    private long counterValue(AtomicLong value) {
-        return value == null ? 0L : value.get();
     }
 
     @Override

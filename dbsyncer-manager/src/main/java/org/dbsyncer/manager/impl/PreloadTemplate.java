@@ -4,8 +4,6 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
-import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
@@ -33,7 +31,6 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.sdk.service.ScheduledScanManager;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.spi.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -90,9 +87,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private boolean preloadCompleted;
 
     @Resource
-    private TaskService<ConfigModel> taskService;
-
-    @Resource
     private ClusterService clusterService;
 
     @Resource
@@ -112,9 +106,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             loadConnectorInstance();
             // 同步任务：按任务级 Meta 恢复 Mapping
             launchSyncMappings();
-            // 订正校验 / 整库迁移
-            resumeValidateSyncTasks();
-            resumeDatabaseSyncTasks();
             //初始化定时检测任务
             scheduledScanManager.start();
         } else {
@@ -198,7 +189,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     /**
-     * 配置导入完成后的收尾：重建连接实例，恢复同步驱动与企业任务。
+     * 配置导入完成后的收尾：重建连接实例，恢复同步驱动；其余运行中任务由续跑。
      */
     public void afterConfigImport() {
         // 集群不预热全部连接器；单机仍全量预热
@@ -206,8 +197,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             loadConnectorInstance();
         }
         launchSyncMappings();
-        resumeValidateSyncTasks();
-        resumeDatabaseSyncTasks();
     }
 
     /**
@@ -289,67 +278,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     logService.log(LogType.ConnectorLog.FAILED, e.getMessage());
                 }
             }));
-        }
-    }
-
-    /**
-     * 恢复订正校验任务。
-     * <p>任务配置在 {@code dbsyncer_task}，表映射在 {@code dbsyncer_table_group}；
-     * TaskService 企业实现启动时已从库加载缓存，此处只做连接器预热与运行中任务续跑。
-     */
-    private void resumeValidateSyncTasks() {
-        List<ConfigModel> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.VALIDATE_SYNC);
-        if (CollectionUtils.isEmpty(taskAll)) {
-            return;
-        }
-        for (ConfigModel commonTask : taskAll) {
-            if (!(commonTask instanceof ValidateSyncTask)) {
-                continue;
-            }
-            ValidateSyncTask task = (ValidateSyncTask) commonTask;
-            try {
-                reConnect(task);
-            } catch (Exception e) {
-                logger.error("校验任务连接器预热失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
-            }
-        }
-        resumeRunningCommonTasks(taskAll);
-    }
-
-    /**
-     * 恢复整库迁移任务。
-     * <p>库表关联已下沉 {@code dbsyncer_table_group}，不再依赖任务 JSON 内 mappings；
-     * 连接器在 Handler 启动时按 table_group 初始化，此处只续跑运行中任务。
-     */
-    private void resumeDatabaseSyncTasks() {
-        List<ConfigModel> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC);
-        if (CollectionUtils.isEmpty(taskAll)) {
-            return;
-        }
-        resumeRunningCommonTasks(taskAll);
-    }
-
-    /**
-     * 将中断前 Meta.state=RUNNING 的任务重新拉起（先将 Meta 置 READY，再 start）。
-     */
-    private void resumeRunningCommonTasks(List<ConfigModel> taskAll) {
-        for (ConfigModel task : taskAll) {
-            if (task == null || StringUtil.isBlank(task.getId())) {
-                continue;
-            }
-            Meta meta = taskMetaProfile.getMeta(task.getId());
-            if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
-                continue;
-            }
-            try {
-                meta.setState(CommonTaskStatusEnum.READY.getCode());
-                meta.setUpdateTime(System.currentTimeMillis());
-                taskMetaProfile.updateMeta(meta);
-                taskService.start(task);
-                logger.info("已恢复运行中任务: type={}, taskId={}, name={}", task.getType(), task.getId(), task.getName());
-            } catch (Exception e) {
-                logger.error("恢复任务失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
-            }
         }
     }
 

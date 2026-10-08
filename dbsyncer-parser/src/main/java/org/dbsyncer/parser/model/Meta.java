@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>主键 {@code id} 为雪花，与业务实体 ID 解耦。
  * <p>关联键 {@code taskId}：任务级（{@code isTaskDetail=0}）为任务/Mapping ID；
  * 表级（{@code isTaskDetail=1}）为 {@code table_group.id}。
-
+ *
  * <p>明细分表 {@code dbsyncer_task_detail_{taskId}} 分片使用任务级 Meta 的 taskId，不是 Meta 主键。
  *
  * @author AE86
@@ -49,6 +49,13 @@ public class Meta extends ConfigModel {
     public Meta() {
         super.setType(ConfigConstant.META);
         super.setName(ConfigConstant.META);
+        clear();
+    }
+
+    /**
+     * 重置meta状态，不还原总数
+     */
+    public void reset() {
         init();
     }
 
@@ -57,12 +64,12 @@ public class Meta extends ConfigModel {
      */
     public void clear() {
         init();
+        this.total = new AtomicLong(0);
     }
 
     private void init() {
         this.state = CommonTaskStatusEnum.READY.getCode();
         this.isTaskDetail = TaskLevelEnum.TASK.getCode();
-        this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);
         this.fail = new AtomicLong(0);
         this.diff = new AtomicLong(0);

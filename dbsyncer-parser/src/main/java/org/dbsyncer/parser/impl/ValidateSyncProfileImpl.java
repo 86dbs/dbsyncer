@@ -68,11 +68,6 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
     }
 
     @Override
-    public void addBatch(List<ValidateSyncTask> tasks) {
-        taskProfile.addTaskBatch(tasks);
-    }
-
-    @Override
     public String update(ValidateSyncTask task) {
         String id = taskProfile.updateTask(task);
         removeCacheAndNotice(task.getId());
@@ -81,13 +76,9 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
 
     @Override
     public void delete(String id) {
+        taskProfile.dropTaskDetalTable(id);
         taskProfile.deleteTask(id);
         removeCacheAndNotice(id);
-    }
-
-    @Override
-    public void clearRunData(String id) {
-        taskProfile.deleteRunData(id);
     }
 
     @Override

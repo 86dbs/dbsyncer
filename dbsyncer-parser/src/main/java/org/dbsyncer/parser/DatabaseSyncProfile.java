@@ -28,11 +28,6 @@ public interface DatabaseSyncProfile {
     String add(DatabaseSyncTask task);
 
     /**
-     * 批量新增任务配置。
-     */
-    void addBatch(List<DatabaseSyncTask> task);
-
-    /**
      * 修改任务配置。
      */
     String update(DatabaseSyncTask tasks);
@@ -55,11 +50,6 @@ public interface DatabaseSyncProfile {
      * 按模型类型分页回调遍历全部任务。
      */
     void pageScanTasks(int pageSize, Consumer<List<DatabaseSyncTask>> pageConsumer);
-
-    /**
-     * 预建运行明细分表
-     */
-    void createRunDetailTable(String taskId);
 
     /**
      * 预建运行明细分表

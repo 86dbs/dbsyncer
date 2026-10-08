@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 全量同步表级进度
@@ -107,7 +108,7 @@ public abstract class FullTableProgressUtil {
             int state = snapshot == null
                     ? CommonTaskStatusEnum.READY.getCode()
                     : snapshot.getStatus();
-            taskMetaProfile.updateMetaProgress(meta.getId(), state, newSnap);
+            taskMetaProfile.updateMetaProgress(meta.getTaskId(), state, newSnap);
         }
     }
 
@@ -126,6 +127,43 @@ public abstract class FullTableProgressUtil {
                 continue;
             }
             save(taskMetaProfile, tableGroupId, null);
+        }
+    }
+
+    /**
+     * 重置任务下全部表明细 Meta：行保留；state=READY、快照清空、计数归零；缺失则创建。
+     */
+    public static void resetAll(TaskMetaProfile taskMetaProfile, List<String> tableGroupIds) {
+        if (CollectionUtils.isEmpty(tableGroupIds)) {
+            return;
+        }
+        for (String tableGroupId : tableGroupIds) {
+            synchronized (tableLock(tableGroupId)) {
+                Meta meta = resolve(taskMetaProfile, tableGroupId);
+                long now = System.currentTimeMillis();
+                if (meta == null || StringUtil.isBlank(meta.getId())) {
+                    meta = new Meta();
+                    meta.setTaskId(tableGroupId);
+                    meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
+                    meta.setCreateTime(now);
+                    apply(meta, null, now);
+                    taskMetaProfile.addMeta(meta);
+                    return;
+                }
+                meta.clear();
+                Map<String, String> newSnap = TaskSnapshotUtil.writeTableSnapshot(meta.getSnapshot(), null, null);
+                meta.setState(CommonTaskStatusEnum.READY.getCode());
+                meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
+                meta.setSnapshot(newSnap);
+                meta.setStartTime(0L);
+                meta.setUpdateTime(now);
+                meta.setTotal(new AtomicLong(0));
+                meta.setSuccess(new AtomicLong(0));
+                meta.setFail(new AtomicLong(0));
+                meta.setDiff(new AtomicLong(0));
+                meta.setFixed(new AtomicLong(0));
+                taskMetaProfile.updateMeta(meta);
+            }
         }
     }
 

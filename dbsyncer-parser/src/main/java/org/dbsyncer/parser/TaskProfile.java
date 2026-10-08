@@ -100,9 +100,14 @@ public interface TaskProfile {
     String exportTaskDetailSchemasJson(List<String> taskIds);
 
     /**
-     * 清空任务运行数据：删表级 Meta、清空 TASK_DETAIL；表映射仍在时补回空明细 Meta。
+     * 清空任务运行数据：重置表级 Meta（保留行）、清空 TASK_DETAIL 后预建空分表（编辑/重置用）。
      */
     void deleteRunData(String taskId);
+
+    /**
+     * 删除任务运行数据：删表级 Meta，并物理 DROP 明细分表（不重建）。
+     */
+    void dropTaskDetalTable(String taskId);
 
     /**
      * 预建运行明细分表

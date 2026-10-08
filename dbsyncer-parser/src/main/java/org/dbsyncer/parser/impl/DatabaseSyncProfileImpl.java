@@ -24,7 +24,6 @@ import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
@@ -68,11 +67,6 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     }
 
     @Override
-    public void addBatch(List<DatabaseSyncTask> tasks) {
-        taskProfile.addTaskBatch(tasks);
-    }
-
-    @Override
     public String update(DatabaseSyncTask task) {
         String id = taskProfile.updateTask(task);
         removeCacheAndNotice(task.getId());
@@ -81,6 +75,7 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
 
     @Override
     public void delete(String id) {
+        taskProfile.dropTaskDetalTable(id);
         taskProfile.deleteTask(id);
         removeCacheAndNotice(id);
     }
@@ -101,11 +96,6 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     }
 
     @Override
-    public void createRunDetailTable(String taskId) {
-        taskProfile.createRunDetailTable(taskId);
-    }
-
-    @Override
     public void onApplicationEvent(RemoveDatabaseSyncCacheEvent event) {
         removeCache(event.getCommonMessage().getId());
         taskMetaProfile.removeMetaCache(event.getCommonMessage().getId());
@@ -114,10 +104,9 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     /**
      * 保存/编辑时重建明细分表骨架行：先清空分表，再按当前表映射 × 开启类型全量插入 READY 行。
      */
+    @Override
     public void syncTaskTableMetaDetails(String taskId) {
-        Assert.hasText(taskId, "任务ID不能为空");
         DatabaseSyncTask task = get(taskId);
-        Assert.notNull(task, "任务不存在");
         storageService.clear(StorageEnum.TASK_DETAIL, taskId);
         List<String> types = resolveEnabledDetailTypes(task);
         if (types.isEmpty()) {

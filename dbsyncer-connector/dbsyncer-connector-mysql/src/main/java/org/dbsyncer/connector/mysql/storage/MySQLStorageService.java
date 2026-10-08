@@ -223,12 +223,22 @@ public class MySQLStorageService extends AbstractStorageService {
             executeSql(String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(sharding)));
             return;
         }
-        // 动态分表：无论是否在内存缓存，都尝试 DROP，避免删任务后孤儿表残留
+        // 动态分表：物理 DROP（删除任务）
         String tableName = PREFIX_TABLE.concat(sharding);
         try {
             executeSql(String.format(DROP_TABLE, tableName));
         } catch (Exception e) {
             logger.debug("drop table {} skipped: {}", tableName, e.getMessage());
+        }
+    }
+
+    @Override
+    protected void truncateAll(String sharding) {
+        String tableName = PREFIX_TABLE.concat(sharding);
+        try {
+            executeSql(String.format(TRUNCATE_TABLE, tableName));
+        } catch (Exception e) {
+            logger.debug("truncate table {} skipped: {}", tableName, e.getMessage());
         }
     }
 

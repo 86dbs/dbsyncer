@@ -32,6 +32,7 @@ import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -55,6 +56,7 @@ import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -128,6 +130,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private MappingMatchTableTask mappingMatchTableTask;
+    @Autowired
+    private TaskProfile taskProfile;
 
     @Override
     public String add(Map<String, String> params) {
@@ -201,11 +205,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             mappingProfile.clearRunData(id);
-            taskMetaProfile.reset(id);
+            taskMetaProfile.clearMeta(id);
             log(LogType.MappingLog.UPDATE, model);
-
             // 更新meta
             tableGroupService.updateMeta(mapping, metaSnapshot);
+
             mappingProfile.update(model);
         }
         // 统计总数
@@ -219,8 +223,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String taskId = mapping.getId();
         synchronized (LOCK) {
             assertRunning(taskId);
-            // 条件删除 table_group + 明细 Meta，并清运行结果
-            mappingProfile.clearRunData(id);
+            // 条件删除 table_group + 明细 Meta，并物理 DROP 明细分表（不重建空表）
+            mappingProfile.dropTaskDetailTable(id);
             log(LogType.MetaLog.CLEAR, mapping);
             tableGroupProfile.removeTableGroupsByTaskId(taskId);
 
@@ -345,8 +349,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Assert.isTrue(!dispatchTaskService.isRunning(taskId), "同步任务表映射正在匹配或统计中，请稍候再启动");
             // 如果已经完成了，重置状态
             clearMetaIfFinished(taskId);
-
-            taskMetaProfile.reset(taskId);
             // 标记运行中
             preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
 
@@ -684,9 +686,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态，便于再次全量
-        if (!CommonTaskStatusEnum.isRunning(meta.getState())) {
-            taskMetaProfile.reset(taskId);
+        if (!CommonTaskStatusEnum.isRunning(meta.getState()) && meta.getSuccess().addAndGet(meta.getFail().get()) == meta.getTotal().get()) {
+            taskMetaProfile.resetMeta(taskId);
             taskDetailMetaProfile.clearData(taskId);
+            taskProfile.deleteRunData(taskId);
         }
     }
 

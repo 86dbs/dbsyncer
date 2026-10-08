@@ -37,6 +37,11 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected abstract void deleteAll(String sharding);
 
+    /**
+     * 清空分片表数据并保留表结构（TRUNCATE）。
+     */
+    protected abstract void truncateAll(String sharding);
+
     protected abstract void batchInsert(StorageEnum type, String sharding, List<Map> list);
 
     protected abstract void batchUpdate(StorageEnum type, String sharding, List<Map> list);
@@ -113,11 +118,22 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     public void clear(StorageEnum type, String taskId) {
         try {
             String sharding = getSharding(type, taskId);
-            deleteAll(sharding);
-            // 动态明细分表：清空后预建空表，避免详情 JOIN 查询报 Table not found
             if (type == StorageEnum.TASK_DETAIL) {
+                // 任务仍在：保证分表存在后只清数据，避免 DROP + 重建
                 ensureShard(type, sharding);
+                truncateAll(sharding);
+            } else {
+                deleteAll(sharding);
             }
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
+        }
+    }
+
+    @Override
+    public void drop(StorageEnum type, String taskId) {
+        try {
+            deleteAll(getSharding(type, taskId));
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
         }

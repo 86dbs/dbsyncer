@@ -45,6 +45,11 @@ public interface MappingProfile {
     void clearRunData(String id);
 
     /**
+     * 删除任务时清理运行数据（物理 DROP 明细分表）。
+     */
+    void dropTaskDetailTable(String id);
+
+    /**
      * 按模型类型分页查询任务，可选按名称模糊搜索。
      *
      * @param searchKey 可选；非空时对 {@code name} 做 LIKE

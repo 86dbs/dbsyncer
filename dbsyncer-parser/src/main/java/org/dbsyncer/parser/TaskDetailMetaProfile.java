@@ -41,9 +41,14 @@ public interface TaskDetailMetaProfile {
     void reset(String tableGroupId);
 
     /**
-     * 清空表, 删除task_detail_{任务id}数据
+     * 清空明细分表数据后预建空表（任务仍在时使用）。
      */
     void clearData(String taskId);
+
+    /**
+     * 物理删除明细分表，不重建（删除任务时使用）。
+     */
+    void dropTaskDetailTable(String taskId);
 
     /**
      * 删除所有 任务明细级别

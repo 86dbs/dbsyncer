@@ -314,7 +314,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         assertRunning(task.getId());
         checkTask(task, params);
         mappingProfile.clearRunData(task.getId());
-        taskMetaProfile.reset(task.getId());
+        taskMetaProfile.clearMeta(task.getId());
         String sortedIds = params.get("sortedTableGroupIds");
         if (StringUtil.isNotBlank(sortedIds)) {
             List<TableGroup> groupAll = new ArrayList<>();
@@ -341,6 +341,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             });
         }
         String id = validateSyncProfile.update(task);
+        validateSyncProfile.createRunDetailTable(id);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐明细
         validateSyncProfile.syncTaskTableMetaDetails(id);
         return id;
@@ -418,41 +419,39 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        // TODO 应该明确查询的类型范围
-        Paging search = validateSyncProfile.query(pageNum, pageSize, searchKey);
-        Collection data = search.getData();
+        Paging<ValidateSyncTask> search = validateSyncProfile.query(pageNum, pageSize, searchKey);
+        Collection<ValidateSyncTask> data = search.getData();
         if (CollectionUtils.isEmpty(data)) {
-            return search;
+            return null;
         }
         List<ValidateSyncTaskVO> list = new ArrayList<>();
         data.forEach(task -> {
-            if (task instanceof ValidateSyncTask) {
-                ValidateSyncTask t = (ValidateSyncTask) task;
-                ValidateSyncTaskVO vo = convertTask2Vo(t);
-                if (vo != null) {
-                    long errorCount = 0L;
-                    Meta taskMeta = taskMetaProfile.getMeta(t.getId());
-                    if (taskMeta != null && taskMeta.getDiff() != null) {
-                        errorCount = taskMeta.getDiff().get();
-                    }
-                    vo.setErrorCount(errorCount);
-                    int tableCount = tableGroupProfile.getTableGroupCount(t.getId());
-                    vo.setTotalTableCount(tableCount);
-                    boolean roundDone = taskMeta != null && CommonTaskStatusEnum.isDone(taskMeta.getState());
-                    List<CommonTaskSnapshot> tableSnapshots = collectValidateTableSnapshots(t.getId());
-                    vo.setCompletedTableCount(countCompletedTables(roundDone, tableCount, tableSnapshots));
-                    vo.setProgress(calculateProgressPercent(roundDone, tableCount, tableSnapshots));
-                    if (taskMeta != null) {
-                        vo.setMetaState(taskMeta.getState());
-                        vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
-                        vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
-                    }
-                    list.add(vo);
+            ValidateSyncTaskVO vo = convertTask2Vo(task);
+            if (vo != null) {
+                long errorCount = 0L;
+                Meta taskMeta = taskMetaProfile.getMeta(task.getId());
+                if (taskMeta != null && taskMeta.getDiff() != null) {
+                    errorCount = taskMeta.getDiff().get();
                 }
+                vo.setErrorCount(errorCount);
+                int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
+                vo.setTotalTableCount(tableCount);
+                boolean roundDone = taskMeta != null && CommonTaskStatusEnum.isDone(taskMeta.getState());
+                List<CommonTaskSnapshot> tableSnapshots = collectValidateTableSnapshots(task.getId());
+                vo.setCompletedTableCount(countCompletedTables(roundDone, tableCount, tableSnapshots));
+                vo.setProgress(calculateProgressPercent(roundDone, tableCount, tableSnapshots));
+                if (taskMeta != null) {
+                    vo.setMetaState(taskMeta.getState());
+                    vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
+                    vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
+                }
+                list.add(vo);
             }
         });
-        search.setData(list);
-        return search;
+        Paging<ValidateSyncTaskVO> result = new Paging<>(search.getPageNum(), search.getPageSize());
+        result.setTotal(search.getTotal());
+        result.setData(list);
+        return result;
     }
 
     @Override

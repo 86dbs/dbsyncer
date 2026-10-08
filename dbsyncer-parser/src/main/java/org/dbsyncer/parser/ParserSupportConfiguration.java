@@ -3,13 +3,11 @@
  */
 package org.dbsyncer.parser;
 
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.parser.flush.impl.DefaultBufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
-import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -53,24 +51,13 @@ public class ParserSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @DependsOn(value = "serviceFactory")
-    public TaskService taskService() {
-        TaskService taskService = serviceFactory.get(TaskService.class);
-        if (taskService != null) {
-            return taskService;
-        }
-        return new TaskService<ConfigModel>() {
-        };
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    @DependsOn(value = {"serviceFactory", "taskService"})
+    @DependsOn(value = {"serviceFactory"})
     public ValidateSyncDetailService validateSyncerDetailService() {
         ValidateSyncDetailService service = serviceFactory.get(ValidateSyncDetailService.class);
         if (service != null) {
             return service;
         }
-        return new ValidateSyncDetailService() {};
+        return new ValidateSyncDetailService() {
+        };
     }
 }

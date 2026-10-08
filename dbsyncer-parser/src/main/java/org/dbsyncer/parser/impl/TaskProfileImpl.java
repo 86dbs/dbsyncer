@@ -15,11 +15,13 @@ import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TaskImportResult;
 import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -58,6 +60,9 @@ public class TaskProfileImpl implements TaskProfile {
 
     @Resource
     private TaskDetailMetaProfile taskDetailMetaProfile;
+
+    @Resource
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -327,14 +332,30 @@ public class TaskProfileImpl implements TaskProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-
-        // 删除明细表数据
+        // 清空明细表并预建空表（任务仍在）；表级 Meta 重置而非删除，供分片选表 JOIN
         taskDetailMetaProfile.clearData(taskId);
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
+            if (CollectionUtils.isEmpty(tableGroups)) {
+                return;
+            }
+            List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
+            FullTableProgressUtil.resetAll(taskMetaProfile, groupIds);
+        });
+    }
 
-        // 删除表关联的meta
+    @Override
+    public void dropTaskDetalTable(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
+        // 物理 DROP 明细分表，不重建
+        taskDetailMetaProfile.dropTaskDetailTable(taskId);
+        deleteTableGroupDetailMetas(taskId);
+    }
+
+    private void deleteTableGroupDetailMetas(String taskId) {
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
             List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
-            // 批量删除表meta数据
             taskDetailMetaProfile.deleteMetaByTableGroupIds(groupIds);
         });
     }

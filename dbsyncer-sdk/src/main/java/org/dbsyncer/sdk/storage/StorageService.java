@@ -41,10 +41,16 @@ public interface StorageService {
     void delete(Query query);
 
     /**
-     * 清空数据/日志
+     * 清空数据/日志（保留表结构）。
      */
     void clear(StorageEnum type, String taskId);
-    
+
+    /**
+     * 删除存储分片（动态分表物理 DROP）。
+     * <p>删除任务时使用；与 {@link #clear} 不同，会去掉物理表。
+     */
+    void drop(StorageEnum type, String taskId);
+
     /**
      * 添加
      */

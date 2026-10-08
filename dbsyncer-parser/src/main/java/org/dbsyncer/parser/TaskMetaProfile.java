@@ -119,5 +119,7 @@ public interface TaskMetaProfile {
     /**
      * 重置meta状态
      */
-    void reset(String taskId);
+    void clearMeta(String taskId);
+
+    void resetMeta(String taskId);
 }

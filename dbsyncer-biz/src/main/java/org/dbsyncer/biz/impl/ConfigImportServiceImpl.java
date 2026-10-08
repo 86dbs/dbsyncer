@@ -20,9 +20,10 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
+import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TaskImportResult;
-import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -70,7 +71,7 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private TaskService<ConfigModel> taskService;
+    private ValidateSyncProfile validateSyncProfile;
 
     @Override
     public void importConfig(File file) {
@@ -97,7 +98,7 @@ public class ConfigImportServiceImpl implements ConfigImportService {
 
             TaskImportResult taskResult = taskProfile.importTasksFromZip(zip);
             for (ConfigModel task : taskResult.getEnterpriseTasks()) {
-                taskService.edit(task);
+                validateSyncProfile.update((ValidateSyncTask) task);
             }
 
             importTableGroupsFromZip(zip);

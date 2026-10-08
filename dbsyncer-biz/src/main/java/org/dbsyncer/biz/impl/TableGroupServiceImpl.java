@@ -169,10 +169,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public Meta updateMeta(Mapping mapping, String metaSnapshot) {
         Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "同步任务meta不存在.");
-
         // 清空状态
         meta.clear();
-
         // 手动配置增量点
         if (StringUtil.isNotBlank(metaSnapshot)) {
             Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
@@ -180,9 +178,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                 meta.setSnapshot(snapshot);
             }
         }
-
         getMetaTotal(meta, mapping.getModel());
-
         meta.setUpdateTime(Instant.now().toEpochMilli());
         taskMetaProfile.updateMeta(meta);
         return meta;

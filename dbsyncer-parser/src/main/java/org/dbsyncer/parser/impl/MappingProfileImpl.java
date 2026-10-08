@@ -65,6 +65,11 @@ public final class MappingProfileImpl extends AbstractConfigModelProfile<Mapping
     }
 
     @Override
+    public void dropTaskDetailTable(String id) {
+        taskProfile.dropTaskDetalTable(id);
+    }
+
+    @Override
     public Paging<Mapping> query(int pageNum, int pageSize, String searchKey) {
         return taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
     }

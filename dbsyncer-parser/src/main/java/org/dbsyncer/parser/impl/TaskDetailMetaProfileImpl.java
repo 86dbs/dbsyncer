@@ -69,6 +69,11 @@ public final class TaskDetailMetaProfileImpl implements TaskDetailMetaProfile {
     }
 
     @Override
+    public void dropTaskDetailTable(String taskId) {
+        storageService.drop(StorageEnum.TASK_DETAIL, taskId);
+    }
+
+    @Override
     public void deleteMetaByTableGroupIds(List<String> tableGroupIds) {
         if (CollectionUtils.isEmpty(tableGroupIds)) {
             return;

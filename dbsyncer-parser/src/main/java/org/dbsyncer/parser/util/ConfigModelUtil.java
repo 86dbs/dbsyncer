@@ -33,7 +33,6 @@ public abstract class ConfigModelUtil {
         if (model instanceof Meta) {
             return convertMetaToMap((Meta) model);
         }
-
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
         params.put(ConfigConstant.CONFIG_MODEL_TYPE, model.getType());
