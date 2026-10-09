@@ -28,7 +28,6 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
@@ -137,9 +136,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
     @Resource
     private ValidateSyncMatchTableTask validateSyncMatchTableTask;
-
-    @Resource
-    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     @Resource
     private TaskProfile taskProfile;
@@ -411,7 +407,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             Meta meta = taskMetaProfile.getMeta(id);
             if (meta != null && CommonTaskStatusEnum.isDone(meta.getState())) {
                 taskMetaProfile.resetMeta(id);
-                taskDetailMetaProfile.clearData(id);
                 taskProfile.deleteRunData(id);
             }
             clusterService.start(task, false);
