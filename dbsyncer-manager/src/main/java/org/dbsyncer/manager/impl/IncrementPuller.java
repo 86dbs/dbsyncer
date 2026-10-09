@@ -210,7 +210,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         snapshot.remove(ParserEnum.TABLE_PROGRESS.getCode());
-        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile.listTableGroupIds(mapping.getId()));
+        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile, mapping.getId());
         meta.getSuccess().set(0);
         meta.getFail().set(0);
         taskMetaProfile.updateMeta(meta);

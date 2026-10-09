@@ -392,6 +392,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     @Override
     public String delete(String id) {
         assertRunning(id);
+
         validateSyncProfile.delete(id);
         return "删除成功";
     }
@@ -731,7 +732,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         if (task == null) {
             return null;
         }
-
         ValidateSyncTask validateSyncTask = (ValidateSyncTask) task;
         Connector s = connectorProfile.getConnector(validateSyncTask.getSourceConnectorId());
         Connector t = connectorProfile.getConnector(validateSyncTask.getTargetConnectorId());

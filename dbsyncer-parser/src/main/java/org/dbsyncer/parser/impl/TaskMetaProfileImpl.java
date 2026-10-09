@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -208,6 +209,34 @@ public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> 
             return;
         }
         storageService.increment(StorageEnum.META, increment.getTaskId(), deltas);
+        // 库内 UPDATE_TIME/计数已更新；同步内存缓存，供 flushEvent 20s 门控与页面进度读取
+        syncCachedMetaAfterIncrement(increment);
+    }
+
+    /**
+     * 将原子增量同步到已缓存的 Meta，避免缓存仍停留在启动时的 updateTime。
+     */
+    private void syncCachedMetaAfterIncrement(MetaIncrement increment) {
+        Meta cached = cacheService.get(buildCacheKey(increment.getTaskId()), Meta.class);
+        if (cached == null) {
+            return;
+        }
+        cached.setUpdateTime(System.currentTimeMillis());
+        addDelta(cached.getTotal(), increment.getTotalDelta());
+        addDelta(cached.getSuccess(), increment.getSuccessDelta());
+        addDelta(cached.getFail(), increment.getFailDelta());
+        addDelta(cached.getDiff(), increment.getDiffDelta());
+        addDelta(cached.getFixed(), increment.getFixedDelta());
+    }
+
+    private void addDelta(AtomicLong counter, long delta) {
+        if (counter == null || delta == 0L) {
+            return;
+        }
+        long next = counter.addAndGet(delta);
+        if (next < 0L) {
+            counter.set(0L);
+        }
     }
 
     @Override

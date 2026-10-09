@@ -548,15 +548,13 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
      */
     private TableProgressBundle collectTableProgressBundle(String taskId) {
         TableProgressBundle bundle = new TableProgressBundle();
-        List<String> ids = tableGroupProfile.listTableGroupIds(taskId);
-        if (CollectionUtils.isEmpty(ids)) {
-            return bundle;
-        }
         Map<String, Long> sourceTotalById = new HashMap<>();
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, page -> {
             if (CollectionUtils.isEmpty(page)) {
                 return;
             }
+            List<String> ids = page.stream().map(TableGroup::getId).collect(Collectors.toList());
+            Map<String, Meta> metaMap = taskMetaProfile.getDetailMetaMap(ids);
             for (TableGroup tableGroup : page) {
                 if (tableGroup == null || StringUtil.isBlank(tableGroup.getId())) {
                     continue;
@@ -564,27 +562,24 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
                 if (tableGroup.getSourceTotal() > 0) {
                     sourceTotalById.put(tableGroup.getId(), tableGroup.getSourceTotal());
                 }
+                if (StringUtil.isBlank(tableGroup.getId())) {
+                    bundle.addTable(null, 0L, 0L);
+                    continue;
+                }
+                Meta meta = metaMap == null ? null : metaMap.get(tableGroup.getId());
+                CommonTaskSnapshot snapshot = meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot());
+                long fromMeta = counterValue(meta == null ? null : meta.getSuccess())
+                        + counterValue(meta == null ? null : meta.getFail());
+                long fromSnap = 0L;
+                if (snapshot instanceof DatabaseSyncTableSnapshot) {
+                    DatabaseSyncTableSnapshot dts = (DatabaseSyncTableSnapshot) snapshot;
+                    fromSnap = Math.max(0L, dts.getSuccessTotal()) + Math.max(0L, dts.getFailTotal());
+                }
+                long synced = Math.max(fromMeta, fromSnap);
+                Long sourceTotal = sourceTotalById.get(tableGroup.getId());
+                bundle.addTable(snapshot, synced, sourceTotal == null ? 0L : sourceTotal);
             }
         });
-        Map<String, Meta> metaMap = taskMetaProfile.getDetailMetaMap(ids);
-        for (String groupId : ids) {
-            if (StringUtil.isBlank(groupId)) {
-                bundle.addTable(null, 0L, 0L);
-                continue;
-            }
-            Meta meta = metaMap == null ? null : metaMap.get(groupId);
-            CommonTaskSnapshot snapshot = meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot());
-            long fromMeta = counterValue(meta == null ? null : meta.getSuccess())
-                    + counterValue(meta == null ? null : meta.getFail());
-            long fromSnap = 0L;
-            if (snapshot instanceof DatabaseSyncTableSnapshot) {
-                DatabaseSyncTableSnapshot dts = (DatabaseSyncTableSnapshot) snapshot;
-                fromSnap = Math.max(0L, dts.getSuccessTotal()) + Math.max(0L, dts.getFailTotal());
-            }
-            long synced = Math.max(fromMeta, fromSnap);
-            Long sourceTotal = sourceTotalById.get(groupId);
-            bundle.addTable(snapshot, synced, sourceTotal == null ? 0L : sourceTotal);
-        }
         return bundle;
     }
 

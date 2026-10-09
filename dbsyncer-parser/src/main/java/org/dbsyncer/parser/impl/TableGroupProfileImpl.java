@@ -33,10 +33,8 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -328,36 +326,6 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
         meta.setCreateTime(now);
         meta.setUpdateTime(now);
         taskMetaProfile.addMeta(meta);
-    }
-
-    /**
-     * 查询任务下全部 table_group.id。
-     */
-    @Override
-    public List<String> listTableGroupIds(String taskId) {
-        List<String> groupIds = new ArrayList<>();
-        if (StringUtil.isBlank(taskId)) {
-            return groupIds;
-        }
-        Query query = new Query();
-        query.setType(StorageEnum.TABLE_GROUP);
-        query.setPageSize(ConfigConstant.PAGE_SIZE);
-        Set<String> selectFields = new HashSet<>();
-        selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
-        query.setSelectFlied(selectFields);
-        query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
-        while (true) {
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                break;
-            }
-            for (Object item : paging.getData()) {
-                Map<String, Object> row = (Map<String, Object>) item;
-                groupIds.add(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)));
-            }
-            query.setPageNum(query.getPageNum() + 1);
-        }
-        return groupIds;
     }
 
     @Override

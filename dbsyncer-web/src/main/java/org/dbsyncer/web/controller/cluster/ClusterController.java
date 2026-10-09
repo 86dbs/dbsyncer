@@ -3,7 +3,10 @@
  */
 package org.dbsyncer.web.controller.cluster;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.model.PluginFile;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -19,6 +22,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * 集群管理。
@@ -153,6 +161,84 @@ public class ClusterController extends BaseController {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
+    }
+
+    /**
+     * 本机插件清单。须携带 {@code X-Cluster-Token}。
+     */
+    @GetMapping("/internal/plugin/manifest")
+    @ResponseBody
+    public RestResult pluginManifest() {
+        try {
+            return RestResult.restSuccess(clusterService.listPluginFiles());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 读取本机插件文件。须携带 {@code X-Cluster-Token}。
+     */
+    @GetMapping("/internal/plugin/file")
+    public void pluginFile(HttpServletResponse response, @RequestParam("name") String name) {
+        try {
+            if (!PluginFile.isSafeName(name)) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            byte[] body = clusterService.readPluginFile(name);
+            if (body == null) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            response.setContentType("application/octet-stream");
+            response.setContentLength(body.length);
+            OutputStream out = response.getOutputStream();
+            out.write(body);
+            out.flush();
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 接收插件文件。文件名在请求头 {@link PluginFile#FILE_NAME_HEADER}。须携带 {@code X-Cluster-Token}。
+     */
+    @PostMapping("/internal/plugin/file")
+    @ResponseBody
+    public RestResult acceptPlugin(HttpServletRequest request) {
+        try {
+            String fileName = request.getHeader(PluginFile.FILE_NAME_HEADER);
+            boolean relay = StringUtil.equals("1", request.getHeader(PluginFile.RELAY_HEADER));
+            clusterService.acceptPluginFile(fileName, readPluginBody(request), relay);
+            return RestResult.restSuccess(Boolean.TRUE);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    private byte[] readPluginBody(HttpServletRequest request) throws IOException {
+        long length = request.getContentLengthLong();
+        if (length > PluginFile.MAX_BYTES) {
+            throw new BizException("插件文件超过128MB");
+        }
+        int initial = length > 0 && length <= Integer.MAX_VALUE ? (int) length : 8192;
+        ByteArrayOutputStream out = new ByteArrayOutputStream(initial);
+        InputStream in = request.getInputStream();
+        byte[] buf = new byte[8192];
+        long total = 0;
+        int n;
+        while ((n = in.read(buf)) != -1) {
+            total += n;
+            if (total > PluginFile.MAX_BYTES) {
+                throw new BizException("插件文件超过128MB");
+            }
+            out.write(buf, 0, n);
+        }
+        return out.toByteArray();
     }
 
 }

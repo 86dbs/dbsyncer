@@ -7,15 +7,21 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * 全量同步表级进度
@@ -113,10 +119,25 @@ public abstract class FullTableProgressUtil {
     }
 
     /**
-     * 清空任务下全部表明细进度（快照清空、state=READY；保留 success/fail 等计数）。
+     * 按页清空任务下全部表明细进度（快照清空、state=READY；保留 success/fail 等计数）。
+     *
+     * @param taskMetaProfile   Meta 服务
+     * @param tableGroupProfile 表映射服务
+     * @param taskId            任务 ID
+     */
+    public static void clearAll(TaskMetaProfile taskMetaProfile, TableGroupProfile tableGroupProfile, String taskId) {
+        if (taskMetaProfile == null || tableGroupProfile == null || StringUtil.isBlank(taskId)) {
+            return;
+        }
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, page ->
+                clearAll(taskMetaProfile, toTableGroupIds(page)));
+    }
+
+    /**
+     * 清空给定表映射的明细进度（快照清空、state=READY；保留 success/fail 等计数）。
      *
      * @param taskMetaProfile Meta 服务
-     * @param tableGroupIds   表映射 ID 列表
+     * @param tableGroupIds   本批表映射 ID
      */
     public static void clearAll(TaskMetaProfile taskMetaProfile, List<String> tableGroupIds) {
         if (taskMetaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
@@ -168,10 +189,35 @@ public abstract class FullTableProgressUtil {
     }
 
     /**
+     * 任务下是否存在未完成的表进度（按页扫描，不一次装入全部表映射）。
+     *
+     * @param taskMetaProfile   Meta 服务
+     * @param tableGroupProfile 表映射服务
+     * @param taskId            任务 ID
+     * @return true 存在未完成进度
+     */
+    public static boolean hasIncomplete(TaskMetaProfile taskMetaProfile, TableGroupProfile tableGroupProfile, String taskId) {
+        if (taskMetaProfile == null || tableGroupProfile == null || StringUtil.isBlank(taskId)) {
+            return false;
+        }
+        AtomicBoolean incomplete = new AtomicBoolean(false);
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, page -> {
+            if (incomplete.get()) {
+                return;
+            }
+
+            if (hasIncomplete(taskMetaProfile, toTableGroupIds(page))) {
+                incomplete.set(true);
+            }
+        });
+        return incomplete.get();
+    }
+
+    /**
      * 是否存在未完成的表进度（有快照且非 DONE，或 state 为运行中/停止中）。
      *
      * @param taskMetaProfile Meta 服务
-     * @param tableGroupIds   表映射 ID 列表
+     * @param tableGroupIds   本批表映射 ID
      * @return true 存在未完成进度
      */
     public static boolean hasIncomplete(TaskMetaProfile taskMetaProfile, List<String> tableGroupIds) {
@@ -239,6 +285,13 @@ public abstract class FullTableProgressUtil {
     public static Object tableLock(String tableGroupId) {
         String id = StringUtil.isBlank(tableGroupId) ? StringUtil.EMPTY : tableGroupId;
         return ("table-meta-" + id).intern();
+    }
+
+    private static List<String> toTableGroupIds(List<TableGroup> groups) {
+        if (CollectionUtils.isEmpty(groups)) {
+            return Collections.emptyList();
+        }
+        return groups.stream().map(TableGroup::getId).collect(Collectors.toList());
     }
 
     private static CommonTaskSnapshot readySnapshot() {

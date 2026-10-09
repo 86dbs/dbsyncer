@@ -76,9 +76,10 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
 
     @Override
     public void delete(String id) {
-        taskProfile.dropTaskDetalTable(id);
+        taskProfile.dropTaskDetailTable(id);
         taskProfile.deleteTask(id);
         tableGroupProfile.removeTableGroupsByTaskId(id);
+        taskMetaProfile.removeMeta(id);
         removeCacheAndNotice(id);
     }
 

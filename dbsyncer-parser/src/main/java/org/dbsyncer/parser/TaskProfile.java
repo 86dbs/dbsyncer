@@ -107,7 +107,7 @@ public interface TaskProfile {
     /**
      * 删除任务运行数据：删表级 Meta，并物理 DROP 明细分表（不重建）。
      */
-    void dropTaskDetalTable(String taskId);
+    void dropTaskDetailTable(String taskId);
 
     /**
      * 预建运行明细分表

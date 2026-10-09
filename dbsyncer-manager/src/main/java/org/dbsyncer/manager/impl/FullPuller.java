@@ -217,7 +217,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     private void clearFullProgress(Task task, String mappingId) {
-        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile.listTableGroupIds(mappingId));
+        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile, mappingId);
         synchronized (metaLock(task.getId())) {
             Meta meta = taskMetaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");

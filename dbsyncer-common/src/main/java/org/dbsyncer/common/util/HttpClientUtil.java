@@ -15,6 +15,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -111,6 +113,53 @@ public abstract class HttpClientUtil {
                     : contentType));
         }
         return execute(request);
+    }
+
+    /**
+     * POST 二进制正文，响应仍按文本读取。
+     *
+     * @param url              地址
+     * @param body             正文
+     * @param contentType      内容类型，空则按字节流
+     * @param headers          请求头
+     * @param connectTimeoutMs 连接超时
+     * @param readTimeoutMs    读超时
+     * @return 状态码与响应文本
+     * @throws Exception 传输失败
+     */
+    public static HttpResult post(String url, byte[] body, ContentType contentType, Map<String, String> headers,
+                                  int connectTimeoutMs, int readTimeoutMs) throws Exception {
+        HttpPost request = new HttpPost(url);
+        applyConfig(request, headers, connectTimeoutMs, readTimeoutMs);
+        if (body != null) {
+            ContentType type = contentType == null ? ContentType.APPLICATION_OCTET_STREAM : contentType;
+            request.setEntity(new ByteArrayEntity(body, type));
+        }
+        return execute(request);
+    }
+
+    /**
+     * GET 二进制正文。非 200 抛出 {@link IOException}。
+     *
+     * @param url              地址
+     * @param headers          请求头
+     * @param connectTimeoutMs 连接超时
+     * @param readTimeoutMs    读超时
+     * @return 响应字节
+     * @throws Exception 传输失败或状态码不是 200
+     */
+    public static byte[] getBytes(String url, Map<String, String> headers, int connectTimeoutMs, int readTimeoutMs)
+            throws Exception {
+        HttpGet request = new HttpGet(url);
+        applyConfig(request, headers, connectTimeoutMs, readTimeoutMs);
+        try (CloseableHttpResponse response = CLIENT.execute(request)) {
+            int status = response.getStatusLine().getStatusCode();
+            byte[] body = response.getEntity() == null ? new byte[0] : EntityUtils.toByteArray(response.getEntity());
+            if (status != 200) {
+                throw new IOException("HTTP " + status);
+            }
+            return body;
+        }
     }
 
     private static void applyConfig(HttpRequestBase request, Map<String, String> headers,

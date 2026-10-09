@@ -10,9 +10,12 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.PluginFile;
 import org.dbsyncer.sdk.model.Task;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,6 +69,50 @@ public interface ClusterService {
     }
 
     default void pushMessage(CommonMessage message) {
+    }
+
+    /**
+     * 将本机插件文件同步到其他节点。
+     *
+     * @param fileName 插件文件名
+     */
+    default void publishPlugin(String fileName) {
+    }
+
+    /**
+     * 从 Leader 对齐本机插件。
+     */
+    default void syncPluginsFromLeader() {
+    }
+
+    /**
+     * 本机插件目录中的 JAR 清单。
+     *
+     * @return 文件名、大小与摘要
+     */
+    default List<PluginFile> listPluginFiles() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 读取本机插件文件。
+     *
+     * @param fileName 文件名
+     * @return 文件字节；不存在时返回 null
+     */
+    default byte[] readPluginFile(String fileName) {
+        return null;
+    }
+
+    /**
+     * 接收其他节点推送的插件文件并加载。
+     *
+     * @param fileName 文件名
+     * @param content  文件字节
+     * @param relay    为 true 时接收节点继续分发给其他节点
+     */
+    default void acceptPluginFile(String fileName, byte[] content, boolean relay) {
+        throw new UnsupportedOperationException("当前部署不接收插件文件");
     }
 
     default long forceExpireGracePeriod() {

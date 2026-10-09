@@ -97,10 +97,6 @@ public interface TableGroupProfile {
      */
     boolean existTableGroup(String taskId, String sourceTable, String targetTable);
 
-    // todo 调用的地方都要优化
-    @Deprecated
-    List<String> listTableGroupIds(String taskId);
-
     /**
      * 表映射总数。
      */

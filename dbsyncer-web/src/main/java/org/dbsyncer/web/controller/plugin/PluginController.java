@@ -1,9 +1,12 @@
 package org.dbsyncer.web.controller.plugin;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.sdk.model.PluginFile;
+import org.dbsyncer.sdk.spi.ClusterService;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -27,6 +30,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequestMapping("/plugin")
@@ -36,6 +41,9 @@ public class PluginController {
 
     @Resource
     private PluginService pluginService;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Resource
     private AppConfig appConfig;
@@ -52,20 +60,27 @@ public class PluginController {
     public RestResult upload(MultipartFile[] files) {
         try {
             if (files != null && files.length > 0) {
-                MultipartFile file = null;
                 String filePath = pluginService.getPluginPath();
                 FileUtils.forceMkdir(new File(filePath));
-                for (int i = 0; i < files.length; i++) {
-                    file = files[i];
-                    if (file != null) {
-                        String filename = file.getOriginalFilename();
-                        pluginService.checkFileSuffix(filename);
-                        File dest = new File(filePath + filename);
-                        FileUtils.deleteQuietly(dest);
-                        FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
+                List<String> saved = new ArrayList<String>();
+                for (MultipartFile file : files) {
+                    if (file == null) {
+                        continue;
                     }
+                    String filename = fileName(file.getOriginalFilename());
+                    pluginService.checkFileSuffix(filename);
+                    if (!PluginFile.isSafeName(filename)) {
+                        throw new BizException("插件文件名不合法，仅支持字母、数字、点、下划线和短横线");
+                    }
+                    File dest = new File(filePath, filename);
+                    FileUtils.deleteQuietly(dest);
+                    FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
+                    saved.add(filename);
                 }
                 pluginService.loadPlugins();
+                for (String filename : saved) {
+                    clusterService.publishPlugin(filename);
+                }
             }
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
@@ -104,6 +119,13 @@ public class PluginController {
             IOUtils.closeQuietly(bis);
             IOUtils.closeQuietly(outputStream);
         }
+    }
+
+    private String fileName(String original) {
+        if (original == null) {
+            return null;
+        }
+        return new File(original).getName();
     }
 
     /**

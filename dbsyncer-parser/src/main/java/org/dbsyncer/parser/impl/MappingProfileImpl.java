@@ -66,7 +66,7 @@ public final class MappingProfileImpl extends AbstractConfigModelProfile<Mapping
 
     @Override
     public void dropTaskDetailTable(String id) {
-        taskProfile.dropTaskDetalTable(id);
+        taskProfile.dropTaskDetailTable(id);
     }
 
     @Override

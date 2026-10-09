@@ -161,7 +161,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
             return false;
         }
 
-        return FullTableProgressUtil.hasIncomplete(taskMetaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()))
+        return FullTableProgressUtil.hasIncomplete(taskMetaProfile, tableGroupProfile, meta.getTaskId())
                 || processed > 0;
     }
 
@@ -177,7 +177,7 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
         meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_PROGRESS.getCode());
-        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile.listTableGroupIds(meta.getTaskId()));
+        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile, meta.getTaskId());
         taskMetaProfile.updateMeta(meta);
     }
 

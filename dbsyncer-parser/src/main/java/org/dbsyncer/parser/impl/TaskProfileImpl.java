@@ -344,7 +344,7 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public void dropTaskDetalTable(String taskId) {
+    public void dropTaskDetailTable(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
