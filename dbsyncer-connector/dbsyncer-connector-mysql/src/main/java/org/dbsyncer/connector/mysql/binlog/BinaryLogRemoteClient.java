@@ -588,7 +588,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     private void confirmSupportOfChecksum(final PacketChannel channel, ChecksumType checksumType) throws IOException {
         channel.write(new QueryCommand("set @master_binlog_checksum= @@global.binlog_checksum"));
-        byte[] statementResult = channel.read();
+        byte[] statementResult = readPacketNoSequence();
         checkError(statementResult);
         eventDeserializer.setChecksumType(checksumType);
     }
@@ -670,17 +670,28 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     private ResultSetRowPacket[] readResultSet() throws IOException {
         List<ResultSetRowPacket> resultSet = new LinkedList();
-        byte[] statementResult = channel.read();
+        byte[] statementResult = readPacketNoSequence();
         if (statementResult[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
             throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
-        while ((channel.read())[0] != (byte) 0xFE /* eof */) { /* skip */ }
-        for (byte[] bytes; (bytes = channel.read())[0] != (byte) 0xFE /* eof */;) {
+        while ((readPacketNoSequence())[0] != (byte) 0xFE /* eof */) { /* skip */ }
+        for (byte[] bytes; (bytes = readPacketNoSequence())[0] != (byte) 0xFE /* eof */;) {
             resultSet.add(new ResultSetRowPacket(bytes));
         }
         return resultSet.toArray(new ResultSetRowPacket[0]);
+    }
+
+    /**
+     * 读取一个 MySQL 数据包（3 字节长度 + 1 字节序号 + 数据体），不做序号校验。
+     * 与监听线程一致：仅依赖长度字段切包，避免服务器在认证后重置序号导致 "unexpected sequence" 异常。
+     */
+    private byte[] readPacketNoSequence() throws IOException {
+        ByteArrayInputStream inputStream = channel.getInputStream();
+        int packetLength = inputStream.readInteger(3);
+        inputStream.skip(1); // 1 byte for sequence
+        return inputStream.read(packetLength);
     }
 
     private void closeChannel(final PacketChannel channel) throws IOException {
