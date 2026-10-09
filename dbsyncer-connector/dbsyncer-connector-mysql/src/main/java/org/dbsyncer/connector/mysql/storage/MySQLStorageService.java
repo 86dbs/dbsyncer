@@ -698,6 +698,7 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID,
                 ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.PLAN_START_CURSOR, ConfigConstant.PLAN_END_CURSOR,
                 ConfigConstant.PLAN_LAST_CURSOR, ConfigConstant.PLAN_SUCCESS, ConfigConstant.PLAN_FAIL,
+                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED,
                 ConfigConstant.PLAN_STATUS, ConfigConstant.PLAN_LAST_PAGE,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskPlanFields = builder.getFields();

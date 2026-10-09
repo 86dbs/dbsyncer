@@ -28,8 +28,10 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
 import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
@@ -135,6 +137,12 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
     @Resource
     private ValidateSyncMatchTableTask validateSyncMatchTableTask;
+
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     /**
      * 任务启停锁
@@ -398,8 +406,17 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         Assert.isTrue(!dispatchTaskService.isRunning(id), "表映射正在匹配中，请稍候再启动");
         ValidateSyncTask task = validateSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
-        clusterService.start(task, false);
-        return "启动成功";
+        synchronized (LOCK) {
+
+            Meta meta = taskMetaProfile.getMeta(id);
+            if (meta != null && CommonTaskStatusEnum.isDone(meta.getState())) {
+                taskMetaProfile.resetMeta(id);
+                taskDetailMetaProfile.clearData(id);
+                taskProfile.deleteRunData(id);
+            }
+            clusterService.start(task, false);
+            return "启动成功";
+        }
     }
 
     @Override
