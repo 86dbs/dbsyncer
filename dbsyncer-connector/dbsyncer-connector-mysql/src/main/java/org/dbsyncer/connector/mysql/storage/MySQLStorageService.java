@@ -732,9 +732,9 @@ public class MySQLStorageService extends AbstractStorageService {
         StorageDataMigrator migrator = new MySQLStorageDataMigrator(this, connectorInstance, database);
         if (!newStorageSchema) {
             logger.info("未检测到完整新存储拆表（或仍含 task.STATUS），执行兼容升级");
+            migrator.run();
+            dropTaskStatusColumnIfPresent();
         }
-        migrator.run();
-        dropTaskStatusColumnIfPresent();
     }
 
     /**
