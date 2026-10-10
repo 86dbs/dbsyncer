@@ -70,14 +70,6 @@
     </div>
 </div>
 
-<div class="grid grid-cols-4 mb-4" th:if="${editionInfo.edition ne 'community' and clusterEnabled}">
-    <div class="card">
-        <div class="card-body">
-            <p class="text-secondary text-sm mb-1">增量任务总计</p>
-            <span class="text-xxl font-bold" id="clusterIncTotal">-</span>
-        </div>
-    </div>
-</div>
 
 <!-- 集群管理 -->
 <div th:if="${editionInfo.edition ne 'community'}" class="form-container">
