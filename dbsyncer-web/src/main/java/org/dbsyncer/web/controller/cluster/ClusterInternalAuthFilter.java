@@ -7,6 +7,7 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.HttpClientUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,6 +49,9 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
     @Value("${dbsyncer.cluster.enabled:false}")
     private boolean clusterEnabled;
 
+    @Resource
+    private PreloadTemplate preloadTemplate;
+
     @PostConstruct
     public void logConfig() {
         if (StringUtil.isBlank(internalToken)) {
@@ -70,6 +75,10 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        // 1. 配置是否开启
+        if (!preloadTemplate.isPreloadCompleted()) {
+            return;
+        }
         if (StringUtil.isBlank(internalToken)) {
             reject(response, HttpServletResponse.SC_FORBIDDEN, "集群内部接口未配置 dbsyncer.cluster.internal-token，已拒绝访问");
             return;
