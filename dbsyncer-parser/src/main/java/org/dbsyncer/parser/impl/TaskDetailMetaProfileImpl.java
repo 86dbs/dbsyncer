@@ -7,7 +7,6 @@ import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
-import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -51,16 +50,6 @@ public final class TaskDetailMetaProfileImpl implements TaskDetailMetaProfile {
     @Override
     public void remove(String tableGroupId) {
 
-    }
-
-    @Override
-    public void reset(String tableGroupId) {
-        Meta meta = getMeta(tableGroupId);
-        if (meta != null) {
-            meta.clear();
-            meta.setUpdateTime(System.currentTimeMillis());
-            operationTemplate.execute(meta, CommandEnum.OPR_EDIT);
-        }
     }
 
     @Override

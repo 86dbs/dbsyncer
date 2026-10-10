@@ -276,22 +276,8 @@ public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> 
     }
 
     @Override
-    public void updateMetaBatch(List<Meta> metas) {
-        if (CollectionUtils.isEmpty(metas)) {
-            return;
-        }
-        TaskSplitUtil.split(metas, ConfigConstant.PAGE_SIZE, batch -> {
-            List<Map> paramsList = new ArrayList<>(batch.size());
-            for (Meta meta : batch) {
-                if (meta == null || StringUtil.isBlank(meta.getId())) {
-                    continue;
-                }
-                paramsList.add(ConfigModelUtil.convertModelToMap(meta));
-            }
-            if (!CollectionUtils.isEmpty(paramsList)) {
-                storageService.editBatch(StorageEnum.META, null, paramsList);
-            }
-        });
+    public void updateMetaWithoutNotice(Meta meta) {
+        operationTemplate.execute(meta, CommandEnum.OPR_EDIT);
     }
 
     @Override

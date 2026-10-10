@@ -36,11 +36,6 @@ public interface TaskDetailMetaProfile {
     void remove(String tableGroupId);
 
     /**
-     * 重置meta状态
-     */
-    void reset(String tableGroupId);
-
-    /**
      * 清空明细分表数据后预建空表（任务仍在时使用）。
      */
     void clearData(String taskId);

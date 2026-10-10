@@ -183,7 +183,7 @@ public abstract class FullTableProgressUtil {
                 meta.setFail(new AtomicLong(0));
                 meta.setDiff(new AtomicLong(0));
                 meta.setFixed(new AtomicLong(0));
-                taskMetaProfile.updateMeta(meta);
+                taskMetaProfile.updateMetaWithoutNotice(meta);
             }
         }
     }

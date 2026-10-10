@@ -85,9 +85,9 @@ public interface TaskMetaProfile {
     String updateMeta(Meta meta);
 
     /**
-     * 批量更新 Meta（就地重置进度等场景，避免删插放大）。
+     * 更新Meta(不带通知)
      */
-    void updateMetaBatch(List<Meta> metas);
+    void updateMetaWithoutNotice(Meta meta);
 
     /**
      * 删除 Meta。
