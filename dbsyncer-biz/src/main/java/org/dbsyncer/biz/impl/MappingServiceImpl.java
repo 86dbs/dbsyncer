@@ -204,7 +204,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             mappingProfile.clearRunData(id);
-            taskMetaProfile.clearMeta(id);
             log(LogType.MappingLog.UPDATE, model);
             // 更新meta
             tableGroupService.updateMeta(mapping, metaSnapshot);
@@ -513,10 +512,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 提交统计同比任务总数任务
      */
     private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
-        MappingCountTask task = (MappingCountTask) mappingCountTask.clone();
-        task.setMappingId(mapping.getId());
-        task.setMetaSnapshot(metaSnapshot);
-        dispatchTaskService.execute(task);
+        if (ModelEnum.isFull(mapping.getType())) {
+            MappingCountTask task = (MappingCountTask) mappingCountTask.clone();
+            task.setMappingId(mapping.getId());
+            task.setMetaSnapshot(metaSnapshot);
+            dispatchTaskService.execute(task);
+        }
     }
 
     /**
