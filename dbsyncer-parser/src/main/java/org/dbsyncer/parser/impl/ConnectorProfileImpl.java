@@ -4,12 +4,14 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.config.PackageFormatConfig;
+import org.dbsyncer.common.event.RemoveConnectorCacheEvent;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Connector;
@@ -20,6 +22,7 @@ import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -35,7 +38,7 @@ import java.util.Map;
  * @version 1.0.0
  */
 @Component
-public class ConnectorProfileImpl implements ConnectorProfile {
+public class ConnectorProfileImpl extends AbstractConfigModelProfile<Connector> implements ConnectorProfile, ApplicationListener<RemoveConnectorCacheEvent> {
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -62,22 +65,37 @@ public class ConnectorProfileImpl implements ConnectorProfile {
     }
 
     @Override
+    public Connector getCache(String id) {
+        String cacheKey = buildCacheKey(id);
+        Connector cached = cacheService.get(cacheKey, Connector.class);
+        if (cached != null) {
+            return cached;
+        }
+        return cacheService.executeWithLock(buildLockKey(id), () -> {
+            Connector again = cacheService.get(cacheKey, Connector.class);
+            if (again != null) {
+                return again;
+            }
+            Query query = new Query();
+            query.setType(StorageEnum.CONNECTOR);
+            query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+            Map map = storageService.queryObject(query);
+            if (CollectionUtils.isEmpty(map)) {
+                return null;
+            }
+            Object json = map.get(ConfigConstant.CONFIG_MODEL_JSON);
+            Connector connector = json == null ? null : parseConnector(String.valueOf(json));
+            if (connector != null) {
+                cacheService.put(cacheKey, connector, EXPIRED_1_HOURS);
+            }
+            return connector;
+        });
+
+    }
+
+    @Override
     public Connector getConnector(String connectorId) {
-        if (StringUtil.isBlank(connectorId)) {
-            return null;
-        }
-        Query query = new Query();
-        query.setType(StorageEnum.CONNECTOR);
-        query.setPageNum(1);
-        query.setPageSize(1);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, connectorId);
-        Paging paging = storageService.query(query);
-        List<Map> data = paging == null ? null : (List<Map>) paging.getData();
-        if (CollectionUtils.isEmpty(data)) {
-            return null;
-        }
-        Object json = data.get(0).get(ConfigConstant.CONFIG_MODEL_JSON);
-        return json == null ? null : parseConnector(String.valueOf(json));
+        return getCache(connectorId);
     }
 
     @Override
@@ -194,5 +212,10 @@ public class ConnectorProfileImpl implements ConnectorProfile {
             }
         }
         TaskSplitUtil.split(connectors, PackageFormatConfig.IMPORT_BATCH_SIZE, this::addConnectorBatch);
+    }
+
+    @Override
+    public void onApplicationEvent(RemoveConnectorCacheEvent event) {
+        removeCache(event.getCommonMessage().getId());
     }
 }
