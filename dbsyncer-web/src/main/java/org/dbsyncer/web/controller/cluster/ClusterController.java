@@ -11,6 +11,7 @@ import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -143,6 +144,7 @@ public class ClusterController extends BaseController {
      */
     @PostMapping("/internal/message")
     @ResponseBody
+    @Async
     public RestResult message(@RequestBody String message) {
         try {
             return RestResult.restSuccess(clusterService.receiveMessage(message));
