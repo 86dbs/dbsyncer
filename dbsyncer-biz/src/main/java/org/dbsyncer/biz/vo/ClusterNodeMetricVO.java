@@ -37,6 +37,7 @@ public class ClusterNodeMetricVO {
     private long storageQueueUp;
     private int fullWorkItemCount;
     private int incrementalCount;
+    private int pluginSize;
 
     public String getNodeId() {
         return nodeId;
@@ -188,5 +189,13 @@ public class ClusterNodeMetricVO {
 
     public void setIncrementalCount(int incrementalCount) {
         this.incrementalCount = incrementalCount;
+    }
+
+    public int getPluginSize() {
+        return pluginSize;
+    }
+
+    public void setPluginSize(int pluginSize) {
+        this.pluginSize = pluginSize;
     }
 }

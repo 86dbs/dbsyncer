@@ -78,13 +78,7 @@ public interface ClusterService {
      */
     default void publishPlugin(String fileName) {
     }
-
-    /**
-     * 从 Leader 对齐本机插件。
-     */
-    default void syncPluginsFromLeader() {
-    }
-
+    
     /**
      * 本机插件目录中的 JAR 清单。
      *

@@ -4,6 +4,7 @@
 package org.dbsyncer.web.controller.cluster;
 
 import org.dbsyncer.biz.MonitorService;
+import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.impl.MetricReporter;
 import org.dbsyncer.biz.model.AppReportMetric;
@@ -101,6 +102,9 @@ public class LocalNodeMetricProvider {
     @Resource
     private ClusterService clusterService;
 
+    @Resource
+    private PluginService pluginService;
+
     @PostConstruct
     public void init() {
         refreshSystemMetrics();
@@ -122,6 +126,7 @@ public class LocalNodeMetricProvider {
         vo.setDiskUsed(disk.getUsed());
         vo.setDiskTotal(disk.getTotal());
         vo.setThreadLive(threadLive);
+        vo.setPluginSize(pluginService.listPlugins().size());
         try {
             AppReportMetric app = monitorService.queryAppMetric(Stream
                     .of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK)

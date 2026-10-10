@@ -18,6 +18,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UnderlineToCamelUtils;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.storage.ExecuteRequest;
@@ -187,7 +188,8 @@ public class ClusterNodeMetricAggregator {
                 logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), result.getStatusCode());
                 return unreachable();
             }
-            RestResult<ClusterNodeMetricVO> res = JsonUtil.jsonToObj(result.getBody(), new TypeReference<RestResult<ClusterNodeMetricVO>>() {});
+            RestResult<ClusterNodeMetricVO> res = JsonUtil.jsonToObj(result.getBody(), new TypeReference<RestResult<ClusterNodeMetricVO>>() {
+            });
             if (res == null || !res.isSuccess()) {
                 return unreachable();
             }
@@ -227,9 +229,15 @@ public class ClusterNodeMetricAggregator {
     }
 
     private Map<String, Integer> resolveIncrementalCounts() {
+        // 调度表 TASK_TYPE 为 mapping；同步方式 model 在 dbsyncer_task.JSON
         try {
-            String sql = "SELECT NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE
-                    + " WHERE NODE_ID IS NOT NULL AND TASK_TYPE IN ('increment', 'fullIncrement') GROUP BY NODE_ID";
+            String sql = "SELECT t.NODE_ID, COUNT(*) AS CNT FROM " + ConfigConstant.CLUSTER_TASK_TABLE + " t"
+                    + " JOIN dbsyncer_task dt ON dt.ID = t.TASK_ID"
+                    + " WHERE t.NODE_ID IS NOT NULL"
+                    + " AND t.TASK_TYPE = '" + ConfigConstant.MAPPING + "'"
+                    + " AND JSON_UNQUOTE(JSON_EXTRACT(dt.JSON, '$.model')) IN ('"
+                    + ModelEnum.INCREMENT.getCode() + "', '" + ModelEnum.FULL_INCREMENT.getCode() + "')"
+                    + " GROUP BY t.NODE_ID";
             return toNodeCountMap(storageService.queryList(ExecuteRequest.of(sql)));
         } catch (Exception e) {
             logger.warn("加载集群增量任务统计失败: {}", e.getMessage());
@@ -243,6 +251,7 @@ public class ClusterNodeMetricAggregator {
             return result;
         }
         for (Map<String, Object> row : rows) {
+
             Map<String, Object> normalized = normalizeRow(row);
             String nodeId = String.valueOf(normalized.getOrDefault(ConfigConstant.SCHEDULE_NODE_ID, ""));
             if (StringUtil.isBlank(nodeId)) {

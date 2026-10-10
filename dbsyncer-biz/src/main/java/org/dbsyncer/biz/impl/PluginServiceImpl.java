@@ -8,7 +8,6 @@ import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.PluginVO;
 import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
@@ -58,20 +57,6 @@ public class PluginServiceImpl implements PluginService {
             return new ArrayList<>();
         }
         return pluginAll.stream().map(this::toPluginVO).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<PluginVO> getPluginAll() {
-        List<Plugin> pluginAll = pluginFactory.getPluginAll();
-        if (CollectionUtils.isEmpty(pluginAll)) {
-            return new ArrayList<>();
-        }
-        Map<String, List<String>> pluginClassNameMap = getPluginClassNameMap();
-        return pluginAll.stream().map(plugin -> {
-            PluginVO vo = toPluginVO(plugin);
-            vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), StringUtil.VERTICAL_LINE));
-            return vo;
-        }).collect(Collectors.toList());
     }
 
     private PluginVO toPluginVO(Plugin plugin) {
@@ -144,7 +129,7 @@ public class PluginServiceImpl implements PluginService {
     }
 
     private void putPluginMap(Map<String, List<String>> map, String className, String name) {
-        map.compute(className, (k, v)-> {
+        map.compute(className, (k, v) -> {
             if (v == null) {
                 try {
                     return new ArrayList<>();

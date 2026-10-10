@@ -309,6 +309,9 @@
         var memory = (m && (m.reachable || m.local)) ? formatUsedTotal(m.memoryUsed, m.memoryTotal, 'G') : '-';
         var threads = (m && (m.reachable || m.local)) ? formatDash(m.threadLive) : '-';
         var disk = (m && (m.reachable || m.local)) ? formatUsedTotal(m.diskUsed, m.diskTotal, 'G') : '-';
+        var pluginSize = formatMetric(m, function (metric) {
+            return formatDash(metric.pluginSize);
+        });
         var buttons = [];
         if (clusterEnabled) {
             var editId = escapeHtml(nodeId);
@@ -381,6 +384,7 @@
             + '<td>' + taskHtml + '</td>'
             + '<td>' + throughputHtml + '</td>'
             + '<td>' + resourceHtml + '</td>'
+            + '<td>' + escapeHtml(pluginSize) + '</td>'
             + '<td>' + actions + '</td>'
             + '</tr>';
     }
@@ -511,4 +515,9 @@
     }
 
     window.initClusterList = initClusterList;
+
+    // 本脚本仅在 clusterEnabled 时由 list.html 引入，直接初始化
+    $(document).ready(function () {
+        initClusterList({clusterEnabled: true});
+    });
 })(window);

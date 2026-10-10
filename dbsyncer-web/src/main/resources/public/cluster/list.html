@@ -22,10 +22,12 @@
             </li>
             <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>高可用（HA）</strong>：某台机器挂了，其他机器立刻接手，保障同步业务不停、数据不断档
             </li>
-            <li><i class="fa fa-angle-right text-info"></i> <strong>动态扩容</strong>：业务量涨了直接加机器，能力跟着长，不用停服重启、无需额外配置</li>
+            <li><i class="fa fa-angle-right text-info"></i> <strong>动态扩容</strong>：业务量涨了直接加机器，能力跟着长，不用停服重启、无需额外配置
+            </li>
         </ul>
         <p class="text-sm text-secondary">
-            适用场景：对同步连续性有要求、大规模数据同步场景。例如多业务库同步至数仓、TB 级数据迁移、增量同步吞吐 1w+ TPS 的业务。
+            适用场景：对同步连续性有要求、大规模数据同步场景。例如多业务库同步至数仓、TB 级数据迁移、增量同步吞吐 1w+ TPS
+            的业务。
         </p>
     </div>
 
@@ -93,6 +95,7 @@
                 <th>任务</th>
                 <th>吞吐</th>
                 <th>资源</th>
+                <th>插件数</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -102,10 +105,6 @@
     </div>
 </div>
 
-<script th:if="${editionInfo.edition ne 'community' and clusterEnabled}" th:src="@{/js/cluster/cluster-list.js}"></script>
-<script th:if="${editionInfo.edition ne 'community' and clusterEnabled}" th:inline="javascript">
-    initClusterList({
-        clusterEnabled: [[${clusterEnabled}]]
-    });
-</script>
+<script th:if="${editionInfo.edition ne 'community' and clusterEnabled}"
+        th:src="@{/js/cluster/cluster-list.js}"></script>
 </html>
