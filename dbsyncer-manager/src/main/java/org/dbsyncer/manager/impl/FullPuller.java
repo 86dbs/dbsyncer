@@ -33,6 +33,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -114,6 +115,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             task.stop();
             return null;
         });
+    }
+
+    @Override
+    public List<String> getTaskId() {
+        return Collections.emptyList();
     }
 
     @Override

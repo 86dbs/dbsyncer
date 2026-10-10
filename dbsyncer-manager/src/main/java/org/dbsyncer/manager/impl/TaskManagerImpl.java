@@ -20,6 +20,8 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,6 +56,15 @@ public final class TaskManagerImpl implements TaskManager, ApplicationListener<C
     public void stop(String taskId) {
         Mapping mapping = requireMapping(taskId);
         getPuller(mapping).close(taskId);
+    }
+
+    @Override
+    public List<String> getRunningTaskId() {
+        List<String> runningTaskId = new ArrayList<>();
+        map.forEach((mapping, puller) -> {
+            runningTaskId.addAll(puller.getTaskId());
+        });
+        return runningTaskId;
     }
 
     private Mapping requireMapping(String taskId) {

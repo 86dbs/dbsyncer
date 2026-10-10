@@ -2,6 +2,8 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.parser.model.Mapping;
 
+import java.util.List;
+
 public interface Puller {
 
     void start(Mapping mapping);
@@ -15,4 +17,9 @@ public interface Puller {
     void start(Mapping mapping, boolean autoRecovery);
 
     void close(String taskId);
+
+    /**
+     * 获取所有运行中的任务id
+     */
+    List<String> getTaskId();
 }

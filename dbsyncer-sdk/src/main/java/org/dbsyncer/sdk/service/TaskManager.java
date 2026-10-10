@@ -5,6 +5,8 @@ package org.dbsyncer.sdk.service;
 
 import org.dbsyncer.common.model.ConfigModel;
 
+import java.util.List;
+
 /**
  * 本机任务执行器：由 Spring 注入，供集群/单机控制面拉起或停止 Puller。
  *
@@ -25,4 +27,6 @@ public interface TaskManager {
      * @param taskId 任务 ID（Mapping ID）
      */
     void stop(String taskId);
+
+    List<String> getRunningTaskId();
 }

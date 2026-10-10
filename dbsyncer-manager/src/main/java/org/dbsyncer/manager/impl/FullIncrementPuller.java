@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -76,6 +78,11 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
         running.remove(taskId);
         fullPuller.close(taskId);
         incrementPuller.close(taskId);
+    }
+
+    @Override
+    public List<String> getTaskId() {
+        return Collections.emptyList();
     }
 
     /**
