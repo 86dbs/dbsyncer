@@ -27,6 +27,11 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
         return StringUtil.HORIZONTAL.concat(getEvent());
     }
 
+    @Override
+    public void clearDataList() {
+        this.dataList.clear();
+    }
+
     public void addData(List<Object> data) {
         dataList.add(data);
     }

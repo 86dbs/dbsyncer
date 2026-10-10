@@ -20,4 +20,9 @@ public interface BufferResponse {
      * @return
      */
     String getSuffixName();
+
+    /**
+     * 清除批处理数据
+     */
+    void clearDataList();
 }

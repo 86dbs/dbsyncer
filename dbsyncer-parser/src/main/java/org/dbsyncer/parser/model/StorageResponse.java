@@ -50,4 +50,9 @@ public class StorageResponse implements BufferResponse {
     public String getSuffixName() {
         return StringUtil.EMPTY;
     }
+
+    @Override
+    public void clearDataList() {
+        this.dataList.clear();
+    }
 }

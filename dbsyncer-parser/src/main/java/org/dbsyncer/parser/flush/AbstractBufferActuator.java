@@ -140,10 +140,13 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             long now = Instant.now().toEpochMilli();
             try {
                 pull(response);
+                logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
+            } finally {
+                // 及时清空列表引用，便于 GC 回收，减轻 parser 侧 LinkedList 保留内存
+                response.clearDataList();
             }
-            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
         });
     }
 
