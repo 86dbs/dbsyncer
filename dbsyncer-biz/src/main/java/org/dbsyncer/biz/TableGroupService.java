@@ -8,6 +8,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,6 +27,13 @@ public interface TableGroupService {
      * 批量新增表关系，不提交统计任务（由调用方统一 MappingCountTask）。
      */
     int addWithoutCount(Map<String, String> params);
+
+    /**
+     * 按多组参数批量新增表关系（每组可含独立 fieldMappings）；遇重复跳过；不提交统计任务。
+     *
+     * @return 实际新增条数
+     */
+    int addWithoutCountBatch(List<Map<String, String>> paramsList);
 
     /**
      * 修改表关系

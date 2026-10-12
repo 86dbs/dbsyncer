@@ -5,7 +5,6 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
@@ -17,7 +16,6 @@ import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -40,7 +38,6 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.plugin.model.MappingStopContent;
-import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
@@ -65,14 +62,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
@@ -142,18 +137,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         refreshMappingTables(id);
         Mapping mapping = mappingProfile.get(id);
 
-        // 匹配相似表（异步）
+        // 匹配相似表 / 自定义表映射（异步落库后统一 MappingCountTask）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-            submitMappingMatchTableTask(mapping);
+            submitMappingMatchTableTask(mapping, null);
             return id;
         }
-
-        // 自定义表映射关系
         String tableGroups = params.get("tableGroups");
         if (StringUtil.isNotBlank(tableGroups)) {
-            matchCustomizedTableGroups(mapping, tableGroups);
+            submitMappingMatchTableTask(mapping, tableGroups);
+            return id;
         }
-        // 统计总数
+        // 无表映射时仍提交统计（total=0）
         submitMappingCountTask(mapping, null);
         return id;
     }
@@ -520,11 +514,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     /**
-     * 提交异步匹配相似表任务（结束后会继续提交统计）
+     * 提交异步表映射任务（相似表或自定义 tableGroups；结束后继续 MappingCountTask）。
+     *
+     * @param tableGroups 自定义映射文本；null/空表示按同名表自动匹配
      */
-    private void submitMappingMatchTableTask(Mapping mapping) {
+    private void submitMappingMatchTableTask(Mapping mapping, String tableGroups) {
         MappingMatchTableTask task = (MappingMatchTableTask) mappingMatchTableTask.clone();
         task.setMappingId(mapping.getId());
+        task.setTableGroups(tableGroups);
         dispatchTaskService.execute(task);
     }
 
@@ -603,82 +600,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      */
     private void assertTableGroupExist(String mappingId) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "映射关系不能为空");
-    }
-
-    /**
-     * 自定义配置表映射关系
-     *
-     * @param model
-     * @param tableGroups
-     */
-    private void matchCustomizedTableGroups(ConfigModel model, String tableGroups) {
-        Mapping mapping = (Mapping) model;
-        List<Table> sourceTables = mapping.getSourceTable();
-        List<Table> targetTables = mapping.getTargetTable();
-        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            return;
-        }
-        String[] lines = StringUtil.split(tableGroups, StringUtil.BREAK_LINE);
-        // 数据源表|目标源表=源表字段A1*|目标字段A2*
-        for (String line : lines) {
-            String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
-            String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
-            if (tableGroupNames.length == 2) {
-                addTableGroup(mapping.getId(), tableGroupNames[0], tableGroupNames[1], tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
-            }
-        }
-    }
-
-    private void addTableGroup(String id, String sourceTableName, String targetTableName, String fieldMappings) {
-        try {
-            Map<String, String> params = new HashMap<>();
-            params.put("mappingId", id);
-            params.put("sourceTable", sourceTableName);
-            params.put("targetTable", targetTableName);
-            params.put("sourceType", TableTypeEnum.TABLE.getCode());
-            params.put("targetType", TableTypeEnum.TABLE.getCode());
-            // A1*|A2*,B1|B2,|C3
-            if (StringUtil.isNotBlank(fieldMappings)) {
-                String[] mappings = StringUtil.split(fieldMappings, StringUtil.COMMA);
-                StringJoiner fms = new StringJoiner(StringUtil.COMMA);
-                StringJoiner sPk = new StringJoiner(StringUtil.COMMA);
-                StringJoiner tPk = new StringJoiner(StringUtil.COMMA);
-                for (String mapping : mappings) {
-                    String[] m = StringUtil.split(mapping, "\\" + StringUtil.VERTICAL_LINE);
-                    if (m.length == 2) {
-                        fms.add(replaceStar(m[0], sPk) + StringUtil.VERTICAL_LINE + replaceStar(m[1], tPk));
-                        continue;
-                    }
-                    // |C2,C3|
-                    if (m.length == 1) {
-                        String name = replaceStar(m[0], tPk);
-                        if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
-                            fms.add(StringUtil.VERTICAL_LINE + name);
-                            continue;
-                        }
-                        fms.add(name + StringUtil.VERTICAL_LINE);
-                    }
-                }
-                params.put("fieldMappings", fms.toString());
-                if (StringUtil.isNotBlank(sPk.toString())) {
-                    params.put("sourceTablePK", sPk.toString());
-                }
-                if (StringUtil.isNotBlank(tPk.toString())) {
-                    params.put("targetTablePK", tPk.toString());
-                }
-            }
-            tableGroupService.add(params);
-        } catch (RepeatedTableGroupException | SdkException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    private String replaceStar(String name, StringJoiner joiner) {
-        if (StringUtil.endsWith(name, StringUtil.STAR)) {
-            name = StringUtil.replace(name.trim(), StringUtil.STAR, StringUtil.EMPTY);
-            joiner.add(name);
-        }
-        return name;
     }
 
     private void clearMetaIfFinished(String taskId) {

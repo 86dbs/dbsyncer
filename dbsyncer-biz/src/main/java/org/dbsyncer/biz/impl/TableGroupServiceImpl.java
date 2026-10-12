@@ -101,6 +101,43 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         }
     }
 
+    @Override
+    public int addWithoutCountBatch(List<Map<String, String>> paramsList) {
+        if (CollectionUtils.isEmpty(paramsList)) {
+            return 0;
+        }
+        String mappingId = paramsList.get(0).get("mappingId");
+        Mapping mapping = mappingProfile.get(mappingId);
+        Assert.notNull(mapping, "mapping can not be null.");
+        assertRunning(mapping.getId());
+
+        synchronized (LOCK) {
+            int baseIndex = tableGroupProfile.getTableGroupCount(mappingId);
+            List<TableGroup> models = new ArrayList<>(paramsList.size());
+            for (Map<String, String> params : paramsList) {
+                if (params == null || StringUtil.isBlank(params.get("sourceTable")) || StringUtil.isBlank(params.get("targetTable"))) {
+                    continue;
+                }
+                Assert.isTrue(StringUtil.equals(mappingId, params.get("mappingId")), "mappingId 必须一致");
+                params.remove("skipRepeatedCheck");
+                try {
+                    TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
+                    log(LogType.TableGroupLog.INSERT, model);
+                    model.setIndex(baseIndex + models.size() + 1);
+                    models.add(model);
+                } catch (RepeatedTableGroupException e) {
+                    // 自定义映射等场景：已存在则跳过
+                }
+            }
+            if (CollectionUtils.isEmpty(models)) {
+                return 0;
+            }
+            tableGroupProfile.addTableGroupBatch(models);
+            mergeMappingColumn(mapping);
+            return models.size();
+        }
+    }
+
     /**
      * 校验并批量落库表映射。
      *
