@@ -80,6 +80,11 @@ public interface TaskMetaProfile {
     void addMetaBatch(List<Meta> metas);
 
     /**
+     * 批量修改 Meta
+     */
+    void updateMetaBatch(List<Meta> metas);
+
+    /**
      * 更新 Meta。
      */
     String updateMeta(Meta meta);

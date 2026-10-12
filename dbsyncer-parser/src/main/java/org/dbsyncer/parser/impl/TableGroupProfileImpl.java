@@ -126,6 +126,15 @@ public final class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
+    public void editTableGroupBatch(List<TableGroup> models) {
+        if (CollectionUtils.isEmpty(models)) {
+            return;
+        }
+        TaskSplitUtil.split(models, ConfigConstant.PAGE_SIZE, batch ->
+                operationTemplate.executeBatch(batch, CommandEnum.OPR_EDIT));
+    }
+
+    @Override
     public void removeTableGroup(String id) {
         removeTableGroupDetailMeta(id);
         storageService.remove(StorageEnum.TABLE_GROUP, id);

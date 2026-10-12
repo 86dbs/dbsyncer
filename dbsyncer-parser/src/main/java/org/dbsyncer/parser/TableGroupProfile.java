@@ -39,6 +39,13 @@ public interface TableGroupProfile {
     String editTableGroup(TableGroup model);
 
     /**
+     * 批量修改 TableGroup（按页拆分后单次存储批量 UPDATE）。
+     *
+     * @param models 待更新的 TableGroup 列表
+     */
+    void editTableGroupBatch(List<TableGroup> models);
+
+    /**
      * 删除单个 TableGroup，并同路径删除其明细 Meta。
      */
     void removeTableGroup(String id);

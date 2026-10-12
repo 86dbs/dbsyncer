@@ -20,6 +20,12 @@ public enum CommandEnum {
     /**
      * 修改
      */
-    OPR_EDIT
+    OPR_EDIT;
 
+    /**
+     * 判断是否是编辑操作
+     */
+    public boolean isEdit() {
+        return this == OPR_EDIT;
+    }
 }

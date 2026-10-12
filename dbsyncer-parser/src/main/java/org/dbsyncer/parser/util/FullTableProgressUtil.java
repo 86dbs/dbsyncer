@@ -16,6 +16,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -153,23 +154,27 @@ public abstract class FullTableProgressUtil {
 
     /**
      * 重置任务下全部表明细 Meta：行保留；state=READY、快照清空、计数归零；缺失则创建。
+     * <p>批量 {@link TaskMetaProfile#getDetailMetaMap} 读取；缺失批量 ADD，已存在逐条 UPDATE。
      */
     public static void resetAll(TaskMetaProfile taskMetaProfile, List<String> tableGroupIds) {
-        if (CollectionUtils.isEmpty(tableGroupIds)) {
+        if (taskMetaProfile == null || CollectionUtils.isEmpty(tableGroupIds)) {
             return;
         }
+        Map<String, Meta> existing = taskMetaProfile.getDetailMetaMap(tableGroupIds);
+        List<Meta> addList = new ArrayList<>();
+        List<Meta> updateList = new ArrayList<>();
+        long now = System.currentTimeMillis();
         for (String tableGroupId : tableGroupIds) {
             synchronized (tableLock(tableGroupId)) {
-                Meta meta = resolve(taskMetaProfile, tableGroupId);
-                long now = System.currentTimeMillis();
+                Meta meta = existing.get(tableGroupId);
                 if (meta == null || StringUtil.isBlank(meta.getId())) {
                     meta = new Meta();
                     meta.setTaskId(tableGroupId);
                     meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
                     meta.setCreateTime(now);
                     apply(meta, null, now);
-                    taskMetaProfile.addMeta(meta);
-                    return;
+                    addList.add(meta);
+                    continue;
                 }
                 meta.clear();
                 Map<String, String> newSnap = TaskSnapshotUtil.writeTableSnapshot(meta.getSnapshot(), null, null);
@@ -183,9 +188,11 @@ public abstract class FullTableProgressUtil {
                 meta.setFail(new AtomicLong(0));
                 meta.setDiff(new AtomicLong(0));
                 meta.setFixed(new AtomicLong(0));
-                taskMetaProfile.updateMetaWithoutNotice(meta);
+                updateList.add(meta);
             }
         }
+        taskMetaProfile.addMetaBatch(addList);
+        taskMetaProfile.updateMetaBatch(updateList);
     }
 
     /**

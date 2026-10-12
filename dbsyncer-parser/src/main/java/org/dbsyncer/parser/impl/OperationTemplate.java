@@ -80,25 +80,28 @@ public final class OperationTemplate {
     }
 
     /**
-     * 批量添加配置：单次存储批量写入。
+     * 批量写入配置：单次存储批量 ADD / EDIT。
      */
     public List<String> executeBatch(List<? extends ConfigModel> models, CommandEnum commandEnum) {
         if (CollectionUtils.isEmpty(models)) {
             return Collections.emptyList();
         }
         Assert.notNull(commandEnum, "CommandEnum can not be null.");
-        Assert.isTrue(commandEnum == CommandEnum.OPR_ADD, "Batch execute only supports OPR_ADD");
-
         List<Map> paramsList = new ArrayList<>(models.size());
         for (ConfigModel model : models) {
-            Assert.notNull(model, "ConfigModel can not be null.");
-            if (StringUtil.isBlank(model.getId())) {
-                model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+            if (commandEnum == CommandEnum.OPR_ADD) {
+                if (StringUtil.isBlank(model.getId())) {
+                    model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                }
             }
             paramsList.add(ConfigModelUtil.convertModelToMap(model));
         }
         StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0).getType());
-        storageService.addBatch(type, null, paramsList);
+        if (commandEnum.isEdit()) {
+            storageService.editBatch(type, null, paramsList);
+        } else {
+            storageService.addBatch(type, null, paramsList);
+        }
         return models.stream().map(ConfigModel::getId).collect(Collectors.toList());
     }
 

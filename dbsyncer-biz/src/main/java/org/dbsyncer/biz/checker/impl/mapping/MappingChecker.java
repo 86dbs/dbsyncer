@@ -222,6 +222,7 @@ public class MappingChecker extends AbstractChecker {
             Map<String, Integer> indexBefore = snapshotIndexes(groupAll);
             Map<String, Map<String, String>> commandBefore = snapshotCommands(groupAll);
             sortTableGroup(groupAll, params);
+            List<TableGroup> dirty = new ArrayList<>();
             for (TableGroup g : groupAll) {
                 if (g == null) {
                     continue;
@@ -230,16 +231,18 @@ public class MappingChecker extends AbstractChecker {
                 Integer oldIndex = indexBefore.get(g.getId());
                 boolean indexChanged = oldIndex == null || oldIndex != g.getIndex();
                 if (indexChanged || !commandEquals(commandBefore.get(g.getId()), g.getCommand())) {
-                    tableGroupProfile.editTableGroup(g);
+                    dirty.add(g);
                 }
             }
+            tableGroupProfile.editTableGroupBatch(dirty);
             return;
         }
-        // 无排序：按页合并，避免整表进内存；command 未变则跳过 UPDATE
+        // 无排序：按页合并，避免整表进内存；command 未变则跳过 UPDATE；有变更则按页批量写回
         tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, page -> {
             if (CollectionUtils.isEmpty(page)) {
                 return;
             }
+            List<TableGroup> dirty = new ArrayList<>(page.size());
             for (TableGroup g : page) {
                 if (g == null) {
                     continue;
@@ -247,9 +250,10 @@ public class MappingChecker extends AbstractChecker {
                 Map<String, String> before = copyCommand(g.getCommand());
                 tableGroupChecker.mergeConfig(mapping, g);
                 if (!commandEquals(before, g.getCommand())) {
-                    tableGroupProfile.editTableGroup(g);
+                    dirty.add(g);
                 }
             }
+            tableGroupProfile.editTableGroupBatch(dirty);
         });
     }
 
