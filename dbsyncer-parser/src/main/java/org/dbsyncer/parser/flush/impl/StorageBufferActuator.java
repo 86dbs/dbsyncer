@@ -19,6 +19,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 
@@ -69,8 +72,9 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     @Override
     public void pull(StorageResponse response) {
         String shardId = response.getTaskDetailShardId();
-        // 严格走库 + 明细分表：写入 dbsyncer_task_detail_{taskId}
-        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.TASK_DETAIL, shardId, response.getDataList()));
+        // 必须拷贝：process() finally 会 clearDataList，异步写不能共用同一 LinkedList（并发 clear 会把节点 item 置 null → NPE）
+        List<Map> batch = new ArrayList<>(response.getDataList());
+        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.TASK_DETAIL, shardId, batch));
     }
 
     @Override
