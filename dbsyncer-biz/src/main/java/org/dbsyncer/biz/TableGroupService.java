@@ -63,10 +63,12 @@ public interface TableGroupService {
     Paging<TableGroup> search(Map<String, String> params);
 
     /**
-     * 更新元信息
-     *
-     * @param mapping
-     * @param metaSnapshot
+     * 重置任务 Meta：清空运行状态，并可选写入增量点；不汇总 total。
      */
-    Meta updateMeta(Mapping mapping, String metaSnapshot);
+    void resetMeta(Mapping mapping, String metaSnapshot);
+
+    /**
+     * 按表组 SOURCE_TOTAL 汇总并写回任务 Meta.total（全量）。
+     */
+    Meta refreshMetaTotal(Mapping mapping);
 }

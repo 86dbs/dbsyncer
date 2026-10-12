@@ -166,18 +166,24 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public Meta updateMeta(Mapping mapping, String metaSnapshot) {
+    public void resetMeta(Mapping mapping, String metaSnapshot) {
         Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "同步任务meta不存在.");
-        // 清空状态
         meta.clear();
-        // 手动配置增量点
         if (StringUtil.isNotBlank(metaSnapshot)) {
             Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
             if (!CollectionUtils.isEmpty(snapshot)) {
                 meta.setSnapshot(snapshot);
             }
         }
+        meta.setUpdateTime(Instant.now().toEpochMilli());
+        taskMetaProfile.updateMeta(meta);
+    }
+
+    @Override
+    public Meta refreshMetaTotal(Mapping mapping) {
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
+        Assert.notNull(meta, "同步任务meta不存在.");
         getMetaTotal(meta, mapping.getModel());
         meta.setUpdateTime(Instant.now().toEpochMilli());
         taskMetaProfile.updateMeta(meta);
@@ -191,6 +197,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             AtomicLong count = new AtomicLong(0);
             tableGroupProfile.pageScanTableGroups(meta.getTaskId(), ConfigConstant.PAGE_SIZE, groupAll -> {
                 for (TableGroup g : groupAll) {
+                    if (g == null) {
+                        continue;
+                    }
                     count.getAndAdd(resolveSourceCount(g));
                 }
             });

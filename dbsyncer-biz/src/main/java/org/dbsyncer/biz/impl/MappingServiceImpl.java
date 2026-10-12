@@ -205,12 +205,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             mappingProfile.clearRunData(id);
             log(LogType.MappingLog.UPDATE, model);
-            // 更新meta
-            tableGroupService.updateMeta(mapping, metaSnapshot);
-
+            // 只复位 Meta
+            tableGroupService.resetMeta(mapping, metaSnapshot);
             mappingProfile.update(model);
         }
-        // 统计总数
+        // 异步查源库 COUNT 并汇总 Meta.total
         submitMappingCountTask(mapping, metaSnapshot);
         return id;
     }
