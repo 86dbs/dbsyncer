@@ -11,7 +11,6 @@ import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -141,10 +140,10 @@ public class ClusterController extends BaseController {
 
     /**
      * 内部统一消息入口（按 type/event 路由）。须携带 {@code X-Cluster-Token}。
+     * <p>须同步返回 RestResult，供集群节点 HTTP 通知解析；不可加 {@code @Async}，否则易出现 200 空 body。
      */
     @PostMapping("/internal/message")
     @ResponseBody
-    @Async
     public RestResult message(@RequestBody String message) {
         try {
             return RestResult.restSuccess(clusterService.receiveMessage(message));

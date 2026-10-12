@@ -512,7 +512,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 提交统计同比任务总数任务
      */
     private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
-        if (ModelEnum.isFull(mapping.getType())) {
+        if (ModelEnum.isFull(mapping.getModel())) {
             MappingCountTask task = (MappingCountTask) mappingCountTask.clone();
             task.setMappingId(mapping.getId());
             task.setMetaSnapshot(metaSnapshot);

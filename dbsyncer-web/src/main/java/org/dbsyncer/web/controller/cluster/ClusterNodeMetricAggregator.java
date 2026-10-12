@@ -116,17 +116,40 @@ public class ClusterNodeMetricAggregator {
         overview.setTotalQueue(totalQueue);
         overview.setTotalFullWorkItems(totalWorkItems);
         overview.setTotalIncremental(totalInc);
-        overview.setTps(mergeTpsSeries(metrics));
-        overview.setQueue(snapshotHistory(chartQueue));
-        overview.setFullWorkItems(snapshotHistory(chartFullWorkItems));
-        pushChartPoint(chartQueue, overview.getTotalQueue());
-        pushChartPoint(chartFullWorkItems, overview.getTotalFullWorkItems());
+        // TPS 用节点秒级序列；堆积/全量分片打点后按同一套 labels 对齐，保证三图 X 轴一致
+        HistoryStackVO tps = mergeTpsSeries(metrics);
+        String pointLabel = lastSeriesLabel(tps);
+        if (StringUtil.isBlank(pointLabel)) {
+            pointLabel = DateFormatUtil.getCurrentTime();
+        }
+        pushChartPoint(chartQueue, pointLabel, overview.getTotalQueue());
+        pushChartPoint(chartFullWorkItems, pointLabel, overview.getTotalFullWorkItems());
+        overview.setTps(tps);
+        if (CollectionUtils.isEmpty(tps.getName())) {
+            overview.setQueue(snapshotHistory(chartQueue));
+            overview.setFullWorkItems(snapshotHistory(chartFullWorkItems));
+        } else {
+            overview.setQueue(alignToLabels(tps.getName(), chartQueue));
+            overview.setFullWorkItems(alignToLabels(tps.getName(), chartFullWorkItems));
+        }
         return overview;
     }
 
-    private void pushChartPoint(HistoryStackVO history, double value) {
-        history.addName(DateFormatUtil.getCurrentTime());
-        history.addValue(value);
+    /**
+     * 追加采样点；同一秒内重复刷新则覆盖末点，避免时间轴重复。
+     */
+    private void pushChartPoint(HistoryStackVO history, String label, double value) {
+        if (history == null || StringUtil.isBlank(label)) {
+            return;
+        }
+        List<Object> names = history.getName();
+        List<Object> values = history.getValue();
+        if (!CollectionUtils.isEmpty(names) && StringUtil.equals(label, String.valueOf(names.get(names.size() - 1)))) {
+            values.set(values.size() - 1, value);
+        } else {
+            history.addName(label);
+            history.addValue(value);
+        }
         while (history.getName().size() > CHART_HISTORY_COUNT) {
             history.getName().remove(0);
             history.getValue().remove(0);
@@ -134,8 +157,50 @@ public class ClusterNodeMetricAggregator {
         history.setAverage(average(history.getValue()));
     }
 
+    /**
+     * 将稀疏采样按时间步进对齐到目标 labels（与 TPS 秒级轴一致）。
+     */
+    private HistoryStackVO alignToLabels(List<Object> labels, HistoryStackVO history) {
+        HistoryStackVO result = new HistoryStackVO();
+        if (CollectionUtils.isEmpty(labels)) {
+            return result;
+        }
+        List<Object> histNames = history == null ? null : history.getName();
+        List<Object> histValues = history == null ? null : history.getValue();
+        int histSize = histNames == null || histValues == null ? 0 : Math.min(histNames.size(), histValues.size());
+        int cursor = 0;
+        double last = 0D;
+        for (Object labelObj : labels) {
+            String label = String.valueOf(labelObj);
+            while (cursor < histSize) {
+                String histLabel = String.valueOf(histNames.get(cursor));
+                if (histLabel.compareTo(label) > 0) {
+                    break;
+                }
+                Object raw = histValues.get(cursor);
+                last = raw instanceof Number ? ((Number) raw).doubleValue() : 0D;
+                cursor++;
+            }
+            result.addName(label);
+            result.addValue(last);
+        }
+        result.setAverage(average(result.getValue()));
+        return result;
+    }
+
+    private String lastSeriesLabel(HistoryStackVO series) {
+        if (series == null || CollectionUtils.isEmpty(series.getName())) {
+            return null;
+        }
+        Object last = series.getName().get(series.getName().size() - 1);
+        return last == null ? null : String.valueOf(last);
+    }
+
     private HistoryStackVO snapshotHistory(HistoryStackVO source) {
         HistoryStackVO snapshot = new HistoryStackVO();
+        if (source == null) {
+            return snapshot;
+        }
         snapshot.setName(new ArrayList<>(source.getName()));
         snapshot.setValue(new ArrayList<>(source.getValue()));
         snapshot.setAverage(source.getAverage());

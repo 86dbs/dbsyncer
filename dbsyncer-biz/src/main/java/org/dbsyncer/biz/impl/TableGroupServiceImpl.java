@@ -191,9 +191,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             AtomicLong count = new AtomicLong(0);
             tableGroupProfile.pageScanTableGroups(meta.getTaskId(), ConfigConstant.PAGE_SIZE, groupAll -> {
                 for (TableGroup g : groupAll) {
-                    if (g == null) {
-                        continue;
-                    }
                     count.getAndAdd(resolveSourceCount(g));
                 }
             });
