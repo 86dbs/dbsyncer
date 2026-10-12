@@ -87,25 +87,16 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     /**
      * 生成分区key
-     *
-     * @param request
-     * @return
      */
     protected abstract String getPartitionKey(Request request);
 
     /**
      * 分区
-     *
-     * @param request
-     * @param response
      */
     protected abstract void partition(Request request, Response response);
 
     /**
-     * 驱动是否运行中
-     *
-     * @param request
-     * @return
+     * 同步任务是否运行中
      */
     public boolean isRunning(BufferRequest request) {
         Meta meta = taskMetaProfile.getMeta(request.getTaskId());
@@ -114,10 +105,6 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     /**
      * 是否跳过分区处理
-     *
-     * @param nextRequest
-     * @param response
-     * @return
      */
     protected boolean skipPartition(Request nextRequest, Response response) {
         return false;
@@ -125,15 +112,11 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     /**
      * 批处理
-     *
-     * @param response
      */
     public abstract void pull(Response response);
 
     /**
      * 批量处理分区数据
-     *
-     * @param map
      */
     protected void process(Map<String, Response> map) {
         map.forEach((key, response) -> {
@@ -152,17 +135,11 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     /**
      * 提交任务失败
-     *
-     * @param queue
-     * @param request
      */
     protected abstract void offerFailed(BlockingQueue<Request> queue, Request request);
 
     /**
      * 统计消费 TPS
-     *
-     * @param timeRegistry
-     * @param count
      */
     protected void meter(TimeRegistry timeRegistry, long count) {
 

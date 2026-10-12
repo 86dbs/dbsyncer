@@ -9,15 +9,11 @@ public interface BufferResponse {
 
     /**
      * 获取批处理数
-     *
-     * @return
      */
     int getTaskSize();
 
     /**
      * 获取后缀名称
-     *
-     * @return
      */
     String getSuffixName();
 
