@@ -299,12 +299,21 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             return result;
         }
         List<MappingVO> rows = new ArrayList<>(paging.getData().size());
+
+        List<String> taskIds = paging.getData().stream()
+                .filter(Objects::nonNull)
+                .map(Mapping::getId)
+                .filter(StringUtil::isNotBlank)
+                .collect(Collectors.toList());
+
+        Map<String, Meta> taskMetaMap = taskMetaProfile.getTaskMetaMap(taskIds);
+
         for (Mapping mapping : paging.getData()) {
             if (mapping == null) {
                 continue;
             }
             try {
-                rows.add(convertMapping2Vo(mapping));
+                rows.add(convertMapping2Vo(mapping, taskMetaMap.get(mapping.getId())));
             } catch (Exception e) {
                 logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, taskId:{}, error:{}",
                         mapping.getId(), mapping.getName(), mapping.getId(), e.getMessage());
@@ -553,13 +562,21 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private MappingVO convertMapping2Vo(Mapping mapping) {
-        Assert.notNull(mapping, "Mapping can not be null.");
-        String model = mapping.getModel();
+        return convertMapping2Vo(mapping, resolveMappingMeta(mapping));
+    }
 
-        Meta meta = resolveMappingMeta(mapping);
-        Assert.notNull(meta, String.format("Meta can not be null. mappingId:%s, taskId:%s", mapping.getId(), mapping.getId()));
+    /**
+     * @param meta 列表批量查库结果；为 null 时回退 {@link #resolveMappingMeta}
+     */
+    private MappingVO convertMapping2Vo(Mapping mapping, Meta meta) {
+        Assert.notNull(mapping, "Mapping can not be null.");
+        Meta resolved = meta != null ? meta : resolveMappingMeta(mapping);
+        Assert.notNull(resolved, String.format("Meta can not be null. mappingId:%s, taskId:%s",
+                mapping.getId(), mapping.getId()));
+
+        String model = mapping.getModel();
         MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
-        BeanUtils.copyProperties(meta, metaVo);
+        BeanUtils.copyProperties(resolved, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
 
         Connector s = connectorProfile.getConnector(mapping.getSourceConnectorId());
