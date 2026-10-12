@@ -4,6 +4,7 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
@@ -246,7 +247,8 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     }
 
     /**
-     * 自定义配置表映射关系（与 MappingServiceImpl 文本格式一致）
+     * 自定义配置表映射关系（与 MappingServiceImpl 文本格式一致）。
+     * 批量落库，不逐表 sync；由调用方收尾对齐明细。
      */
     private void matchCustomizedTableGroups(ValidateSyncTask validateSyncTask, String tableGroups) {
         List<Table> sourceTables = validateSyncTask.getSourceTable();
@@ -257,24 +259,51 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         Map<String, Table> sourceTableMap = toTableNameMap(sourceTables);
         Map<String, Table> targetTableMap = toTableNameMap(targetTables);
         String[] lines = StringUtil.split(tableGroups, StringUtil.BREAK_LINE);
-        // 数据源表|目标源表=源表字段A1*|目标字段A2*
-        for (String line : lines) {
-            if (StringUtil.isBlank(line)) {
-                continue;
+        assertRunning(validateSyncTask.getId());
+        synchronized (LOCK) {
+            int baseIndex = tableGroupProfile.getTableGroupCount(validateSyncTask.getId());
+            List<TableGroup> models = new ArrayList<>();
+            // 数据源表|目标源表=源表字段A1*|目标字段A2*
+            for (String line : lines) {
+                if (StringUtil.isBlank(line)) {
+                    continue;
+                }
+                String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
+                String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
+                if (tableGroupNames.length != 2) {
+                    continue;
+                }
+                Table sourceTable = sourceTableMap.get(tableGroupNames[0].toUpperCase(Locale.ROOT));
+                Table targetTable = targetTableMap.get(tableGroupNames[1].toUpperCase(Locale.ROOT));
+                if (sourceTable == null || targetTable == null) {
+                    logger.warn("自定义表映射未找到表: {} >> {}", tableGroupNames[0], tableGroupNames[1]);
+                    continue;
+                }
+                try {
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskId", validateSyncTask.getId());
+                    params.put("sourceTable", sourceTable.getName());
+                    params.put("targetTable", targetTable.getName());
+                    params.put("sourceType", StringUtil.isNotBlank(sourceTable.getType()) ? sourceTable.getType() : TableTypeEnum.TABLE.getCode());
+                    params.put("targetType", StringUtil.isNotBlank(targetTable.getType()) ? targetTable.getType() : TableTypeEnum.TABLE.getCode());
+                    if (tableGroup.length == 2 && StringUtil.isNotBlank(tableGroup[1])) {
+                        params.put("fieldMappings", tableGroup[1]);
+                    }
+                    TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
+                    validateSyncTableGroupChecker.mergeConfig(validateSyncTask, model);
+                    log(LogType.TableGroupLog.INSERT, validateSyncTask, model);
+                    model.setIndex(baseIndex + models.size() + 1);
+                    models.add(model);
+                } catch (RepeatedTableGroupException e) {
+                    // 已存在则跳过
+                } catch (Exception e) {
+                    logger.error("添加表映射失败: {} >> {}, {}", sourceTable.getName(), targetTable.getName(), e.getMessage());
+                }
             }
-            String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
-            String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
-            if (tableGroupNames.length != 2) {
-                continue;
+            if (!CollectionUtils.isEmpty(models)) {
+                tableGroupProfile.addTableGroupBatch(models);
+                mergeTaskColumn(validateSyncTask);
             }
-            Table sourceTable = sourceTableMap.get(tableGroupNames[0].toUpperCase(Locale.ROOT));
-            Table targetTable = targetTableMap.get(tableGroupNames[1].toUpperCase(Locale.ROOT));
-            if (sourceTable == null || targetTable == null) {
-                logger.warn("自定义表映射未找到表: {} >> {}", tableGroupNames[0], tableGroupNames[1]);
-                continue;
-            }
-            addMatchedTableGroup(validateSyncTask.getId(), sourceTable, targetTable,
-                    tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
         }
     }
 
@@ -287,26 +316,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             map.putIfAbsent(table.getName().toUpperCase(Locale.ROOT), table);
         }
         return map;
-    }
-
-    /**
-     * 单表匹配写入；失败只记日志，不中断其余表（对齐 MappingServiceImpl）
-     */
-    private void addMatchedTableGroup(String taskId, Table sourceTable, Table targetTable, String fieldMappings) {
-        try {
-            Map<String, String> params = new HashMap<>();
-            params.put("taskId", taskId);
-            params.put("sourceTable", sourceTable.getName());
-            params.put("targetTable", targetTable.getName());
-            params.put("sourceType", StringUtil.isNotBlank(sourceTable.getType()) ? sourceTable.getType() : TableTypeEnum.TABLE.getCode());
-            params.put("targetType", StringUtil.isNotBlank(targetTable.getType()) ? targetTable.getType() : TableTypeEnum.TABLE.getCode());
-            if (StringUtil.isNotBlank(fieldMappings)) {
-                params.put("fieldMappings", fieldMappings);
-            }
-            addTableGroup(params);
-        } catch (Exception e) {
-            logger.error("添加表映射失败: {} >> {}, {}", sourceTable.getName(), targetTable.getName(), e.getMessage());
-        }
     }
 
     @Override
@@ -627,36 +636,73 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     public String addTableGroup(Map<String, String> params) {
         String taskId = params.get("taskId");
         ValidateSyncTask task = validateSyncProfile.get(taskId);
+        Assert.notNull(task, "task can not be null.");
         assertRunning(task.getId());
         synchronized (LOCK) {
             try {
-                // table1, table2
-                String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
-                String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
-                int tableSize = sourceTableArray.length;
-                Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
-
-                String id = null;
-                List<String> list = new ArrayList<>();
-                for (int i = 0; i < tableSize; i++) {
-                    params.put("sourceTable", sourceTableArray[i]);
-                    params.put("targetTable", targetTableArray[i]);
-                    TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
-                    validateSyncTableGroupChecker.mergeConfig(task, model);
-                    log(LogType.TableGroupLog.INSERT, task, model);
-                    int tableGroupCount = tableGroupProfile.getTableGroupCount(taskId);
-                    model.setIndex(tableGroupCount + 1);
-                    id = tableGroupProfile.addTableGroup(model);
-                    list.add(id);
+                List<TableGroup> models = createAndPersistTableGroups(task, params, false);
+                if (CollectionUtils.isEmpty(models)) {
+                    return StringUtil.EMPTY;
                 }
-                // 合并任务公共字段
                 mergeTaskColumn(task);
-                return 1 < tableSize ? String.valueOf(tableSize) : id;
+                return 1 < models.size() ? String.valueOf(models.size()) : models.get(0).getId();
             } finally {
                 // 表映射变更后对齐明细
                 validateSyncProfile.syncTaskTableMetaDetails(taskId);
             }
         }
+    }
+
+    @Override
+    public void addTableGroupBatch(Map<String, String> params) {
+        String taskId = params.get("taskId");
+        ValidateSyncTask task = validateSyncProfile.get(taskId);
+        Assert.notNull(task, "task can not be null.");
+        assertRunning(task.getId());
+        synchronized (LOCK) {
+            List<TableGroup> models = createAndPersistTableGroups(task, params, true);
+            if (CollectionUtils.isEmpty(models)) {
+                return;
+            }
+            mergeTaskColumn(task);
+            // 整批结束后只对齐一次明细
+            validateSyncProfile.syncTaskTableMetaDetails(taskId);
+        }
+    }
+
+    /**
+     * 校验并批量落库表映射。
+     *
+     * @param skipRepeated true 时遇重复跳过该表；false 时遇重复抛出
+     */
+    private List<TableGroup> createAndPersistTableGroups(ValidateSyncTask task, Map<String, String> params, boolean skipRepeated) {
+        String taskId = task.getId();
+        String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
+        String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
+        int tableSize = sourceTableArray.length;
+        Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
+
+        int baseIndex = tableGroupProfile.getTableGroupCount(taskId);
+        List<TableGroup> models = new ArrayList<>(tableSize);
+        for (int i = 0; i < tableSize; i++) {
+            params.put("sourceTable", sourceTableArray[i]);
+            params.put("targetTable", targetTableArray[i]);
+            try {
+                TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
+                validateSyncTableGroupChecker.mergeConfig(task, model);
+                log(LogType.TableGroupLog.INSERT, task, model);
+                model.setIndex(baseIndex + models.size() + 1);
+                models.add(model);
+            } catch (RepeatedTableGroupException e) {
+                if (!skipRepeated) {
+                    throw e;
+                }
+            }
+        }
+        if (!CollectionUtils.isEmpty(models)) {
+            tableGroupProfile.addTableGroupBatch(models);
+        }
+        return models;
     }
 
     @Override

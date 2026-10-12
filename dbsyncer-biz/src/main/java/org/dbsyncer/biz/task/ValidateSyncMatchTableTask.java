@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,6 +64,9 @@ public final class ValidateSyncMatchTableTask extends AbstractDispatchTask {
         matchSimilarTableGroups(task);
     }
 
+    /**
+     * 批量写入相似表映射，整批结束后由 addTableGroupBatch 只对齐一次明细。
+     */
     private void matchSimilarTableGroups(ValidateSyncTask validateSyncTask) {
         List<Table> sourceTables = validateSyncTask.getSourceTable();
         List<Table> targetTables = validateSyncTask.getTargetTable();
@@ -78,6 +82,8 @@ public final class ValidateSyncMatchTableTask extends AbstractDispatchTask {
             targetTableMap.putIfAbsent(table.getName().toUpperCase(Locale.ROOT), table);
         }
 
+        List<String> sourceNames = new ArrayList<>();
+        List<String> targetNames = new ArrayList<>();
         for (Table sourceTable : sourceTables) {
             if (sourceTable == null || StringUtil.isBlank(sourceTable.getName())) {
                 continue;
@@ -90,22 +96,19 @@ public final class ValidateSyncMatchTableTask extends AbstractDispatchTask {
             if (StringUtil.isNotBlank(targetType) && !TableTypeEnum.isTable(targetType)) {
                 continue;
             }
-            addMatchedTableGroup(validateSyncTask.getId(), sourceTable, targetTable);
+            sourceNames.add(sourceTable.getName());
+            targetNames.add(targetTable.getName());
         }
-    }
-
-    private void addMatchedTableGroup(String taskId, Table sourceTable, Table targetTable) {
-        try {
-            Map<String, String> params = new HashMap<>();
-            params.put("taskId", taskId);
-            params.put("sourceTable", sourceTable.getName());
-            params.put("targetTable", targetTable.getName());
-            params.put("sourceType", StringUtil.isNotBlank(sourceTable.getType()) ? sourceTable.getType() : TableTypeEnum.TABLE.getCode());
-            params.put("targetType", StringUtil.isNotBlank(targetTable.getType()) ? targetTable.getType() : TableTypeEnum.TABLE.getCode());
-            validateSyncService.addTableGroup(params);
-        } catch (Exception e) {
-            logger.error("添加表映射失败: {} >> {}, {}", sourceTable.getName(), targetTable.getName(), e.getMessage());
+        if (sourceNames.isEmpty()) {
+            return;
         }
+        Map<String, String> params = new HashMap<>();
+        params.put("taskId", validateSyncTask.getId());
+        params.put("sourceTable", StringUtil.join(sourceNames, StringUtil.VERTICAL_LINE));
+        params.put("targetTable", StringUtil.join(targetNames, StringUtil.VERTICAL_LINE));
+        params.put("sourceType", TableTypeEnum.TABLE.getCode());
+        params.put("targetType", TableTypeEnum.TABLE.getCode());
+        validateSyncService.addTableGroupBatch(params);
     }
 
     public void setTaskId(String taskId) {
