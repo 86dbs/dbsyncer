@@ -18,11 +18,14 @@ import java.util.Map;
 public interface TableGroupService {
 
     /**
-     * 新增表关系
-     *
-     * @param params
+     * 新增表关系（会提交表级统计任务）。
      */
     String add(Map<String, String> params);
+
+    /**
+     * 批量新增表关系，不提交统计任务（由调用方统一 MappingCountTask）。
+     */
+    int addWithoutCount(Map<String, String> params);
 
     /**
      * 修改表关系

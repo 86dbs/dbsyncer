@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
@@ -69,35 +70,75 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         assertRunning(mapping.getId());
 
         synchronized (LOCK) {
-            // table1, table2
-            String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
-            String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
-            int tableSize = sourceTableArray.length;
-            Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
-
-            int baseIndex = tableGroupProfile.getTableGroupCount(mappingId);
-            params.put("skipRepeatedCheck", Boolean.TRUE.toString());
-            List<TableGroup> models = new ArrayList<>(tableSize);
-            for (int i = 0; i < tableSize; i++) {
-                params.put("sourceTable", sourceTableArray[i]);
-                params.put("targetTable", targetTableArray[i]);
-                TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-                log(LogType.TableGroupLog.INSERT, model);
-                model.setIndex(baseIndex + i + 1);
-                models.add(model);
+            List<TableGroup> models = createAndPersistTableGroups(params, true);
+            if (CollectionUtils.isEmpty(models)) {
+                return StringUtil.EMPTY;
             }
-            tableGroupProfile.addTableGroupBatch(models);
-
             List<String> list = new ArrayList<>(models.size());
             for (TableGroup model : models) {
                 list.add(model.getId());
             }
             submitTableGroupCountTask(mapping, list);
-
-            // 合并驱动公共字段
             mergeMappingColumn(mapping);
-            return 1 < tableSize ? String.valueOf(tableSize) : list.get(0);
+            return 1 < models.size() ? String.valueOf(models.size()) : list.get(0);
         }
+    }
+
+    @Override
+    public int addWithoutCount(Map<String, String> params) {
+        String mappingId = params.get("mappingId");
+        Mapping mapping = mappingProfile.get(mappingId);
+        Assert.notNull(mapping, "mapping can not be null.");
+        assertRunning(mapping.getId());
+
+        synchronized (LOCK) {
+            List<TableGroup> models = createAndPersistTableGroups(params, false);
+            if (CollectionUtils.isEmpty(models)) {
+                return 0;
+            }
+            mergeMappingColumn(mapping);
+            return models.size();
+        }
+    }
+
+    /**
+     * 校验并批量落库表映射。
+     *
+     * @param skipRepeatedCheck true 时跳过重复校验（页面批量新增）；false 时遇重复跳过该表
+     */
+    private List<TableGroup> createAndPersistTableGroups(Map<String, String> params, boolean skipRepeatedCheck) {
+        String mappingId = params.get("mappingId");
+        String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
+        String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
+        int tableSize = sourceTableArray.length;
+        Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
+
+        int baseIndex = tableGroupProfile.getTableGroupCount(mappingId);
+        if (skipRepeatedCheck) {
+            params.put("skipRepeatedCheck", Boolean.TRUE.toString());
+        } else {
+            params.remove("skipRepeatedCheck");
+        }
+        List<TableGroup> models = new ArrayList<>(tableSize);
+        for (int i = 0; i < tableSize; i++) {
+            params.put("sourceTable", sourceTableArray[i]);
+            params.put("targetTable", targetTableArray[i]);
+            try {
+                TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
+                log(LogType.TableGroupLog.INSERT, model);
+                model.setIndex(baseIndex + models.size() + 1);
+                models.add(model);
+            } catch (RepeatedTableGroupException e) {
+                if (skipRepeatedCheck) {
+                    throw e;
+                }
+                // 自动匹配等场景：已存在则跳过
+            }
+        }
+        if (!CollectionUtils.isEmpty(models)) {
+            tableGroupProfile.addTableGroupBatch(models);
+        }
+        return models;
     }
 
     @Override
@@ -177,7 +218,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             }
         }
         meta.setUpdateTime(Instant.now().toEpochMilli());
-        taskMetaProfile.updateMeta(meta);
+        taskMetaProfile.updateMetaWithoutNotice(meta);
     }
 
     @Override

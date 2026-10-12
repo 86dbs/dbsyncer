@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz.task;
 
-import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
@@ -12,7 +11,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Table;
 import org.slf4j.Logger;
@@ -20,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,46 +67,50 @@ public final class MappingMatchTableTask extends AbstractDispatchTask {
             logger.warn("Mapping not found, skip match table, mappingId={}", mappingId);
             return;
         }
-        matchSimilarTableGroups(mapping);
+        int added = matchSimilarTableGroups(mapping);
+        logger.info("自动匹配完成:{}, 新增{}张表映射", mapping.getName(), added);
 
         MappingCountTask task = (MappingCountTask) mappingCountTask.clone();
         task.setMappingId(mapping.getId());
         dispatchTaskService.execute(task);
     }
 
-    private void matchSimilarTableGroups(Mapping mapping) {
+    /**
+     * 批量写入相似表映射，不逐表提交 CountTask。
+     *
+     * @return 实际新增条数
+     */
+    private int matchSimilarTableGroups(Mapping mapping) {
         List<Table> sourceTables = mapping.getSourceTable();
         List<Table> targetTables = mapping.getTargetTable();
         if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            return;
+            return 0;
         }
         Map<String, Table> targetTableMap = targetTables.stream()
                 .collect(Collectors.toMap(table -> table.getName().toUpperCase(), table -> table, (a, b) -> a));
+        List<String> sourceNames = new ArrayList<>();
+        List<String> targetNames = new ArrayList<>();
         for (Table sourceTable : sourceTables) {
-            if (StringUtil.isBlank(sourceTable.getName())) {
+            if (sourceTable == null || StringUtil.isBlank(sourceTable.getName())) {
                 continue;
             }
-            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable) -> {
-                if (TableTypeEnum.isTable(targetTable.getType())) {
-                    addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName());
-                }
-                return targetTable;
-            });
+            Table targetTable = targetTableMap.get(sourceTable.getName().toUpperCase());
+            if (targetTable == null || !TableTypeEnum.isTable(targetTable.getType())) {
+                continue;
+            }
+            sourceNames.add(sourceTable.getName());
+            targetNames.add(targetTable.getName());
         }
-    }
-
-    private void addTableGroup(String mappingId, String sourceTableName, String targetTableName) {
-        try {
-            Map<String, String> params = new HashMap<>();
-            params.put("mappingId", mappingId);
-            params.put("sourceTable", sourceTableName);
-            params.put("targetTable", targetTableName);
-            params.put("sourceType", TableTypeEnum.TABLE.getCode());
-            params.put("targetType", TableTypeEnum.TABLE.getCode());
-            tableGroupService.add(params);
-        } catch (RepeatedTableGroupException | SdkException e) {
-            logger.error(e.getMessage(), e);
+        if (sourceNames.isEmpty()) {
+            return 0;
         }
+        Map<String, String> params = new HashMap<>();
+        params.put("mappingId", mapping.getId());
+        params.put("sourceTable", StringUtil.join(sourceNames, StringUtil.VERTICAL_LINE));
+        params.put("targetTable", StringUtil.join(targetNames, StringUtil.VERTICAL_LINE));
+        params.put("sourceType", TableTypeEnum.TABLE.getCode());
+        params.put("targetType", TableTypeEnum.TABLE.getCode());
+        return tableGroupService.addWithoutCount(params);
     }
 
     public void setMappingId(String mappingId) {
