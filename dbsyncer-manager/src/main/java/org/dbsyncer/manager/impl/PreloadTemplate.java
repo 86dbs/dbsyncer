@@ -101,6 +101,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load Notification Channels
         loadNotificationChannel();
 
+        // 单机/集群共用：半停态 Meta 归 READY，避免一直「停止中」
+        reconcileStoppingMappingMetas();
+
         if (clusterService.isStandalone()) {
             // Load connectorInstances
             loadConnectorInstance();
@@ -196,11 +199,49 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (clusterService.isStandalone()) {
             loadConnectorInstance();
         }
+        reconcileStoppingMappingMetas();
         launchSyncMappings();
     }
 
     /**
-     * 恢复同步驱动(Mapping)。
+     * 将仍为 STOPPING 的同步任务 Meta 归为 READY（进程重启 / 半停收口兜底）。
+     * <p>单机与集群启动均调用；不启动任务，仅纠正控制面状态。
+     */
+    public void reconcileStoppingMappingMetas() {
+        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappings -> {
+            if (CollectionUtils.isEmpty(mappings)) {
+                return;
+            }
+            List<String> taskIds = new ArrayList<>();
+            for (Mapping mapping : mappings) {
+                if (mapping != null && StringUtil.isNotBlank(mapping.getId())) {
+                    taskIds.add(mapping.getId());
+                }
+            }
+            Map<String, Meta> metaMap = taskMetaProfile.getTaskMetaMap(taskIds);
+            if (CollectionUtils.isEmpty(metaMap)) {
+                return;
+            }
+            for (Mapping mapping : mappings) {
+                if (mapping == null || StringUtil.isBlank(mapping.getId())) {
+                    continue;
+                }
+                Meta meta = metaMap.get(mapping.getId());
+                if (meta == null || meta.getState() != CommonTaskStatusEnum.STOPPING.getCode()) {
+                    continue;
+                }
+                try {
+                    changeMetaState(meta, CommonTaskStatusEnum.READY);
+                } catch (Exception e) {
+                    logger.error("半停态 Meta 收口失败, taskId={}, name={}, err={}", mapping.getId(), mapping.getName(), e.getMessage(), e);
+                }
+            }
+        });
+    }
+
+    /**
+     * 恢复同步驱动(Mapping)：仅续跑 Meta=RUNNING 的任务。
+     * <p>STOPPING 收口见 {@link #reconcileStoppingMappingMetas()}。
      * <p>先按任务类型 {@code mapping} 分页拉取任务，再批量查任务级 Meta（{@code isTaskDetail=0}），
      * 避免一次性加载全部 Meta。明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
      */
@@ -224,17 +265,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     continue;
                 }
                 Meta meta = metaMap.get(mapping.getId());
-                if (meta == null) {
+                if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
                     continue;
                 }
                 try {
                     reConnect(mapping);
-                    // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
-                    if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
-                        clusterService.start(mapping, true);
-                    } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
-                        changeMetaState(meta, CommonTaskStatusEnum.READY);
-                    }
+                    // 自动恢复：CDC 监听启动失败时按配置重试
+                    clusterService.start(mapping, true);
                 } catch (Exception e) {
                     logger.error("恢复同步驱动失败, taskId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
                 }
