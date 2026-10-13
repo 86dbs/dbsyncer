@@ -606,6 +606,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Map<String, String> map = new HashMap<>();
         SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, columns, queryFilterSql);
         map.put(ConnectorConstant.OPERTION_QUERY_SOURCE_IN, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(buildSqlConfig));
+        // 业务过滤原文：划界重建 SQL 时直接读，勿从分页 QUERY 反解析
+        map.put(ConnectorConstant.OPERTION_QUERY_FILTER, queryFilterSql);
         buildSql(map, SqlBuilderEnum.QUERY, buildSqlConfig);
 
         // 构建游标分页SQL
@@ -635,6 +637,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             querySql += queryFilterSql;
         }
         map.put(ConnectorConstant.OPERTION_QUERY_SOURCE_IN, querySql);
+        map.put(ConnectorConstant.OPERTION_QUERY_FILTER, queryFilterSql);
         PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
         // 获取查询总数SQL
@@ -774,18 +777,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (CollectionUtils.isEmpty(command)) {
             return StringUtil.EMPTY;
         }
-        String pageSql = command.get(ConnectorConstant.OPERTION_QUERY);
-        if (StringUtil.isBlank(pageSql)) {
-            return StringUtil.EMPTY;
-        }
-        String upper = pageSql.toUpperCase(Locale.ROOT);
-        int whereIdx = upper.indexOf(" WHERE ");
-        if (whereIdx < 0) {
-            return StringUtil.EMPTY;
-        }
-        int orderIdx = upper.indexOf(" ORDER BY ", whereIdx);
-        int end = orderIdx >= 0 ? orderIdx : pageSql.length();
-        return pageSql.substring(whereIdx, end);
+        String filter = command.get(ConnectorConstant.OPERTION_QUERY_FILTER);
+        return filter == null ? StringUtil.EMPTY : filter;
     }
 
     /**
