@@ -47,7 +47,6 @@ import com.github.shyiko.mysql.binlog.network.protocol.ResultSetRowPacket;
 import com.github.shyiko.mysql.binlog.network.protocol.command.Command;
 import com.github.shyiko.mysql.binlog.network.protocol.command.DumpBinaryLogCommand;
 import com.github.shyiko.mysql.binlog.network.protocol.command.DumpBinaryLogGtidCommand;
-import com.github.shyiko.mysql.binlog.network.protocol.command.PingCommand;
 import com.github.shyiko.mysql.binlog.network.protocol.command.QueryCommand;
 import com.github.shyiko.mysql.binlog.network.protocol.command.SSLRequestCommand;
 import org.dbsyncer.common.util.StringUtil;
@@ -144,6 +143,16 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
      * 连接代数：每次建连尝试在 openChannel 成功后递增；旧 worker/keepalive 迟到回调用 epoch/channel 识别并丢弃。
      */
     private final AtomicLong connectionEpoch = new AtomicLong(0);
+    /**
+     * 心跳间隔（毫秒）：通过 SET @master_heartbeat_period 让 MySQL 在 binlog 流上定期发送心跳事件，
+     * 避免在流模式连接上发送 PingCommand 破坏协议（与原版库 BinaryLogClient 的 keepalive 机制一致）。
+     * 可通过 -Ddbsyncer.mysql.heartbeatInterval=0 禁用（用于不支持/不兼容心跳的库，如 GoldenDB、OceanBase 等）。
+     */
+    private long heartbeatInterval = Long.getLong("dbsyncer.mysql.heartbeatInterval", 3000L);
+    /**
+     * 最近一次收到 binlog 事件（含心跳事件）的时间，keepalive 线程据此判断连接是否存活。
+     */
+    private volatile long eventLastSeen;
     private Thread worker;
     private Thread keepAlive;
     private String workerThreadName;
@@ -347,6 +356,18 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         if (checksumType != ChecksumType.NONE) {
             confirmSupportOfChecksum(channel, checksumType);
         }
+        // 启用 MySQL 原生心跳（须先于 COM_BINLOG_DUMP，避免在流模式下发送命令）
+        if (heartbeatInterval > 0) {
+            try {
+                enableHeartbeat();
+            } catch (Exception e) {
+                // 不支持心跳（MySQL < 5.6、GoldenDB 等兼容库）时降级：keepalive 不再主动探测，
+                // 连接状态交由 worker 线程读取 socket 的 EOF 检测（避免 Ping 响应混入 binlog 事件流）
+                logger.warn("Failed to enable binlog heartbeat ({}), keepalive will rely on socket EOF detection", e.getMessage());
+                heartbeatInterval = 0;
+            }
+        }
+        eventLastSeen = System.currentTimeMillis();
         synchronized (gtidSetAccessLock) {
             String position = gtidSet != null ? gtidSet.toString() : binlogFilename + "/" + binlogPosition;
             logger.info("Connected to {}:{} at {} (sid:{}, cid:{})", hostname, port, position, serverId, connectionId);
@@ -413,6 +434,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 }
                 Event event = eventDeserializer.nextEvent(packetLength == MAX_PACKET_LENGTH ? new ByteArrayInputStream(readPacketSplitInChunks(inputStream, packetLength - 1)) : inputStream);
                 if (event != null) {
+                    eventLastSeen = System.currentTimeMillis();
                     updateGtidSet(event);
                     notifyEventListeners(event);
                     updateClientBinlogFilenameAndPosition(event);
@@ -420,6 +442,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 }
                 throw new EOFException("event data deserialization exception");
             }
+            // 循环退出说明流已读到 EOF（连接被对端关闭），与原版库一致抛异常，交由 keepalive 触发重连
+            throw new EOFException("Binlog stream closed");
         } catch (Exception e) {
             notifyException(e, listenChannel, epoch);
         }
@@ -588,9 +612,15 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     private void confirmSupportOfChecksum(final PacketChannel channel, ChecksumType checksumType) throws IOException {
         channel.write(new QueryCommand("set @master_binlog_checksum= @@global.binlog_checksum"));
-        byte[] statementResult = channel.read();
+        byte[] statementResult = readPacketNoSequence();
         checkError(statementResult);
         eventDeserializer.setChecksumType(checksumType);
+    }
+
+    private void enableHeartbeat() throws IOException {
+        channel.write(new QueryCommand("set @master_heartbeat_period=" + heartbeatInterval * 1000000));
+        byte[] statementResult = readPacketNoSequence();
+        checkError(statementResult);
     }
 
     private byte[] readPacketSplitInChunks(ByteArrayInputStream inputStream, int packetLength) throws IOException {
@@ -670,17 +700,28 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     private ResultSetRowPacket[] readResultSet() throws IOException {
         List<ResultSetRowPacket> resultSet = new LinkedList();
-        byte[] statementResult = channel.read();
+        byte[] statementResult = readPacketNoSequence();
         if (statementResult[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
             throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
-        while ((channel.read())[0] != (byte) 0xFE /* eof */) { /* skip */ }
-        for (byte[] bytes; (bytes = channel.read())[0] != (byte) 0xFE /* eof */;) {
+        while ((readPacketNoSequence())[0] != (byte) 0xFE /* eof */) { /* skip */ }
+        for (byte[] bytes; (bytes = readPacketNoSequence())[0] != (byte) 0xFE /* eof */;) {
             resultSet.add(new ResultSetRowPacket(bytes));
         }
         return resultSet.toArray(new ResultSetRowPacket[0]);
+    }
+
+    /**
+     * 读取一个 MySQL 数据包（3 字节长度 + 1 字节序号 + 数据体），不做序号校验。
+     * 与监听线程一致：仅依赖长度字段切包，避免服务器在认证后重置序号导致 "unexpected sequence" 异常。
+     */
+    private byte[] readPacketNoSequence() throws IOException {
+        ByteArrayInputStream inputStream = channel.getInputStream();
+        int packetLength = inputStream.readInteger(3);
+        inputStream.skip(1); // 1 byte for sequence
+        return inputStream.read(packetLength);
     }
 
     private void closeChannel(final PacketChannel channel) throws IOException {
@@ -770,10 +811,15 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                     if (!connected || stopped || connectedError) {
                         break;
                     }
-                    PacketChannel ch = channel;
-                    if (ch != null) {
-                        ch.write(new PingCommand());
+                    // 优先使用 MySQL 原生心跳检测连接（与事件流同通道，不额外发命令）。
+                    // 心跳不可用时（GoldenDB 等兼容库可能拒绝 SET @master_heartbeat_period）不再发送 PingCommand：
+                    // Ping 响应会混入 binlog 事件流导致流错位，改为依赖 worker 线程读取 socket 的 EOF 感知断开并触发重连。
+                    if (heartbeatInterval > 0) {
+                        if (System.currentTimeMillis() - eventLastSeen > TimeUnit.SECONDS.toMillis(10)) {
+                            throw new IOException("no binlog event received within keepalive interval");
+                        }
                     }
+                    // else: 静默，连接状态由 worker 的 socket 读取（EOF/异常）负责检测
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;

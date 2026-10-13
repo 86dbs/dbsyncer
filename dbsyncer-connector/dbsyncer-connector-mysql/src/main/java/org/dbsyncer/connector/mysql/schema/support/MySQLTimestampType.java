@@ -32,9 +32,19 @@ public final class MySQLTimestampType extends TimestampType {
 
     @Override
     protected Timestamp merge(Object val, Field field) {
+        // 兼容 MySQL 8.0 驱动返回的 LocalDateTime / LocalDate，以及时间字符串
         if (val instanceof java.util.Date) {
             java.util.Date date = (java.util.Date) val;
             return new Timestamp(date.getTime());
+        }
+        if (val instanceof LocalDateTime) {
+            return Timestamp.valueOf((LocalDateTime) val);
+        }
+        if (val instanceof java.time.LocalDate) {
+            return Timestamp.valueOf(((java.time.LocalDate) val).atStartOfDay());
+        }
+        if (val instanceof String) {
+            return Timestamp.valueOf((String) val);
         }
         return throwUnsupportedException(val, field);
     }
