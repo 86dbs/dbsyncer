@@ -255,13 +255,20 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             }
         }
         meta.setUpdateTime(Instant.now().toEpochMilli());
-        taskMetaProfile.updateMetaWithoutNotice(meta);
+        taskMetaProfile.updateMeta(meta);
     }
 
     @Override
-    public Meta refreshMetaTotal(Mapping mapping) {
+    public Meta refreshMetaTotal(Mapping mapping, String metaSnapshot) {
         Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "同步任务meta不存在.");
+        meta.clear();
+        if (StringUtil.isNotBlank(metaSnapshot)) {
+            Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
+            if (!CollectionUtils.isEmpty(snapshot)) {
+                meta.setSnapshot(snapshot);
+            }
+        }
         getMetaTotal(meta, mapping.getModel());
         meta.setUpdateTime(Instant.now().toEpochMilli());
         taskMetaProfile.updateMeta(meta);

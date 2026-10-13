@@ -81,5 +81,5 @@ public interface TableGroupService {
     /**
      * 按表组 SOURCE_TOTAL 汇总并写回任务 Meta.total（全量）。
      */
-    Meta refreshMetaTotal(Mapping mapping);
+    Meta refreshMetaTotal(Mapping mapping, String metaSnapshot);
 }

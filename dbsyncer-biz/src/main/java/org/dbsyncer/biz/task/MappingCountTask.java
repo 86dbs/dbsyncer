@@ -74,8 +74,7 @@ public final class MappingCountTask extends AbstractCountTask {
                     updateTableGroupCount(mapping, tableGroup);
                 }
             });
-            tableGroupService.resetMeta(mapping, metaSnapshot);
-            Meta meta = tableGroupService.refreshMetaTotal(mapping);
+            Meta meta = tableGroupService.refreshMetaTotal(mapping, metaSnapshot);
             logger.info("完成统计:{}, {}张表, 总数:{}", mapping.getName(), groupCount, meta.getTotal());
         }
     }
