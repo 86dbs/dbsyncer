@@ -871,7 +871,13 @@ function formatElapsedDuration(startTime, endTime) {
 }
 
 function appendElapsedTime(content, meta) {
-    const text = formatElapsedDuration(meta.startTime, meta.updateTime);
+    // 运行中/停止中 updateTime 往往未随计数刷新，用前端当前时间算实时耗时
+    const RUNNING = 1;
+    const STOPPING = 2;
+    const endTime = (meta.state === RUNNING || meta.state === STOPPING)
+        ? Date.now()
+        : meta.updateTime;
+    const text = formatElapsedDuration(meta.startTime, endTime);
     if (!text) {
         return;
     }
