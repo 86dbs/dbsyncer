@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.schema.AbstractDataType;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
@@ -44,6 +45,10 @@ public abstract class TimestampType extends AbstractDataType<Timestamp> {
         if (val instanceof LocalDateTime) {
             LocalDateTime dateTime = (LocalDateTime) val;
             return Timestamp.valueOf(dateTime);
+        }
+
+        if (val instanceof LocalDate) {
+            return Timestamp.valueOf(((LocalDate) val).atStartOfDay());
         }
 
         if (val instanceof byte[]) {
