@@ -15,6 +15,7 @@ import java.util.List;
 
 /**
  * 整库迁移任务进度：按组合模式计算（仅结构 / 仅数据 / 都同步）。
+ * <p>结构+数据都开时分阶段：结构未完按结构表进度 0~100；结构完成后按数据行级进度重新从 0~100。
  * <p>数据阶段按「表等权」汇总各表行级完成度，避免仅少数表回写 sourceTotal 时全局分母偏小导致进度虚高。
  *
  * @author wuji
@@ -24,16 +25,6 @@ public final class DatabaseSyncProgressUtil {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final BigDecimal ONE = BigDecimal.ONE;
-
-    /**
-     * 都同步时结构段权重（其余为数据行级）。
-     */
-    private static final BigDecimal SCHEMA_WEIGHT = new BigDecimal("0.10");
-
-    /**
-     * 都同步时数据段权重。
-     */
-    private static final BigDecimal DATA_WEIGHT = new BigDecimal("0.90");
 
     private DatabaseSyncProgressUtil() {
     }
@@ -71,11 +62,12 @@ public final class DatabaseSyncProgressUtil {
         if (!schema) {
             return dataPart.multiply(HUNDRED).setScale(2, RoundingMode.HALF_UP);
         }
+        // 都同步：结构阶段满 100 后再进入数据阶段（数据进度重新从 0 计）
         BigDecimal schemaPart = ratio(countSchemaDoneTables(tableSnapshots), tableGroupSize);
-        return schemaPart.multiply(SCHEMA_WEIGHT)
-                .add(dataPart.multiply(DATA_WEIGHT))
-                .multiply(HUNDRED)
-                .setScale(2, RoundingMode.HALF_UP);
+        if (schemaPart.compareTo(ONE) < 0) {
+            return schemaPart.multiply(HUNDRED).setScale(2, RoundingMode.HALF_UP);
+        }
+        return dataPart.multiply(HUNDRED).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**

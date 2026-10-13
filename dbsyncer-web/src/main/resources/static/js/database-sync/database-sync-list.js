@@ -165,7 +165,7 @@
                 return '';
             }
             return '<span class="text-xs text-secondary whitespace-nowrap" title="结构完成表 / 总表">'
-                + '结构 ' + schemaDone + '/' + tableTotal + '</span>';
+                + '表结构 ' + schemaDone + '/' + tableTotal + '</span>';
         }
 
         if (enableSchema && enableData && schemaDone < tableTotal) {
@@ -173,7 +173,7 @@
                 return '';
             }
             return '<span class="text-xs text-secondary whitespace-nowrap" title="结构完成表 / 总表">'
-                + '结构 ' + schemaDone + '/' + tableTotal + '</span>';
+                + '表结构 ' + schemaDone + '/' + tableTotal + '</span>';
         }
 
         if (enableData) {
