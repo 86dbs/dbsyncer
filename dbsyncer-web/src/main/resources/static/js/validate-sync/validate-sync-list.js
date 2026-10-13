@@ -149,7 +149,7 @@
         if (!durationText) {
             return '';
         }
-        return '<span class="text-xs text-tertiary whitespace-nowrap">任务耗时：' + durationText + '</span>';
+        return '<span class="text-xs text-tertiary whitespace-nowrap">耗时：' + durationText + '</span>';
     }
 
     function renderResultColumn(task) {
