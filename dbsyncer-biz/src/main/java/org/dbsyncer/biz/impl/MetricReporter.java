@@ -297,8 +297,6 @@ public class MetricReporter implements ScheduledTaskJob {
 
     /**
      * 获取执行器TPS
-     *
-     * @return
      */
     public TpsVO getOneMinBufferActuatorRate() {
         Bucket[] buckets = timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getBucketAll();
@@ -337,32 +335,21 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     /**
-     * 获取所有驱动成功数
-     *
-     * @param metaAll
-     * @return
+     * 获取所有同步任务成功数
      */
     private long getMappingSuccess(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
     }
 
     /**
-     * 获取所有驱动失败数
-     *
-     * @param metaAll
-     * @return
+     * 获取所有同步任务失败数
      */
     private long getMappingFail(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
     }
 
     /**
-     * 获取所有驱动数据
-     *
-     * @param metaAll
-     * @param time
-     * @param status
-     * @return
+     * 获取所有同步任务数据总数
      */
     private long getMappingDataCount(List<Meta> metaAll, long time, StorageDataStatusEnum status) {
         return queryMappingMetricCount(metaAll, (query) -> {
@@ -373,10 +360,7 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     /**
-     * 获取昨天驱动成功+失败数
-     *
-     * @param metaAll
-     * @return
+     * 获取昨天同步任务成功+失败数
      */
     private long getMappingYesterdayAll(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> {
@@ -387,30 +371,21 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     /**
-     * 获取所有驱动事件插入数
-     *
-     * @param metaAll
-     * @return
+     * 获取所有同步任务事件插入数
      */
     private long getMappingInsert(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_INSERT));
     }
 
     /**
-     * 获取所有驱动事件更新数
-     *
-     * @param metaAll
-     * @return
+     * 获取所有同步任务事件更新数
      */
     private long getMappingUpdate(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_UPDATE));
     }
 
     /**
-     * 获取所有驱动事件删除数
-     *
-     * @param metaAll
-     * @return
+     * 获取所有同步任务事件删除数
      */
     private long getMappingDelete(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_DELETE));
@@ -418,9 +393,6 @@ public class MetricReporter implements ScheduledTaskJob {
 
     /**
      * 获取所有DDL事件数
-     *
-     * @param metaAll
-     * @return
      */
     private long getMappingDll(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_ALTER));

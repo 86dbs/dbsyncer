@@ -10,13 +10,7 @@ import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Plugin;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -25,9 +19,6 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -40,12 +31,6 @@ public class PluginServiceImpl implements PluginService {
 
     @Resource
     private PluginFactory pluginFactory;
-
-    @Resource
-    private MappingProfile mappingProfile;
-
-    @Resource
-    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private LogService logService;
@@ -94,50 +79,4 @@ public class PluginServiceImpl implements PluginService {
         }
     }
 
-    private Map<String, List<String>> getPluginClassNameMap() {
-        Map<String, List<String>> map = new ConcurrentHashMap<>();
-        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappingAll -> {
-            if (CollectionUtils.isEmpty(mappingAll)) {
-                return;
-            }
-            for (Mapping m : mappingAll) {
-                Plugin plugin = m.getPlugin();
-                if (null != plugin) {
-                    putPluginMap(map, plugin.getClassName(), m.getName());
-                    continue;
-                }
-                AtomicBoolean pluginFound = new AtomicBoolean(false);
-                tableGroupProfile.pageScanTableGroups(m.getId(), ConfigConstant.PAGE_SIZE, page -> {
-                    if (pluginFound.get() || CollectionUtils.isEmpty(page)) {
-                        return;
-                    }
-                    for (TableGroup t : page) {
-                        if (t == null) {
-                            continue;
-                        }
-                        Plugin p = t.getPlugin();
-                        if (p != null) {
-                            putPluginMap(map, p.getClassName(), m.getName());
-                            pluginFound.set(true);
-                            return;
-                        }
-                    }
-                });
-            }
-        });
-        return map;
-    }
-
-    private void putPluginMap(Map<String, List<String>> map, String className, String name) {
-        map.compute(className, (k, v) -> {
-            if (v == null) {
-                try {
-                    return new ArrayList<>();
-                } catch (Exception e) {
-                    throw new ParserException(e);
-                }
-            }
-            return v;
-        }).add(name);
-    }
 }
