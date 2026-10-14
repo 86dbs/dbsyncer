@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.manager;
 
-import org.dbsyncer.manager.deployment.StandaloneFullFlushService;
 import org.dbsyncer.manager.deployment.StandaloneService;
+import org.dbsyncer.parser.impl.FullFlushServiceImpl;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.FullFlushService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
@@ -48,7 +48,7 @@ public class ManagerSupportConfiguration {
         if (spi != null) {
             return spi;
         }
-        return new StandaloneFullFlushService();
+        return new FullFlushServiceImpl();
     }
 
 }
