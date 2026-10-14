@@ -248,6 +248,11 @@ public class TaskProfileImpl implements TaskProfile {
             }
             String type = map.get(ConfigConstant.CONFIG_MODEL_TYPE) == null
                     ? null : String.valueOf(map.get(ConfigConstant.CONFIG_MODEL_TYPE));
+            // 导入兼容历史大写 TYPE，规范后再解析/落库
+            type = CommonTaskTypeEnum.normalizeImportType(type);
+            if (StringUtil.isNotBlank(type)) {
+                map.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
+            }
             String itemJson = JsonUtil.objToJson(map);
             if (StringUtil.equals(ConfigConstant.MAPPING, type) || StringUtil.isBlank(type)) {
                 Mapping mapping = JsonUtil.jsonToObj(itemJson, Mapping.class);
@@ -263,12 +268,14 @@ public class TaskProfileImpl implements TaskProfile {
             if (taskType == CommonTaskTypeEnum.VALIDATE_SYNC) {
                 ValidateSyncTask task = JsonUtil.jsonToObj(itemJson, ValidateSyncTask.class);
                 if (task != null) {
+                    task.setType(taskType.getCode());
                     importTask(task);
                     enterpriseTasks.add(task);
                 }
             } else if (taskType == CommonTaskTypeEnum.DATABASE_SYNC) {
                 DatabaseSyncTask task = JsonUtil.jsonToObj(itemJson, DatabaseSyncTask.class);
                 if (task != null) {
+                    task.setType(taskType.getCode());
                     importTask(task);
                     enterpriseTasks.add(task);
                 }

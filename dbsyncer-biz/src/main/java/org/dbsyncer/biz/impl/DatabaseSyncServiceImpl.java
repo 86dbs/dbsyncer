@@ -442,7 +442,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
     private void fillTaskOnAdd(DatabaseSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setType(CommonTaskTypeEnum.DATABASE_SYNC.name());
+            task.setType(CommonTaskTypeEnum.DATABASE_SYNC.getCode());
         }
         long now = Instant.now().toEpochMilli();
         task.setCreateTime(task.getCreateTime() == null ? now : task.getCreateTime());

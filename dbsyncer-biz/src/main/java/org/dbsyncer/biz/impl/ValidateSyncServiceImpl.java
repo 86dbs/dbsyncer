@@ -372,7 +372,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         ValidateSyncTask newTask = JsonUtil.jsonToObj(json, ValidateSyncTask.class);
         newTask.setId(String.valueOf(snowflakeIdWorker.nextId()));
         newTask.setName(newTask.getName() + "(复制)");
-        newTask.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
+        newTask.setType(CommonTaskTypeEnum.VALIDATE_SYNC.getCode());
         newTask.setUpdateTime(System.currentTimeMillis());
         String newId = validateSyncProfile.add(newTask);
         // 深拷贝 table_group（关联已下沉到该表）
@@ -800,7 +800,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     private void checkTask(ValidateSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
+            task.setType(CommonTaskTypeEnum.VALIDATE_SYNC.getCode());
         }
         long now = Instant.now().toEpochMilli();
         task.setCreateTime(null == task.getCreateTime() ? now : task.getCreateTime());

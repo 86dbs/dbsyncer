@@ -7,12 +7,8 @@ import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.message.CommonMessage;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.model.Result;
 import org.dbsyncer.sdk.model.ClusterNode;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PluginFile;
-import org.dbsyncer.sdk.model.Task;
-import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.util.Collections;
 import java.util.List;
@@ -112,14 +108,4 @@ public interface ClusterService {
     default long forceExpireGracePeriod() {
         return 0L;
     }
-
-    /**
-     * 全量页级结果落库。
-     *
-     * @param task                 运行态（分片执行时 id 为分片计划 ID）
-     * @param result               本批写结果
-     * @param targetSchemaResolver 目标库类型解析
-     * @param targetFieldMap       目标字段
-     */
-    void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap);
 }

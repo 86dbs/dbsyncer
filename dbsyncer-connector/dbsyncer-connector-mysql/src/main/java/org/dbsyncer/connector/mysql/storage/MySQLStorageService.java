@@ -731,14 +731,14 @@ public class MySQLStorageService extends AbstractStorageService {
         // 兼容升级（临时脚本，若干版本后可删）：缺新拆表则拆分；始终幂等物化/预建 detail
         StorageDataMigrator migrator = new MySQLStorageDataMigrator(this, connectorInstance, database);
         if (!newStorageSchema) {
-            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS），执行兼容升级");
+            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS / 历史企业任务 TYPE），执行兼容升级");
             migrator.run();
             dropTaskStatusColumnIfPresent();
         }
     }
 
     /**
-     * 是否已是新版本存储：关键拆表齐全，且 dbsyncer_task 无旧 STATUS 列。
+     * 是否已是新版本存储：关键拆表齐全，dbsyncer_task 无旧 STATUS 列，且无历史企业任务 TYPE。
      */
     private boolean isNewStorageSchema() {
         String taskTable = PREFIX_TABLE.concat(StorageEnum.TASK.getType());
@@ -747,7 +747,27 @@ public class MySQLStorageService extends AbstractStorageService {
                 && tableExists(taskTable)
                 && tableExists(PREFIX_TABLE.concat(StorageEnum.TABLE_GROUP.getType()))
                 && tableExists(PREFIX_TABLE.concat(StorageEnum.META.getType()))
-                && !columnExists(taskTable, "STATUS");
+                && !columnExists(taskTable, "STATUS")
+                && !hasLegacyEnterpriseTaskType(taskTable);
+    }
+
+    /**
+     * 任务表是否仍存在历史大写 TYPE（VALIDATE_SYNC / DATABASE_SYNC），需跑驼峰化迁移。
+     */
+    private boolean hasLegacyEnterpriseTaskType(String taskTable) {
+        if (StringUtil.isBlank(taskTable) || !tableExists(taskTable)) {
+            return false;
+        }
+        try {
+            String sql = "SELECT COUNT(1) FROM `" + taskTable + "` WHERE `TYPE` IN (?, ?)";
+            Long cnt = connectorInstance.execute(tpl -> tpl.queryForObject(sql,
+                    new Object[]{"VALIDATE_SYNC", "DATABASE_SYNC"}, Long.class));
+            return cnt != null && cnt > 0;
+        } catch (Exception e) {
+            logger.debug("hasLegacyEnterpriseTaskType({}) failed: {}", taskTable, e.getMessage());
+            // 查失败时视为仍有旧数据，触发迁移更安全
+            return true;
+        }
     }
 
     private boolean columnExists(String tableName, String columnName) {
