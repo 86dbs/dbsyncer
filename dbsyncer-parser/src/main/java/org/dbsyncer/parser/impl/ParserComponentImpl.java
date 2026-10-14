@@ -36,8 +36,8 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.Task;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
+import org.dbsyncer.sdk.spi.FullFlushService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +86,7 @@ public class ParserComponentImpl implements ParserComponent {
     private RsaManager rsaManager;
 
     @Resource
-    private ClusterService clusterService;
+    private FullFlushService fullFlushService;
 
     @Override
     public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
@@ -231,8 +231,8 @@ public class ParserComponentImpl implements ParserComponent {
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
-            clusterService.flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
 
+            fullFlushService.flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
 

@@ -68,9 +68,73 @@ public abstract class StorageDataMigrator {
             // 每个 table_group 需有表级 Meta（TASK_ID=table_group.id, IS_TASK_DETAIL=1），校验/整库启动靠它筛选未完成表
             ensureTableGroupDetailMetas();
             ensureTaskDetailTables();
+            migrateEnterpriseTaskTypeCodes();
         } catch (Exception e) {
             logger.error("存储兼容升级失败: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * 订正校验 / 整库迁移任务 TYPE：历史大写 → 驼峰 code；同步改列与 JSON.type（幂等）。
+     */
+    private void migrateEnterpriseTaskTypeCodes() {
+        if (!tableExists(T_TASK)) {
+            return;
+        }
+        int updated = 0;
+        for (Map<String, Object> task : query("SELECT * FROM " + q(T_TASK))) {
+            String taskId = val(task, "id", "ID");
+            if (StringUtil.isBlank(taskId)) {
+                continue;
+            }
+            String colType = val(task, "type", "TYPE");
+            String json = val(task, "json", "JSON");
+            String mappedCol = mapLegacyTaskType(colType);
+            boolean colChanged = StringUtil.isNotBlank(mappedCol) && !StringUtil.equals(colType, mappedCol);
+
+            Map root = StringUtil.isBlank(json) ? null : JsonUtil.parseMap(json);
+            boolean jsonChanged = false;
+            if (root != null) {
+                String jsonType = val(root, ConfigConstant.CONFIG_MODEL_TYPE, "type");
+                String mappedJson = mapLegacyTaskType(jsonType);
+                if (StringUtil.isNotBlank(mappedJson) && !StringUtil.equals(jsonType, mappedJson)) {
+                    root.put(ConfigConstant.CONFIG_MODEL_TYPE, mappedJson);
+                    jsonChanged = true;
+                }
+            }
+            if (!colChanged && !jsonChanged) {
+                continue;
+            }
+            String newType = colChanged ? mappedCol : first(mappedCol, colType);
+            if (jsonChanged && StringUtil.isBlank(newType)) {
+                newType = val(root, ConfigConstant.CONFIG_MODEL_TYPE);
+            }
+            Map<String, Object> p = new HashMap<>();
+            p.put(ConfigConstant.CONFIG_MODEL_ID, taskId);
+            p.put(ConfigConstant.CONFIG_MODEL_NAME, first(val(task, "name", "NAME"), taskId));
+            p.put(ConfigConstant.CONFIG_MODEL_TYPE, first(newType, colType));
+            p.put(ConfigConstant.CONFIG_MODEL_JSON, jsonChanged ? JsonUtil.objToJsonSafe(root) : (StringUtil.isBlank(json) ? "{}" : json));
+            p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(task, "createTime", "CREATE_TIME", System.currentTimeMillis()));
+            p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, System.currentTimeMillis());
+            storage.edit(StorageEnum.TASK, p);
+            updated++;
+        }
+        if (updated > 0) {
+            logger.info("存储兼容升级：企业任务 TYPE 驼峰化完成, rows={}", updated);
+        }
+    }
+
+    /**
+     * @return 新 code；非历史大写则返回原值
+     */
+    private static String mapLegacyTaskType(String type) {
+        if (StringUtil.equals(type, "VALIDATE_SYNC")) {
+            return ConfigConstant.VALIDATE_SYNC;
+        }
+        if (StringUtil.equals(type, "DATABASE_SYNC")) {
+            return ConfigConstant.DATABASE_SYNC;
+        }
+        return type;
     }
 
     private boolean needSplit() {

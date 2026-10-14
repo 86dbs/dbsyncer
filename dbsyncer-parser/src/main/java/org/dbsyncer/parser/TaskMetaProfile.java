@@ -121,10 +121,5 @@ public interface TaskMetaProfile {
      */
     void removeMetaCache(String taskId);
 
-    /**
-     * 重置meta状态
-     */
-    void clearMeta(String taskId);
-
     void resetMeta(String taskId);
 }

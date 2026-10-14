@@ -29,6 +29,7 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
@@ -140,6 +141,9 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
     @Resource
     private TaskProfile taskProfile;
+    
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     /**
      * 任务启停锁
@@ -191,7 +195,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             // 合并任务公共字段
             mergeTaskColumn(task);
             String id = validateSyncProfile.add(task);
-            validateSyncProfile.createRunDetailTable(id);
             validateSyncProfile.syncTaskTableMetaDetails(id);
             preloadTemplate.reConnect(task);
             return id;
@@ -206,7 +209,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             task.setTargetSchema(params.get("targetSchema"));
             // 先持久化再建连，才能拉取到所有表
             String id = validateSyncProfile.add(task);
-            validateSyncProfile.createRunDetailTable(id);
             preloadTemplate.reConnect(task);
             ValidateSyncTask validateSyncTask = refreshTablesAndGet(id);
             // 勾选「匹配相似表」时异步自动匹配，否则解析自定义表映射文本
@@ -216,12 +218,15 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
                 if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
                     throw new BizException("未获取到源库或目标库表列表，无法匹配相似表");
                 }
+                // 异步匹配结束时会 sync；此处仅预清分表，避免空表残留
+                taskDetailMetaProfile.clearData(id);
                 submitValidateSyncMatchTableTask(id);
             } else {
                 String tableGroups = params.get("tableGroups");
                 if (StringUtil.isNotBlank(tableGroups)) {
                     matchCustomizedTableGroups(validateSyncTask, tableGroups);
                 }
+                // sync 内部会 TRUNCATE 一次并重建骨架，勿再提前 clearData
                 validateSyncProfile.syncTaskTableMetaDetails(id);
             }
             return id;
@@ -326,8 +331,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         }
         assertRunning(task.getId());
         checkTask(task, params);
-        mappingProfile.clearRunData(task.getId());
-        taskMetaProfile.clearMeta(task.getId());
+        taskMetaProfile.removeMeta(task.getId());
         String sortedIds = params.get("sortedTableGroupIds");
         if (StringUtil.isNotBlank(sortedIds)) {
             List<TableGroup> groupAll = new ArrayList<>();
@@ -354,8 +358,8 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             });
         }
         String id = validateSyncProfile.update(task);
-        validateSyncProfile.createRunDetailTable(id);
-        // 编辑会清空运行明细，按当前表映射与开启类型重新对齐明细
+        // 表级 Meta 归零；明细分表由 sync 一次性 TRUNCATE 并重建骨架（勿再 clearRunData，否则会 TRUNCATE 两次）
+        taskProfile.resetTableDetailMetas(id);
         validateSyncProfile.syncTaskTableMetaDetails(id);
         return id;
     }
@@ -368,7 +372,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         ValidateSyncTask newTask = JsonUtil.jsonToObj(json, ValidateSyncTask.class);
         newTask.setId(String.valueOf(snowflakeIdWorker.nextId()));
         newTask.setName(newTask.getName() + "(复制)");
-        newTask.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
+        newTask.setType(CommonTaskTypeEnum.VALIDATE_SYNC.getCode());
         newTask.setUpdateTime(System.currentTimeMillis());
         String newId = validateSyncProfile.add(newTask);
         // 深拷贝 table_group（关联已下沉到该表）
@@ -393,7 +397,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             }
         });
         preloadTemplate.reConnect(newTask);
-        validateSyncProfile.createRunDetailTable(newId);
         validateSyncProfile.syncTaskTableMetaDetails(newId);
         return newId;
     }
@@ -416,8 +419,10 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
             Meta meta = taskMetaProfile.getMeta(id);
             if (meta != null && CommonTaskStatusEnum.isDone(meta.getState())) {
+                // 整轮重跑：任务级 Meta 归零 + 表级 Meta 归零 + 明细分表 TRUNCATE 一次并重建骨架
                 taskMetaProfile.resetMeta(id);
-                taskProfile.deleteRunData(id);
+                taskProfile.resetTableDetailMetas(id);
+                validateSyncProfile.syncTaskTableMetaDetails(id);
             }
             clusterService.start(task, false);
             return "启动成功";
@@ -795,7 +800,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     private void checkTask(ValidateSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
+            task.setType(CommonTaskTypeEnum.VALIDATE_SYNC.getCode());
         }
         long now = Instant.now().toEpochMilli();
         task.setCreateTime(null == task.getCreateTime() ? now : task.getCreateTime());

@@ -41,8 +41,8 @@ public class ConfigConstant {
     /**
      * 企业任务 type（存 {@code dbsyncer_task}），与 {@code CommonTaskTypeEnum#name()} 一致
      */
-    public static final String VALIDATE_SYNC = "VALIDATE_SYNC";
-    public static final String DATABASE_SYNC = "DATABASE_SYNC";
+    public static final String VALIDATE_SYNC = "validateSync";
+    public static final String DATABASE_SYNC = "databaseSync";
 
     /**
      * 用户表(dbsyncer_user)拆分列
@@ -180,6 +180,6 @@ public class ConfigConstant {
     /**
      * 内部分页加载默认分页大小
      */
-    public static final int PAGE_SIZE= 1000;
+    public static final int PAGE_SIZE = 1000;
 
 }

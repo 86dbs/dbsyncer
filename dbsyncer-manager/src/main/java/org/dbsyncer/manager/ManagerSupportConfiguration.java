@@ -4,7 +4,9 @@
 package org.dbsyncer.manager;
 
 import org.dbsyncer.manager.deployment.StandaloneService;
+import org.dbsyncer.parser.impl.FullFlushServiceImpl;
 import org.dbsyncer.sdk.spi.ClusterService;
+import org.dbsyncer.sdk.spi.FullFlushService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +35,20 @@ public class ManagerSupportConfiguration {
             return spi;
         }
         return new StandaloneService();
+    }
+
+    /**
+     * 全量页级落库：优先 SPI，否则单机默认实现。
+     */
+    @Bean
+    @ConditionalOnMissingBean(FullFlushService.class)
+    @DependsOn(value = "serviceFactory")
+    public FullFlushService fullFlushService() {
+        FullFlushService spi = serviceFactory.get(FullFlushService.class);
+        if (spi != null) {
+            return spi;
+        }
+        return new FullFlushServiceImpl();
     }
 
 }

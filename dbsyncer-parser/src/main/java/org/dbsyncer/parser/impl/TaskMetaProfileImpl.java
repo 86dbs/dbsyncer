@@ -335,16 +335,6 @@ public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> 
     }
 
     @Override
-    public void clearMeta(String taskId) {
-        Meta meta = getMeta(taskId);
-        if (meta != null) {
-            meta.clear();
-            meta.setUpdateTime(System.currentTimeMillis());
-            updateMeta(meta);
-        }
-    }
-
-    @Override
     public void resetMeta(String taskId) {
         Meta meta = getMeta(taskId);
         if (meta != null) {

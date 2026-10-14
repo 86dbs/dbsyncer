@@ -248,6 +248,11 @@ public class TaskProfileImpl implements TaskProfile {
             }
             String type = map.get(ConfigConstant.CONFIG_MODEL_TYPE) == null
                     ? null : String.valueOf(map.get(ConfigConstant.CONFIG_MODEL_TYPE));
+            // 导入兼容历史大写 TYPE，规范后再解析/落库
+            type = CommonTaskTypeEnum.normalizeImportType(type);
+            if (StringUtil.isNotBlank(type)) {
+                map.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
+            }
             String itemJson = JsonUtil.objToJson(map);
             if (StringUtil.equals(ConfigConstant.MAPPING, type) || StringUtil.isBlank(type)) {
                 Mapping mapping = JsonUtil.jsonToObj(itemJson, Mapping.class);
@@ -263,12 +268,14 @@ public class TaskProfileImpl implements TaskProfile {
             if (taskType == CommonTaskTypeEnum.VALIDATE_SYNC) {
                 ValidateSyncTask task = JsonUtil.jsonToObj(itemJson, ValidateSyncTask.class);
                 if (task != null) {
+                    task.setType(taskType.getCode());
                     importTask(task);
                     enterpriseTasks.add(task);
                 }
             } else if (taskType == CommonTaskTypeEnum.DATABASE_SYNC) {
                 DatabaseSyncTask task = JsonUtil.jsonToObj(itemJson, DatabaseSyncTask.class);
                 if (task != null) {
+                    task.setType(taskType.getCode());
                     importTask(task);
                     enterpriseTasks.add(task);
                 }
@@ -332,8 +339,16 @@ public class TaskProfileImpl implements TaskProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        // 清空明细表并预建空表（任务仍在）；表级 Meta 重置而非删除，供分片选表 JOIN
+        // 清空明细分表数据（任务仍在）；表级 Meta 重置而非删除，供分片选表 JOIN
         taskDetailMetaProfile.clearData(taskId);
+        resetTableDetailMetas(taskId);
+    }
+
+    @Override
+    public void resetTableDetailMetas(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
             if (CollectionUtils.isEmpty(tableGroups)) {
                 return;
@@ -359,22 +374,14 @@ public class TaskProfileImpl implements TaskProfile {
             taskDetailMetaProfile.deleteMetaByTableGroupIds(groupIds);
         });
     }
-
-    @Override
-    public void createRunDetailTable(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return;
-        }
-        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
-    }
-
+    
     @Override
     public void createRunDetailTables(List<String> taskIds) {
         if (CollectionUtils.isEmpty(taskIds)) {
             return;
         }
         for (String taskId : taskIds) {
-            createRunDetailTable(taskId);
+            taskDetailMetaProfile.clearData(taskId);
         }
     }
 }

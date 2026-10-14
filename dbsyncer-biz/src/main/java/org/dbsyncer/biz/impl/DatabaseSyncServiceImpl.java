@@ -179,7 +179,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         }
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
         databaseSyncProfile.clearRunData(id);
-        taskMetaProfile.clearMeta(id);
+        taskMetaProfile.resetMeta(id);
         String editedId = databaseSyncProfile.update(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
         databaseSyncProfile.syncTaskTableMetaDetails(editedId);
@@ -442,7 +442,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
     private void fillTaskOnAdd(DatabaseSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setType(CommonTaskTypeEnum.DATABASE_SYNC.name());
+            task.setType(CommonTaskTypeEnum.DATABASE_SYNC.getCode());
         }
         long now = Instant.now().toEpochMilli();
         task.setCreateTime(task.getCreateTime() == null ? now : task.getCreateTime());

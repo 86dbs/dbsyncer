@@ -50,11 +50,6 @@ public interface ValidateSyncProfile {
     void pageScanTasks(int pageSize, Consumer<List<ValidateSyncTask>> pageConsumer);
 
     /**
-     * 预建运行明细分表
-     */
-    void createRunDetailTable(String taskId);
-
-    /**
      * 保存/编辑时重建明细分表骨架行（先清空再按当前表映射写入）。
      */
     void syncTaskTableMetaDetails(String taskId);

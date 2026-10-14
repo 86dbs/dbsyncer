@@ -149,7 +149,7 @@ public abstract class ConfigModelUtil {
 
     /**
      * 依据配置类型路由到对应的存储表。
-     * <p>同步 Mapping 与企业任务（VALIDATE_SYNC / DATABASE_SYNC）均并入 {@code dbsyncer_task}。
+     * <p>同步 Mapping 与企业任务（validateSync / databaseSync）均并入 {@code dbsyncer_task}。
      *
      * @param type 配置类型 {@link ConfigConstant} / {@link CommonTaskTypeEnum#name()}
      * @return 存储枚举

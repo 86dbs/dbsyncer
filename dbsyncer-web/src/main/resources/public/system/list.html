@@ -80,7 +80,7 @@
                             class="text-primary">*</strong></label>
                     <div class="form-control-area">
                         <input type="number" class="form-control" min="1" max="64" required
-                               name="tableWindowSize" th:value="${config?.tableWindowSize}"/>
+                               name="concurrentTableCount" th:value="${config?.concurrentTableCount}"/>
                     </div>
                 </div>
                 <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
