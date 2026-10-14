@@ -332,8 +332,16 @@ public class TaskProfileImpl implements TaskProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        // 清空明细表并预建空表（任务仍在）；表级 Meta 重置而非删除，供分片选表 JOIN
+        // 清空明细分表数据（任务仍在）；表级 Meta 重置而非删除，供分片选表 JOIN
         taskDetailMetaProfile.clearData(taskId);
+        resetTableDetailMetas(taskId);
+    }
+
+    @Override
+    public void resetTableDetailMetas(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
             if (CollectionUtils.isEmpty(tableGroups)) {
                 return;
@@ -359,22 +367,14 @@ public class TaskProfileImpl implements TaskProfile {
             taskDetailMetaProfile.deleteMetaByTableGroupIds(groupIds);
         });
     }
-
-    @Override
-    public void createRunDetailTable(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return;
-        }
-        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
-    }
-
+    
     @Override
     public void createRunDetailTables(List<String> taskIds) {
         if (CollectionUtils.isEmpty(taskIds)) {
             return;
         }
         for (String taskId : taskIds) {
-            createRunDetailTable(taskId);
+            taskDetailMetaProfile.clearData(taskId);
         }
     }
 }

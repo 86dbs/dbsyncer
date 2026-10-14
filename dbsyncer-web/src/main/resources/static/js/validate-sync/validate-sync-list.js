@@ -141,11 +141,12 @@
     }
 
     function renderTaskDurationText(task) {
-        var isRunning = Number(task.metaState) === 1;
-        if (isRunning) {
-            return '';
-        }
-        var durationText = formatElapsedDuration(task.startTime, task.updateTime);
+        var state = Number(task.metaState);
+        var RUNNING = 1;
+        var STOPPING = 2;
+        // 运行中/停止中 updateTime 往往未随进度刷新，用前端当前时间算实时耗时
+        var endTime = (state === RUNNING || state === STOPPING) ? Date.now() : task.updateTime;
+        var durationText = formatElapsedDuration(task.startTime, endTime);
         if (!durationText) {
             return '';
         }

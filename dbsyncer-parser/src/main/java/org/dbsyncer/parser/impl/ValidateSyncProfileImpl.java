@@ -10,6 +10,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.ValidateSyncProfile;
@@ -44,6 +45,9 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
 
     @Resource
     private TaskProfile taskProfile;
+
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
@@ -92,12 +96,7 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
     public void pageScanTasks(int pageSize, Consumer<List<ValidateSyncTask>> pageConsumer) {
         taskProfile.pageScanTasks(ValidateSyncTask.class, pageSize, pageConsumer);
     }
-
-    @Override
-    public void createRunDetailTable(String taskId) {
-        taskProfile.createRunDetailTable(taskId);
-    }
-
+    
     @Override
     public void onApplicationEvent(RemoveValidateSyncCacheEvent event) {
         removeCache(event.getCommonMessage().getId());
@@ -112,7 +111,7 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
         Assert.hasText(taskId, "任务ID不能为空");
         ValidateSyncTask task = get(taskId);
         Assert.notNull(task, "任务不存在");
-        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
+        taskDetailMetaProfile.clearData(taskId);
         List<String> types = resolveEnabledDetailTypes(task);
         if (types.isEmpty()) {
             return;
