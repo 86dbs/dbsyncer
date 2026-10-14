@@ -11,9 +11,6 @@ package org.dbsyncer.common.cache;
  */
 public final class CacheConstant {
 
-    private CacheConstant() {
-    }
-
     /**
      * 系统配置（{@code SystemConfig}）
      */
