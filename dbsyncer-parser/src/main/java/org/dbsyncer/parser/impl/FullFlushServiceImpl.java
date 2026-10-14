@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.manager.deployment;
+package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.event.FullRefreshEvent;
@@ -23,7 +23,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2026-10-14
  */
-public final class StandaloneFullFlushService implements FullFlushService {
+public class FullFlushServiceImpl implements FullFlushService {
 
     @Resource
     private FlushStrategy flushStrategy;
