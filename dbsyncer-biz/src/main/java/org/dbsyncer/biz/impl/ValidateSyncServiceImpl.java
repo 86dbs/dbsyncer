@@ -60,7 +60,6 @@ import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -142,13 +141,14 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
     @Resource
     private TaskProfile taskProfile;
+    
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     /**
      * 任务启停锁
      */
     private final static Object LOCK = new Object();
-    @Autowired
-    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     @Override
     public ValidateSyncTaskVO get(String id) {

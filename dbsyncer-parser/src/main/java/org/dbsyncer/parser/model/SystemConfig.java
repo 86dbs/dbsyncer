@@ -14,8 +14,8 @@ import org.dbsyncer.sdk.model.NoticeConfig;
 /**
  * 系统配置
  *
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2020-05-29 20:13
  */
 public class SystemConfig extends ConfigModel {
@@ -110,9 +110,9 @@ public class SystemConfig extends ConfigModel {
     private NoticeConfig noticeConfig;
 
     /**
-     * 批处理并发窗口：同时推进的表数上限，并作为本机分片执行线程池大小
+     * 并发表数
      */
-    private int tableWindowSize = 10;
+    private int concurrentTableCount = 10;
 
     /**
      * 分片总数（与任务 readNum×threadNum 相除得到每波预切片数）
@@ -260,12 +260,12 @@ public class SystemConfig extends ConfigModel {
         this.noticeConfig = noticeConfig;
     }
 
-    public int getTableWindowSize() {
-        return tableWindowSize;
+    public int getConcurrentTableCount() {
+        return concurrentTableCount;
     }
 
-    public void setTableWindowSize(int tableWindowSize) {
-        this.tableWindowSize = tableWindowSize;
+    public void setConcurrentTableCount(int concurrentTableCount) {
+        this.concurrentTableCount = concurrentTableCount;
     }
 
     public int getShardTotal() {
