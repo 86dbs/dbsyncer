@@ -58,9 +58,13 @@ public class ConfigConstant {
     public static final String GROUP_OWNER_ROLE = "ownerRole";
 
     /**
-     * 业务分组关系表(dbsyncer_group_rel)拆分列；资源类型列复用 {@link #CONFIG_MODEL_TYPE}
+     * 业务分组关系表(dbsyncer_group_rel)拆分列
      */
     public static final String GROUP_REL_GROUP_ID = "groupId";
+    /**
+     * 资源类型列 RESOURCE_TYPE（模型侧复用 {@link #CONFIG_MODEL_TYPE}/{@code ConfigModel#type}）
+     */
+    public static final String GROUP_REL_RESOURCE_TYPE = "resourceType";
     public static final String GROUP_REL_RESOURCE_ID = "resourceId";
 
     /**

@@ -46,7 +46,7 @@ public class GroupRelProfileImpl implements GroupRelProfile {
         Query query = new Query(1, 1);
         query.setType(StorageEnum.GROUP_REL);
         query.addFilter(ConfigConstant.GROUP_REL_GROUP_ID, groupId);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, resourceType);
+        query.addFilter(ConfigConstant.GROUP_REL_RESOURCE_TYPE, resourceType);
         query.addFilter(ConfigConstant.GROUP_REL_RESOURCE_ID, resourceId);
         Paging paging = storageService.query(query);
         if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
@@ -65,7 +65,7 @@ public class GroupRelProfileImpl implements GroupRelProfile {
             return Collections.emptyList();
         }
         Query condition = new Query();
-        condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, resourceType);
+        condition.addFilter(ConfigConstant.GROUP_REL_RESOURCE_TYPE, resourceType);
         condition.addFilter(ConfigConstant.GROUP_REL_RESOURCE_ID, resourceId);
         return operationTemplate.queryList(StorageEnum.GROUP_REL, condition, GroupRel.class);
     }
@@ -78,7 +78,7 @@ public class GroupRelProfileImpl implements GroupRelProfile {
         Query condition = new Query();
         condition.addFilter(ConfigConstant.GROUP_REL_GROUP_ID, groupId);
         if (StringUtil.isNotBlank(resourceType)) {
-            condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, resourceType);
+            condition.addFilter(ConfigConstant.GROUP_REL_RESOURCE_TYPE, resourceType);
         }
         return operationTemplate.queryList(StorageEnum.GROUP_REL, condition, GroupRel.class);
     }
@@ -136,7 +136,7 @@ public class GroupRelProfileImpl implements GroupRelProfile {
         }
         Query query = new Query();
         query.setType(StorageEnum.GROUP_REL);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, resourceType);
+        query.addFilter(ConfigConstant.GROUP_REL_RESOURCE_TYPE, resourceType);
         query.addFilter(ConfigConstant.GROUP_REL_RESOURCE_ID, resourceId);
         storageService.delete(query);
     }

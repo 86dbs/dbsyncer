@@ -657,16 +657,16 @@ public class H2StorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
-        // 业务分组（无 type 列）
+        // 业务分组
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.GROUP_SORT, ConfigConstant.GROUP_OWNER_ID, ConfigConstant.GROUP_OWNER_ROLE,
                 ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> groupFields = builder.getFields();
 
-        // 业务分组关系（无 name/json；TYPE 存资源类型）
+        // 业务分组关系
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.GROUP_REL_GROUP_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID);
+                ConfigConstant.GROUP_REL_GROUP_ID, ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID);
         List<Field> groupRelFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
@@ -1046,6 +1046,7 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.GROUP_OWNER_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_OWNER_ROLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());

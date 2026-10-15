@@ -123,7 +123,7 @@ public class GroupServiceImpl implements GroupService {
         long now = System.currentTimeMillis();
         GroupRel rel = new GroupRel();
         rel.setGroupId(groupId);
-        rel.setType(resourceType);
+        rel.setResourceType(resourceType);
         rel.setResourceId(resourceId);
         rel.setCreateTime(now);
         rel.setUpdateTime(now);

@@ -69,7 +69,7 @@ public final class OperationTemplate {
         }
 
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
-        StorageEnum type = ConfigModelUtil.getStorageEnum(model);
+        StorageEnum type = ConfigModelUtil.getStorageEnum(model.getType());
         if (CommandEnum.OPR_EDIT == cmd) {
             storageService.edit(type, params);
         } else {
@@ -95,7 +95,7 @@ public final class OperationTemplate {
             }
             paramsList.add(ConfigModelUtil.convertModelToMap(model));
         }
-        StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0));
+        StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0).getType());
         if (commandEnum.isEdit()) {
             storageService.editBatch(type, null, paramsList);
         } else {
