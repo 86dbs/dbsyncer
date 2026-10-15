@@ -15,6 +15,7 @@ import com.github.shyiko.mysql.binlog.event.RotateEventData;
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.deserialization.AnnotateRowsEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.ChecksumType;
+import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserializationException;
 import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.EventHeaderV4Deserializer;
@@ -23,6 +24,7 @@ import com.github.shyiko.mysql.binlog.event.deserialization.GtidEventDataDeseria
 import com.github.shyiko.mysql.binlog.event.deserialization.IntVarEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.MariadbGtidEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.MariadbGtidListEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.MissingTableMapEventException;
 import com.github.shyiko.mysql.binlog.event.deserialization.NullEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.PreviousGtidSetDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.QueryEventDataDeserializer;
@@ -81,6 +83,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.github.shyiko.mysql.binlog.event.EventType.GTID;
 
@@ -168,6 +172,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private Boolean isMariaDB;
 
     private static final long MYSQL_VERSION_8_4 = 8400000000L;
+    private static final Pattern NEXT_POSITION_PATTERN = Pattern.compile("nextPosition=(\\d+)");
+
     private final List<EventListener> eventListeners = new CopyOnWriteArrayList<>();
     private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
 
@@ -892,9 +898,94 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 binlogFilename = null;
                 binlogPosition = 0;
             }
+        } else {
+            // 位点落在 TABLE_MAP 与 ROW 事件组中间时，同位点重连会永久失败；直接跳到事件 nextPosition
+            trySkipIncompleteEventGroup(e);
         }
         connectedError = true;
         lifecycleListeners.forEach(listener -> listener.onException(this, e));
+    }
+
+    /**
+     * 判断是否为「从事件组中间起读」类失败（缺 TABLE_MAP）。
+     */
+    public static boolean isIncompleteEventGroupFailure(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof MissingTableMapEventException) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null) {
+                String lower = message.toLowerCase();
+                if (lower.contains("no tablemapeventdata")
+                        || lower.contains("within the logical event group")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * MissingTableMap 为确定性命中：将 {@link #binlogPosition} 推进到事件头 nextPosition，重连后继续读；
+     * 同组内若仍缺 TABLE_MAP 会再次跳过，直到读到可解析事件。
+     *
+     * @return true 表示已跳过，重连将从新位点继续
+     */
+    private boolean trySkipIncompleteEventGroup(Exception e) {
+        if (!isIncompleteEventGroupFailure(e)) {
+            return false;
+        }
+        String file = binlogFilename == null ? "" : binlogFilename;
+        long nextPosition = resolveNextPosition(e);
+        if (nextPosition <= 0 || nextPosition <= binlogPosition) {
+            logger.error("binlog 位点落在事件组中间 {}/{}, 但无法解析有效 nextPosition，无法自动跳过", file, binlogPosition);
+            return false;
+        }
+        long from = binlogPosition;
+        binlogPosition = nextPosition;
+        logger.warn("已跳过不完整 binlog 事件组 {}/{} -> {}/{}", file, from, file, nextPosition);
+        return true;
+    }
+
+    /**
+     * 从反序列化异常中解析事件头 nextPosition；失败时回退解析异常文案。
+     */
+    static long resolveNextPosition(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof EventDataDeserializationException) {
+                EventHeader header = ((EventDataDeserializationException) current).getEventHeader();
+                if (header instanceof EventHeaderV4) {
+                    long nextPosition = ((EventHeaderV4) header).getNextPosition();
+                    if (nextPosition > 0) {
+                        return nextPosition;
+                    }
+                }
+            }
+            current = current.getCause();
+        }
+        current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null) {
+                Matcher matcher = NEXT_POSITION_PATTERN.matcher(message);
+                if (matcher.find()) {
+                    try {
+                        long nextPosition = Long.parseLong(matcher.group(1));
+                        if (nextPosition > 0) {
+                            return nextPosition;
+                        }
+                    } catch (NumberFormatException ignore) {
+                        // continue
+                    }
+                }
+            }
+            current = current.getCause();
+        }
+        return -1L;
     }
 
     @Override
