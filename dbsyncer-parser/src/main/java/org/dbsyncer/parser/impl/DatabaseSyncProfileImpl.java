@@ -28,7 +28,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,12 +88,7 @@ public final class DatabaseSyncProfileImpl extends AbstractConfigModelProfile<Da
     }
 
     @Override
-    public Paging<DatabaseSyncTask> query(int pageNum, int pageSize, String searchKey) {
-        return taskProfile.queryTasks(DatabaseSyncTask.class, pageNum, pageSize, searchKey);
-    }
-
-    @Override
-    public Paging<DatabaseSyncTask> query(int pageNum, int pageSize, String searchKey, Collection<String> ids) {
+    public Paging<DatabaseSyncTask> query(int pageNum, int pageSize, String searchKey, List<String> ids) {
         return taskProfile.queryTasks(DatabaseSyncTask.class, pageNum, pageSize, searchKey, ids);
     }
 

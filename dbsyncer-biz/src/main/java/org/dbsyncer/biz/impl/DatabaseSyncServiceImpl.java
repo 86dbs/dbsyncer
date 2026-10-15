@@ -255,12 +255,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);
         }
-        Paging<DatabaseSyncTask> paging;
-        if (groupFilter.hasIdFilter()) {
-            paging = databaseSyncProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
-        } else {
-            paging = databaseSyncProfile.query(pageNum, pageSize, searchKey);
-        }
+        Paging<DatabaseSyncTask> paging = databaseSyncProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
         Collection<DatabaseSyncTask> data = paging.getData();
         if (CollectionUtils.isEmpty(data)) {
             return null;

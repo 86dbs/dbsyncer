@@ -246,12 +246,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);
         }
-        Paging<Connector> paging;
-        if (groupFilter.hasIdFilter()) {
-            paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey, role, groupFilter.getIds());
-        } else {
-            paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey, role);
-        }
+        Paging<Connector> paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey, role, groupFilter.getIds());
         if (paging == null) {
             return null;
         }

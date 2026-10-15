@@ -456,12 +456,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);
         }
-        Paging<ValidateSyncTask> search;
-        if (groupFilter.hasIdFilter()) {
-            search = validateSyncProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
-        } else {
-            search = validateSyncProfile.query(pageNum, pageSize, searchKey);
-        }
+        Paging<ValidateSyncTask> search = validateSyncProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
         Collection<ValidateSyncTask> data = search.getData();
         if (CollectionUtils.isEmpty(data)) {
             return null;

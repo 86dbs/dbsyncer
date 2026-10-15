@@ -8,13 +8,10 @@ import org.dbsyncer.common.util.HttpClientUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -39,29 +36,13 @@ import java.security.MessageDigest;
  */
 public class ClusterInternalAuthFilter extends OncePerRequestFilter {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     private final UrlPathHelper urlPathHelper = new UrlPathHelper();
 
     @Value("${dbsyncer.cluster.internal-token:}")
     private String internalToken;
 
-    @Value("${dbsyncer.cluster.enabled:false}")
-    private boolean clusterEnabled;
-
     @Resource
     private PreloadTemplate preloadTemplate;
-
-    @PostConstruct
-    public void logConfig() {
-        if (StringUtil.isBlank(internalToken)) {
-            logger.warn("dbsyncer.cluster.internal-token 未配置，/cluster/internal/** 将被拒绝。生产集群必须为各节点配置相同共享密钥，并通过请求头 {} 传递。", HttpClientUtil.CLUSTER_TOKEN_HEADER);
-            return;
-        }
-        if (clusterEnabled) {
-            logger.info("集群内部控制面已启用 {} 校验", HttpClientUtil.CLUSTER_TOKEN_HEADER);
-        }
-    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

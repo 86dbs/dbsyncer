@@ -6,7 +6,6 @@ package org.dbsyncer.parser;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -44,13 +43,9 @@ public interface DatabaseSyncProfile {
      * 按模型类型分页查询任务，可选按名称模糊搜索。
      *
      * @param searchKey 可选；非空时对 {@code name} 做 LIKE
+     * @param ids 可选；按 ID IN 过滤。
      */
-    Paging<DatabaseSyncTask> query(int pageNum, int pageSize, String searchKey);
-
-    /**
-     * 分页查询，并按 ID IN 过滤。
-     */
-    Paging<DatabaseSyncTask> query(int pageNum, int pageSize, String searchKey, Collection<String> ids);
+    Paging<DatabaseSyncTask> query(int pageNum, int pageSize, String searchKey, List<String> ids);
 
     /**
      * 按模型类型分页回调遍历全部任务。

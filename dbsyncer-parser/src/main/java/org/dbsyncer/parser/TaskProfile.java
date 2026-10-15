@@ -8,7 +8,6 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.TaskImportResult;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -29,20 +28,12 @@ public interface TaskProfile {
     <T extends ConfigModel> T getTask(String id, Class<T> clazz);
 
     /**
-     * 按模型类型分页查询任务，可选按名称模糊搜索。
-     *
-     * @param searchKey 可选；非空时对 {@code name} 做 LIKE
-     */
-    <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey);
-
-    /**
      * 按模型类型分页查询任务，并按 ID IN 过滤。
      *
      * @param searchKey 可选；非空时对 {@code name} 做 LIKE
      * @param ids       资源 ID 集合；空或 null 不加 ID 条件
      */
-    <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey,
-                                                 Collection<String> ids);
+    <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey, List<String> ids);
 
     /**
      * 按模型类型分页回调遍历全部任务。

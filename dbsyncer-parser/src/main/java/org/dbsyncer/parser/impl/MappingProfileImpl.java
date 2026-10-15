@@ -14,7 +14,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -71,12 +70,7 @@ public final class MappingProfileImpl extends AbstractConfigModelProfile<Mapping
     }
 
     @Override
-    public Paging<Mapping> query(int pageNum, int pageSize, String searchKey) {
-        return taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
-    }
-
-    @Override
-    public Paging<Mapping> query(int pageNum, int pageSize, String searchKey, Collection<String> ids) {
+    public Paging<Mapping> query(int pageNum, int pageSize, String searchKey, List<String> ids) {
         return taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey, ids);
     }
 

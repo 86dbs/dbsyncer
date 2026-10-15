@@ -931,23 +931,20 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     /**
      * MissingTableMap 为确定性命中：将 {@link #binlogPosition} 推进到事件头 nextPosition，重连后继续读；
      * 同组内若仍缺 TABLE_MAP 会再次跳过，直到读到可解析事件。
-     *
-     * @return true 表示已跳过，重连将从新位点继续
      */
-    private boolean trySkipIncompleteEventGroup(Exception e) {
+    private void trySkipIncompleteEventGroup(Exception e) {
         if (!isIncompleteEventGroupFailure(e)) {
-            return false;
+            return;
         }
         String file = binlogFilename == null ? "" : binlogFilename;
         long nextPosition = resolveNextPosition(e);
         if (nextPosition <= 0 || nextPosition <= binlogPosition) {
             logger.error("binlog 位点落在事件组中间 {}/{}, 但无法解析有效 nextPosition，无法自动跳过", file, binlogPosition);
-            return false;
+            return;
         }
         long from = binlogPosition;
         binlogPosition = nextPosition;
         logger.warn("已跳过不完整 binlog 事件组 {}/{} -> {}/{}", file, from, file, nextPosition);
-        return true;
     }
 
     /**

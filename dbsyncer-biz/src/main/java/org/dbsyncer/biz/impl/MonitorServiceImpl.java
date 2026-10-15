@@ -140,7 +140,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 50);
         String searchKey = params.get("searchKey");
         // 按任务分页，避免扫全量 Meta（含校验/迁移等非同步任务）
-        Paging<Mapping> paging = mappingProfile.query(pageNum, pageSize, searchKey);
+        Paging<Mapping> paging = mappingProfile.query(pageNum, pageSize, searchKey, null);
         Paging<MetaVO> result = new Paging<>(pageNum, pageSize);
         if (paging == null) {
             return result;

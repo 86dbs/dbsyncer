@@ -29,7 +29,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -127,13 +127,7 @@ public class ConnectorProfileImpl extends AbstractConfigModelProfile<Connector> 
     }
 
     @Override
-    public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey, String role) {
-        return queryConnectors(pageNum, pageSize, searchKey, role, null);
-    }
-
-    @Override
-    public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey, String role,
-                                             Collection<String> ids) {
+    public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey, String role, List<String> ids) {
         int safePageNum = pageNum > 0 ? pageNum : 1;
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         Query query = new Query(safePageNum, safePageSize);
@@ -147,7 +141,7 @@ public class ConnectorProfileImpl extends AbstractConfigModelProfile<Connector> 
             query.addFilter(ConfigConstant.CONNECTOR_IS_TARGET, 1);
         }
         if (!CollectionUtils.isEmpty(ids)) {
-            query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, new ArrayList<Object>(ids)));
+            query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, Collections.singletonList(ids)));
         }
         query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
         Paging paging = storageService.query(query);

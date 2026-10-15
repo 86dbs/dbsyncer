@@ -298,12 +298,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (groupFilter.isEmptyResult()) {
             return result;
         }
-        Paging<Mapping> paging;
-        if (groupFilter.hasIdFilter()) {
-            paging = mappingProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
-        } else {
-            paging = mappingProfile.query(pageNum, pageSize, searchKey);
-        }
+        Paging<Mapping> paging = mappingProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
         if (paging == null) {
             return result;
         }

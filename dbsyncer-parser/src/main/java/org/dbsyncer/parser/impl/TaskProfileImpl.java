@@ -39,7 +39,6 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,13 +80,7 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey) {
-        return queryTasks(clazz, pageNum, pageSize, searchKey, null);
-    }
-
-    @Override
-    public <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey,
-                                                        Collection<String> ids) {
+    public <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey, List<String> ids) {
         Assert.notNull(clazz, "Task class can not be null.");
         int safePageNum = pageNum > 0 ? pageNum : 1;
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
@@ -102,7 +95,7 @@ public class TaskProfileImpl implements TaskProfile {
                 query.addFilter(ConfigConstant.CONFIG_MODEL_NAME, searchKey, false);
             }
             if (!CollectionUtils.isEmpty(ids)) {
-                query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, new ArrayList<Object>(ids)));
+                query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, Collections.singletonList(ids)));
             }
             query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
             Paging paging = storageService.query(query);
@@ -136,7 +129,7 @@ public class TaskProfileImpl implements TaskProfile {
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         int pageNum = 1;
         while (true) {
-            Paging<T> paging = queryTasks(clazz, pageNum, safePageSize, null);
+            Paging<T> paging = queryTasks(clazz, pageNum, safePageSize, null, null);
             if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
