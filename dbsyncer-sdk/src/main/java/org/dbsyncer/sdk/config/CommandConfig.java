@@ -1,5 +1,5 @@
 /**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
 package org.dbsyncer.sdk.config;
 
@@ -25,6 +25,11 @@ public class CommandConfig {
 
     private List<Filter> filter;
 
+    /**
+     * 数据库/目录（如 MongoDB database、JDBC catalog）
+     */
+    private String catalog;
+
     private String schema;
 
     private ConnectorInstance connectorInstance;
@@ -42,6 +47,14 @@ public class CommandConfig {
 
     public String getConnectorType() {
         return connectorType;
+    }
+
+    public String getCatalog() {
+        return catalog;
+    }
+
+    public void setCatalog(String catalog) {
+        this.catalog = catalog;
     }
 
     public String getSchema() {
