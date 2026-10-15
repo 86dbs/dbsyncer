@@ -706,7 +706,6 @@ public class MySQLStorageService extends AbstractStorageService {
         // 业务分组
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.GROUP_SORT, ConfigConstant.GROUP_OWNER_ID, ConfigConstant.GROUP_OWNER_ROLE,
                 ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> groupFields = builder.getFields();
 
@@ -1056,9 +1055,6 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.PLAN_FAIL, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.PLAN_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.PLAN_LAST_PAGE, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.GROUP_SORT, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.GROUP_OWNER_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.GROUP_OWNER_ROLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR))

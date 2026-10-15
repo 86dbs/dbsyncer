@@ -33,12 +33,12 @@
      * 列表筛选选项：全部 + 真实分组（不含「未分组」）。
      */
     function buildFilterData(groups) {
-        var data = [{ label: '全部', value: '' }];
+        var data = [{label: '全部', value: ''}];
         (groups || []).forEach(function (g) {
             if (!g || !g.id) {
                 return;
             }
-            data.push({ label: g.name || '', value: g.id });
+            data.push({label: g.name || '', value: g.id});
         });
         return data;
     }
@@ -273,14 +273,13 @@
         var selectApi = null;
         var silentChange = false;
 
+        // 列表容器已带 flex/gap；筛选区用 min-w-200，下拉随容器宽度
         $container.html(
-            '<div class="group-toolbar-inner flex items-center gap-2">' +
-            '<div class="group-filter-wrap hidden flex-shrink-0 min-w-160">' +
+            '<div class="group-filter-wrap hidden flex-shrink-0 w-320">' +
             '<select class="form-control group-filter-select"></select>' +
             '</div>' +
             '<button type="button" class="btn btn-outline group-edit-btn hidden flex-shrink-0" title="编辑分组"><i class="fa fa-edit"></i></button>' +
-            '<button type="button" class="btn btn-outline group-remove-btn hidden flex-shrink-0" title="删除分组"><i class="fa fa-trash"></i></button>' +
-            '</div>'
+            '<button type="button" class="btn btn-outline group-remove-btn hidden flex-shrink-0" title="删除分组"><i class="fa fa-trash"></i></button>'
         );
         var $filterWrap = $container.find('.group-filter-wrap');
         var $select = $container.find('.group-filter-select');
@@ -364,7 +363,7 @@
             var resourceApi = null;
             var dialog = showConfirm({
                 title: '新建分组',
-                size: 'large',
+                size: 'max',
                 position: 'center',
                 body: '<div class="group-dialog-body">' +
                     '<div class="form-item"><label class="form-label">名称<strong class="text-primary">*</strong></label>' +

@@ -19,7 +19,7 @@ import java.util.Map;
 public interface GroupService {
 
     /**
-     * 新建分组（仅名称，SORT 默认 0）。
+     * 新建分组（仅名称）。
      *
      * @param params 含 name
      * @return 分组 ID

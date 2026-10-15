@@ -5,7 +5,6 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -53,14 +52,6 @@ public abstract class ConfigModelUtil {
             params.put(ConfigConstant.CONNECTOR_IS_SOURCE, connector.isSource() ? 1 : 0);
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, connector.isTarget() ? 1 : 0);
             params.put(ConfigConstant.CONNECTOR_STATUS, connector.getStatus());
-        }
-
-        // 业务分组：排序/归属落拆分列（表无 type 列，params 中 type 仅路由用会被忽略）
-        if (model instanceof Group) {
-            Group group = (Group) model;
-            params.put(ConfigConstant.GROUP_SORT, group.getSort());
-            params.put(ConfigConstant.GROUP_OWNER_ID, StringUtil.getIfBlank(group.getOwnerId(), StringUtil.EMPTY));
-            params.put(ConfigConstant.GROUP_OWNER_ROLE, StringUtil.getIfBlank(group.getOwnerRole(), StringUtil.EMPTY));
         }
 
         // 表映射关系：关联信息落拆分列

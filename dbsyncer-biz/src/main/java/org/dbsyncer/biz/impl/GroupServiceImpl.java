@@ -55,9 +55,6 @@ public class GroupServiceImpl implements GroupService {
         long now = System.currentTimeMillis();
         Group group = new Group();
         group.setName(name);
-        group.setSort(0);
-        group.setOwnerId(StringUtil.EMPTY);
-        group.setOwnerRole(StringUtil.EMPTY);
         group.setCreateTime(now);
         group.setUpdateTime(now);
         return groupProfile.addGroup(group);

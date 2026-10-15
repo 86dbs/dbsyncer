@@ -16,46 +16,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
  */
 public class Group extends ConfigModel {
 
-    /**
-     * 排序，越小越靠前
-     */
-    private int sort;
-
-    /**
-     * 归属用户 ID，空表示未指定
-     */
-    private String ownerId = "";
-
-    /**
-     * 归属角色，空表示未指定
-     */
-    private String ownerRole = "";
-
     public Group() {
         super.setType(ConfigConstant.GROUP);
-    }
-
-    public int getSort() {
-        return sort;
-    }
-
-    public void setSort(int sort) {
-        this.sort = sort;
-    }
-
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
-    }
-
-    public String getOwnerRole() {
-        return ownerRole;
-    }
-
-    public void setOwnerRole(String ownerRole) {
-        this.ownerRole = ownerRole;
     }
 }

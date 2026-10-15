@@ -51,13 +51,6 @@ public class ConfigConstant {
     public static final String GROUP_REL = "groupRel";
 
     /**
-     * 业务分组表(dbsyncer_group)拆分列
-     */
-    public static final String GROUP_SORT = "sort";
-    public static final String GROUP_OWNER_ID = "ownerId";
-    public static final String GROUP_OWNER_ROLE = "ownerRole";
-
-    /**
      * 业务分组关系表(dbsyncer_group_rel)拆分列
      */
     public static final String GROUP_REL_GROUP_ID = "groupId";

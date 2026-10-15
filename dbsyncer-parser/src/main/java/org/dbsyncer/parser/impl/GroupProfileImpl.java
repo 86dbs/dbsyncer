@@ -49,8 +49,7 @@ public class GroupProfileImpl extends AbstractConfigModelProfile<Group> implemen
         Query query = new Query();
         query.setType(StorageEnum.GROUP);
         query.setPageSize(ConfigConstant.PAGE_SIZE);
-        query.addOrderBy(ConfigConstant.GROUP_SORT, SortEnum.ASC);
-        query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
+        query.addOrderBy(ConfigConstant.CONFIG_MODEL_NAME, SortEnum.ASC);
         List<Group> result = new ArrayList<>();
         while (true) {
             Paging paging = storageService.query(query);

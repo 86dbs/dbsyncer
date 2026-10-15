@@ -22,7 +22,7 @@ public interface GroupProfile {
     Group getGroup(String id);
 
     /**
-     * 全部分组（按 SORT 升序、UPDATE_TIME 降序）。
+     * 全部分组（按名称升序）。
      */
     List<Group> listGroups();
 
