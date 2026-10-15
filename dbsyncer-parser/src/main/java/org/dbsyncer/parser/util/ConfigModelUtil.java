@@ -5,6 +5,8 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Group;
+import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserInfo;
@@ -33,6 +35,10 @@ public abstract class ConfigModelUtil {
         if (model instanceof Meta) {
             return convertMetaToMap((Meta) model);
         }
+        // GroupRel：严格按 dbsyncer_group_rel 拆分列，无 name/json；TYPE 存资源类型
+        if (model instanceof GroupRel) {
+            return convertGroupRelToMap((GroupRel) model);
+        }
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
         params.put(ConfigConstant.CONFIG_MODEL_TYPE, model.getType());
@@ -47,6 +53,14 @@ public abstract class ConfigModelUtil {
             params.put(ConfigConstant.CONNECTOR_IS_SOURCE, connector.isSource() ? 1 : 0);
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, connector.isTarget() ? 1 : 0);
             params.put(ConfigConstant.CONNECTOR_STATUS, connector.getStatus());
+        }
+
+        // 业务分组：排序/归属落拆分列（表无 type 列，params 中 type 仅路由用会被忽略）
+        if (model instanceof Group) {
+            Group group = (Group) model;
+            params.put(ConfigConstant.GROUP_SORT, group.getSort());
+            params.put(ConfigConstant.GROUP_OWNER_ID, StringUtil.getIfBlank(group.getOwnerId(), StringUtil.EMPTY));
+            params.put(ConfigConstant.GROUP_OWNER_ROLE, StringUtil.getIfBlank(group.getOwnerRole(), StringUtil.EMPTY));
         }
 
         // 表映射关系：关联信息落拆分列
@@ -98,11 +112,43 @@ public abstract class ConfigModelUtil {
         if (UserInfo.class.equals(clazz)) {
             return (T) parseUserInfo(row);
         }
+        if (GroupRel.class.equals(clazz)) {
+            return (T) parseGroupRel(row);
+        }
         Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
         if (json == null) {
             return null;
         }
         return JsonUtil.jsonToObj(String.valueOf(json), clazz);
+    }
+
+    /**
+     * 分组关系行转模型（TYPE 列 → resourceType）。
+     */
+    private static GroupRel parseGroupRel(Map row) {
+        if (row == null) {
+            return null;
+        }
+        Map<String, Object> data = new HashMap<>(row);
+        Object type = data.remove(ConfigConstant.CONFIG_MODEL_TYPE);
+        if (type != null) {
+            data.put("resourceType", type);
+        }
+        return JsonUtil.mapToObj(data, GroupRel.class);
+    }
+
+    /**
+     * 分组关系转存储入参：TYPE 列写 resourceType，不写 name/json。
+     */
+    private static Map<String, Object> convertGroupRelToMap(GroupRel rel) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, rel.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, rel.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rel.getUpdateTime());
+        params.put(ConfigConstant.GROUP_REL_GROUP_ID, StringUtil.getIfBlank(rel.getGroupId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.CONFIG_MODEL_TYPE, StringUtil.getIfBlank(rel.getResourceType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.GROUP_REL_RESOURCE_ID, StringUtil.getIfBlank(rel.getResourceId(), StringUtil.EMPTY));
+        return params;
     }
 
     private static Meta parseMeta(Map row) {
@@ -173,6 +219,10 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.TABLE_GROUP;
             case ConfigConstant.META:
                 return StorageEnum.META;
+            case ConfigConstant.GROUP:
+                return StorageEnum.GROUP;
+            case ConfigConstant.GROUP_REL:
+                return StorageEnum.GROUP_REL;
             default:
                 // 后续新增的 CommonTaskTypeEnum 仍走 task 表
                 return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;

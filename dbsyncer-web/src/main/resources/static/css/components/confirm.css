@@ -213,6 +213,43 @@
   word-break: normal;
 }
 
+/* 分组新建/编辑弹窗：取消 pre-wrap；放开 overflow，避免裁切 dbSelect 下拉 */
+.confirm-body .group-dialog-body {
+  white-space: normal;
+  word-break: normal;
+}
+
+.confirm-body .group-dialog-body .form-item {
+  min-width: 0;
+}
+
+.confirm-body .group-dialog-body .dbsyncer-select {
+  display: block;
+  width: 100%;
+  /* 作为下拉定位上下文，并抬高层级盖住页脚 */
+  position: relative;
+  z-index: 2;
+}
+
+.confirm-body .group-dialog-body .dbsyncer-select-dropdown {
+  left: 0;
+  right: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  z-index: 3;
+}
+
+/* confirm-body 默认 overflow-y:auto 会裁切 absolute 下拉，分组弹窗改为可见 */
+.confirm-dialog:has(.group-dialog-body) {
+  overflow: visible;
+}
+
+.confirm-body:has(.group-dialog-body) {
+  overflow: visible;
+  max-height: none;
+}
+
 .confirm-body .table-picker-body .grid > .form-item {
   min-width: 0;
 }

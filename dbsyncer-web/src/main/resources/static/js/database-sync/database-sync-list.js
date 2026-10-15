@@ -276,10 +276,16 @@
         window.databaseSyncStop = databaseSyncStop;
         window.databaseSyncRemove = databaseSyncRemove;
 
+        var groupToolbar = null;
         const pagination = new PaginationManager({
             requestUrl: '/database-sync/search',
             tableBodySelector: '#database-sync-table',
             storageKey: 'database-sync-list',
+            refreshCompleted: function () {
+                if (groupToolbar) {
+                    groupToolbar.setListTotal(pagination.total || 0);
+                }
+            },
             renderRow: function (task, index) {
                 const mappingCount = task.mappingCount != null ? task.mappingCount : 0;
                 const taskId = String(task.id || '').replace(/"/g, '');
@@ -310,16 +316,30 @@
             customPageSize: true
         });
 
-        const searchInput = initSearch('database-sync-search', function (searchKey) {
-            pagination.doSearch({searchKey: searchKey}, 1);
+        var searchInput = null;
+        groupToolbar = GroupToolbar.initListToolbar({
+            containerSelector: '#databaseSyncGroupToolbar',
+            createButtonHostSelector: '#databaseSyncGroupCreateHost',
+            resourceType: 'databaseSync',
+            searchUrl: '/database-sync/search',
+            addPageUrl: '/database-sync/pageAdd',
+            addButtonSelector: '#databaseSyncAddBtn',
+            onChange: function () {
+                pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput ? searchInput.getValue() : '' }), 1);
+            }
+        });
+        groupToolbar.setListTotal(pagination.total || 0);
+
+        searchInput = initSearch('database-sync-search', function (searchKey) {
+            pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchKey }), 1);
         });
 
         window.refreshIndexList = function () {
-            pagination.doSearch({searchKey: searchInput.getValue()}, pagination.currentPage);
+            pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput.getValue() }), pagination.currentPage);
         };
 
         PageRefreshManager.register(function () {
-            pagination.doSearch({searchKey: searchInput.getValue()}, pagination.currentPage);
+            pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput.getValue() }), pagination.currentPage);
         });
     }
 

@@ -10,6 +10,34 @@
   font-size: var(--font-size-sm);
 }
 
+/* 列表顶栏分组筛选：抬高层级、保证下拉宽度，避免被表格挡住或挤成竖排 */
+.group-toolbar-inner {
+  position: relative;
+  z-index: 30;
+}
+
+.group-toolbar-inner .group-filter-wrap {
+  flex: 1 1 auto;
+  min-width: 160px;
+  max-width: 280px;
+}
+
+.group-toolbar-inner .dbsyncer-select.open {
+  z-index: 40;
+}
+
+.group-toolbar-inner .dbsyncer-select-dropdown {
+  left: 0;
+  right: auto;
+  min-width: 200px;
+  width: max-content;
+  max-width: 320px;
+}
+
+.group-toolbar-inner .dbsyncer-select-option-text {
+  white-space: nowrap;
+}
+
 /* 迷你宽度：约 1/4 宽，用于与输入框并排时的下拉（如 GET/POST） */
 .dbsyncer-select-mini {
   width: 25%;

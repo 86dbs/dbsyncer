@@ -58,6 +58,14 @@
 .inline-block { display: inline-block; }
 .hidden { display: none; }
 
+/* 与 .flex / .inline-flex / .btn 等同用时，保证 hidden 优先生效 */
+.flex.hidden,
+.inline-flex.hidden,
+.grid.hidden,
+.btn.hidden {
+  display: none !important;
+}
+
 /* Flex对齐 */
 .flex-row { flex-direction: row; }
 .flex-col { flex-direction: column; }
@@ -179,6 +187,7 @@
 .min-w-160 { min-width: 160px; }
 .min-w-200 { min-width: 200px; }
 .min-w-300 { min-width: 300px; }
+.w-320 { width: 320px; }
 
 .connector-logo {
   width: 40px;

@@ -11,6 +11,11 @@
   overflow: hidden;
 }
 
+/* 列表顶栏含分组下拉时放开裁切，避免 absolute 菜单被挡住 */
+.form-container:has(.group-toolbar-inner) {
+  overflow: visible;
+}
+
 .container-no-bg {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);

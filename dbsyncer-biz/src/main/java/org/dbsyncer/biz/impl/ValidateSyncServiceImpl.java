@@ -4,6 +4,8 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.GroupSearchFilter;
+import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
@@ -144,6 +146,9 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     
     @Resource
     private TaskDetailMetaProfile taskDetailMetaProfile;
+
+    @Resource
+    private GroupService groupService;
 
     /**
      * 任务启停锁
@@ -406,6 +411,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         assertRunning(id);
 
         validateSyncProfile.delete(id);
+        groupService.bind(null, ConfigConstant.VALIDATE_SYNC, id);
         return "删除成功";
     }
 
@@ -446,7 +452,16 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        Paging<ValidateSyncTask> search = validateSyncProfile.query(pageNum, pageSize, searchKey);
+        GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.VALIDATE_SYNC);
+        if (groupFilter.isEmptyResult()) {
+            return new Paging<>(pageNum, pageSize);
+        }
+        Paging<ValidateSyncTask> search;
+        if (groupFilter.hasIdFilter()) {
+            search = validateSyncProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
+        } else {
+            search = validateSyncProfile.query(pageNum, pageSize, searchKey);
+        }
         Collection<ValidateSyncTask> data = search.getData();
         if (CollectionUtils.isEmpty(data)) {
             return null;

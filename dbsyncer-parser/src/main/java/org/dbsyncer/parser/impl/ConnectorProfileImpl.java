@@ -19,6 +19,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -28,6 +29,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -126,6 +128,12 @@ public class ConnectorProfileImpl extends AbstractConfigModelProfile<Connector> 
 
     @Override
     public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey, String role) {
+        return queryConnectors(pageNum, pageSize, searchKey, role, null);
+    }
+
+    @Override
+    public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey, String role,
+                                             Collection<String> ids) {
         int safePageNum = pageNum > 0 ? pageNum : 1;
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         Query query = new Query(safePageNum, safePageSize);
@@ -137,6 +145,9 @@ public class ConnectorProfileImpl extends AbstractConfigModelProfile<Connector> 
             query.addFilter(ConfigConstant.CONNECTOR_IS_SOURCE, 1);
         } else if (StringUtil.equalsIgnoreCase("target", role)) {
             query.addFilter(ConfigConstant.CONNECTOR_IS_TARGET, 1);
+        }
+        if (!CollectionUtils.isEmpty(ids)) {
+            query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, new ArrayList<Object>(ids)));
         }
         query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
         Paging paging = storageService.query(query);

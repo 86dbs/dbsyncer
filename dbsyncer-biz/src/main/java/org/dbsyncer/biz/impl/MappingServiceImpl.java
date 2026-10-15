@@ -4,6 +4,8 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.GroupSearchFilter;
+import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
@@ -127,6 +129,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Resource
     private TaskProfile taskProfile;
 
+    @Resource
+    private GroupService groupService;
+
     @Override
     public String add(Map<String, String> params) {
         Mapping model = mappingChecker.checkAddConfigModel(params);
@@ -231,6 +236,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             // 删除同步任务
             mappingProfile.delete(id);
+            groupService.bind(null, ConfigConstant.MAPPING, id);
             log(LogType.MappingLog.DELETE, mapping);
         }
         return "同步任务删除成功";
@@ -287,8 +293,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        Paging<Mapping> paging = mappingProfile.query(pageNum, pageSize, searchKey);
+        GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.MAPPING);
         Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
+        if (groupFilter.isEmptyResult()) {
+            return result;
+        }
+        Paging<Mapping> paging;
+        if (groupFilter.hasIdFilter()) {
+            paging = mappingProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
+        } else {
+            paging = mappingProfile.query(pageNum, pageSize, searchKey);
+        }
         if (paging == null) {
             return result;
         }

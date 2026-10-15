@@ -5,6 +5,8 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorConfigService;
+import org.dbsyncer.biz.GroupSearchFilter;
+import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.checker.impl.connector.ConnectorChecker;
 import org.dbsyncer.common.enums.YesNoEnum;
 import org.dbsyncer.common.model.Paging;
@@ -79,6 +81,9 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     @Resource
     private ConnectorChecker connectorChecker;
 
+    @Resource
+    private GroupService groupService;
+
     @Override
     public String add(Map<String, String> params) {
         Connector connector = connectorChecker.checkAddConfigModel(params);
@@ -123,7 +128,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     public String edit(Map<String, String> params) {
         Connector model = connectorChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
-
         return connectorProfile.updateConnector(model);
     }
 
@@ -136,6 +140,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
             connectorFactory.disconnect(connector.getId());
             log(LogType.ConnectorLog.DELETE, connector);
             connectorProfile.removeConnector(id);
+            groupService.bind(null, ConfigConstant.CONNECTOR, id);
         }
         return "删除连接器成功!";
     }
@@ -237,7 +242,16 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         String searchKey = params.get("searchKey");
         // 过滤源库或目标库类型
         String role = params.get("role");
-        Paging<Connector> paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey, role);
+        GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.CONNECTOR);
+        if (groupFilter.isEmptyResult()) {
+            return new Paging<>(pageNum, pageSize);
+        }
+        Paging<Connector> paging;
+        if (groupFilter.hasIdFilter()) {
+            paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey, role, groupFilter.getIds());
+        } else {
+            paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey, role);
+        }
         if (paging == null) {
             return null;
         }

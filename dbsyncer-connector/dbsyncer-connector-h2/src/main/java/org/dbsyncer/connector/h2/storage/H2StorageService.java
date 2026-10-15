@@ -657,6 +657,18 @@ public class H2StorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
+        // 业务分组（无 type 列）
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.GROUP_SORT, ConfigConstant.GROUP_OWNER_ID, ConfigConstant.GROUP_OWNER_ROLE,
+                ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> groupFields = builder.getFields();
+
+        // 业务分组关系（无 name/json；TYPE 存资源类型）
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.GROUP_REL_GROUP_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID);
+        List<Field> groupRelFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -665,6 +677,8 @@ public class H2StorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+        tables.computeIfAbsent(StorageEnum.GROUP.getType(), k -> new Executor(k, groupFields, true, true));
+        tables.computeIfAbsent(StorageEnum.GROUP_REL.getType(), k -> new Executor(k, groupRelFields, true, true));
 
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
@@ -1027,7 +1041,12 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_NICKNAME, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_EMAIL, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_SORT, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.GROUP_OWNER_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_OWNER_ROLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         String columnName = UnderlineToCamelUtils.camelToUnderline(field.getName());

@@ -570,7 +570,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     /**
-     * 展开 IN：生成 {@code IN (?,?,?)} 并逐个绑定参数（逗号拼接值或 {@link InFilter#getBindValues()}）。
+     * 展开 IN：生成 {@code IN (?,?,?)} 并逐个绑定参数。
      */
     private void appendInClause(AbstractFilter filter, List<Object> args, StringBuilder sql) {
         List<Object> binds;
@@ -703,6 +703,18 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskPlanFields = builder.getFields();
 
+        // 业务分组（无 type 列）
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.GROUP_SORT, ConfigConstant.GROUP_OWNER_ID, ConfigConstant.GROUP_OWNER_ROLE,
+                ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> groupFields = builder.getFields();
+
+        // 业务分组关系（无 name/json；TYPE 存资源类型）
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.GROUP_REL_GROUP_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID);
+        List<Field> groupRelFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -714,6 +726,8 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, false));
         tables.computeIfAbsent(StorageEnum.CLUSTER_TASK.getType(), k -> new Executor(k, taskScheduleFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK_PLAN.getType(), k -> new Executor(k, taskPlanFields, true, false));
+        tables.computeIfAbsent(StorageEnum.GROUP.getType(), k -> new Executor(k, groupFields, true, true));
+        tables.computeIfAbsent(StorageEnum.GROUP_REL.getType(), k -> new Executor(k, groupRelFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
@@ -731,7 +745,7 @@ public class MySQLStorageService extends AbstractStorageService {
         // 兼容升级（临时脚本，若干版本后可删）：缺新拆表则拆分；始终幂等物化/预建 detail
         StorageDataMigrator migrator = new MySQLStorageDataMigrator(this, connectorInstance, database);
         if (!newStorageSchema) {
-            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS / 历史企业任务 TYPE），执行兼容升级");
+            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS），执行兼容升级");
             migrator.run();
             dropTaskStatusColumnIfPresent();
         }
@@ -1041,7 +1055,12 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.PLAN_SUCCESS, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.PLAN_FAIL, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.PLAN_STATUS, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.PLAN_LAST_PAGE, "INTEGER", Types.INTEGER))
+                            new Field(ConfigConstant.PLAN_LAST_PAGE, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.GROUP_SORT, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.GROUP_OWNER_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_OWNER_ROLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

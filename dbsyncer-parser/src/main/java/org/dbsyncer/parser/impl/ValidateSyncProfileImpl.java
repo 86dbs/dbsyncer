@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,11 @@ public final class ValidateSyncProfileImpl extends AbstractConfigModelProfile<Va
     @Override
     public Paging<ValidateSyncTask> query(int pageNum, int pageSize, String searchKey) {
         return taskProfile.queryTasks(ValidateSyncTask.class, pageNum, pageSize, searchKey);
+    }
+
+    @Override
+    public Paging<ValidateSyncTask> query(int pageNum, int pageSize, String searchKey, Collection<String> ids) {
+        return taskProfile.queryTasks(ValidateSyncTask.class, pageNum, pageSize, searchKey, ids);
     }
 
     @Override

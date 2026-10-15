@@ -16,6 +16,8 @@ import org.dbsyncer.sdk.storage.strategy.TaskPlanStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
 import org.dbsyncer.sdk.storage.strategy.UserStrategy;
 import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
+import org.dbsyncer.sdk.storage.strategy.GroupStrategy;
+import org.dbsyncer.sdk.storage.strategy.GroupRelStrategy;
 
 /**
  * 存储策略枚举
@@ -79,7 +81,17 @@ public enum StorageStrategyEnum {
     /**
      * 任务分片计划
      */
-    TASK_PLAN(StorageEnum.TASK_PLAN, new TaskPlanStrategy());
+    TASK_PLAN(StorageEnum.TASK_PLAN, new TaskPlanStrategy()),
+
+    /**
+     * 业务分组
+     */
+    GROUP(StorageEnum.GROUP, new GroupStrategy()),
+
+    /**
+     * 业务分组关系
+     */
+    GROUP_REL(StorageEnum.GROUP_REL, new GroupRelStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

@@ -45,6 +45,25 @@ public class ConfigConstant {
     public static final String DATABASE_SYNC = "databaseSync";
 
     /**
+     * 业务分组 / 分组关系（模型 type，路由到独立表）
+     */
+    public static final String GROUP = "group";
+    public static final String GROUP_REL = "groupRel";
+
+    /**
+     * 业务分组表(dbsyncer_group)拆分列
+     */
+    public static final String GROUP_SORT = "sort";
+    public static final String GROUP_OWNER_ID = "ownerId";
+    public static final String GROUP_OWNER_ROLE = "ownerRole";
+
+    /**
+     * 业务分组关系表(dbsyncer_group_rel)拆分列；资源类型列复用 {@link #CONFIG_MODEL_TYPE}
+     */
+    public static final String GROUP_REL_GROUP_ID = "groupId";
+    public static final String GROUP_REL_RESOURCE_ID = "resourceId";
+
+    /**
      * 用户表(dbsyncer_user)拆分列
      */
     public static final String USER_USERNAME = "username";

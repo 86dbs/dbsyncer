@@ -6,6 +6,7 @@ package org.dbsyncer.parser;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -43,6 +44,11 @@ public interface ValidateSyncProfile {
      * @param searchKey 可选；非空时对 {@code name} 做 LIKE
      */
     Paging<ValidateSyncTask> query(int pageNum, int pageSize, String searchKey);
+
+    /**
+     * 分页查询，并按 ID IN 过滤。
+     */
+    Paging<ValidateSyncTask> query(int pageNum, int pageSize, String searchKey, Collection<String> ids);
 
     /**
      * 按模型类型分页回调遍历全部任务。

@@ -30,14 +30,23 @@ public abstract class BeanUtil {
         }
     }
 
+    /**
+     * 对象转 Map（含父类字段；同名以子类为准）。
+     */
     public static Map beanToMap(Object object) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-        Field[] field = object.getClass().getDeclaredFields();
         Map map = new HashMap();
-        for (Field fi : field) {
-            String property = fi.getName();
-            String getMe = "get" + property.substring(0, 1).toUpperCase() + property.substring(1);
-            Object obj = object.getClass().getMethod(getMe).invoke(object);
-            map.put(property, obj);
+        Class<?> clazz = object.getClass();
+        while (clazz != null && !Object.class.equals(clazz)) {
+            for (Field fi : clazz.getDeclaredFields()) {
+                String property = fi.getName();
+                if (map.containsKey(property)) {
+                    continue;
+                }
+                String getMe = "get" + property.substring(0, 1).toUpperCase() + property.substring(1);
+                Object obj = object.getClass().getMethod(getMe).invoke(object);
+                map.put(property, obj);
+            }
+            clazz = clazz.getSuperclass();
         }
         return map;
     }

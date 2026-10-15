@@ -5,6 +5,8 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
+import org.dbsyncer.biz.GroupSearchFilter;
+import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.model.TableProgressBundle;
 import org.dbsyncer.biz.vo.DatabaseMappingVO;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
@@ -105,6 +107,9 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
 
     @Resource
     private ParserComponent parserComponent;
+
+    @Resource
+    private GroupService groupService;
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
@@ -207,6 +212,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         Assert.hasText(id, "任务 ID 不能为空");
         assertRunning(id);
         databaseSyncProfile.delete(id);
+        groupService.bind(null, ConfigConstant.DATABASE_SYNC, id);
         return "删除成功";
     }
 
@@ -245,7 +251,16 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        Paging<DatabaseSyncTask> paging = databaseSyncProfile.query(pageNum, pageSize, searchKey);
+        GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.DATABASE_SYNC);
+        if (groupFilter.isEmptyResult()) {
+            return new Paging<>(pageNum, pageSize);
+        }
+        Paging<DatabaseSyncTask> paging;
+        if (groupFilter.hasIdFilter()) {
+            paging = databaseSyncProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
+        } else {
+            paging = databaseSyncProfile.query(pageNum, pageSize, searchKey);
+        }
         Collection<DatabaseSyncTask> data = paging.getData();
         if (CollectionUtils.isEmpty(data)) {
             return null;

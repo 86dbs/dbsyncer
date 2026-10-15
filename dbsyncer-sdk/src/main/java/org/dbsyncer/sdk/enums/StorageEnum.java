@@ -53,7 +53,15 @@ public enum StorageEnum {
     /**
      * 任务分片计划
      */
-    TASK_PLAN("cluster_task_plan");
+    TASK_PLAN("cluster_task_plan"),
+    /**
+     * 业务分组
+     */
+    GROUP("group"),
+    /**
+     * 业务分组关系
+     */
+    GROUP_REL("group_rel");
 
     private final String type;
 
