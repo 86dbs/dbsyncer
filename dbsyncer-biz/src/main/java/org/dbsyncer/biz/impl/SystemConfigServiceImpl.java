@@ -127,7 +127,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());
         list.addAll(connectorProfile.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
-        Paging<Mapping> mappingPaging = mappingProfile.query(1, 5, null);
+        Paging<Mapping> mappingPaging = mappingProfile.query(1, 5, null, null);
         if (mappingPaging != null && !CollectionUtils.isEmpty(mappingPaging.getData())) {
             list.addAll(mappingPaging.getData());
         }
