@@ -137,7 +137,9 @@ public class ParserComponentImpl implements ParserComponent {
         ConnectorInstance targetInstance = requireInstance(mappingId, targetConnectorId, targetDatabase, targetSchema,
                 ConnectorInstanceUtil.TARGET_SUFFIX);
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sourceSchema, sTable, sourceInstance, tableGroup.getFilter());
+        sourceConfig.setCatalog(sourceDatabase);
         final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), targetSchema, tTable, targetInstance, targetFilter);
+        targetConfig.setCatalog(targetDatabase);
         targetConfig.setForceUpdate(forceUpdate);
         return connectorFactory.getCommand(sourceConfig, targetConfig);
     }

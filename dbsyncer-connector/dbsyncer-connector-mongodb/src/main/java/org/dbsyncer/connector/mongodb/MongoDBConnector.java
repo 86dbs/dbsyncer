@@ -560,11 +560,20 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
         return connectorInstance.getConfig().getDatabase();
     }
 
+    /**
+     * 解析库名：优先任务所选 catalog（mapping.sourceDatabase），其次 schema，最后连接器默认 database。
+     */
     private String resolveDatabaseName(CommandConfig commandConfig) {
-        if (commandConfig != null && StringUtil.isNotBlank(commandConfig.getSchema())) {
+        if (commandConfig == null) {
+            return null;
+        }
+        if (StringUtil.isNotBlank(commandConfig.getCatalog())) {
+            return commandConfig.getCatalog().trim();
+        }
+        if (StringUtil.isNotBlank(commandConfig.getSchema())) {
             return commandConfig.getSchema().trim();
         }
-        if (commandConfig != null && commandConfig.getConnectorConfig() instanceof MongoDBConfig) {
+        if (commandConfig.getConnectorConfig() instanceof MongoDBConfig) {
             return ((MongoDBConfig) commandConfig.getConnectorConfig()).getDatabase();
         }
         return null;
