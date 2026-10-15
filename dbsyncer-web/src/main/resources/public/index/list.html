@@ -356,17 +356,19 @@
             pageSize: 3,
             showBoundaryButtons: false,
             renderRow: function(connector, index) {
-                return `<div class="card flex justify-between border rounded-md mb-3">
-                <div class="flex items-center">
-                    <div class="flex items-center justify-center ml-3">
-                        <img draggable="false" src="${$basePath}/img/${escapeHtml((connector.config && connector.config.connectorType) || '')}.png" style="width: 50px; height: 50px;" alt="${escapeHtml((connector.config && connector.config.connectorType) || '')}">
+                const url = escapeHtml((connector.config && connector.config.url) || '');
+                const type = escapeHtml((connector.config && connector.config.connectorType) || '');
+                return `<div class="card flex justify-between items-center border rounded-md mb-3">
+                <div class="flex items-center min-w-0 flex-1 overflow-hidden">
+                    <div class="flex items-center justify-center ml-3 flex-shrink-0">
+                        <img draggable="false" class="connector-logo" src="${$basePath}/img/${type}.png" alt="${type}">
                     </div>
-                    <div class="ml-3">
-                        <p class="font-medium">${escapeHtml(connector.name)}</p>
-                        <p class="text-xs text-gray-500" title="${escapeHtml((connector.config && connector.config.url) || '')}">${escapeHtml((connector.config && connector.config.url) || '')}</p>
+                    <div class="ml-3 min-w-0 overflow-hidden">
+                        <p class="font-medium text-truncate" title="${escapeHtml(connector.name)}">${escapeHtml(connector.name)}</p>
+                        <p class="text-xs text-gray-500 text-truncate" title="${url}">${url}</p>
                     </div>
                 </div>
-                <div class="flex items-center mr-2">
+                <div class="flex items-center mr-2 flex-shrink-0">
                     ${Number(connector.status) === 1 ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}
                 </div>
             </div>`;
