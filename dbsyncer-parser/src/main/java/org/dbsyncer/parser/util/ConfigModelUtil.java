@@ -123,22 +123,14 @@ public abstract class ConfigModelUtil {
     }
 
     /**
-     * 分组关系行转模型（TYPE 列 → resourceType）。
+     * 分组关系行转模型（TYPE 列直接映射父类 type）。
      */
     private static GroupRel parseGroupRel(Map row) {
-        if (row == null) {
-            return null;
-        }
-        Map<String, Object> data = new HashMap<>(row);
-        Object type = data.remove(ConfigConstant.CONFIG_MODEL_TYPE);
-        if (type != null) {
-            data.put("resourceType", type);
-        }
-        return JsonUtil.mapToObj(data, GroupRel.class);
+        return JsonUtil.mapToObj(row, GroupRel.class);
     }
 
     /**
-     * 分组关系转存储入参：TYPE 列写 resourceType，不写 name/json。
+     * 分组关系转存储入参：TYPE 列写父类 type（资源类型），不写 name/json。
      */
     private static Map<String, Object> convertGroupRelToMap(GroupRel rel) {
         Map<String, Object> params = new HashMap<>();
@@ -146,7 +138,7 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, rel.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rel.getUpdateTime());
         params.put(ConfigConstant.GROUP_REL_GROUP_ID, StringUtil.getIfBlank(rel.getGroupId(), StringUtil.EMPTY));
-        params.put(ConfigConstant.CONFIG_MODEL_TYPE, StringUtil.getIfBlank(rel.getResourceType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.CONFIG_MODEL_TYPE, StringUtil.getIfBlank(rel.getType(), StringUtil.EMPTY));
         params.put(ConfigConstant.GROUP_REL_RESOURCE_ID, StringUtil.getIfBlank(rel.getResourceId(), StringUtil.EMPTY));
         return params;
     }
@@ -191,6 +183,34 @@ public abstract class ConfigModelUtil {
 
     private static String tableName(Table table) {
         return table == null || StringUtil.isBlank(table.getName()) ? StringUtil.EMPTY : table.getName();
+    }
+
+    /**
+     * 按模型实例路由存储表。{@link GroupRel#getType()} 存资源类型，不能按 type 字符串路由。
+     */
+    public static StorageEnum getStorageEnum(ConfigModel model) {
+        if (model instanceof GroupRel) {
+            return StorageEnum.GROUP_REL;
+        }
+        return getStorageEnum(model == null ? null : model.getType());
+    }
+
+    /**
+     * 按模型 Class 路由存储表。
+     */
+    public static StorageEnum getStorageEnum(Class<?> clazz) {
+        if (clazz != null && GroupRel.class.isAssignableFrom(clazz)) {
+            return StorageEnum.GROUP_REL;
+        }
+        if (clazz == null || !ConfigModel.class.isAssignableFrom(clazz)) {
+            return StorageEnum.CONFIG;
+        }
+        try {
+            ConfigModel probe = (ConfigModel) clazz.newInstance();
+            return getStorageEnum(probe.getType());
+        } catch (Exception e) {
+            return StorageEnum.CONFIG;
+        }
     }
 
     /**

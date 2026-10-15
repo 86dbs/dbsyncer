@@ -7,7 +7,6 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
@@ -50,7 +49,7 @@ public final class OperationTemplate {
         if (StringUtil.isBlank(id)) {
             return null;
         }
-        StorageEnum type = ConfigModelUtil.getStorageEnum(newInstanceType(clazz));
+        StorageEnum type = ConfigModelUtil.getStorageEnum(clazz);
         Query query = new Query();
         query.setType(type);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
@@ -70,7 +69,7 @@ public final class OperationTemplate {
         }
 
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
-        StorageEnum type = ConfigModelUtil.getStorageEnum(model.getType());
+        StorageEnum type = ConfigModelUtil.getStorageEnum(model);
         if (CommandEnum.OPR_EDIT == cmd) {
             storageService.edit(type, params);
         } else {
@@ -96,7 +95,7 @@ public final class OperationTemplate {
             }
             paramsList.add(ConfigModelUtil.convertModelToMap(model));
         }
-        StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0).getType());
+        StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0));
         if (commandEnum.isEdit()) {
             storageService.editBatch(type, null, paramsList);
         } else {
@@ -147,15 +146,6 @@ public final class OperationTemplate {
             query.setPageNum(query.getPageNum() + 1);
         }
         return result;
-    }
-
-    private String newInstanceType(Class<?> clazz) {
-        try {
-            ConfigModel model = (ConfigModel) clazz.newInstance();
-            return model.getType();
-        } catch (Exception e) {
-            throw new ParserException(e);
-        }
     }
 
     private <T> T parseRow(Map row, Class<T> clazz) {

@@ -4,10 +4,9 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
- * 业务分组关系
+ * 业务分组关系。{@link #getType()} 复用父类字段，存资源类型（connector/mapping/…）。
  *
  * @author wuji
  * @version 1.0.0
@@ -21,17 +20,11 @@ public class GroupRel extends ConfigModel {
     private String groupId;
 
     /**
-     * 资源类型：connector / mapping / validateSync / databaseSync
-     */
-    private String resourceType;
-
-    /**
      * 资源 ID（连接或任务 ID）
      */
     private String resourceId;
 
     public GroupRel() {
-        super.setType(ConfigConstant.GROUP_REL);
         super.setName("");
     }
 
@@ -41,14 +34,6 @@ public class GroupRel extends ConfigModel {
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
-    }
-
-    public String getResourceType() {
-        return resourceType;
-    }
-
-    public void setResourceType(String resourceType) {
-        this.resourceType = resourceType;
     }
 
     public String getResourceId() {
