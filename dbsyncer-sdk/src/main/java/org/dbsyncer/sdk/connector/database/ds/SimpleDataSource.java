@@ -171,7 +171,8 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         try {
             connection.close();
         } catch (Exception e) {
-            logger.warn("关闭连接失败, url={}, msg={}", url, e.getMessage());
+            String msg = String.format("关闭连接失败, url=%s", url);
+            logger.error(msg, e);
         } finally {
             activeNum.decrementAndGet();
         }
