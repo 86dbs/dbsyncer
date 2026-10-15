@@ -58,6 +58,10 @@
   width: 500px;
 }
 
+.confirm-dialog.size-xlarge {
+  width: 720px;
+}
+
 .confirm-dialog.size-max {
   width: 60vw;
   max-width: 90%;
@@ -388,6 +392,7 @@
 @media (max-width: 768px) {
   .confirm-dialog.size-normal,
   .confirm-dialog.size-large,
+  .confirm-dialog.size-xlarge,
   .confirm-dialog.size-max {
     width: 85%;
     max-width: none;

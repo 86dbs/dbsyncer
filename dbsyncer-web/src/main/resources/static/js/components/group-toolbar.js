@@ -363,7 +363,7 @@
             var resourceApi = null;
             var dialog = showConfirm({
                 title: '新建分组',
-                size: 'max',
+                size: 'xlarge',
                 position: 'center',
                 body: '<div class="group-dialog-body">' +
                     '<div class="form-item"><label class="form-label">名称<strong class="text-primary">*</strong></label>' +
