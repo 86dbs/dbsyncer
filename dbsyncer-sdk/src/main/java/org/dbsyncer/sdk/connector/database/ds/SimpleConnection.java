@@ -78,9 +78,7 @@ public class SimpleConnection implements Connection {
 
     @Override
     public void close() throws SQLException {
-        if (!connection.isClosed()) {
-            DatabaseUtil.close(connection);
-        }
+        DatabaseUtil.close(connection);
     }
 
     @Override
