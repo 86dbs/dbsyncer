@@ -95,7 +95,7 @@ public class TaskProfileImpl implements TaskProfile {
                 query.addFilter(ConfigConstant.CONFIG_MODEL_NAME, searchKey, false);
             }
             if (!CollectionUtils.isEmpty(ids)) {
-                query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, Collections.singletonList(ids)));
+                query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, new ArrayList<>(ids)));
             }
             query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
             Paging paging = storageService.query(query);

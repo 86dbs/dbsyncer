@@ -141,7 +141,8 @@ public class ConnectorProfileImpl extends AbstractConfigModelProfile<Connector> 
             query.addFilter(ConfigConstant.CONNECTOR_IS_TARGET, 1);
         }
         if (!CollectionUtils.isEmpty(ids)) {
-            query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, Collections.singletonList(ids)));
+            // InFilter 需要与 IN 占位一一对应的绑定值，不能再包一层 singletonList
+            query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, new ArrayList<>(ids)));
         }
         query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
         Paging paging = storageService.query(query);
