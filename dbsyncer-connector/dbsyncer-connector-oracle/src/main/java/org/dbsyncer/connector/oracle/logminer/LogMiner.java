@@ -5,7 +5,6 @@ package org.dbsyncer.connector.oracle.logminer;
 
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.util.DatabaseUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +42,7 @@ public class LogMiner {
 
     // 动态休眠时间配置（毫秒）
     private final int minSleepMillis = 100;
-    private final int maxSleepMillis = 3000;
+    private final int maxSleepMillis = 1000;
     private volatile int currentSleepMillis = 1000;
 
     // 查询范围控制
@@ -263,7 +262,7 @@ public class LogMiner {
                 if (redoSql != null) {
                     final RedoEvent event = new RedoEvent(scn.longValue(), operationCode, redoSql, segOwner, tableName, changeTime, txId);
                     // Transactional Commit Callback
-                    TransactionalBuffer.CommitCallback commitCallback = (smallestScn, commitScn, counter)-> {
+                    TransactionalBuffer.CommitCallback commitCallback = (smallestScn, commitScn, counter) -> {
                         if (smallestScn == null || scn.compareTo(smallestScn) < 0) {
                             // 当前SCN 事务已经提交 并且 小于事务缓冲区中所有的开始SCN，所以可以更新offsetScn
                             startScn = scn.longValue();
@@ -524,8 +523,6 @@ public class LogMiner {
         statement.setQueryTimeout(queryTimeout);
         return statement;
     }
-
-
 
     final class Worker extends Thread {
 

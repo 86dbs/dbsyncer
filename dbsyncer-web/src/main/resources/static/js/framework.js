@@ -951,7 +951,8 @@ function renderFullPhaseSyncResult(meta) {
     const total = Number(meta.total) || 0;
     const success = Number(meta.success) || 0;
     const processed = success + (Number(meta.fail) || 0);
-    const isFullInProgress = total > 0 && processed < total;
+    // 有总数即展示进度条（含完成后 100%），仅 total=0 时提示等待启动
+    const showProgress = total > 0;
     const content = [];
 
     content.push('<div class="sync-result text-xs">');
@@ -959,10 +960,10 @@ function renderFullPhaseSyncResult(meta) {
         content.push(`<div class="text-tertiary">正在统计表总数...</div>`);
     } else {
         content.push(`<div>总数: ${formatCount(total)}</div>`);
-        if (isFullInProgress) {
+        if (showProgress) {
             content.push(renderMiniProgressBar(processed, total));
             content.push(`<div>全量进度: ${formatCount(processed)} / ${formatCount(total)} (${formatPercent(processed / total, 1)})</div>`);
-        } else if (total === 0) {
+        } else {
             content.push(`<div class="text-tertiary">等待全量任务启动...</div>`);
         }
     }
