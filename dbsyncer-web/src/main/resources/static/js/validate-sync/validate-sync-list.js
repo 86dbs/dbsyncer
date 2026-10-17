@@ -141,6 +141,10 @@
     }
 
     function renderTaskDurationText(task) {
+        // 定时任务长期挂起，列表不展示耗时
+        if (task.trigger === 'timing') {
+            return '';
+        }
         var state = Number(task.metaState);
         var RUNNING = 1;
         var STOPPING = 2;

@@ -103,7 +103,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
         // 单机/集群共用：半停态 Meta 归 READY，避免一直「停止中」
         reconcileStoppingMappingMetas();
-
+        clusterService.init();
         if (clusterService.isStandalone()) {
             // Load connectorInstances
             loadConnectorInstance();
@@ -111,8 +111,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             launchSyncMappings();
             //初始化定时检测任务
             scheduledScanManager.start();
-        } else {
-            clusterService.init();
         }
         preloadCompleted = true;
     }
