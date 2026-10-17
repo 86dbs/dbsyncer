@@ -7,14 +7,14 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.enums.TaskLevelEnum;
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -48,7 +48,10 @@ public class MappingChecker extends AbstractChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ProfileComponent profileComponent;
+    private MappingProfile mappingProfile;
+
+    @Resource
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -69,7 +72,7 @@ public class MappingChecker extends AbstractChecker {
     private LicenseService licenseService;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public Mapping checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         Assert.hasText(name, "驱动名称不能为空");
@@ -93,11 +96,11 @@ public class MappingChecker extends AbstractChecker {
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public Mapping checkEditConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "Can not find mapping.");
 
         // 修改基本配置
@@ -189,9 +192,7 @@ public class MappingChecker extends AbstractChecker {
         meta.setTaskId(mapping.getId());
         meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
         this.modifyConfigModel(meta, new HashMap<>());
-
-        String id = profileComponent.addConfigModel(meta);
-        mapping.setMetaId(id);
+        taskMetaProfile.addMeta(meta);
     }
 
     /**
@@ -221,6 +222,7 @@ public class MappingChecker extends AbstractChecker {
             Map<String, Integer> indexBefore = snapshotIndexes(groupAll);
             Map<String, Map<String, String>> commandBefore = snapshotCommands(groupAll);
             sortTableGroup(groupAll, params);
+            List<TableGroup> dirty = new ArrayList<>();
             for (TableGroup g : groupAll) {
                 if (g == null) {
                     continue;
@@ -229,16 +231,18 @@ public class MappingChecker extends AbstractChecker {
                 Integer oldIndex = indexBefore.get(g.getId());
                 boolean indexChanged = oldIndex == null || oldIndex != g.getIndex();
                 if (indexChanged || !commandEquals(commandBefore.get(g.getId()), g.getCommand())) {
-                    profileComponent.editConfigModel(g);
+                    dirty.add(g);
                 }
             }
+            tableGroupProfile.editTableGroupBatch(dirty);
             return;
         }
-        // 无排序：按页合并，避免整表进内存；command 未变则跳过 UPDATE
+        // 无排序：按页合并，避免整表进内存；command 未变则跳过 UPDATE；有变更则按页批量写回
         tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, page -> {
             if (CollectionUtils.isEmpty(page)) {
                 return;
             }
+            List<TableGroup> dirty = new ArrayList<>(page.size());
             for (TableGroup g : page) {
                 if (g == null) {
                     continue;
@@ -246,9 +250,10 @@ public class MappingChecker extends AbstractChecker {
                 Map<String, String> before = copyCommand(g.getCommand());
                 tableGroupChecker.mergeConfig(mapping, g);
                 if (!commandEquals(before, g.getCommand())) {
-                    profileComponent.editConfigModel(g);
+                    dirty.add(g);
                 }
             }
+            tableGroupProfile.editTableGroupBatch(dirty);
         });
     }
 

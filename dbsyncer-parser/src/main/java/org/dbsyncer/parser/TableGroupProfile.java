@@ -5,7 +5,7 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.storage.ExecuteRequest;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -37,6 +37,13 @@ public interface TableGroupProfile {
     void addTableGroupBatchWithoutMeta(List<TableGroup> models);
 
     String editTableGroup(TableGroup model);
+
+    /**
+     * 批量修改 TableGroup（按页拆分后单次存储批量 UPDATE）。
+     *
+     * @param models 待更新的 TableGroup 列表
+     */
+    void editTableGroupBatch(List<TableGroup> models);
 
     /**
      * 删除单个 TableGroup，并同路径删除其明细 Meta。
@@ -88,16 +95,14 @@ public interface TableGroupProfile {
      * @param query SQL 与可选分页参数
      * @return TableGroup 列表（无则空列表）
      */
-    List<TableGroup> listTableGroupsBySql(SqlQuery query);
+    List<TableGroup> listTableGroupsBySql(ExecuteRequest query);
 
     int getTableGroupCount(String mappingId);
 
     /**
      * 是否已存在相同源表+目标表映射（库侧等值查询，不扫全表）。
      */
-    boolean existsTableGroup(String taskId, String sourceTable, String targetTable);
-
-    List<String> listTableGroupIds(String taskId);
+    boolean existTableGroup(String taskId, String sourceTable, String targetTable);
 
     /**
      * 表映射总数。
@@ -109,8 +114,4 @@ public interface TableGroupProfile {
      */
     void pageScanTableGroupsByTaskId(Consumer<TableGroup> consumer);
 
-    /**
-     * 旧版 JSON 导入/导出快照中，任务下 table_group 分组键（{@code tableGroup_{taskId}}）。
-     */
-    String getPreloadGroupKey(String taskId);
 }

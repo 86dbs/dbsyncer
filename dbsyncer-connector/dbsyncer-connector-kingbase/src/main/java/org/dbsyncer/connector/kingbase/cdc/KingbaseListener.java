@@ -115,7 +115,7 @@ public class KingbaseListener extends AbstractDatabaseListener {
                 pluginName = KingbaseConfigConstant.DEFAULT_PLUGIN;
             }
             messageDecoder = MessageDecoderEnum.getMessageDecoder(pluginName);
-            messageDecoder.setMetaId(metaId);
+            messageDecoder.setTaskId(taskId);
             messageDecoder.setConfig(config);
             messageDecoder.setDatabase(database);
             messageDecoder.setSchema(schema);

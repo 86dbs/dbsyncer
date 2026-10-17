@@ -5,6 +5,7 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserInfo;
@@ -33,7 +34,10 @@ public abstract class ConfigModelUtil {
         if (model instanceof Meta) {
             return convertMetaToMap((Meta) model);
         }
-
+        // GroupRel：严格按 dbsyncer_group_rel 拆分列，无 name/json；RESOURCE_TYPE 存资源类型
+        if (model instanceof GroupRel) {
+            return convertGroupRelToMap((GroupRel) model);
+        }
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
         params.put(ConfigConstant.CONFIG_MODEL_TYPE, model.getType());
@@ -47,6 +51,7 @@ public abstract class ConfigModelUtil {
             Connector connector = (Connector) model;
             params.put(ConfigConstant.CONNECTOR_IS_SOURCE, connector.isSource() ? 1 : 0);
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, connector.isTarget() ? 1 : 0);
+            params.put(ConfigConstant.CONNECTOR_STATUS, connector.getStatus());
         }
 
         // 表映射关系：关联信息落拆分列
@@ -98,11 +103,35 @@ public abstract class ConfigModelUtil {
         if (UserInfo.class.equals(clazz)) {
             return (T) parseUserInfo(row);
         }
+        if (GroupRel.class.equals(clazz)) {
+            return (T) parseGroupRel(row);
+        }
         Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
         if (json == null) {
             return null;
         }
         return JsonUtil.jsonToObj(String.valueOf(json), clazz);
+    }
+
+    /**
+     * 分组关系行转模型（RESOURCE_TYPE → resourceType）。
+     */
+    private static GroupRel parseGroupRel(Map row) {
+        return JsonUtil.mapToObj(row, GroupRel.class);
+    }
+
+    /**
+     * 分组关系转存储入参：resourceType → RESOURCE_TYPE，不写 name/json。
+     */
+    private static Map<String, Object> convertGroupRelToMap(GroupRel rel) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, rel.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, rel.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rel.getUpdateTime());
+        params.put(ConfigConstant.GROUP_REL_GROUP_ID, StringUtil.getIfBlank(rel.getGroupId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.GROUP_REL_RESOURCE_TYPE, StringUtil.getIfBlank(rel.getResourceType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.GROUP_REL_RESOURCE_ID, StringUtil.getIfBlank(rel.getResourceId(), StringUtil.EMPTY));
+        return params;
     }
 
     private static Meta parseMeta(Map row) {
@@ -148,8 +177,20 @@ public abstract class ConfigModelUtil {
     }
 
     /**
+     * 按模型 Class 路由存储表。
+     */
+    public static StorageEnum getStorageEnum(Class<?> clazz) {
+        try {
+            ConfigModel model = (ConfigModel) clazz.newInstance();
+            return getStorageEnum(model.getType());
+        } catch (Exception e) {
+            return StorageEnum.CONFIG;
+        }
+    }
+
+    /**
      * 依据配置类型路由到对应的存储表。
-     * <p>同步 Mapping 与企业任务（VALIDATE_SYNC / DATABASE_SYNC）均并入 {@code dbsyncer_task}。
+     * <p>同步 Mapping 与企业任务（validateSync / databaseSync）均并入 {@code dbsyncer_task}。
      *
      * @param type 配置类型 {@link ConfigConstant} / {@link CommonTaskTypeEnum#name()}
      * @return 存储枚举
@@ -173,6 +214,10 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.TABLE_GROUP;
             case ConfigConstant.META:
                 return StorageEnum.META;
+            case ConfigConstant.GROUP:
+                return StorageEnum.GROUP;
+            case ConfigConstant.GROUP_REL:
+                return StorageEnum.GROUP_REL;
             default:
                 // 后续新增的 CommonTaskTypeEnum 仍走 task 表
                 return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;

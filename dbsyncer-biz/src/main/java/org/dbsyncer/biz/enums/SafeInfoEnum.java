@@ -18,6 +18,10 @@ public enum SafeInfoEnum {
      */
     API_SECRET("apiSecret"),
     /**
+     * 集群密钥
+     */
+    CLUSTER_SECRET("clusterSecret"),
+    /**
      * RSA私钥
      */
     RSA_PRIVATE_KEY("rsaPrivateKey"),

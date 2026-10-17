@@ -4,12 +4,12 @@
 package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
-import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
+import org.dbsyncer.sdk.enums.DatabaseSyncDetailTypeEnum;
 
 import java.io.Serializable;
 
 /**
- * 通用任务表级快照：step 在迁移场景为 {@link DatabaseMigrationDetailTypeEnum}，
+ * 通用任务表级快照：step 在迁移场景为 {@link DatabaseSyncDetailTypeEnum}，
  * 在校验场景为 {@link org.dbsyncer.sdk.enums.ValidateSyncStepEnum}。
  *
  * @author wuji
@@ -20,13 +20,19 @@ public class CommonTaskSnapshot implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 当前阶段编码 */
+    /**
+     * 当前阶段编码
+     */
     private String step;
 
-    /** 当前阶段状态，见 {@link CommonTaskStatusEnum} */
+    /**
+     * 当前阶段状态，见 {@link CommonTaskStatusEnum}
+     */
     private int status;
 
-    /** 数据迁移分页游标 */
+    /**
+     * 数据迁移分页游标
+     */
     private String cursor;
 
     private long pageIndex;

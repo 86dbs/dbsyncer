@@ -2,6 +2,7 @@ package org.dbsyncer.common.util;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONValidator;
+import com.alibaba.fastjson2.TypeReference;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -195,7 +196,7 @@ public abstract class JsonUtil {
      * @param <T>           目标类型
      * @return 反序列化结果，json 为空时返回 null
      */
-    public static <T> T jsonToObj(String json, com.alibaba.fastjson2.TypeReference<T> typeReference) {
+    public static <T> T jsonToObj(String json, TypeReference<T> typeReference) {
         if (json == null || typeReference == null) {
             return null;
         }

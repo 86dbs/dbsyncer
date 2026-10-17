@@ -28,9 +28,19 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected abstract Paging select(String sharding, Query query);
 
+    /**
+     * 按条件查询单条
+     */
+    protected abstract Map selectOne(String sharding, Query query);
+
     protected abstract void delete(String sharding, Query query);
 
     protected abstract void deleteAll(String sharding);
+
+    /**
+     * 清空分片表数据并保留表结构（TRUNCATE）。
+     */
+    protected abstract void truncateAll(String sharding);
 
     protected abstract void batchInsert(StorageEnum type, String sharding, List<Map> list);
 
@@ -52,7 +62,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     @Override
     public Paging query(Query query) {
         try {
-            String sharding = getSharding(query.getType(), query.getMetaId());
+            String sharding = getSharding(query.getType(), query.getTaskId());
             return select(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
@@ -67,6 +77,29 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
+    public Map queryObject(Query query) {
+        Assert.notNull(query, "Query can not be null.");
+        Assert.notNull(query.getType(), "StorageEnum type can not be null.");
+        BooleanFilter filter = query.getBooleanFilter();
+        Assert.isTrue(filter != null
+                        && (!CollectionUtils.isEmpty(filter.getFilters()) || !CollectionUtils.isEmpty(filter.getClauses())),
+                "queryObject must contain filter conditions.");
+        try {
+            query.setPageNum(1);
+            query.setPageSize(1);
+            return selectOne(getSharding(query.getType(), query.getTaskId()), query);
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
+        } catch (SdkException e) {
+            if (isMissingStorageTable(e)) {
+                return null;
+            }
+            throw e;
+        }
+        return null;
+    }
+
+    @Override
     public void delete(Query query) {
         BooleanFilter q = query.getBooleanFilter();
         if (CollectionUtils.isEmpty(q.getClauses()) && CollectionUtils.isEmpty(q.getFilters())) {
@@ -74,7 +107,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         }
 
         try {
-            String sharding = getSharding(query.getType(), query.getMetaId());
+            String sharding = getSharding(query.getType(), query.getTaskId());
             delete(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
@@ -82,13 +115,15 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void clear(StorageEnum type, String metaId) {
+    public void clear(StorageEnum type, String taskId) {
         try {
-            String sharding = getSharding(type, metaId);
-            deleteAll(sharding);
-            // 动态明细分表：清空后预建空表，避免详情 JOIN 查询报 Table not found
+            String sharding = getSharding(type, taskId);
             if (type == StorageEnum.TASK_DETAIL) {
+                // 任务仍在：保证分表存在后只清数据，避免 DROP + 重建
                 ensureShard(type, sharding);
+                truncateAll(sharding);
+            } else {
+                deleteAll(sharding);
             }
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
@@ -96,11 +131,11 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void ensure(StorageEnum type, String metaId) {
+    public void drop(StorageEnum type, String taskId) {
         try {
-            ensureShard(type, getSharding(type, metaId));
+            deleteAll(getSharding(type, taskId));
         } catch (NullExecutorException e) {
-            // 未知存储类型等，忽略
+            // 存储表不存在或已删除，请重试
         }
     }
 
@@ -118,14 +153,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void add(StorageEnum type, String metaId, Map params) {
-        addBatch(type, metaId, newArrayList(params));
+    public void add(StorageEnum type, String taskId, Map params) {
+        addBatch(type, taskId, newArrayList(params));
     }
 
     @Override
-    public void addBatch(StorageEnum type, String metaId, List<Map> list) {
+    public void addBatch(StorageEnum type, String taskId, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
-            batchInsert(type, getSharding(type, metaId), list);
+            batchInsert(type, getSharding(type, taskId), list);
         }
     }
 
@@ -135,14 +170,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void edit(StorageEnum type, String metaId, Map params) {
-        editBatch(type, metaId, newArrayList(params));
+    public void edit(StorageEnum type, String taskId, Map params) {
+        editBatch(type, taskId, newArrayList(params));
     }
 
     @Override
-    public void editBatch(StorageEnum type, String metaId, List<Map> list) {
+    public void editBatch(StorageEnum type, String taskId, List<Map> list) {
         if (!CollectionUtils.isEmpty(list)) {
-            batchUpdate(type, getSharding(type, metaId), list);
+            batchUpdate(type, getSharding(type, taskId), list);
         }
     }
 
@@ -152,14 +187,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void remove(StorageEnum type, String metaId, String id) {
-        removeBatch(type, metaId, newArrayList(id));
+    public void remove(StorageEnum type, String taskId, String id) {
+        removeBatch(type, taskId, newArrayList(id));
     }
 
     @Override
-    public void removeBatch(StorageEnum type, String metaId, List<String> ids) {
+    public void removeBatch(StorageEnum type, String taskId, List<String> ids) {
         if (!CollectionUtils.isEmpty(ids)) {
-            batchDelete(type, getSharding(type, metaId), ids);
+            batchDelete(type, getSharding(type, taskId), ids);
         }
     }
 
@@ -173,7 +208,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public List<Map<String, Object>> queryList(SqlQuery query) {
+    public List<Map<String, Object>> queryList(ExecuteRequest query) {
         Assert.notNull(query, "SqlQuery can not be null.");
         Assert.hasText(query.getSql(), "sql can not be empty.");
         try {

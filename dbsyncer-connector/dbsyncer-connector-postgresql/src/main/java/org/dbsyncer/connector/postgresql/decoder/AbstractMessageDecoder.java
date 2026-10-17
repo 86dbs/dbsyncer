@@ -14,13 +14,13 @@ import org.postgresql.util.PGmoney;
 import java.nio.ByteBuffer;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2022-04-10 22:36
+ * @author AE86
+ * @version 1.0.0
+ * @date 2022-04-10 22:36
  */
 public abstract class AbstractMessageDecoder implements MessageDecoder {
 
-    protected String metaId;
+    protected String taskId;
 
     protected DatabaseConfig config;
     protected String database;
@@ -55,12 +55,12 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
 
     @Override
     public String getSlotName() {
-        return String.format("dbs_slot_%s_%s_%s", schema, config.getUsername(), metaId).toLowerCase();
+        return String.format("dbs_slot_%s_%s_%s", schema, config.getUsername(), taskId).toLowerCase();
     }
 
     @Override
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 
     @Override

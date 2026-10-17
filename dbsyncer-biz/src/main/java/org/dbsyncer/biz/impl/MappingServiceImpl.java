@@ -4,9 +4,9 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.GroupSearchFilter;
+import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.MonitorService;
-import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
@@ -16,22 +16,22 @@ import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
-import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -40,7 +40,6 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.plugin.model.MappingStopContent;
-import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
@@ -50,6 +49,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
@@ -64,14 +64,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
@@ -94,25 +92,25 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private ConnectorProfile connectorProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private MonitorService monitorService;
-
-    @Resource
     private DispatchTaskService dispatchTaskService;
 
     @Resource
-    private ManagerFactory managerFactory;
+    private ClusterService clusterService;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -121,43 +119,47 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private TableGroupContext tableGroupContext;
 
     @Resource
-    private ParserComponent parserComponent;
-
-    @Resource
     private PreloadTemplate preloadTemplate;
 
     @Resource
-    private RsaManager rsaManager;
+    private MappingCountTask mappingCountTask;
+
+    @Resource
+    private MappingMatchTableTask mappingMatchTableTask;
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private GroupService groupService;
 
     @Override
     public String add(Map<String, String> params) {
-        ConfigModel model = mappingChecker.checkAddConfigModel(params);
+        Mapping model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, model);
 
-        String id = profileComponent.addConfigModel(model);
+        String id = mappingProfile.add(model);
         // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
         refreshMappingTables(id);
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
 
-        // 匹配相似表（异步）
+        // 匹配相似表 / 自定义表映射（异步落库后统一 MappingCountTask）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-            submitMappingMatchTableTask(mapping);
+            submitMappingMatchTableTask(mapping, null);
             return id;
         }
-
-        // 自定义表映射关系
         String tableGroups = params.get("tableGroups");
         if (StringUtil.isNotBlank(tableGroups)) {
-            matchCustomizedTableGroups(mapping, tableGroups);
+            submitMappingMatchTableTask(mapping, tableGroups);
+            return id;
         }
-        // 统计总数
+        // 无表映射时仍提交统计（total=0）
         submitMappingCountTask(mapping, null);
         return id;
     }
 
     @Override
     public String copy(String id) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
 
         String json = JsonUtil.objToJson(mapping);
@@ -167,7 +169,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
         mappingChecker.addMeta(newMapping);
 
-        profileComponent.addConfigModel(newMapping);
+        mappingProfile.add(newMapping);
         preloadTemplate.reConnect(newMapping);
         log(LogType.MappingLog.COPY, newMapping);
 
@@ -197,43 +199,34 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
-            Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
+            assertRunning(mapping.getId());
+            Mapping model = mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
-            taskProfile.clearRunData(id);
-            taskProfile.resetRunProgress(id);
+            mappingProfile.clearRunData(id);
             log(LogType.MappingLog.UPDATE, model);
-
-            // 更新meta
-            tableGroupService.updateMeta(mapping, metaSnapshot);
-            profileComponent.editConfigModel(model);
+            mappingProfile.update(model);
+            // 异步查源库 COUNT 并汇总 Meta.total
+            submitMappingCountTask(mapping, metaSnapshot);
         }
-        // 统计总数
-        submitMappingCountTask(mapping, metaSnapshot);
         return id;
     }
 
     @Override
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
-        String metaId = mapping.getMetaId();
-        Meta meta = metaProfile.getMeta(metaId);
+        String taskId = mapping.getId();
         synchronized (LOCK) {
-            assertRunning(metaId);
-            // 删除数据
-            monitorService.clearData(metaId);
-            log(LogType.MetaLog.CLEAR, meta);
-
-            // 条件删除 table_group + 明细 Meta，并清运行结果
-            taskProfile.clearRunData(id);
-            tableGroupProfile.removeTableGroupsByTaskId(id);
+            assertRunning(taskId);
+            // 条件删除 table_group + 明细 Meta，并物理 DROP 明细分表（不重建空表）
+            mappingProfile.dropTaskDetailTable(id);
+            log(LogType.MetaLog.CLEAR, mapping);
+            tableGroupProfile.removeTableGroupsByTaskId(taskId);
 
             // 删除任务级 meta
-            profileComponent.removeConfigModel(metaId);
-            log(LogType.MetaLog.DELETE, meta);
+            taskMetaProfile.removeMeta(taskId);
 
-            // 删除驱动表映射关系
-            tableGroupContext.clear(metaId);
+            // 删除同步表映射关系
+            tableGroupContext.clear(taskId);
 
             // 释放连接池
             String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
@@ -241,29 +234,30 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             connectorFactory.disconnect(sourceInstanceId);
             connectorFactory.disconnect(targetInstanceId);
 
-            // 删除驱动
-            profileComponent.removeConfigModel(id);
+            // 删除同步任务
+            mappingProfile.delete(id);
+            groupService.bind(null, ConfigConstant.MAPPING, id);
             log(LogType.MappingLog.DELETE, mapping);
         }
-        return "驱动删除成功";
+        return "同步任务删除成功";
     }
 
     @Override
     public MappingVO getMapping(String id) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         return convertMapping2Vo(mapping);
     }
 
     @Override
     public MappingCustomTableVO getMappingCustomTable(String id, String type) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         MappingCustomTableVO vo = new MappingCustomTableVO();
         vo.setId(mapping.getId());
         vo.setName(mapping.getName());
         boolean isSource = StringUtil.equals("source", type);
         List<Table> tables = isSource ? mapping.getSourceTable() : mapping.getTargetTable();
         String connectorId = isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId();
-        ConnectorConfig config = profileComponent.getConnector(connectorId).getConfig();
+        ConnectorConfig config = connectorProfile.getConnector(connectorId).getConfig();
         ConnectorService<?, ?> connectorService = connectorFactory.getConnectorService(config);
         vo.setConnectorConfig(config);
         vo.setExtendedType(connectorService.getExtendedTableType().getCode());
@@ -290,7 +284,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             vo.setMainTables(mainTables.stream().sorted(Comparator.comparing(Table::getName)).collect(Collectors.toList()));
         }
         // 元信息
-        vo.setMeta(metaProfile.getMeta(mapping.getMetaId()));
+        vo.setMeta(taskMetaProfile.getMeta(mapping.getId()));
         return vo;
     }
 
@@ -299,8 +293,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
-        Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
+        GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.MAPPING);
         Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
+        if (groupFilter.isEmptyResult()) {
+            return result;
+        }
+        Paging<Mapping> paging = mappingProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
         if (paging == null) {
             return result;
         }
@@ -309,15 +307,24 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             return result;
         }
         List<MappingVO> rows = new ArrayList<>(paging.getData().size());
+
+        List<String> taskIds = paging.getData().stream()
+                .filter(Objects::nonNull)
+                .map(Mapping::getId)
+                .filter(StringUtil::isNotBlank)
+                .collect(Collectors.toList());
+
+        Map<String, Meta> taskMetaMap = taskMetaProfile.getTaskMetaMap(taskIds);
+
         for (Mapping mapping : paging.getData()) {
             if (mapping == null) {
                 continue;
             }
             try {
-                rows.add(convertMapping2Vo(mapping));
+                rows.add(convertMapping2Vo(mapping, taskMetaMap.get(mapping.getId())));
             } catch (Exception e) {
-                logger.error("转换驱动列表行失败, 已跳过. mappingId:{}, name:{}, metaId:{}, error:{}",
-                        mapping.getId(), mapping.getName(), mapping.getMetaId(), e.getMessage());
+                logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, taskId:{}, error:{}",
+                        mapping.getId(), mapping.getName(), mapping.getId(), e.getMessage());
             }
         }
         result.setData(rows);
@@ -330,7 +337,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (StringUtil.isBlank(mappingId)) {
             mappingId = params.get("id");
         }
-        Assert.hasText(mappingId, "驱动ID不能为空.");
+        Assert.hasText(mappingId, "同步任务ID不能为空.");
         assertMappingExist(mappingId);
 
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
@@ -344,50 +351,56 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         //校验映射关系是否存在
         assertTableGroupExist(id);
-        final String metaId = mapping.getMetaId();
-        // 如果已经完成了，重置状态
-        clearMetaIfFinished(metaId);
-
+        final String taskId = mapping.getId();
         synchronized (LOCK) {
-            assertRunning(metaId);
-            Assert.isTrue(!dispatchTaskService.isRunning(id), "驱动表映射正在匹配或统计中，请稍候再启动");
-            // 启动
-            managerFactory.start(mapping);
+            assertRunning(taskId);
+            Assert.isTrue(!dispatchTaskService.isRunning(taskId), "同步任务表映射正在匹配或统计中，请稍候再启动");
+            // 如果已经完成了，重置状态
+            clearMetaIfFinished(taskId);
+            // 标记运行中
+            preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
+
+            try {
+                clusterService.start(mapping, false);
+            } catch (Exception e) {
+                // rollback
+                preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.READY);
+                throw new BizException(e.getMessage());
+            }
 
             log(LogType.MappingLog.RUNNING, mapping);
         }
-        return "驱动启动成功";
+        return "同步任务启动成功";
     }
 
     @Override
     public String stop(String id) {
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
-            if (!isRunning(mapping.getMetaId())) {
-                throw new BizException("驱动已停止.");
+            if (!isRunning(mapping.getId())) {
+                throw new BizException("同步任务已停止.");
             }
-            managerFactory.close(mapping);
-
+            preloadTemplate.changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
+            clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
             log(LogType.MappingLog.STOP, mapping);
-
-            // 发送关闭驱动通知消息
+            // 发送关闭通知消息
             MappingStopContent content = new MappingStopContent();
-            content.setTitle("手动停止驱动");
+            content.setTitle("手动停止同步任务");
             content.setName(mapping.getName());
             content.setModel(ModelEnum.getModelEnum(mapping.getModel()));
             sendNotifyMessage(content);
         }
-        return "驱动停止成功";
+        return "同步任务停止成功";
     }
 
     @Override
     public String refreshMappingTables(String id) {
-        Mapping mapping = profileComponent.getMapping(id);
+        Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
         mapping.setSourceTable(updateConnectorTables(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX));
         mapping.setTargetTable(updateConnectorTables(mapping, ConnectorInstanceUtil.TARGET_SUFFIX));
-        profileComponent.editConfigModel(mapping);
-        return "刷新驱动表成功";
+        mappingProfile.update(mapping);
+        return "刷新同步任务表成功";
     }
 
     @Override
@@ -484,9 +497,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
+            assertRunning(mapping.getId());
             saveCustomTable(mapping, params);
-            profileComponent.editConfigModel(mapping);
+            mappingProfile.update(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
@@ -497,43 +510,38 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
+            assertRunning(mapping.getId());
             removeCustomTable(mapping, params);
-            profileComponent.editConfigModel(mapping);
+            mappingProfile.update(mapping);
             log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
     }
 
     /**
-     * 提交统计驱动总数任务
+     * 提交统计同比任务总数任务
      */
     private void submitMappingCountTask(Mapping mapping, String metaSnapshot) {
-        MappingCountTask task = new MappingCountTask();
-        task.setMappingId(mapping.getId());
-        task.setMetaSnapshot(metaSnapshot);
-        task.setParserComponent(parserComponent);
-        task.setProfileComponent(profileComponent);
-        task.setTableGroupProfile(tableGroupProfile);
-        task.setTableGroupService(tableGroupService);
-        task.setConnectorFactory(connectorFactory);
-        task.setRsaManager(rsaManager);
-        dispatchTaskService.execute(task);
+        if (ModelEnum.isFull(mapping.getModel())) {
+            MappingCountTask task = (MappingCountTask) mappingCountTask.clone();
+            task.setMappingId(mapping.getId());
+            task.setMetaSnapshot(metaSnapshot);
+            dispatchTaskService.execute(task);
+        } else {
+            // 只复位 Meta
+            tableGroupService.resetMeta(mapping, metaSnapshot);
+        }
     }
 
     /**
-     * 提交异步匹配相似表任务（结束后会继续提交统计）
+     * 提交异步表映射任务（相似表或自定义 tableGroups；结束后继续 MappingCountTask）。
+     *
+     * @param tableGroups 自定义映射文本；null/空表示按同名表自动匹配
      */
-    private void submitMappingMatchTableTask(Mapping mapping) {
-        MappingMatchTableTask task = new MappingMatchTableTask();
+    private void submitMappingMatchTableTask(Mapping mapping, String tableGroups) {
+        MappingMatchTableTask task = (MappingMatchTableTask) mappingMatchTableTask.clone();
         task.setMappingId(mapping.getId());
-        task.setTableGroupService(tableGroupService);
-        task.setProfileComponent(profileComponent);
-        task.setParserComponent(parserComponent);
-        task.setTableGroupProfile(tableGroupProfile);
-        task.setConnectorFactory(connectorFactory);
-        task.setRsaManager(rsaManager);
-        task.setDispatchTaskService(dispatchTaskService);
+        task.setTableGroups(tableGroups);
         dispatchTaskService.execute(task);
     }
 
@@ -554,9 +562,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     break;
             }
         });
-
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
-        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        Connector connector = connectorProfile.getConnector(context.getConnectorId());
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId, connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
         tables = connectorFactory.getTables(connectorInstance, context);
         tables.addAll(customTables);
         // 按升序展示表
@@ -565,18 +573,25 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private MappingVO convertMapping2Vo(Mapping mapping) {
-        Assert.notNull(mapping, "Mapping can not be null.");
-        String model = mapping.getModel();
+        return convertMapping2Vo(mapping, resolveMappingMeta(mapping));
+    }
 
-        // 元信息（历史数据可能出现 mapping.metaId 悬空，列表不应整页失败）
-        Meta meta = resolveMappingMeta(mapping);
-        Assert.notNull(meta, String.format("Meta can not be null. mappingId:%s, metaId:%s", mapping.getId(), mapping.getMetaId()));
+    /**
+     * @param meta 列表批量查库结果；为 null 时回退 {@link #resolveMappingMeta}
+     */
+    private MappingVO convertMapping2Vo(Mapping mapping, Meta meta) {
+        Assert.notNull(mapping, "Mapping can not be null.");
+        Meta resolved = meta != null ? meta : resolveMappingMeta(mapping);
+        Assert.notNull(resolved, String.format("Meta can not be null. mappingId:%s, taskId:%s",
+                mapping.getId(), mapping.getId()));
+
+        String model = mapping.getModel();
         MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
-        BeanUtils.copyProperties(meta, metaVo);
+        BeanUtils.copyProperties(resolved, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
 
-        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
-        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Connector s = connectorProfile.getConnector(mapping.getSourceConnectorId());
+        Connector t = connectorProfile.getConnector(mapping.getTargetConnectorId());
         MappingVO vo = new MappingVO(s, t, metaVo);
         BeanUtils.copyProperties(mapping, vo);
         // 全量表列表体积大，下拉/搜索走 searchTables 分页；VO 不回传
@@ -586,29 +601,25 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     /**
-     * 获取驱动任务级 Meta；若 metaId 悬空则重建并回写 mapping。
+     * 获取同步任务任务级 Meta
      */
     private Meta resolveMappingMeta(Mapping mapping) {
-        String metaId = mapping.getMetaId();
-        Meta meta = StringUtil.isBlank(metaId) ? null : metaProfile.getMeta(metaId);
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
         if (meta != null) {
             return meta;
         }
-        logger.warn("驱动 Meta 缺失，尝试重建. mappingId:{}, name:{}, metaId:{}", mapping.getId(), mapping.getName(), metaId);
+        logger.warn("同步任务 Meta 缺失，尝试重建. mappingId:{}, name:{}, taskId:{}", mapping.getId(), mapping.getName(), mapping.getId());
         mappingChecker.addMeta(mapping);
-        profileComponent.editConfigModel(mapping);
-        return metaProfile.getMeta(mapping.getMetaId());
+        mappingProfile.update(mapping);
+        return taskMetaProfile.getMeta(mapping.getId());
     }
 
     /**
-     * 检查是否存在驱动
-     *
-     * @param mappingId
-     * @return
+     * 检查是否存在同步任务
      */
     private Mapping assertMappingExist(String mappingId) {
-        Mapping mapping = profileComponent.getMapping(mappingId);
-        Assert.notNull(mapping, "驱动不存在.");
+        Mapping mapping = mappingProfile.get(mappingId);
+        Assert.notNull(mapping, "同步任务不存在.");
         return mapping;
     }
 
@@ -619,90 +630,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "映射关系不能为空");
     }
 
-    /**
-     * 自定义配置表映射关系
-     *
-     * @param model
-     * @param tableGroups
-     */
-    private void matchCustomizedTableGroups(ConfigModel model, String tableGroups) {
-        Mapping mapping = (Mapping) model;
-        List<Table> sourceTables = mapping.getSourceTable();
-        List<Table> targetTables = mapping.getTargetTable();
-        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            return;
-        }
-        String[] lines = StringUtil.split(tableGroups, StringUtil.BREAK_LINE);
-        // 数据源表|目标源表=源表字段A1*|目标字段A2*
-        for (String line : lines) {
-            String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
-            String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
-            if (tableGroupNames.length == 2) {
-                addTableGroup(mapping.getId(), tableGroupNames[0], tableGroupNames[1], tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
-            }
-        }
-    }
-
-    private void addTableGroup(String id, String sourceTableName, String targetTableName, String fieldMappings) {
-        try {
-            Map<String, String> params = new HashMap<>();
-            params.put("mappingId", id);
-            params.put("sourceTable", sourceTableName);
-            params.put("targetTable", targetTableName);
-            params.put("sourceType", TableTypeEnum.TABLE.getCode());
-            params.put("targetType", TableTypeEnum.TABLE.getCode());
-            // A1*|A2*,B1|B2,|C3
-            if (StringUtil.isNotBlank(fieldMappings)) {
-                String[] mappings = StringUtil.split(fieldMappings, StringUtil.COMMA);
-                StringJoiner fms = new StringJoiner(StringUtil.COMMA);
-                StringJoiner sPk = new StringJoiner(StringUtil.COMMA);
-                StringJoiner tPk = new StringJoiner(StringUtil.COMMA);
-                for (String mapping : mappings) {
-                    String[] m = StringUtil.split(mapping, "\\" + StringUtil.VERTICAL_LINE);
-                    if (m.length == 2) {
-                        fms.add(replaceStar(m[0], sPk) + StringUtil.VERTICAL_LINE + replaceStar(m[1], tPk));
-                        continue;
-                    }
-                    // |C2,C3|
-                    if (m.length == 1) {
-                        String name = replaceStar(m[0], tPk);
-                        if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
-                            fms.add(StringUtil.VERTICAL_LINE + name);
-                            continue;
-                        }
-                        fms.add(name + StringUtil.VERTICAL_LINE);
-                    }
-                }
-                params.put("fieldMappings", fms.toString());
-                if (StringUtil.isNotBlank(sPk.toString())) {
-                    params.put("sourceTablePK", sPk.toString());
-                }
-                if (StringUtil.isNotBlank(tPk.toString())) {
-                    params.put("targetTablePK", tPk.toString());
-                }
-            }
-            tableGroupService.add(params);
-        } catch (RepeatedTableGroupException | SdkException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    private String replaceStar(String name, StringJoiner joiner) {
-        if (StringUtil.endsWith(name, StringUtil.STAR)) {
-            name = StringUtil.replace(name.trim(), StringUtil.STAR, StringUtil.EMPTY);
-            joiner.add(name);
-        }
-        return name;
-    }
-
-    private void clearMetaIfFinished(String metaId) {
-        Meta meta = metaProfile.getMeta(metaId);
+    private void clearMetaIfFinished(String taskId) {
+        Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态
-        if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
-            meta.getFail().set(0);
-            meta.getSuccess().set(0);
-            profileComponent.editConfigModel(meta);
+        // 完成任务则重置状态，便于再次全量
+        if (!CommonTaskStatusEnum.isRunning(meta.getState()) && meta.getSuccess().addAndGet(meta.getFail().get()) == meta.getTotal().get()) {
+            taskMetaProfile.resetMeta(taskId);
+            taskDetailMetaProfile.clearData(taskId);
+            taskProfile.deleteRunData(taskId);
         }
     }
 

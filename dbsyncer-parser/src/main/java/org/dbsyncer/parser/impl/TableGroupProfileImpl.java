@@ -9,11 +9,11 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.parser.util.SqlResultRowUtil;
@@ -25,7 +25,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.StringFilter;
-import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -33,11 +33,10 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * {@link TableGroupProfile} 实现（dbsyncer_table_group）。
@@ -46,7 +45,7 @@ import java.util.function.Consumer;
  * @version 1.0.0
  */
 @Component
-public class TableGroupProfileImpl implements TableGroupProfile {
+public final class TableGroupProfileImpl implements TableGroupProfile {
 
     private static final String RESULT_SELECT_COLUMNS =
             "tg.ID AS tableGroupId, "
@@ -79,11 +78,17 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     private StorageService storageService;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TaskDetailMetaProfile taskDetailMetaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Override
     public String addTableGroup(TableGroup model) {
-        String id = operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
+        String id = operationTemplate.execute(model, CommandEnum.OPR_ADD);
         addTableGroupDetailMeta(id);
         return id;
     }
@@ -110,14 +115,23 @@ public class TableGroupProfileImpl implements TableGroupProfile {
                 metas.add(meta);
             }
             if (!CollectionUtils.isEmpty(metas)) {
-                metaProfile.addMetaBatch(metas);
+                taskMetaProfile.addMetaBatch(metas);
             }
         });
     }
 
     @Override
     public String editTableGroup(TableGroup model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
+        return operationTemplate.execute(model, CommandEnum.OPR_EDIT);
+    }
+
+    @Override
+    public void editTableGroupBatch(List<TableGroup> models) {
+        if (CollectionUtils.isEmpty(models)) {
+            return;
+        }
+        TaskSplitUtil.split(models, ConfigConstant.PAGE_SIZE, batch ->
+                operationTemplate.executeBatch(batch, CommandEnum.OPR_EDIT));
     }
 
     @Override
@@ -131,9 +145,13 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        List<String> groupIds = listTableGroupIds(taskId);
-        //删除所有子任务
-        metaProfile.deleteMetaByTableGroupIds(groupIds);
+        // 删除表关联的meta
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
+            List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
+            // 批量删除表meta数据
+            taskDetailMetaProfile.deleteMetaByTableGroupIds(groupIds);
+        });
+
         Query deleteQuery = new Query();
         deleteQuery.setType(StorageEnum.TABLE_GROUP);
         deleteQuery.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
@@ -190,7 +208,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     @Override
     public Paging queryTableGroupResults(String mappingId, String detailStatus, int pageNum, int pageSize) {
-        Assert.hasText(mappingId, "驱动ID不能为空");
+        Assert.hasText(mappingId, "同步任务ID不能为空");
         int safePageNum = Math.max(pageNum, 1);
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
 
@@ -205,7 +223,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         }
         String sql = "SELECT " + RESULT_SELECT_COLUMNS + RESULT_FROM_JOIN + where + RESULT_ORDER_SQL;
         List<Map<String, Object>> rows = storageService.queryList(
-                SqlQuery.of(sql, args.toArray()).page(safePageNum, safePageSize));
+                ExecuteRequest.of(sql, args.toArray()).page(safePageNum, safePageSize));
         List<Map<String, Object>> data = new ArrayList<>(rows == null ? 0 : rows.size());
         if (!CollectionUtils.isEmpty(rows)) {
             for (Map<String, Object> row : rows) {
@@ -229,7 +247,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     private long queryTableGroupResultCount(String where, List<Object> args) {
         String sql = "SELECT COUNT(1) AS cnt " + RESULT_FROM_JOIN + where;
-        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()));
+        List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of(sql, args.toArray()));
         if (CollectionUtils.isEmpty(rows)) {
             return 0L;
         }
@@ -249,7 +267,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         int pageNum = 1;
         while (true) {
             Paging<TableGroup> paging = queryTableGroup(mappingId, null, pageNum, safePageSize);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+            if (CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
             List<TableGroup> page = new ArrayList<>(paging.getData());
@@ -262,7 +280,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public List<TableGroup> listTableGroupsBySql(SqlQuery query) {
+    public List<TableGroup> listTableGroupsBySql(ExecuteRequest query) {
         if (query == null) {
             return Collections.emptyList();
         }
@@ -291,7 +309,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public boolean existsTableGroup(String taskId, String sourceTable, String targetTable) {
+    public boolean existTableGroup(String taskId, String sourceTable, String targetTable) {
         if (StringUtil.isBlank(taskId) || StringUtil.isBlank(sourceTable) || StringUtil.isBlank(targetTable)) {
             return false;
         }
@@ -306,7 +324,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta existing = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        Meta existing = taskMetaProfile.getMetaDetail(tableGroupId);
         if (existing != null) {
             return;
         }
@@ -316,37 +334,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         long now = System.currentTimeMillis();
         meta.setCreateTime(now);
         meta.setUpdateTime(now);
-        metaProfile.addMeta(meta);
-    }
-
-    /**
-     * 查询任务下全部 table_group.id。
-     */
-    @Override
-    public List<String> listTableGroupIds(String taskId) {
-        List<String> groupIds = new ArrayList<>();
-        if (StringUtil.isBlank(taskId)) {
-            return groupIds;
-        }
-        Query query = new Query();
-        query.setType(StorageEnum.TABLE_GROUP);
-        query.setPageSize(ConfigConstant.PAGE_SIZE);
-        Set<String> selectFields = new HashSet<>();
-        selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
-        query.setSelectFlied(selectFields);
-        query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
-        while (true) {
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                break;
-            }
-            for (Object item : paging.getData()) {
-                Map<String, Object> row = (Map<String, Object>) item;
-                groupIds.add(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)));
-            }
-            query.setPageNum(query.getPageNum() + 1);
-        }
-        return groupIds;
+        taskMetaProfile.addMeta(meta);
     }
 
     @Override
@@ -401,18 +389,13 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         }
     }
 
-    @Override
-    public String getPreloadGroupKey(String taskId) {
-        return ConfigConstant.TABLE_GROUP + "_" + taskId;
-    }
-
     private void removeTableGroupDetailMeta(String tableGroupId) {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        Meta byRef = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        Meta byRef = taskMetaProfile.getMetaDetail(tableGroupId);
         if (byRef != null && StringUtil.isNotBlank(byRef.getId())) {
-            metaProfile.removeMeta(byRef.getId());
+            taskMetaProfile.removeMeta(byRef.getId());
         }
     }
 

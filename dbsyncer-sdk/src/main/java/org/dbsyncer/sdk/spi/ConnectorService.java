@@ -15,6 +15,8 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.CursorBound;
+import org.dbsyncer.sdk.model.CursorBoundRequest;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.MetaContext;
@@ -106,6 +108,18 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 分页获取数据源数据
      */
     Result reader(I connectorInstance, ReaderContext context);
+
+    /**
+     * 按起始游标与行预算解析本片结束游标（只读定位键，不读业务列）。
+     * <p>默认不支持；关系库等连接器可覆盖。调用方在 {@link CursorBound#isSupported()} 为 false 时按整表一片处理。
+     *
+     * @param connectorInstance 连接实例
+     * @param request           划界请求
+     * @return 游标边界；不会返回 null
+     */
+    default CursorBound resolveCursorBound(I connectorInstance, CursorBoundRequest request) {
+        return CursorBound.unsupported(request == null ? StringUtil.EMPTY : request.getStartCursor());
+    }
 
     /**
      * 批量写入目标源数据

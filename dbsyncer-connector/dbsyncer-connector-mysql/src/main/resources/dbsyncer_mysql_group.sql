@@ -1,0 +1,9 @@
+CREATE TABLE `dbsyncer_group` (
+  `ID` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '唯一ID',
+  `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
+  `UPDATE_TIME` bigint NOT NULL COMMENT '修改时间',
+  `NAME` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '分组名称',
+  `JSON` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '扩展配置',
+  PRIMARY KEY (`ID`) USING BTREE,
+  UNIQUE KEY `UK_NAME` (`NAME`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '业务分组表' ROW_FORMAT = Dynamic;

@@ -4,9 +4,8 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
-import org.dbsyncer.common.enums.TaskLevelEnum;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -20,15 +19,18 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 
 /**
  * 持久化执行器
  *
- * @Version 1.0.0
- * @Author AE86
- * @Date 2023-03-27 16:50
+ * @author AE86
+ * @version 1.0.0
+ * @date 2023-03-27 16:50
  */
 @Component
 public final class StorageBufferActuator extends AbstractBufferActuator<StorageRequest, StorageResponse> {
@@ -45,10 +47,10 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     private Executor storageExecutor;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @PostConstruct
     private void init() {
@@ -70,19 +72,17 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     @Override
     public void pull(StorageResponse response) {
         String shardId = response.getTaskDetailShardId();
-        // 严格走库 + 明细分表：写入 dbsyncer_task_detail_{taskId}
-        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.TASK_DETAIL, shardId, response.getDataList()));
+        // 必须拷贝：process() finally 会 clearDataList，异步写不能共用同一 LinkedList（并发 clear 会把节点 item 置 null → NPE）
+        List<Map> batch = new ArrayList<>(response.getDataList());
+        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.TASK_DETAIL, shardId, batch));
     }
 
     @Override
     protected void offerFailed(BlockingQueue<StorageRequest> queue, StorageRequest request) {
         String shardId = request.getTaskDetailShardId();
-        Meta meta = metaProfile.getMetaByTaskId(shardId, TaskLevelEnum.TASK);
-        if (meta == null) {
-            meta = metaProfile.getMeta(shardId);
-        }
+        Meta meta = taskMetaProfile.getMeta(shardId);
         if (meta != null) {
-            Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+            Mapping mapping = mappingProfile.get(meta.getTaskId());
             if (mapping != null) {
                 logger.info("{}, data={}", mapping.getName(), request.getRow());
             }

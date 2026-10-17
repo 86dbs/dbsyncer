@@ -5,7 +5,7 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.message.NoticeChannelDispatcher;
 import org.dbsyncer.plugin.impl.AbstractNoticeService;
 import org.dbsyncer.plugin.model.TestNoticeContent;
@@ -30,14 +30,14 @@ public class MessageServiceImpl implements MessageService {
     private NoticeDecisionEngine noticeDecisionEngine;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private AppConfig appConfig;
 
     @Override
     public void sendMessage(NoticeContent noticeContent) {
-        NoticeConfig noticeConfig = profileComponent.getSystemConfig().getNoticeConfig();
+        NoticeConfig noticeConfig = systemConfigProfile.getSystemConfig().getNoticeConfig();
         if (noticeConfig == null || noticeContent == null) {
             return;
         }
@@ -50,7 +50,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public String testSendMessage() {
-        NoticeConfig noticeConfig = profileComponent.getSystemConfig().getNoticeConfig();
+        NoticeConfig noticeConfig = systemConfigProfile.getSystemConfig().getNoticeConfig();
         if (noticeConfig == null) {
             throw new ParserException("请先保存告警配置");
         }

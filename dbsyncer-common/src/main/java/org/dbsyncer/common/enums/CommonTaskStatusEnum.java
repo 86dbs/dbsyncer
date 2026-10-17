@@ -25,7 +25,6 @@ public enum CommonTaskStatusEnum {
      * 停止中
      */
     STOPPING(2, "停止中"),
-
     /**
      * 已完成
      */

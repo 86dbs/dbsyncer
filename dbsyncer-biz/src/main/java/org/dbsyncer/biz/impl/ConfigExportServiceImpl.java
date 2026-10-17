@@ -11,9 +11,9 @@ import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ConnectorProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -58,7 +58,7 @@ public class ConfigExportServiceImpl implements ConfigExportService {
     private SystemConfigProfile systemConfigProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TaskProfile taskProfile;
@@ -87,7 +87,7 @@ public class ConfigExportServiceImpl implements ConfigExportService {
             List<String> taskIds = new ArrayList<>();
             counts.put(ConfigConstant.TASK, writeAllTasks(zos, taskIds));
             counts.put(ConfigConstant.TABLE_GROUP, writeTableGroupsToZip(zos));
-            counts.put(ConfigConstant.META, metaProfile.writeMetasToZip(zos));
+            counts.put(ConfigConstant.META, taskMetaProfile.writeMetasToZip(zos));
             counts.put(StorageEnum.TASK_DETAIL.getType(), writeTaskDetailSchemas(zos, taskIds));
             writeManifest(zos, versionInfo, counts);
         }
@@ -101,7 +101,7 @@ public class ConfigExportServiceImpl implements ConfigExportService {
         rows += connectorProfile.countConnectors();
         rows += taskProfile.countAllTasks();
         rows += tableGroupProfile.countTableGroups();
-        rows += metaProfile.countMeta();
+        rows += taskMetaProfile.countMeta();
         return Math.max(rows, 1L) * PackageFormatConfig.ESTIMATE_BYTES_PER_ROW;
     }
 

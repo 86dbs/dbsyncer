@@ -39,6 +39,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final LocalDateTime PG_EPOCH = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
+
     /**
      * 普通表与分区主表；子分区 OID 归一到根主表名，便于按主表映射过滤增量事件。
      */

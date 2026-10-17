@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * {@link org.dbsyncer.parser.TaskProfile#importTasksFromJson(String)} 结果。
- *
  * @author wuji
  * @version 1.0.0
  */

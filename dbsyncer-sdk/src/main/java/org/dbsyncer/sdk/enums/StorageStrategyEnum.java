@@ -11,8 +11,13 @@ import org.dbsyncer.sdk.storage.strategy.LogStrategy;
 import org.dbsyncer.sdk.storage.strategy.MetaStrategy;
 import org.dbsyncer.sdk.storage.strategy.TableGroupStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.ClusterTaskStrategy;
+import org.dbsyncer.sdk.storage.strategy.TaskPlanStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
 import org.dbsyncer.sdk.storage.strategy.UserStrategy;
+import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
+import org.dbsyncer.sdk.storage.strategy.GroupStrategy;
+import org.dbsyncer.sdk.storage.strategy.GroupRelStrategy;
 
 /**
  * 存储策略枚举
@@ -61,7 +66,32 @@ public enum StorageStrategyEnum {
     /**
      * 任务策略
      */
-    TASK(StorageEnum.TASK, new TaskStrategy());
+    TASK(StorageEnum.TASK, new TaskStrategy()),
+
+    /**
+     * 集群节点
+     */
+    CLUSTER_NODE(StorageEnum.CLUSTER_NODE, new ClusterNodeStrategy()),
+
+    /**
+     * 集群任务调度
+     */
+    CLUSTER_TASK(StorageEnum.CLUSTER_TASK, new ClusterTaskStrategy()),
+
+    /**
+     * 任务分片计划
+     */
+    TASK_PLAN(StorageEnum.TASK_PLAN, new TaskPlanStrategy()),
+
+    /**
+     * 业务分组
+     */
+    GROUP(StorageEnum.GROUP, new GroupStrategy()),
+
+    /**
+     * 业务分组关系
+     */
+    GROUP_REL(StorageEnum.GROUP_REL, new GroupRelStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

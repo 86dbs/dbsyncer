@@ -46,22 +46,6 @@ public interface PluginContext extends BaseContext {
     Table getTargetTable();
 
     /**
-     * 数据源表
-     *
-     * <h3>已过时，请尽快替换为getSourceTable().getName()
-     */
-    @Deprecated
-    String getSourceTableName();
-
-    /**
-     * 目标源表
-     *
-     * <h3>已过时，请尽快替换为getTargetTable().getName()
-     */
-    @Deprecated
-    String getTargetTableName();
-
-    /**
      * 增量同步，事件（INSERT/UPDATE/DELETE）
      */
     String getEvent();

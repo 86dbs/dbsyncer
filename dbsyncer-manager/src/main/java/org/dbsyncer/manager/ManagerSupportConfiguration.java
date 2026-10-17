@@ -3,24 +3,52 @@
  */
 package org.dbsyncer.manager;
 
-import org.dbsyncer.manager.deployment.StandaloneProvider;
-import org.dbsyncer.sdk.spi.DeploymentService;
-
+import org.dbsyncer.manager.deployment.StandaloneService;
+import org.dbsyncer.parser.impl.FullFlushServiceImpl;
+import org.dbsyncer.sdk.spi.ClusterService;
+import org.dbsyncer.sdk.spi.FullFlushService;
+import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
+
+import javax.annotation.Resource;
 
 /**
  * @author AE86
  * @version 1.0.0
- * @Date 2023-11-19 23:29
+ * @date 2023-11-19 23:29
  */
 @Configuration
 public class ManagerSupportConfiguration {
 
+    @Resource
+    private ServiceFactory serviceFactory;
+
     @Bean
-    @ConditionalOnMissingBean
-    public DeploymentService deploymentService() {
-        return new StandaloneProvider();
+    @ConditionalOnMissingBean(ClusterService.class)
+    @DependsOn(value = "serviceFactory")
+    public ClusterService clusterService() {
+        ClusterService spi = serviceFactory.get(ClusterService.class);
+        if (spi != null) {
+            return spi;
+        }
+        return new StandaloneService();
     }
+
+    /**
+     * 全量页级落库：优先 SPI，否则单机默认实现。
+     */
+    @Bean
+    @ConditionalOnMissingBean(FullFlushService.class)
+    @DependsOn(value = "serviceFactory")
+    public FullFlushService fullFlushService() {
+        FullFlushService spi = serviceFactory.get(FullFlushService.class);
+        if (spi != null) {
+            return spi;
+        }
+        return new FullFlushServiceImpl();
+    }
+
 }

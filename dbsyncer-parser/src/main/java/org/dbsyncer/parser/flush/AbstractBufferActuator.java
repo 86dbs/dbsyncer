@@ -4,20 +4,18 @@
 package org.dbsyncer.parser.flush;
 
 import org.dbsyncer.common.config.BufferActuatorConfig;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Meta;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
 import java.util.Map;
@@ -51,7 +49,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private ScheduledTaskService scheduledTaskService;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TimeRegistry timeRegistry;
@@ -89,37 +87,24 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     /**
      * 生成分区key
-     *
-     * @param request
-     * @return
      */
     protected abstract String getPartitionKey(Request request);
 
     /**
      * 分区
-     *
-     * @param request
-     * @param response
      */
     protected abstract void partition(Request request, Response response);
 
     /**
-     * 驱动是否运行中
-     *
-     * @param request
-     * @return
+     * 同步任务是否运行中
      */
     public boolean isRunning(BufferRequest request) {
-        Meta meta = metaProfile.getMeta(request.getMetaId());
+        Meta meta = taskMetaProfile.getMeta(request.getTaskId());
         return meta != null && CommonTaskStatusEnum.isRunning(meta.getState());
     }
 
     /**
      * 是否跳过分区处理
-     *
-     * @param nextRequest
-     * @param response
-     * @return
      */
     protected boolean skipPartition(Request nextRequest, Response response) {
         return false;
@@ -127,41 +112,34 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     /**
      * 批处理
-     *
-     * @param response
      */
     public abstract void pull(Response response);
 
     /**
      * 批量处理分区数据
-     *
-     * @param map
      */
     protected void process(Map<String, Response> map) {
-        map.forEach((key, response)-> {
+        map.forEach((key, response) -> {
             long now = Instant.now().toEpochMilli();
             try {
                 pull(response);
+                logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
+            } finally {
+                // 及时清空列表引用，便于 GC 回收，减轻 parser 侧 LinkedList 保留内存
+                response.clearDataList();
             }
-            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
         });
     }
 
     /**
      * 提交任务失败
-     *
-     * @param queue
-     * @param request
      */
     protected abstract void offerFailed(BlockingQueue<Request> queue, Request request);
 
     /**
      * 统计消费 TPS
-     *
-     * @param timeRegistry
-     * @param count
      */
     protected void meter(TimeRegistry timeRegistry, long count) {
 
@@ -230,7 +208,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         while (!queue.isEmpty() && batchCounter.get() < config.getBufferPullCount()) {
             Request poll = queue.poll();
             String key = getPartitionKey(poll);
-            Response response = map.compute(key, (k, v)-> {
+            Response response = map.compute(key, (k, v) -> {
                 if (v == null) {
                     try {
                         return responseClazz.newInstance();

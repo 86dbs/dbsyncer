@@ -6,7 +6,8 @@ package org.dbsyncer.parser.message;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
@@ -40,7 +41,10 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
     private final Map<NoticeChannelEnum, NoticeService> notifyServiceMap = new ConcurrentHashMap<>();
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private UserProfile userProfile;
 
     public void registerNotifyService(NoticeChannelEnum noticeChannelEnum, NoticeService notificationService) {
         notifyServiceMap.put(noticeChannelEnum, notificationService);
@@ -52,7 +56,7 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
 
     @Override
     public void deliver(NoticeContent noticeContent) {
-        NoticeConfig noticeConfig = profileComponent.getSystemConfig().getNoticeConfig();
+        NoticeConfig noticeConfig = systemConfigProfile.getSystemConfig().getNoticeConfig();
         if (noticeConfig == null || noticeContent == null || notifyServiceMap.isEmpty()) {
             return;
         }
@@ -74,7 +78,7 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
         if (channel != NoticeChannelEnum.EMAIL) {
             return;
         }
-        UserConfig userConfig = profileComponent.getUserConfig();
+        UserConfig userConfig = userProfile.getUserConfig();
         if (null == userConfig) {
             return;
         }

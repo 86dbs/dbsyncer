@@ -3,9 +3,12 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.event.RemoveSystemConfigCacheEvent;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.AbstractConfigModelProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
@@ -14,6 +17,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -27,7 +31,7 @@ import java.util.List;
  * @version 1.0.0
  */
 @Component
-public class SystemConfigProfileImpl implements SystemConfigProfile {
+public final class SystemConfigProfileImpl extends AbstractConfigModelProfile<SystemConfig> implements SystemConfigProfile, ApplicationListener<RemoveSystemConfigCacheEvent> {
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -38,19 +42,13 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
-    private SystemConfig systemConfig;
-
     @Override
     public SystemConfig getSystemConfig() {
-        if (systemConfig != null) {
-            return systemConfig;
-        }
-        systemConfig = querySystemConfig();
-        return systemConfig;
+        return getCache(null);
     }
 
     @Override
-    public String saveSystemConfig(SystemConfig config) {
+    public void saveSystemConfig(SystemConfig config) {
         Assert.notNull(config, "SystemConfig can not be null.");
         long now = System.currentTimeMillis();
         if (config.getCreateTime() == null) {
@@ -65,23 +63,13 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
         } else {
             storageService.edit(StorageEnum.CONFIG, ConfigModelUtil.convertModelToMap(config));
         }
-        //todo 分布式需要优化
-        systemConfig = querySystemConfig();
-        return config.getId();
+        pushMessage(null);
+        removeCache(null);
     }
-
 
     @Override
     public int countSystemConfigs() {
         return operationTemplate.count(StorageEnum.CONFIG, null);
-    }
-
-    @Override
-    public void removeSystemConfig(String id) {
-        if (StringUtil.isBlank(id)) {
-            return;
-        }
-        storageService.remove(StorageEnum.CONFIG, id);
     }
 
     @Override
@@ -98,10 +86,16 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
         }
     }
 
-    private SystemConfig querySystemConfig() {
+    @Override
+    protected ConfigModel getConfigModel(String id) {
         Query condition = new Query();
         condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.SYSTEM);
         List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, condition, SystemConfig.class);
         return CollectionUtils.isEmpty(list) ? null : list.get(0);
+    }
+
+    @Override
+    public void onApplicationEvent(RemoveSystemConfigCacheEvent event) {
+        removeCache(null);
     }
 }

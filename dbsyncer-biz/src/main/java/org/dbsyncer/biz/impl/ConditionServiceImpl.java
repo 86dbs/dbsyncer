@@ -5,35 +5,29 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.vo.ConditionVO;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.springframework.stereotype.Service;
 
-import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
-
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * 支持的条件和运算符类型
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-01-19 16:02
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-01-19 16:02
  */
-@Component
+@Service
 public class ConditionServiceImpl implements ConditionService {
-
-    @Resource
-    private ProfileComponent profileComponent;
 
     @Override
     public ConditionVO getCondition() {
-        List<OperationEnum> operationEnumAll = profileComponent.getOperationEnumAll();
-        List<QuartzFilterEnum> quartzFilterEnumAll = profileComponent.getQuartzFilterEnumAll();
-        List<FilterEnum> filterEnumAll = profileComponent.getFilterEnumAll();
+        List<OperationEnum> operationEnumAll = Arrays.asList(OperationEnum.values());;
+        List<QuartzFilterEnum> quartzFilterEnumAll = Arrays.asList(QuartzFilterEnum.values());
+        List<FilterEnum> filterEnumAll = Arrays.asList(FilterEnum.values());
         return new ConditionVO(operationEnumAll, quartzFilterEnumAll, filterEnumAll);
     }
 }

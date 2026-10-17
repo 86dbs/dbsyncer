@@ -179,6 +179,7 @@
 .min-w-160 { min-width: 160px; }
 .min-w-200 { min-width: 200px; }
 .min-w-300 { min-width: 300px; }
+.w-320 { width: 320px; }
 
 .connector-logo {
   width: 40px;

@@ -4,7 +4,6 @@
 package org.dbsyncer.web.controller.monitor;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
@@ -16,15 +15,12 @@ import org.dbsyncer.biz.vo.CpuVO;
 import org.dbsyncer.biz.vo.DiskSpaceVO;
 import org.dbsyncer.biz.vo.HistoryStackVO;
 import org.dbsyncer.biz.vo.MemoryVO;
-import org.dbsyncer.biz.vo.EditionInfoVO;
-import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
@@ -79,9 +75,6 @@ public class MonitorController extends BaseController {
     private DataSyncService dataSyncService;
 
     @Resource
-    private ConnectorService connectorService;
-
-    @Resource
     private MappingService mappingService;
 
     @Resource
@@ -102,24 +95,16 @@ public class MonitorController extends BaseController {
     @Resource
     private GBValueFormatter gbValueFormatter;
 
-    @Resource
-    private LicenseService licenseService;
-
     @RequestMapping("")
-    public String index(HttpServletRequest request, ModelMap model) {
-        EditionInfoVO editionInfo = new EditionInfoVO();
-        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
-        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
-        model.put("editionInfo", editionInfo);
+    public String index(ModelMap model) {
+        initEditionInfo(model);
         return "monitor/list.html";
     }
 
     @GetMapping("/page/retry")
-    public String page(ModelMap model, String metaId, String messageId) {
-        MetaVO metaVo = monitorService.getMetaVo(metaId);
-        model.put("meta", metaVo);
-        model.put("mapping", mappingService.getMapping(metaVo.getTaskId()));
-        model.put("message", dataSyncService.getMessageVo(metaId, messageId));
+    public String page(ModelMap model, String taskId, String messageId) {
+        model.put("mapping", mappingService.getMapping(taskId));
+        model.put("message", dataSyncService.getMessageVo(taskId, messageId));
         return "monitor/retry.html";
     }
 
@@ -128,13 +113,6 @@ public class MonitorController extends BaseController {
         collectCpu();
         collectMemory();
         collectDiskSpace();
-    }
-
-    @Scheduled(fixedRate = 10000)
-    public void refreshConnectorHealth() {
-        if (preloadTemplate.isPreloadCompleted()) {
-            connectorService.refreshHealth();
-        }
     }
 
     @Scheduled(fixedRate = 30000)
@@ -217,9 +195,9 @@ public class MonitorController extends BaseController {
      */
     @PostMapping("/getDataDetail")
     @ResponseBody
-    public RestResult getDataDetail(String metaId, String messageId) {
+    public RestResult getDataDetail(String taskId, String messageId) {
         try {
-            return RestResult.restSuccess(dataSyncService.getMessageVo(metaId, messageId));
+            return RestResult.restSuccess(dataSyncService.getMessageVo(taskId, messageId));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -242,7 +220,7 @@ public class MonitorController extends BaseController {
     public RestResult metric() {
         try {
             AppReportMetric reportMetric = monitorService
-                    .queryAppMetric(Stream.of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK).map(m->getMetricResponse(m.getCode())).collect(Collectors.toList()));
+                    .queryAppMetric(Stream.of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK).map(m -> getMetricResponse(m.getCode())).collect(Collectors.toList()));
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
             reportMetric.setDisk(disk);
@@ -369,7 +347,7 @@ public class MonitorController extends BaseController {
         metricResponse.setMetricName(metricEnum.getMetricName());
         if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
             List<Sample> measurements = new ArrayList<>();
-            metric.getMeasurements().forEach(s->measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
+            metric.getMeasurements().forEach(s -> measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
             metricResponse.setMeasurements(measurements);
         }
         return metricResponse;

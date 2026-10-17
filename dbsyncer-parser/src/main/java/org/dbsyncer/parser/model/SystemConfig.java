@@ -14,11 +14,11 @@ import org.dbsyncer.sdk.model.NoticeConfig;
 /**
  * 系统配置
  *
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2020-05-29 20:13
  */
-public class SystemConfig extends ConfigModel {
+public class SystemConfig extends ConfigModel implements Cloneable {
 
     public SystemConfig() {
         super.setType(ConfigConstant.SYSTEM);
@@ -108,6 +108,31 @@ public class SystemConfig extends ConfigModel {
      * 通知配置
      */
     private NoticeConfig noticeConfig;
+
+    /**
+     * 并发表数
+     */
+    private int maxTableCount = 10;
+
+    /**
+     * 并发分片数
+     */
+    private int maxPlanCount = 10;
+
+    /**
+     * 分片总数（与任务 readNum×threadNum 相除得到每波预切片数）
+     */
+    private int shardTotal = 1_000_000;
+
+    /**
+     * 分片运行超时（毫秒）
+     */
+    private long shardTimeoutMs = 300_000L;
+
+    /**
+     * 集群节点间内部接口共享密钥，生产集群各节点必须配置相同值，防止未鉴权启停任务。
+     */
+    private String clusterSecret = "9r+KZ1FNjSpob+shIVXPeuP+u6m2d9z/7RgeY/1vzp0=";
 
     public int getExpireDataDays() {
         return expireDataDays;
@@ -243,5 +268,54 @@ public class SystemConfig extends ConfigModel {
 
     public void setNoticeConfig(NoticeConfig noticeConfig) {
         this.noticeConfig = noticeConfig;
+    }
+
+    public int getMaxTableCount() {
+        return maxTableCount;
+    }
+
+    public void setMaxTableCount(int maxTableCount) {
+        this.maxTableCount = maxTableCount;
+    }
+
+    public int getMaxPlanCount() {
+        return maxPlanCount;
+    }
+
+    public void setMaxPlanCount(int maxPlanCount) {
+        this.maxPlanCount = maxPlanCount;
+    }
+
+    public int getShardTotal() {
+        return shardTotal;
+    }
+
+    public void setShardTotal(int shardTotal) {
+        this.shardTotal = shardTotal;
+    }
+
+    public long getShardTimeoutMs() {
+        return shardTimeoutMs;
+    }
+
+    public void setShardTimeoutMs(long shardTimeoutMs) {
+        this.shardTimeoutMs = shardTimeoutMs;
+    }
+
+    public String getClusterSecret() {
+        return clusterSecret;
+    }
+
+    public void setClusterSecret(String clusterSecret) {
+        this.clusterSecret = clusterSecret;
+    }
+
+    @Override
+    public SystemConfig clone() {
+        try {
+            return (SystemConfig) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

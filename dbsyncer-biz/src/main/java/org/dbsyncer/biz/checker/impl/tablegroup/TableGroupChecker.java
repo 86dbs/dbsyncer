@@ -10,8 +10,8 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
@@ -44,9 +44,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-01-08 15:17
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-01-08 15:17
  */
 @Component
 public class TableGroupChecker extends AbstractChecker {
@@ -57,7 +57,7 @@ public class TableGroupChecker extends AbstractChecker {
     private ParserComponent parserComponent;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private MappingProfile mappingProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -78,7 +78,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
         Assert.hasText(sourceType, "tableGroup sourceType is empty.");
         Assert.hasText(targetType, "tableGroup targetType is empty.");
-        Mapping mapping = profileComponent.getMapping(mappingId);
+        Mapping mapping = mappingProfile.get(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
         // 检查是否存在重复映射关系（批量新增可由 Service 预检后跳过）
@@ -117,7 +117,7 @@ public class TableGroupChecker extends AbstractChecker {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
+        Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
         String fieldMappingJson = params.get("fieldMapping");
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
@@ -151,7 +151,7 @@ public class TableGroupChecker extends AbstractChecker {
      * 刷新表字段
      */
     public void refreshTableFields(TableGroup tableGroup) {
-        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
+        Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
 
         Table sourceTable = tableGroup.getSourceTable();
@@ -210,7 +210,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     public void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
-        if (tableGroupProfile.existsTableGroup(mappingId, sourceTable, targetTable)) {
+        if (tableGroupProfile.existTableGroup(mappingId, sourceTable, targetTable)) {
             final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
             logger.error(error);
             throw new RepeatedTableGroupException(error);

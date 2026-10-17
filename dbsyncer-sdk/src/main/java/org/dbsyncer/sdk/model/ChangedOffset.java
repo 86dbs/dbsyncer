@@ -4,15 +4,15 @@ package org.dbsyncer.sdk.model;
  * 增量偏移量
  *
  * @version 1.0.0
- * @Author AE86
- * @Date 2023-08-23 20:00
+ * @author AE86
+ * @date 2023-08-23 20:00
  */
 public final class ChangedOffset {
 
     /**
      * 驱动ID
      */
-    private String metaId;
+    private String taskId;
 
     /**
      * 增量文件名称
@@ -29,12 +29,12 @@ public final class ChangedOffset {
      */
     private long seq;
 
-    public String getMetaId() {
-        return metaId;
+    public String getTaskId() {
+        return taskId;
     }
 
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 
     public String getNextFileName() {

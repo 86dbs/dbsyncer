@@ -26,23 +26,35 @@ public class ConfigConstant {
     public static final String SYSTEM = "system";
     public static final String USER = "user";
     public static final String CONNECTOR = "connector";
-    /**
-     * 连接器可作为源端（拆分列 IS_SOURCE，1-是 0-否）
-     */
-    public static final String CONNECTOR_IS_SOURCE = "isSource";
-    /**
-     * 连接器可作为目标端（拆分列 IS_TARGET，1-是 0-否）
-     */
-    public static final String CONNECTOR_IS_TARGET = "isTarget";
     public static final String MAPPING = "mapping";
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
     public static final String TASK = "task";
+    public static final String GROUP = "group";
+    public static final String GROUP_REL = "groupRel";
+
+    /**
+     * 连接器配置字段
+     */
+    public static final String CONNECTOR_IS_SOURCE = "isSource";
+    public static final String CONNECTOR_IS_TARGET = "isTarget";
+    public static final String CONNECTOR_STATUS = "status";
+
     /**
      * 企业任务 type（存 {@code dbsyncer_task}），与 {@code CommonTaskTypeEnum#name()} 一致
      */
-    public static final String VALIDATE_SYNC = "VALIDATE_SYNC";
-    public static final String DATABASE_SYNC = "DATABASE_SYNC";
+    public static final String VALIDATE_SYNC = "validateSync";
+    public static final String DATABASE_SYNC = "databaseSync";
+
+    /**
+     * 业务分组关系表(dbsyncer_group_rel)拆分列
+     */
+    public static final String GROUP_REL_GROUP_ID = "groupId";
+    /**
+     * 资源类型列 RESOURCE_TYPE（模型侧复用 {@link #CONFIG_MODEL_TYPE}/{@code ConfigModel#type}）
+     */
+    public static final String GROUP_REL_RESOURCE_TYPE = "resourceType";
+    public static final String GROUP_REL_RESOURCE_ID = "resourceId";
 
     /**
      * 用户表(dbsyncer_user)拆分列
@@ -89,6 +101,38 @@ public class ConfigConstant {
      * 任务启动时间（落库列 START_TIME）
      */
     public static final String META_START_TIME = "startTime";
+
+    /**
+     * 集群节点表(dbsyncer_cluster_node)
+     */
+    public static final String CLUSTER_NODE_ID = "nodeId";
+    public static final String CLUSTER_IP = "ip";
+    public static final String CLUSTER_HTTP_PORT = "httpPort";
+    public static final String CLUSTER_WORKER_ID = "workerId";
+    public static final String CLUSTER_STATUS = "status";
+    public static final String CLUSTER_ROLE = "role";
+    public static final String CLUSTER_TERM = "term";
+    public static final String CLUSTER_HEARTBEAT_TIME = "heartbeatTime";
+    public static final String CLUSTER_START_TIME = "startTime";
+
+    /**
+     * 集群任务调度表(dbsyncer_cluster_task)
+     */
+    public static final String CLUSTER_TASK_TABLE = "dbsyncer_cluster_task";
+    public static final String SCHEDULE_NODE_ID = "nodeId";
+    public static final String SCHEDULE_TASK_TYPE = "taskType";
+
+    /**
+     * 任务分片计划表(dbsyncer_cluster_task_plan)
+     */
+    public static final String CLUSTER_TASK_PLAN_TABLE = "dbsyncer_cluster_task_plan";
+    public static final String PLAN_START_CURSOR = "startCursor";
+    public static final String PLAN_END_CURSOR = "endCursor";
+    public static final String PLAN_LAST_CURSOR = "lastCursor";
+    public static final String PLAN_SUCCESS = "success";
+    public static final String PLAN_FAIL = "fail";
+    public static final String PLAN_LAST_PAGE = "lastPage";
+    public static final String PLAN_STATUS = "status";
 
     /**
      * 任务级 Meta.SNAPSHOT 内键：整库迁移库映射 status 摘要 JSON（不含表级 tables）
@@ -148,6 +192,6 @@ public class ConfigConstant {
     /**
      * 内部分页加载默认分页大小
      */
-    public static final int PAGE_SIZE= 1000;
+    public static final int PAGE_SIZE = 1000;
 
 }

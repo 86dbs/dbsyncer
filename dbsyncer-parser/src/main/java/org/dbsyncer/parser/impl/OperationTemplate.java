@@ -7,9 +7,7 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -28,7 +26,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 通用配置存储模板（无领域编排；任务见 {@link org.dbsyncer.parser.TaskProfile}，
+ * 通用配置存储模板
  * 用户/连接器/表映射/Meta 见各自 Profile）。
  *
  * @author AE86
@@ -44,29 +42,25 @@ public final class OperationTemplate {
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
+    /**
+     * 按主键查询单条配置。
+     */
     public <T> T queryObject(Class<T> clazz, String id) {
         if (StringUtil.isBlank(id)) {
             return null;
         }
-        StorageEnum type = ConfigModelUtil.getStorageEnum(newInstanceType(clazz));
+        StorageEnum type = ConfigModelUtil.getStorageEnum(clazz);
         Query query = new Query();
         query.setType(type);
-        query.setPageNum(1);
-        query.setPageSize(1);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
-        Paging paging = storageService.query(query);
-        List<Map> data = (List<Map>) paging.getData();
-        if (CollectionUtils.isEmpty(data)) {
+        Map row = storageService.queryObject(query);
+        if (CollectionUtils.isEmpty(row)) {
             return null;
         }
-        return parseRow(data.get(0), clazz);
+        return parseRow(row, clazz);
     }
 
-    public String execute(OperationConfig config) {
-        ConfigModel model = config.getModel();
-        Assert.notNull(model, "ConfigModel can not be null.");
-        CommandEnum cmd = config.getCommandEnum();
-        Assert.notNull(cmd, "CommandEnum can not be null.");
+    public String execute(ConfigModel model, CommandEnum cmd) {
         Assert.isTrue(!(model instanceof UserConfig), "UserConfig must go through UserProfile.syncUserConfig");
         if (CommandEnum.OPR_ADD == cmd) {
             if (StringUtil.isBlank(model.getId())) {
@@ -85,36 +79,29 @@ public final class OperationTemplate {
     }
 
     /**
-     * 批量添加配置：单次存储批量写入。
+     * 批量写入配置：单次存储批量 ADD / EDIT。
      */
     public List<String> executeBatch(List<? extends ConfigModel> models, CommandEnum commandEnum) {
         if (CollectionUtils.isEmpty(models)) {
             return Collections.emptyList();
         }
         Assert.notNull(commandEnum, "CommandEnum can not be null.");
-        Assert.isTrue(commandEnum == CommandEnum.OPR_ADD, "Batch execute only supports OPR_ADD");
-
         List<Map> paramsList = new ArrayList<>(models.size());
         for (ConfigModel model : models) {
-            Assert.notNull(model, "ConfigModel can not be null.");
-            if (StringUtil.isBlank(model.getId())) {
-                model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+            if (commandEnum == CommandEnum.OPR_ADD) {
+                if (StringUtil.isBlank(model.getId())) {
+                    model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                }
             }
             paramsList.add(ConfigModelUtil.convertModelToMap(model));
         }
         StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0).getType());
-        storageService.addBatch(type, null, paramsList);
+        if (commandEnum.isEdit()) {
+            storageService.editBatch(type, null, paramsList);
+        } else {
+            storageService.addBatch(type, null, paramsList);
+        }
         return models.stream().map(ConfigModel::getId).collect(Collectors.toList());
-    }
-
-    public void remove(OperationConfig config) {
-        String id = config.getId();
-        Assert.hasText(id, "ID can not be empty.");
-        storageService.remove(StorageEnum.CONFIG, id);
-        storageService.remove(StorageEnum.USER, id);
-        storageService.remove(StorageEnum.CONNECTOR, id);
-        storageService.remove(StorageEnum.TASK, id);
-        storageService.remove(StorageEnum.META, id);
     }
 
     /**
@@ -159,15 +146,6 @@ public final class OperationTemplate {
             query.setPageNum(query.getPageNum() + 1);
         }
         return result;
-    }
-
-    private String newInstanceType(Class<?> clazz) {
-        try {
-            ConfigModel model = (ConfigModel) clazz.newInstance();
-            return model.getType();
-        } catch (Exception e) {
-            throw new ParserException(e);
-        }
     }
 
     private <T> T parseRow(Map row, Class<T> clazz) {

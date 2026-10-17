@@ -3,12 +3,10 @@
  */
 package org.dbsyncer.storage;
 
-import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.connector.h2.storage.H2StorageService;
 import org.dbsyncer.sdk.storage.StorageService;
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.origin.OriginTrackedValue;
 import org.springframework.context.annotation.Bean;
@@ -19,8 +17,6 @@ import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 
 import javax.annotation.Resource;
-
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
@@ -44,7 +40,7 @@ public class StorageSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public StorageService storageService(ScheduledTaskService scheduledTaskService) {
+    public StorageService storageService() {
         Properties properties = new Properties();
         if (environment instanceof AbstractEnvironment) {
             AbstractEnvironment ae = (AbstractEnvironment) environment;
@@ -83,9 +79,7 @@ public class StorageSupportConfiguration {
     }
 
     private String getConnectorType(String storageType) {
-        Iterator<String> iterator = connectorFactory.getConnectorTypeAll().iterator();
-        while (iterator.hasNext()) {
-            String connectorType = iterator.next();
+        for (String connectorType : connectorFactory.getConnectorTypeAll()) {
             if (StringUtil.equalsIgnoreCase(storageType, connectorType)) {
                 return connectorType;
             }

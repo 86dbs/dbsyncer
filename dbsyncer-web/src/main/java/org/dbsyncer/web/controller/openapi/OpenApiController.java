@@ -17,7 +17,6 @@ import org.dbsyncer.connector.http.constant.HttpConstant;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.model.OpenApiResponse;
-import org.dbsyncer.web.security.TimestampValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -74,6 +73,9 @@ public class OpenApiController extends BaseController implements InitializingBea
 
     @Resource
     private RsaManager rsaManager;
+
+    @Resource
+    private TimestampValidator timestampValidator;
 
     @Resource
     private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
@@ -133,7 +135,7 @@ public class OpenApiController extends BaseController implements InitializingBea
             String nonce = apiData.getNonce();
             Assert.notNull(timestamp, "Timestamp is empty.");
             Assert.hasText(nonce, "Nonce is empty.");
-            Assert.isTrue(TimestampValidator.validate(timestamp, nonce), "时间戳或Nonce验证失败");
+            Assert.isTrue(timestampValidator.validate(timestamp, nonce), "时间戳或Nonce验证失败");
 
             // 解析加密请求
             RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();

@@ -4,41 +4,36 @@
 package org.dbsyncer.biz.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.model.DataSyncEvent;
 import org.dbsyncer.biz.model.DataSyncRequest;
 import org.dbsyncer.biz.vo.BinlogColumnVO;
 import org.dbsyncer.biz.vo.MessageVO;
 import org.dbsyncer.common.binlog.proto.BinlogMap;
-import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.filter.FieldResolver;
-import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -51,7 +46,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -70,27 +64,27 @@ public class DataSyncServiceImpl implements DataSyncService {
     private BufferActuatorRouterService bufferActuatorRouter;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TaskDetailProfile taskDetailProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private StorageService storageService;
-
-    @Resource
     private ConnectorFactory connectorFactory;
 
     @Override
-    public MessageVO getMessageVo(String metaId, String messageId) {
-        Assert.hasText(metaId, "The metaId is null.");
+    public MessageVO getMessageVo(String taskId, String messageId) {
+        Assert.hasText(taskId, "The taskId is null.");
         Assert.hasText(messageId, "The messageId is null.");
         MessageVO messageVo = new MessageVO();
         try {
-            Map row = getData(metaId, messageId);
+            Map row = taskDetailProfile.getData(taskId, messageId);
             Map binlogData = getBinlogData(row, true);
             String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
             TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
@@ -137,7 +131,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
 
         // 4、获取连接器服务
-        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
+        Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
         ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
@@ -176,12 +170,11 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Override
     public String sync(Map<String, String> params) throws InvalidProtocolBufferException {
-        String metaId = params.get("metaId");
         String messageId = params.get("messageId");
-        Assert.hasText(metaId, "The metaId is null.");
+        String taskId = params.get("mappingId");
         Assert.hasText(messageId, "The messageId is null.");
 
-        Map row = getData(metaId, messageId);
+        Map row = taskDetailProfile.getData(taskId, messageId);
         Map binlogData = getBinlogData(row, false);
         if (CollectionUtils.isEmpty(binlogData)) {
             return messageId;
@@ -202,27 +195,23 @@ public class DataSyncServiceImpl implements DataSyncService {
         RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null);
 
         // 执行同步是否成功
-        bufferActuatorRouter.execute(metaId, changedEvent);
+        bufferActuatorRouter.execute(taskId, changedEvent);
         // 明细分表：从该任务分表(dbsyncer_task_detail_{taskId})删除该条同步数据
-        Meta meta = metaProfile.getMeta(metaId);
+        taskDetailProfile.delete(taskId, messageId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Meta can not be null.");
-        String shardId = StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : metaId;
-        storageService.remove(StorageEnum.TASK_DETAIL, shardId, messageId);
-        if (!StringUtil.equals(shardId, metaId)) {
-            storageService.remove(StorageEnum.TASK_DETAIL, metaId, messageId);
-        }
         // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
-        metaProfile.incrementMeta(MetaIncrement.of(metaId).fail(-1L));
+        taskMetaProfile.incrementMeta(MetaIncrement.of(taskId).fail(-1L));
         return messageId;
     }
 
     @Override
     public void syncBatch(DataSyncRequest request) {
-        Mapping mapping = profileComponent.getMapping(request.getMappingId());
+        Mapping mapping = mappingProfile.get(request.getMappingId());
         Assert.notNull(mapping, "Mapping can not be null.");
         TableGroup tableGroup = tableGroupProfile.getTableGroup(request.getTableGroupId());
         Assert.notNull(tableGroup, "Meta can not be null.");
-        Meta meta = metaProfile.getMeta(mapping.getMetaId());
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "Meta can not be null.");
         List<DataSyncEvent> dataList = request.getDataList();
         Assert.notEmpty(dataList, "DataList can not be null.");
@@ -231,36 +220,8 @@ public class DataSyncServiceImpl implements DataSyncService {
             String sourceTableName = tableGroup.getSourceTable().getName();
             RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, changedData.getEvent(), changedData.getData(), null, null);
             // 执行同步是否成功
-            bufferActuatorRouter.execute(meta.getId(), changedEvent);
+            bufferActuatorRouter.execute(meta.getTaskId(), changedEvent);
         }
-    }
-
-    private Map getData(String metaId, String messageId) {
-        Query query = new Query(1, 1);
-        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
-        query.setFieldResolverMap(fieldResolvers);
-        // 明细分表：定位到该任务分表(dbsyncer_task_detail_{taskId})，按 ID 命中同步数据
-        Meta meta = metaProfile.getMeta(metaId);
-        String shardId = meta != null && StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : metaId;
-        query.setMetaId(shardId);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
-        query.setType(StorageEnum.TASK_DETAIL);
-        Paging paging = storageService.query(query);
-        if (!CollectionUtils.isEmpty(paging.getData())) {
-            List<Map> data = (List<Map>) paging.getData();
-            return data.get(0);
-        }
-        // 兼容历史雪花主键分表
-        if (!StringUtil.equals(shardId, metaId)) {
-            query.setMetaId(metaId);
-            paging = storageService.query(query);
-            if (!CollectionUtils.isEmpty(paging.getData())) {
-                List<Map> data = (List<Map>) paging.getData();
-                return data.get(0);
-            }
-        }
-        return Collections.EMPTY_MAP;
     }
 
     private Object convertValue(Object oldValue, String newValue) {

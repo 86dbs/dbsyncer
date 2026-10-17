@@ -6,10 +6,12 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.UserInfo;
+import org.dbsyncer.web.controller.cluster.ClusterInternalAuthFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -24,6 +26,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 import javax.annotation.Resource;
@@ -56,7 +59,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     /**
      * 认证页面
      */
-    private static final String LOGIN_PAGE = "/login.html";
+    public static final String LOGIN_PAGE = "/login.html";
 
     /**
      * 每个帐号允许同时登录会话数, 默认同一个帐号只能在一个地方登录
@@ -73,8 +76,6 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     /**
      * 登录失败
-     *
-     * @return
      */
     @Bean
     public AuthenticationFailureHandler loginFailHandler() {
@@ -83,8 +84,6 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     /**
      * 登录成功
-     *
-     * @return
      */
     @Bean
     public SavedRequestAwareAuthenticationSuccessHandler loginSuccessHandler() {
@@ -120,10 +119,31 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         // .anyRequest().permitAll()
         // .and().logout().permitAll();
 
-        http.csrf().disable().authorizeRequests().antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**", "/index/version.json", "/openapi/**").permitAll().anyRequest().authenticated().and()
+        http.csrf().disable()
+                .addFilterBefore(clusterInternalAuthFilter(), UsernamePasswordAuthenticationFilter.class)
+                .authorizeRequests()
+                .antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**", "/index/version.json", "/openapi/**",
+                        "/cluster/ping", "/cluster/internal/**", "/sso/consume").permitAll()
+                .anyRequest().authenticated().and()
                 .formLogin().loginProcessingUrl(LOGIN).loginPage(LOGIN_PAGE).successHandler(loginSuccessHandler()).failureHandler(loginFailHandler()).permitAll().and().logout().permitAll()
                 .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler()).and().sessionManagement().sessionFixation().migrateSession()
                 .maximumSessions(MAXIMUM_SESSIONS);
+    }
+
+    /**
+     * 仅挂入 Spring Security 链，避免 Servlet 容器再注册一份过滤器。
+     */
+    @Bean
+    public ClusterInternalAuthFilter clusterInternalAuthFilter() {
+        return new ClusterInternalAuthFilter();
+    }
+
+    @Bean
+    public FilterRegistrationBean<ClusterInternalAuthFilter> clusterInternalAuthFilterRegistration(
+            ClusterInternalAuthFilter filter) {
+        FilterRegistrationBean<ClusterInternalAuthFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Override
@@ -157,9 +177,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Override
     public void sessionCreated(HttpSessionEvent se) {
-        logger.info("创建会话:{}", se.getSession().getId());
-        int maxInactiveInterval = se.getSession().getMaxInactiveInterval();
-        logger.info(String.valueOf(maxInactiveInterval));
+        logger.info("创建会话:{}, maxInactiveInterval={}", se.getSession().getId(), se.getSession().getMaxInactiveInterval());
     }
 
     @Override
@@ -169,9 +187,6 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     /**
      * 响应
-     *
-     * @param response
-     * @param result
      */
     private void write(HttpServletResponse response, RestResult result) {
         PrintWriter out = null;

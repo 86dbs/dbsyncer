@@ -1,41 +1,22 @@
 /**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
 package org.dbsyncer.parser.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-01-26 21:36
+ * 业务分组（{@code dbsyncer_group}）。
+ * <p>勿与表映射 {@link TableGroup} 混淆。
+ *
+ * @author wuji
+ * @version 1.0.0
+ * @date 2026-10-14 18:00
  */
-public final class Group {
+public class Group extends ConfigModel {
 
-    private final List<String> index = new ArrayList<>();
-
-    public synchronized void remove(String e) {
-        index.remove(e);
-    }
-
-    public int size() {
-        return index.size();
-    }
-
-    public List<String> getIndex() {
-        return index;
-    }
-
-    public boolean contains(String id) {
-        return index.contains(id);
-    }
-
-    public void add(String id) {
-        index.add(id);
-    }
-
-    public boolean isEmpty() {
-        return index.isEmpty();
+    public Group() {
+        super.setType(ConfigConstant.GROUP);
     }
 }

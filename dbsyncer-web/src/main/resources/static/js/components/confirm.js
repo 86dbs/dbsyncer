@@ -10,7 +10,7 @@
  *   - confirmText: 确认按钮文本（默认 '确定'）
  *   - cancelText: 取消按钮文本（默认 '取消'）
  *   - confirmType: 确认按钮类型（primary/success/warning/danger/info，默认 primary）
- *   - size: 对话框大小（normal/large/max，默认 normal）
+ *   - size: 对话框大小（normal/large/xlarge/max，默认 normal）
  *   - position: 弹窗位置（top/center，默认 center）
  *   - showConfirm: 是否显示确认按钮（默认 true）
  *   - showCancel: 是否显示取消按钮（默认 true）
@@ -69,7 +69,7 @@
         }
 
         // 验证size
-        const validSizes = ['normal', 'large', 'max'];
+        const validSizes = ['normal', 'large', 'xlarge', 'max'];
         if (validSizes.indexOf(config.size) === -1) {
             config.size = 'normal';
         }

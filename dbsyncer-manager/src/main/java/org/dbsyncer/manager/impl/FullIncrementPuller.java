@@ -3,24 +3,26 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.service.FullIncrementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -32,17 +34,20 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @date 2026-05-18 15:02
  */
 @Component
-public final class FullIncrementPuller extends AbstractPuller {
+public final class FullIncrementPuller extends AbstractPuller implements FullIncrementService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Set<String> running = new CopyOnWriteArraySet<>();
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
+    private MappingProfile mappingProfile;
 
     @Resource
     private FullPuller fullPuller;
@@ -60,62 +65,91 @@ public final class FullIncrementPuller extends AbstractPuller {
 
     @Override
     public void start(Mapping mapping, boolean autoRecovery) {
-        final String metaId = mapping.getMetaId();
-        running.add(metaId);
-        Thread worker = new Thread(() -> runFullIncrementSync(mapping, metaId, autoRecovery));
+        final String taskId = mapping.getId();
+        running.add(taskId);
+        Thread worker = new Thread(() -> runFullIncrementSync(mapping, taskId, autoRecovery));
         worker.setName("full-increment-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
     }
 
     @Override
-    public void close(String metaId) {
-        running.remove(metaId);
-        fullPuller.close(metaId);
-        incrementPuller.close(metaId);
+    public void close(String taskId) {
+        running.remove(taskId);
+        fullPuller.close(taskId);
+        incrementPuller.close(taskId);
     }
 
-    private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
+    @Override
+    public List<String> getTaskId() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 批处理全量前准备：可恢复则跳过，否则捕获增量位点。
+     */
+    @Override
+    public void prepareFullPhase(String taskId) {
+        Mapping mapping = mappingProfile.get(taskId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
+        prepareFullPhase(mapping, meta);
+    }
+
+    /**
+     * 批处理全量完成后标记增量阶段并启动增量。
+     */
+    @Override
+    public void switchToIncrement(String taskId) {
+        Mapping mapping = mappingProfile.get(taskId);
+        if (mapping == null) {
+            return;
+        }
+        markFullIncrementPhase(mapping.getId(), ModelEnum.INCREMENT.getCode());
+        logger.info("开始增量同步： {}", mapping.getName());
+        incrementPuller.start(mapping, false);
+    }
+
+    private void runFullIncrementSync(Mapping mapping, String taskId, boolean autoRecovery) {
         try {
-            Meta meta = metaProfile.getMeta(metaId);
+            Meta meta = taskMetaProfile.getMeta(taskId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
-                //重启恢复是如果是增量阶段直接启动增量任务
                 incrementPuller.start(mapping, autoRecovery);
                 return;
             }
-            prepareFullPhase(mapping, meta, metaId);
-            logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
+            prepareFullPhase(mapping, meta);
+            logger.info("开始全量同步：{}", mapping.getName());
             fullPuller.runSync(mapping, false);
-            if (!isRunning(metaId)) {
+            if (!isRunning(taskId)) {
                 return;
             }
-            markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-            logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+            markFullIncrementPhase(taskId, ModelEnum.INCREMENT.getCode());
             incrementPuller.start(mapping, autoRecovery);
         } catch (Exception e) {
-            logger.error("全量+增量同步失败：{}, {}", metaId, e.getMessage(), e);
+            logger.error("全量+增量同步失败：{}, {}", taskId, e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
-            incrementPuller.close(metaId);
-            publishClosedEvent(metaId);
+            incrementPuller.close(taskId);
+            publishClosedEvent(taskId);
         } finally {
-            running.remove(metaId);
+            running.remove(taskId);
         }
     }
 
-    private void prepareFullPhase(Mapping mapping, Meta meta, String metaId) {
+    private void prepareFullPhase(Mapping mapping, Meta meta) {
         if (shouldResumeFullPhase(meta)) {
-            logger.info("恢复全量阶段：{}, {}", metaId, mapping.getName());
             return;
         }
         //重新开始，获取增量位点信息
         incrementPuller.captureAndSaveOffset(mapping);
     }
 
-    private boolean isRunning(String metaId) {
-        return running.contains(metaId);
+    private boolean isRunning(String taskId) {
+        return running.contains(taskId);
     }
 
     private String getFullIncrementPhase(Meta meta) {
+        if (meta == null || meta.getSnapshot() == null) {
+            return null;
+        }
         return meta.getSnapshot().get(ParserEnum.FULL_INCREMENT_PHASE.getCode());
     }
 
@@ -134,30 +168,24 @@ public final class FullIncrementPuller extends AbstractPuller {
             return false;
         }
 
-        Map<String, String> snapshot = meta.getSnapshot();
-        int tableGroupIndex = NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
-        int pageIndex = NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue());
-        String cursor = snapshot.get(ParserEnum.CURSOR.getCode());
-
-        return FullTableProgressUtil.hasIncomplete(snapshot)
-                || tableGroupIndex > ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()
-                || pageIndex > ParserEnum.PAGE_INDEX.getDefaultValue()
-                || StringUtil.isNotBlank(cursor)
+        return FullTableProgressUtil.hasIncomplete(taskMetaProfile, tableGroupProfile, meta.getTaskId())
                 || processed > 0;
     }
 
     /**
      * 标记状态
      */
-    private void markFullIncrementPhase(String metaId, String phase) {
-        Meta meta = metaProfile.getMeta(metaId);
+    private void markFullIncrementPhase(String taskId, String phase) {
+        Meta meta = taskMetaProfile.getMeta(taskId);
         meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), phase);
 
         //清除全量标记
         meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
         meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
-        FullTableProgressUtil.clear(meta.getSnapshot());
-        profileComponent.editConfigModel(meta);
+        meta.getSnapshot().remove(ParserEnum.TABLE_PROGRESS.getCode());
+        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile, meta.getTaskId());
+        taskMetaProfile.updateMeta(meta);
     }
+
 }

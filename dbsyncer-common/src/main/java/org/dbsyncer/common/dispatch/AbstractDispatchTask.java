@@ -9,11 +9,11 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-22 23:34
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-22 23:34
  */
-public abstract class AbstractDispatchTask implements DispatchTask {
+public abstract class AbstractDispatchTask implements DispatchTask, Cloneable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -29,7 +29,7 @@ public abstract class AbstractDispatchTask implements DispatchTask {
             running = true;
             execute();
         } catch (Exception e) {
-            logger.error("dispatch task，uniqueId:" + getUniqueId(), e);
+            logger.error("dispatch task，uniqueId:{}", getUniqueId(), e);
         } finally {
             running = false;
             if (consumer != null) {
@@ -50,5 +50,14 @@ public abstract class AbstractDispatchTask implements DispatchTask {
 
     protected boolean isRunning() {
         return running;
+    }
+
+    @Override
+    public AbstractDispatchTask clone() {
+        try {
+            return (AbstractDispatchTask) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }

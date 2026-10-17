@@ -11,7 +11,7 @@ public class MetaVO extends Meta {
 
     // 同步方式
     private String model;
-    // 驱动名称
+    // 同步任务名称
     private String mappingName;
     // 是否统计总数中
     private boolean counting;

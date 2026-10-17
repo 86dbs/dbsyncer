@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  */
 @Component
-public class UserProfileImpl implements UserProfile {
+public final class UserProfileImpl implements UserProfile {
 
     @Resource
     private StorageService storageService;
@@ -77,7 +77,7 @@ public class UserProfileImpl implements UserProfile {
     }
 
     @Override
-    public String syncUserConfig(UserConfig config) {
+    public String saveUserConfig(UserConfig config) {
         if (config == null) {
             return null;
         }
@@ -160,7 +160,7 @@ public class UserProfileImpl implements UserProfile {
             return;
         }
         for (UserConfig config : configs) {
-            syncUserConfig(config);
+            saveUserConfig(config);
         }
     }
 }

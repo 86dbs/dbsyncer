@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @version 1.0.0
- * @Author AE86
- * @Date 2020-05-25 22:35
+ * @author AE86
+ * @date 2020-05-25 22:35
  */
 public abstract class AbstractListener<C extends ConnectorInstance> implements Listener {
 
@@ -48,7 +48,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     protected List<Table> sourceTable;
     protected List<Table> customTable;
     protected Map<String, String> snapshot;
-    protected String metaId;
+    protected String taskId;
     private Watcher watcher;
 
     @Override
@@ -196,7 +196,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
         this.snapshot = snapshot;
     }
 
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 }

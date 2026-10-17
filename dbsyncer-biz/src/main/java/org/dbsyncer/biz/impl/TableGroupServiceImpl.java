@@ -3,22 +3,20 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -51,62 +49,133 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private TableGroupChecker tableGroupChecker;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private MappingProfile mappingProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private ParserComponent parserComponent;
-
-    @Resource
-    private ConnectorFactory connectorFactory;
-
-    @Resource
-    private RsaManager rsaManager;
-
-    @Resource
     private DispatchTaskService dispatchTaskService;
+
+    @Resource
+    private TableGroupCountTask tableGroupCountTask;
 
     @Override
     public String add(Map<String, String> params) {
         String mappingId = params.get("mappingId");
-        Mapping mapping = profileComponent.getMapping(mappingId);
-        assertRunning(mapping);
+        Mapping mapping = mappingProfile.get(mappingId);
+        assertRunning(mapping.getId());
 
         synchronized (LOCK) {
-            // table1, table2
-            String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
-            String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
-            int tableSize = sourceTableArray.length;
-            Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
-
-            int baseIndex = tableGroupProfile.getTableGroupCount(mappingId);
-            params.put("skipRepeatedCheck", Boolean.TRUE.toString());
-            List<TableGroup> models = new ArrayList<>(tableSize);
-            for (int i = 0; i < tableSize; i++) {
-                params.put("sourceTable", sourceTableArray[i]);
-                params.put("targetTable", targetTableArray[i]);
-                TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-                log(LogType.TableGroupLog.INSERT, model);
-                model.setIndex(baseIndex + i + 1);
-                models.add(model);
+            List<TableGroup> models = createAndPersistTableGroups(params, true);
+            if (CollectionUtils.isEmpty(models)) {
+                return StringUtil.EMPTY;
             }
-            tableGroupProfile.addTableGroupBatch(models);
-
             List<String> list = new ArrayList<>(models.size());
             for (TableGroup model : models) {
                 list.add(model.getId());
             }
             submitTableGroupCountTask(mapping, list);
-
-            // 合并驱动公共字段
             mergeMappingColumn(mapping);
-            return 1 < tableSize ? String.valueOf(tableSize) : list.get(0);
+            return 1 < models.size() ? String.valueOf(models.size()) : list.get(0);
         }
+    }
+
+    @Override
+    public int addWithoutCount(Map<String, String> params) {
+        String mappingId = params.get("mappingId");
+        Mapping mapping = mappingProfile.get(mappingId);
+        Assert.notNull(mapping, "mapping can not be null.");
+        assertRunning(mapping.getId());
+
+        synchronized (LOCK) {
+            List<TableGroup> models = createAndPersistTableGroups(params, false);
+            if (CollectionUtils.isEmpty(models)) {
+                return 0;
+            }
+            mergeMappingColumn(mapping);
+            return models.size();
+        }
+    }
+
+    @Override
+    public int addWithoutCountBatch(List<Map<String, String>> paramsList) {
+        if (CollectionUtils.isEmpty(paramsList)) {
+            return 0;
+        }
+        String mappingId = paramsList.get(0).get("mappingId");
+        Mapping mapping = mappingProfile.get(mappingId);
+        Assert.notNull(mapping, "mapping can not be null.");
+        assertRunning(mapping.getId());
+
+        synchronized (LOCK) {
+            int baseIndex = tableGroupProfile.getTableGroupCount(mappingId);
+            List<TableGroup> models = new ArrayList<>(paramsList.size());
+            for (Map<String, String> params : paramsList) {
+                if (params == null || StringUtil.isBlank(params.get("sourceTable")) || StringUtil.isBlank(params.get("targetTable"))) {
+                    continue;
+                }
+                Assert.isTrue(StringUtil.equals(mappingId, params.get("mappingId")), "mappingId 必须一致");
+                params.remove("skipRepeatedCheck");
+                try {
+                    TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
+                    log(LogType.TableGroupLog.INSERT, model);
+                    model.setIndex(baseIndex + models.size() + 1);
+                    models.add(model);
+                } catch (RepeatedTableGroupException e) {
+                    // 自定义映射等场景：已存在则跳过
+                }
+            }
+            if (CollectionUtils.isEmpty(models)) {
+                return 0;
+            }
+            tableGroupProfile.addTableGroupBatch(models);
+            mergeMappingColumn(mapping);
+            return models.size();
+        }
+    }
+
+    /**
+     * 校验并批量落库表映射。
+     *
+     * @param skipRepeatedCheck true 时跳过重复校验（页面批量新增）；false 时遇重复跳过该表
+     */
+    private List<TableGroup> createAndPersistTableGroups(Map<String, String> params, boolean skipRepeatedCheck) {
+        String mappingId = params.get("mappingId");
+        String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
+        String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
+        int tableSize = sourceTableArray.length;
+        Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
+
+        int baseIndex = tableGroupProfile.getTableGroupCount(mappingId);
+        if (skipRepeatedCheck) {
+            params.put("skipRepeatedCheck", Boolean.TRUE.toString());
+        } else {
+            params.remove("skipRepeatedCheck");
+        }
+        List<TableGroup> models = new ArrayList<>(tableSize);
+        for (int i = 0; i < tableSize; i++) {
+            params.put("sourceTable", sourceTableArray[i]);
+            params.put("targetTable", targetTableArray[i]);
+            try {
+                TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
+                log(LogType.TableGroupLog.INSERT, model);
+                model.setIndex(baseIndex + models.size() + 1);
+                models.add(model);
+            } catch (RepeatedTableGroupException e) {
+                if (skipRepeatedCheck) {
+                    throw e;
+                }
+                // 自动匹配等场景：已存在则跳过
+            }
+        }
+        if (!CollectionUtils.isEmpty(models)) {
+            tableGroupProfile.addTableGroupBatch(models);
+        }
+        return models;
     }
 
     @Override
@@ -114,8 +183,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
-        assertRunning(mapping);
+        Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
+        assertRunning(mapping.getId());
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
@@ -139,11 +208,11 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String remove(String mappingId, String ids) {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        Mapping mapping = profileComponent.getMapping(mappingId);
-        assertRunning(mapping);
+        Mapping mapping = mappingProfile.get(mappingId);
+        assertRunning(mapping.getId());
 
         // 批量删除表
-        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id-> {
+        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
             TableGroup model = tableGroupProfile.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
             tableGroupProfile.removeTableGroup(id);
@@ -175,42 +244,62 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public Meta updateMeta(Mapping mapping, String metaSnapshot) {
-        Meta meta = metaProfile.getMeta(mapping.getMetaId());
-        Assert.notNull(meta, "驱动meta不存在.");
-
-        // 清空状态
+    public void resetMeta(Mapping mapping, String metaSnapshot) {
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
+        Assert.notNull(meta, "同步任务meta不存在.");
         meta.clear();
-
-        // 手动配置增量点
         if (StringUtil.isNotBlank(metaSnapshot)) {
             Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
             if (!CollectionUtils.isEmpty(snapshot)) {
                 meta.setSnapshot(snapshot);
             }
         }
-
-        getMetaTotal(meta, mapping.getModel());
-
         meta.setUpdateTime(Instant.now().toEpochMilli());
-        profileComponent.editConfigModel(meta);
+        taskMetaProfile.updateMeta(meta);
+    }
+
+    @Override
+    public Meta refreshMetaTotal(Mapping mapping, String metaSnapshot) {
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
+        Assert.notNull(meta, "同步任务meta不存在.");
+        meta.clear();
+        if (StringUtil.isNotBlank(metaSnapshot)) {
+            Map snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
+            if (!CollectionUtils.isEmpty(snapshot)) {
+                meta.setSnapshot(snapshot);
+            }
+        }
+        getMetaTotal(meta, mapping.getModel());
+        meta.setUpdateTime(Instant.now().toEpochMilli());
+        taskMetaProfile.updateMeta(meta);
         return meta;
     }
 
     private void getMetaTotal(Meta meta, String model) {
         // 全量同步
         if (ModelEnum.isFull(model)) {
-            // 统计tableGroup总条数
+            // 统计tableGroup总条数（优先 SOURCE_TOTAL 列，兼容仅写在 sourceTable.count 的旧数据）
             AtomicLong count = new AtomicLong(0);
             tableGroupProfile.pageScanTableGroups(meta.getTaskId(), ConfigConstant.PAGE_SIZE, groupAll -> {
                 for (TableGroup g : groupAll) {
-                    if (g != null && g.getSourceTable() != null) {
-                        count.getAndAdd(g.getSourceTable().getCount());
+                    if (g == null) {
+                        continue;
                     }
+                    count.getAndAdd(resolveSourceCount(g));
                 }
             });
             meta.setTotal(count);
         }
+    }
+
+    private long resolveSourceCount(TableGroup group) {
+        if (group.getSourceTotal() > 0) {
+            return group.getSourceTotal();
+        }
+        if (group.getSourceTable() != null) {
+            return group.getSourceTable().getCount();
+        }
+        return 0L;
     }
 
     private void resetTableGroupAllIndex(String mappingId) {
@@ -230,7 +319,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                     continue;
                 }
                 g.setIndex(i--);
-                profileComponent.editConfigModel(g);
+                tableGroupProfile.editTableGroup(g);
             }
         }
     }
@@ -247,22 +336,16 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         });
         mapping.setSourceColumn(holder[0]);
         mapping.setTargetColumn(holder[1]);
-        profileComponent.editConfigModel(mapping);
+        mappingProfile.update(mapping);
     }
 
     /**
-     * 提交统计驱动表总数任务
+     * 提交统计同步任务表总数任务
      */
     private void submitTableGroupCountTask(Mapping mapping, List<String> list) {
-        TableGroupCountTask task = new TableGroupCountTask();
+        TableGroupCountTask task = (TableGroupCountTask) tableGroupCountTask.clone();
         task.setMappingId(mapping.getId());
         task.setTableGroups(list);
-        task.setParserComponent(parserComponent);
-        task.setProfileComponent(profileComponent);
-        task.setTableGroupProfile(tableGroupProfile);
-        task.setConnectorFactory(connectorFactory);
-        task.setRsaManager(rsaManager);
-        task.setTableGroupService(this);
         dispatchTaskService.execute(task);
     }
 

@@ -141,15 +141,20 @@
     }
 
     function renderTaskDurationText(task) {
-        var isRunning = Number(task.metaState) === 1;
-        if (isRunning) {
+        // 定时任务长期挂起，列表不展示耗时
+        if (task.trigger === 'timing') {
             return '';
         }
-        var durationText = formatElapsedDuration(task.startTime, task.updateTime);
+        var state = Number(task.metaState);
+        var RUNNING = 1;
+        var STOPPING = 2;
+        // 运行中/停止中 updateTime 往往未随进度刷新，用前端当前时间算实时耗时
+        var endTime = (state === RUNNING || state === STOPPING) ? Date.now() : task.updateTime;
+        var durationText = formatElapsedDuration(task.startTime, endTime);
         if (!durationText) {
             return '';
         }
-        return '<span class="text-xs text-tertiary whitespace-nowrap">任务耗时：' + durationText + '</span>';
+        return '<span class="text-xs text-tertiary whitespace-nowrap">耗时：' + durationText + '</span>';
     }
 
     function renderResultColumn(task) {
@@ -243,11 +248,17 @@
         window.changeTaskState = changeTaskState;
         window.deleteTask = deleteTask;
 
+        var groupToolbar = null;
         const pagination = new PaginationManager({
             requestUrl: '/validate-sync/search',
             tableBodySelector: '#validate-sync-table',
             storageKey: 'validate-sync-list',
             pageSize: 20,
+            refreshCompleted: function () {
+                if (groupToolbar) {
+                    groupToolbar.setListTotal(pagination.total || 0);
+                }
+            },
             renderRow: function (task, index) {
                 const taskId = String(task.id).replace(/"/g, '');
                 return ''
@@ -276,16 +287,30 @@
             customPageSize: true
         });
 
-        const searchInput = initSearch('validate-sync-search', function (searchKey) {
-            pagination.doSearch({ searchKey: searchKey }, 1);
+        var searchInput = null;
+        groupToolbar = GroupToolbar.initListToolbar({
+            containerSelector: '#validateSyncGroupToolbar',
+            createButtonHostSelector: '#validateSyncGroupCreateHost',
+            resourceType: 'validateSync',
+            searchUrl: '/validate-sync/search',
+            addPageUrl: '/validate-sync/pageAdd',
+            addButtonSelector: '#validateSyncAddBtn',
+            onChange: function () {
+                pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput ? searchInput.getValue() : '' }), 1);
+            }
+        });
+        groupToolbar.setListTotal(pagination.total || 0);
+
+        searchInput = initSearch('validate-sync-search', function (searchKey) {
+            pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchKey }), 1);
         });
 
         window.refreshIndexList = function () {
-            pagination.doSearch({ searchKey: searchInput.getValue() }, pagination.currentPage);
+            pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput.getValue() }), pagination.currentPage);
         };
 
         PageRefreshManager.register(function () {
-            pagination.doSearch({ searchKey: searchInput.getValue() }, pagination.currentPage);
+            pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput.getValue() }), pagination.currentPage);
         });
     }
 

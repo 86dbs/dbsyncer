@@ -15,9 +15,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2024-05-12 01:08
+ * @author AE86
+ * @version 1.0.0
+ * @date 2024-05-12 01:08
  */
 @Component
 public class AppConfigServiceImpl implements AppConfigService {

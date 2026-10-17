@@ -18,13 +18,13 @@ public abstract class MetaLockUtil {
     }
 
     /**
-     * 按 metaId 获取进程内互斥锁（{@link String#intern()}）。
+     * 按 taskId 获取进程内互斥锁（{@link String#intern()}）。
      *
-     * @param metaId Meta 主键
-     * @return 锁对象；metaId 为空时返回专用占位锁
+     * @param taskId 任务ID
+     * @return 锁对象；
      */
-    public static Object lock(String metaId) {
-        String id = StringUtil.isBlank(metaId) ? StringUtil.EMPTY : metaId;
+    public static Object lock(String taskId) {
+        String id = StringUtil.isBlank(taskId) ? StringUtil.EMPTY : taskId;
         return ("meta-write-" + id).intern();
     }
 }

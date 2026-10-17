@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
@@ -12,7 +13,11 @@ import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.SqlResultRowUtil;
 import org.dbsyncer.parser.util.TaskDetailQuerySupport;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.storage.SqlQuery;
+import org.dbsyncer.sdk.enums.DatabaseSyncDetailTypeEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.FieldResolver;
+import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.storage.ExecuteRequest;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.springframework.stereotype.Component;
@@ -21,6 +26,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +38,7 @@ import java.util.Map;
  * @date 2026-07-20 15:00
  */
 @Component
-public class TaskDetailProfileImpl implements TaskDetailProfile {
+public final class TaskDetailProfileImpl implements TaskDetailProfile {
 
     private static final String SELECT_COLUMNS =
             "d.ID AS id, d.CREATE_TIME AS createTime, "
@@ -90,7 +96,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
 
         String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where + orderSql;
         List<Map<String, Object>> rows = storageService.queryList(
-                SqlQuery.of(sql, args.toArray()).page(pageNum, pageSize));
+                ExecuteRequest.of(sql, args.toArray()).page(pageNum, pageSize));
         List<Map<String, Object>> data = new ArrayList<>(rows == null ? 0 : rows.size());
         if (!CollectionUtils.isEmpty(rows)) {
             for (Map<String, Object> row : rows) {
@@ -113,16 +119,33 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         List<Object> args = new ArrayList<>();
         String where = TaskDetailQuerySupport.buildWhere(query, args);
         String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where;
-        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()).page(1, 1));
+        List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of(sql, args.toArray()).page(1, 1));
         if (CollectionUtils.isEmpty(rows)) {
             return null;
         }
         return toDisplayRow(rows.get(0));
     }
 
+    @Override
+    public void delete(String taskId, String id) {
+        storageService.remove(StorageEnum.TASK_DETAIL, taskId, id);
+    }
+
+    @Override
+    public Map getData(String taskId, String id) {
+        Query query = new Query();
+        Map<String, FieldResolver> fieldResolvers = new HashMap<>();
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        query.setFieldResolverMap(fieldResolvers);
+        query.setTaskId(taskId);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        query.setType(StorageEnum.TASK_DETAIL);
+        return storageService.queryObject(query);
+    }
+
     private long queryCount(String detailTable, String where, List<Object> args) {
         String sql = "SELECT COUNT(1) AS cnt " + String.format(FROM_JOIN, detailTable) + where;
-        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()));
+        List<Map<String, Object>> rows = storageService.queryList(ExecuteRequest.of(sql, args.toArray()));
         if (CollectionUtils.isEmpty(rows)) {
             return 0L;
         }
@@ -155,16 +178,20 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         Object fixed = row.get(ConfigConstant.META_FIXED);
         Object state = row.get(ConfigConstant.META_STATE);
 
-        // 明细 DATA 中独立计数优先（结构/数据分两行，不能共用 meta、table_group）
+        // 数据迁移：成功/失败以表级 Meta 为准（集群波次累加）；DATA 可覆盖 sourceTotal
         Map<String, Object> detailContent = TaskDetailUtil.deserializeContent(row.get(ConfigConstant.BINLOG_DATA));
         if (detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL) != null) {
             sourceTotal = detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL);
         }
-        if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL) != null) {
-            success = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
-        }
-        if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL) != null) {
-            fail = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+        boolean rowData = DatabaseSyncDetailTypeEnum.ROW_DATA.getCode()
+                .equals(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_TYPE)));
+        if (!rowData) {
+            if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL) != null) {
+                success = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
+            }
+            if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL) != null) {
+                fail = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+            }
         }
         // 类型级生命周期优先 DATA.status；表级回退 meta.state
         Object detailStatus = detailContent.get(ConfigConstant.TASK_STATUS);

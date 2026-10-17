@@ -4,18 +4,15 @@
 package org.dbsyncer.web.controller.license;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.http.entity.ContentType;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.ProductStatusVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.model.HttpResult;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.HttpClientUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
@@ -93,8 +90,8 @@ public class LicenseController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
-        model.put("editionInfo", getEditionInfoVO());
         model.put("productInfo", licenseService.getProductInfo());
+        initEditionInfo(model);
         return "license/list";
     }
 
@@ -161,7 +158,9 @@ public class LicenseController extends BaseController {
     @GetMapping("/query.json")
     @ResponseBody
     public RestResult query() {
-        EditionInfoVO infoVo = getEditionInfoVO();
+        EditionInfoVO infoVo = new EditionInfoVO();
+        infoVo.setEdition(licenseService.getEditionEnum().getCode());
+        infoVo.setEditionName(licenseService.getEditionEnum().getMessage());
         ProductInfo productInfo = licenseService.getProductInfo();
         if (productInfo == null || CollectionUtils.isEmpty(productInfo.getProducts())) {
             // 专业版软件已部署，但尚未激活任何产品授权
@@ -264,13 +263,6 @@ public class LicenseController extends BaseController {
         return "";
     }
 
-    private EditionInfoVO getEditionInfoVO() {
-        EditionInfoVO infoVo = new EditionInfoVO();
-        infoVo.setEdition(licenseService.getEditionEnum().getCode());
-        infoVo.setEditionName(licenseService.getEditionEnum().getMessage());
-        return infoVo;
-    }
-
     private void formatEffectiveTimeContent(EditionInfoVO infoVo) {
         LocalDateTime before = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getCurrentTime()), ZoneId.systemDefault());
         LocalDateTime after = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getEffectiveTime()), ZoneId.systemDefault());
@@ -311,27 +303,29 @@ public class LicenseController extends BaseController {
     }
 
     public String invoke(ProductInfo info) throws IOException {
+        // 授权服务历史协议：body 为 URL 编码后的 JSON，Content-Type 仍为 application/json
         String data = URLEncoder.encode(JsonUtil.objToJson(info), "UTF-8");
-        StringEntity se = new StringEntity(data);
-        se.setContentEncoding("UTF-8");
-        se.setContentType("application/json");
-        HttpPost httpPost = new HttpPost(serverAddress);
-        httpPost.setEntity(se);
-        CloseableHttpClient httpClient = HttpClients.createDefault();
         try {
-            CloseableHttpResponse response = httpClient.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() == SUCCESS) {
-                Map<String, String> result = JsonUtil.jsonToObj(EntityUtils.toString(response.getEntity()), Map.class);
-                if (result.containsKey(DATA)) {
+            HttpResult response = HttpClientUtil.post(serverAddress, data, ContentType.APPLICATION_JSON);
+            if (response.isOk()) {
+                Map<String, String> result = JsonUtil.jsonToObj(response.getBody(), Map.class);
+                if (result != null && result.containsKey(DATA)) {
                     String status = String.valueOf(result.get(STATUS));
                     if (Integer.parseInt(status) == SUCCESS) {
                         return result.get(DATA);
                     }
                 }
-                throw new IllegalArgumentException(result.get(MSG));
+                throw new IllegalArgumentException(result == null ? "授权服务返回异常" : result.get(MSG));
             }
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (HttpHostConnectException e) {
             throw new IllegalArgumentException("网络连接异常，无法激活");
+        } catch (Exception e) {
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            }
+            throw new IOException(e);
         }
         throw new IllegalArgumentException("授权服务地址异常，无法激活");
     }

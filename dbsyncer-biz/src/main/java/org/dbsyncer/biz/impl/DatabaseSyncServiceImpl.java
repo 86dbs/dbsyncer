@@ -5,25 +5,33 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
+import org.dbsyncer.biz.GroupSearchFilter;
+import org.dbsyncer.biz.GroupService;
+import org.dbsyncer.biz.model.TableProgressBundle;
 import org.dbsyncer.biz.vo.DatabaseMappingVO;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.TaskDetailProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
+import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
+import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.DatabaseSyncMappingUtil;
@@ -33,12 +41,12 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.DatabaseMapping;
+import org.dbsyncer.sdk.model.DatabaseSyncTableSnapshot;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
-import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
-import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.util.DatabaseSyncProgressUtil;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -58,7 +66,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -70,18 +77,21 @@ import java.util.stream.Collectors;
  * @date 2026-05-22 00:00
  */
 @Service
-public class DatabaseSyncServiceImpl implements DatabaseSyncService {
+public class DatabaseSyncServiceImpl extends BaseServiceImpl implements DatabaseSyncService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ProfileComponent profileComponent;
+    private ConnectorProfile connectorProfile;
 
     @Resource
-    private TaskProfile taskProfile;
+    private DatabaseSyncProfile databaseSyncProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TaskDetailProfile taskDetailProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -93,17 +103,17 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private TaskService<DatabaseSyncTask> taskService;
-
-    @Resource
-    private DatabaseSyncDetailService databaseSyncDetailService;
+    private ClusterService clusterService;
 
     @Resource
     private ParserComponent parserComponent;
 
+    @Resource
+    private GroupService groupService;
+
     @Override
     public DatabaseSyncTaskVO get(String id) {
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
         return convertTask2Vo(task);
     }
@@ -127,20 +137,19 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillTaskOnAdd(task, params);
         task.setDatabaseMappings(toPersistMappings(mappings));
         // 任务需先落库（含任务级 Meta）才能按 taskId 建连与写 table_group；失败则整单回滚
-        String taskId = taskService.add(task);
+        String taskId = databaseSyncProfile.add(task);
         try {
             tableGroupProfile.addTableGroupBatch(buildTableGroups(taskId, mappings));
         } catch (Exception e) {
             try {
-                taskService.delete(taskId);
+                databaseSyncProfile.delete(taskId);
             } catch (Exception cleanupEx) {
                 logger.error("整库迁移任务创建失败后回滚删除失败: id={}", taskId, cleanupEx);
             }
             throw new BizException(e.getMessage(), e);
         }
         // 预建明细分表并对齐明细行，详情页 JOIN 查询不依赖任务是否已写出数据
-        taskProfile.createRunDetailTable(taskId);
-        databaseSyncDetailService.syncTaskTableMetaDetails(taskId);
+        databaseSyncProfile.syncTaskTableMetaDetails(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -149,11 +158,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String edit(Map<String, String> params) {
         String id = params.get("id");
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
-        if (taskService.isRunning(id)) {
-            throw new BizException("任务正在运行，请先停止");
-        }
+        assertRunning(task.getId());
         List<DatabaseMappingVO> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
         checkDatabaseMapping(mappings);
         if (CollectionUtils.isEmpty(mappings)) {
@@ -176,11 +183,11 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException(e.getMessage(), e);
         }
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
-        taskProfile.clearRunData(id);
-        taskProfile.resetRunProgress(id);
-        String editedId = taskService.edit(task);
+        databaseSyncProfile.clearRunData(id);
+        taskMetaProfile.resetMeta(id);
+        String editedId = databaseSyncProfile.update(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
-        databaseSyncDetailService.syncTaskTableMetaDetails(editedId);
+        databaseSyncProfile.syncTaskTableMetaDetails(editedId);
         return editedId;
     }
 
@@ -203,17 +210,16 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        if (taskService.isRunning(id)) {
-            throw new BizException("任务正在运行，请先停止");
-        }
-        taskService.delete(id);
+        assertRunning(id);
+        databaseSyncProfile.delete(id);
+        groupService.bind(null, ConfigConstant.DATABASE_SYNC, id);
         return "删除成功";
     }
 
     @Override
     public String start(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = databaseSyncProfile.get(id);
         Assert.notNull(task, "任务不存在");
         if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             throw new BizException("任务未配置库映射，无法启动");
@@ -221,70 +227,90 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (tableGroupProfile.getTableGroupCount(id) <= 0) {
             throw new BizException("任务未配置库表映射，无法启动");
         }
-        taskService.start(id);
+        clusterService.start(task, false);
         return "启动成功";
     }
 
     @Override
     public String stop(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        taskService.stop(id);
+        ConfigModel task = databaseSyncProfile.get(id);
+        Assert.notNull(task, "任务不存在");
+        Meta taskMeta = taskMetaProfile.getMeta(id);
+        if (taskMeta != null && CommonTaskStatusEnum.isRunning(taskMeta.getState())) {
+            taskMeta.setState(CommonTaskStatusEnum.STOPPING.getCode());
+            taskMeta.setUpdateTime(System.currentTimeMillis());
+            taskMetaProfile.updateMeta(taskMeta);
+        }
+        clusterService.stop(id, CommonTaskTypeEnum.DATABASE_SYNC);
         return "停止成功";
     }
 
     @Override
     public Paging<DatabaseSyncTaskVO> search(Map<String, String> params) {
-        Paging paging = taskService.search(params, CommonTaskTypeEnum.DATABASE_SYNC);
-        Collection data = paging.getData();
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String searchKey = params.get("searchKey");
+        GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.DATABASE_SYNC);
+        if (groupFilter.isEmptyResult()) {
+            return new Paging<>(pageNum, pageSize);
+        }
+        Paging<DatabaseSyncTask> paging = databaseSyncProfile.query(pageNum, pageSize, searchKey, groupFilter.getIds());
+        Collection<DatabaseSyncTask> data = paging.getData();
         if (CollectionUtils.isEmpty(data)) {
-            return paging;
+            return null;
         }
         List<DatabaseSyncTaskVO> list = new ArrayList<>();
         data.forEach(item -> {
-            if (item instanceof DatabaseSyncTask) {
-                DatabaseSyncTask task = (DatabaseSyncTask) item;
-                DatabaseSyncTaskVO vo = convertTask2Vo(task);
-                if (vo != null) {
-                    int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
-                    Meta taskMeta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
-                    boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
-                    Map<Integer, Integer> mappingStatus = DatabaseSyncProgressUtil.readMappingStatus(
-                            taskMeta == null ? null : taskMeta.getSnapshot());
-                    List<CommonTaskSnapshot> tableSnapshots = collectTableSnapshots(task.getId());
-                    vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
-                            task, tableCount, vo.getMappingCount(), roundDone, mappingStatus, tableSnapshots));
-                    vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
-                            task, tableCount, roundDone, mappingStatus, tableSnapshots));
-                    vo.setErrorCount(0L);
-                    if (taskMeta != null) {
-                        if (taskMeta.getFail() != null) {
-                            vo.setErrorCount(taskMeta.getFail().get());
-                        }
-                        vo.setMetaState(taskMeta.getState());
-                        vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
-                        vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
+            DatabaseSyncTask task = item;
+            DatabaseSyncTaskVO vo = convertTask2Vo(task);
+            if (vo != null) {
+                int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
+                Meta taskMeta = taskMetaProfile.getMeta(task.getId());
+                boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
+                TableProgressBundle progressBundle = collectTableProgressBundle(task.getId());
+                vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
+                        task, tableCount, roundDone,
+                        progressBundle.getSnapshots(), progressBundle.getSyncedRowsPerTable(),
+                        progressBundle.getSourceTotalPerTable()));
+                vo.setTotalTableCount(tableCount);
+                vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
+                        task, tableCount, roundDone, progressBundle.getSnapshots()));
+                vo.setSchemaCompletedCount(DatabaseSyncProgressUtil.countSchemaDoneTables(
+                        progressBundle.getSnapshots()));
+                vo.setSyncedRows(progressBundle.sumSyncedRows());
+                vo.setSourceTotal(progressBundle.sumSourceTotal());
+                vo.setErrorCount(0L);
+                if (taskMeta != null) {
+                    if (taskMeta.getFail() != null) {
+                        vo.setErrorCount(taskMeta.getFail().get());
                     }
-                    list.add(vo);
+                    vo.setMetaState(taskMeta.getState());
+                    vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
+                    vo.setUpdateTime(taskMeta.getUpdateTime() > 0 ? taskMeta.getUpdateTime() : null);
                 }
+                list.add(vo);
             }
         });
-        paging.setData(list);
-        return paging;
-    }
-
-    @Override
-    public List<DatabaseSyncTaskVO> getAll() {
-        return taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC).stream()
-                .filter(DatabaseSyncTask.class::isInstance)
-                .map(t -> convertTask2Vo((DatabaseSyncTask) t))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        Paging<DatabaseSyncTaskVO> result = new Paging<>(paging.getPageNum(), paging.getPageSize());
+        result.setTotal(paging.getTotal());
+        result.setData(list);
+        return result;
     }
 
     @Override
     public Paging searchResult(Map<String, String> params) {
-        return databaseSyncDetailService.result(params);
+        String taskId = params.get("taskId");
+        Assert.hasText(taskId, "任务ID不能为空");
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String detailType = StringUtil.trimToEmpty(params.get("detailType"));
+        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
+        return taskDetailProfile.queryResults(TaskDetailQuery.of(taskId)
+                .setPage(pageNum, pageSize)
+                .setDetailType(StringUtil.isBlank(detailType) ? null : detailType)
+                .setDetailStatus(TaskDetailStatusEnum.from(detailStatus))
+                .setStatusMetric(TaskDetailMetricEnum.FAIL));
     }
 
     @Override
@@ -301,7 +327,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (StringUtil.isBlank(connectorId)) {
             throw new BizException("连接器不能为空");
         }
-        Connector connector = profileComponent.getConnector(connectorId);
+        Connector connector = connectorProfile.getConnector(connectorId);
         if (connector == null) {
             throw new BizException("连接器不存在");
         }
@@ -426,7 +452,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private void fillTaskOnAdd(DatabaseSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setType(CommonTaskTypeEnum.DATABASE_SYNC.name());
+            task.setType(CommonTaskTypeEnum.DATABASE_SYNC.getCode());
         }
         long now = Instant.now().toEpochMilli();
         task.setCreateTime(task.getCreateTime() == null ? now : task.getCreateTime());
@@ -517,8 +543,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         List<DatabaseMappingVO> mappingViews = buildDatabaseMappingVo(
                 DatabaseSyncMappingUtil.sortByIndex(task.getDatabaseMappings()), tableGroups);
         DatabaseMappingVO first = CollectionUtils.isEmpty(mappingViews) ? null : mappingViews.get(0);
-        Connector source = first == null ? null : profileComponent.getConnector(first.getSourceConnectorId());
-        Connector target = first == null ? null : profileComponent.getConnector(first.getTargetConnectorId());
+        Connector source = first == null ? null : connectorProfile.getConnector(first.getSourceConnectorId());
+        Connector target = first == null ? null : connectorProfile.getConnector(first.getTargetConnectorId());
         DatabaseSyncTaskVO vo = new DatabaseSyncTaskVO(source, target);
         BeanUtils.copyProperties(task, vo);
         // 覆盖 BeanUtils 写入的仅库维映射，挂上 table_group 表映射供编辑页
@@ -527,22 +553,48 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return vo;
     }
 
-    private List<CommonTaskSnapshot> collectTableSnapshots(String taskId) {
-        List<String> ids = tableGroupProfile.listTableGroupIds(taskId);
-        if (CollectionUtils.isEmpty(ids)) {
-            return Collections.emptyList();
-        }
-        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
-        List<CommonTaskSnapshot> snapshots = new ArrayList<>(ids.size());
-        for (String groupId : ids) {
-            if (StringUtil.isBlank(groupId)) {
-                snapshots.add(null);
-                continue;
+    /**
+     * 汇总各表明细快照与行级样本（同序），供列表按表等权计算进度。
+     */
+    private TableProgressBundle collectTableProgressBundle(String taskId) {
+        TableProgressBundle bundle = new TableProgressBundle();
+        Map<String, Long> sourceTotalById = new HashMap<>();
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, page -> {
+            if (CollectionUtils.isEmpty(page)) {
+                return;
             }
-            Meta meta = metaMap == null ? null : metaMap.get(groupId);
-            snapshots.add(meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot()));
-        }
-        return snapshots;
+            List<String> ids = page.stream().map(TableGroup::getId).collect(Collectors.toList());
+            Map<String, Meta> metaMap = taskMetaProfile.getDetailMetaMap(ids);
+            for (TableGroup tableGroup : page) {
+                if (tableGroup == null || StringUtil.isBlank(tableGroup.getId())) {
+                    continue;
+                }
+                if (tableGroup.getSourceTotal() > 0) {
+                    sourceTotalById.put(tableGroup.getId(), tableGroup.getSourceTotal());
+                }
+                if (StringUtil.isBlank(tableGroup.getId())) {
+                    bundle.addTable(null, 0L, 0L);
+                    continue;
+                }
+                Meta meta = metaMap == null ? null : metaMap.get(tableGroup.getId());
+                CommonTaskSnapshot snapshot = meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot());
+                long fromMeta = counterValue(meta == null ? null : meta.getSuccess())
+                        + counterValue(meta == null ? null : meta.getFail());
+                long fromSnap = 0L;
+                if (snapshot instanceof DatabaseSyncTableSnapshot) {
+                    DatabaseSyncTableSnapshot dts = (DatabaseSyncTableSnapshot) snapshot;
+                    fromSnap = Math.max(0L, dts.getSuccessTotal()) + Math.max(0L, dts.getFailTotal());
+                }
+                long synced = Math.max(fromMeta, fromSnap);
+                Long sourceTotal = sourceTotalById.get(tableGroup.getId());
+                bundle.addTable(snapshot, synced, sourceTotal == null ? 0L : sourceTotal);
+            }
+        });
+        return bundle;
+    }
+
+    private static long counterValue(java.util.concurrent.atomic.AtomicLong counter) {
+        return counter == null ? 0L : Math.max(0L, counter.get());
     }
 
     /**
@@ -598,7 +650,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             if (CollectionUtils.isEmpty(tableMappings)) {
                 continue;
             }
-            Connector sourceConnector = profileComponent.getConnector(mapping.getSourceConnectorId());
+            Connector sourceConnector = connectorProfile.getConnector(mapping.getSourceConnectorId());
             Assert.notNull(sourceConnector, "源连接器不存在");
             Assert.notNull(sourceConnector.getConfig(), "源连接器配置不存在");
             // 与 ParserComponentImpl#getMetaInfo 的实例ID保持一致（mappingId + connectorId + suffix）

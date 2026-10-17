@@ -15,15 +15,17 @@ import org.dbsyncer.common.util.PackageZipUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
-import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
-import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.parser.ValidateSyncProfile;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TaskImportResult;
-import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -65,13 +67,16 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private TaskService<ConfigModel> taskService;
+    private ValidateSyncProfile validateSyncProfile;
+
+    @Resource
+    private DatabaseSyncProfile databaseSyncProfile;
 
     @Override
     public void importConfig(File file) {
@@ -93,17 +98,20 @@ public class ConfigImportServiceImpl implements ConfigImportService {
                     info.getAppName(), info.getVersion(), info.getCreateTime());
 
             systemConfigProfile.importFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.SYSTEM));
-            ensureSystemConfig();
             userProfile.importFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.USER));
             connectorProfile.importConnectorsFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.CONNECTOR));
 
             TaskImportResult taskResult = taskProfile.importTasksFromZip(zip);
             for (ConfigModel task : taskResult.getEnterpriseTasks()) {
-                taskService.edit(task);
+                if (task instanceof ValidateSyncTask) {
+                    validateSyncProfile.update((ValidateSyncTask) task);
+                } else if (task instanceof DatabaseSyncTask) {
+                    databaseSyncProfile.update((DatabaseSyncTask) task);
+                }
             }
 
             importTableGroupsFromZip(zip);
-            metaProfile.importMetaFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.META));
+            taskMetaProfile.importMetaFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.META));
             taskProfile.importTaskDetailSchemasFromJson(PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.TASK_DETAIL));
 
             preloadTemplate.afterConfigImport();
@@ -114,22 +122,6 @@ public class ConfigImportServiceImpl implements ConfigImportService {
         } catch (Exception e) {
             throw new BizException("导入配置 ZIP 失败: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * 导入后若无系统配置则补默认行，避免增量启动等路径 getSystemConfig() 为空 NPE。
-     */
-    private void ensureSystemConfig() {
-        if (systemConfigProfile.getSystemConfig() != null) {
-            return;
-        }
-        SystemConfig config = new SystemConfig();
-        config.setName("系统配置");
-        long now = System.currentTimeMillis();
-        config.setCreateTime(now);
-        config.setUpdateTime(now);
-        systemConfigProfile.saveSystemConfig(config);
-        logger.warn("Imported package has no system config, created default system config");
     }
 
     /**

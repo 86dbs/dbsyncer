@@ -61,9 +61,6 @@ public class Mapping extends AbstractConfigModel {
     // 监听配置
     private ListenerConfig listener;
 
-    // 元信息ID
-    private String metaId;
-
     // 批量读取
     private int readNum = 10000;
 
@@ -177,14 +174,6 @@ public class Mapping extends AbstractConfigModel {
     public Mapping setListener(ListenerConfig listener) {
         this.listener = listener;
         return this;
-    }
-
-    public String getMetaId() {
-        return metaId;
-    }
-
-    public void setMetaId(String metaId) {
-        this.metaId = metaId;
     }
 
     public int getReadNum() {

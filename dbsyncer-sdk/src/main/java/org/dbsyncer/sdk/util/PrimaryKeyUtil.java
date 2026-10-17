@@ -159,7 +159,7 @@ public abstract class PrimaryKeyUtil {
         Object[] cursors = new Object[primaryKeys.size()];
         int i = 0;
         for (String pk : primaryKeys) {
-            cursors[i++] = last.get(pk);
+            cursors[i++] = rowValue(last, pk);
         }
         return cursors;
     }
@@ -176,6 +176,115 @@ public abstract class PrimaryKeyUtil {
             }
         }
         return cursors;
+    }
+
+    /**
+     * 比较两组游标，按主键从左到右。
+     *
+     * @param left  左值
+     * @param right 右值
+     * @return 负/零/正
+     */
+    public static int compareCursors(Object[] left, Object[] right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        int size = Math.min(left.length, right.length);
+        for (int i = 0; i < size; i++) {
+            int cmp = compareCursorValue(left[i], right[i]);
+            if (cmp != 0) {
+                return cmp;
+            }
+        }
+        return Integer.compare(left.length, right.length);
+    }
+
+    /**
+     * 当前游标是否已到达结束游标（含）。结束游标为空则永不视为到达。
+     *
+     * @param current 当前游标
+     * @param end     结束游标
+     * @return true 已到达或越过结束
+     */
+    public static boolean reachedEnd(Object[] current, Object[] end) {
+        if (end == null || end.length == 0) {
+            return false;
+        }
+        return compareCursors(current, end) >= 0;
+    }
+
+    /**
+     * 保留游标小于等于结束游标的行（结束游标为空则原样返回）。
+     * <p>游标分页结果按主键升序；先比末行 O(1)，仅末行越过时再 stream 过滤截断，
+     * 避免本页无上界多读导致计数超过片预算。
+     *
+     * @param data        数据行
+     * @param primaryKeys 主键名
+     * @param end         结束游标
+     * @return 截断后的列表
+     */
+    public static List<Map> trimToEndInclusive(List<Map> data, List<String> primaryKeys, Object[] end) {
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(primaryKeys) || end == null || end.length == 0) {
+            return data;
+        }
+        // 升序：末行未越过结束游标 → 整页都在片内
+        if (compareCursors(cursorOf(data.get(data.size() - 1), primaryKeys), end) <= 0) {
+            return data;
+        }
+        return data.stream()
+                .filter(row -> compareCursors(cursorOf(row, primaryKeys), end) <= 0)
+                .collect(Collectors.toList());
+    }
+
+    private static Object[] cursorOf(Map row, List<String> primaryKeys) {
+        if (row == null) {
+            return null;
+        }
+        Object[] cursor = new Object[primaryKeys.size()];
+        for (int i = 0; i < primaryKeys.size(); i++) {
+            cursor[i] = rowValue(row, primaryKeys.get(i));
+        }
+        return cursor;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static Object rowValue(Map row, String primaryKey) {
+        if (StringUtil.isBlank(primaryKey)) {
+            return null;
+        }
+        Object value = row.get(primaryKey);
+        if (value != null || row.containsKey(primaryKey)) {
+            return value;
+        }
+        for (Object key : row.keySet()) {
+            if (key != null && primaryKey.equalsIgnoreCase(String.valueOf(key))) {
+                return row.get(key);
+            }
+        }
+        return null;
+    }
+
+    private static int compareCursorValue(Object left, Object right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        if (left instanceof Number && right instanceof Number) {
+            return new java.math.BigDecimal(left.toString())
+                    .compareTo(new java.math.BigDecimal(right.toString()));
+        }
+        return String.valueOf(left).compareTo(String.valueOf(right));
     }
 
 }

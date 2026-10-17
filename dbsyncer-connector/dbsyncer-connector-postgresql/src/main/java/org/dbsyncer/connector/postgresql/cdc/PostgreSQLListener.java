@@ -114,7 +114,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
 
             Properties extInfo = config.getExtInfo();
             messageDecoder = MessageDecoderEnum.getMessageDecoder(extInfo.getProperty(PostgreSQLConfigConstant.PLUGIN_NAME));
-            messageDecoder.setMetaId(metaId);
+            messageDecoder.setTaskId(taskId);
             messageDecoder.setConfig(config);
             messageDecoder.setDatabase(database);
             messageDecoder.setSchema(schema);

@@ -40,12 +40,6 @@ public final class MySQLTimestampType extends TimestampType {
         if (val instanceof LocalDateTime) {
             return Timestamp.valueOf((LocalDateTime) val);
         }
-        if (val instanceof java.time.LocalDate) {
-            return Timestamp.valueOf(((java.time.LocalDate) val).atStartOfDay());
-        }
-        if (val instanceof String) {
-            return Timestamp.valueOf((String) val);
-        }
         return throwUnsupportedException(val, field);
     }
 

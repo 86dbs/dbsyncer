@@ -4,6 +4,7 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.config.IncrementRecoveryConfig;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -11,12 +12,13 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
@@ -24,11 +26,11 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -65,9 +67,9 @@ import java.util.stream.Collectors;
 /**
  * 增量同步
  *
- * @Version 1.0.0
- * @Author AE86
- * @Date 2020-04-26 15:28
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-04-26 15:28
  */
 @Component
 public final class IncrementPuller extends AbstractPuller implements ApplicationListener<RefreshOffsetEvent>, ScheduledTaskJob {
@@ -87,16 +89,16 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private ConnectorFactory connectorFactory;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private MetaProfile metaProfile;
-
-    @Resource
-    private PluginFactory pluginFactory;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private LogService logService;
@@ -106,6 +108,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Resource
     private IncrementRecoveryConfig incrementRecoveryConfig;
+
+    @Resource
+    private ParserConsumer parserConsumer;
 
     private final Map<String, Listener> map = new ConcurrentHashMap<>();
 
@@ -122,32 +127,32 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Override
     public void start(Mapping mapping, boolean autoRecovery) {
         final String mappingId = mapping.getId();
-        final String metaId = mapping.getMetaId();
-        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
-        Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Connector targetConnector = connectorProfile.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mappingId);
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = taskMetaProfile.getMeta(mappingId);
         Assert.notNull(meta, "Meta不能为空.");
 
         Thread worker = new Thread(() -> {
             try {
-                Listener listener = map.computeIfAbsent(metaId, k -> {
-                    logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
+                Listener listener = map.computeIfAbsent(mappingId, k -> {
+                    logger.info("开始增量同步：{}, {}", mappingId, mapping.getName());
                     long now = Instant.now().toEpochMilli();
                     meta.setStartTime(now);
                     meta.setUpdateTime(now);
-                    profileComponent.editConfigModel(meta);
+                    taskMetaProfile.updateMeta(meta);
                     tableGroupContext.put(mapping, list);
                     return buildListener(mapping, connector, targetConnector, list, meta);
                 });
-                startListener(mapping, metaId, listener, autoRecovery);
+                startListener(mapping, mappingId, listener, autoRecovery);
             } catch (Exception e) {
-                close(metaId);
+                close(mappingId);
+                publishClosedEvent(mappingId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, String.format("启动驱动失败：[%s], %s", mapping.getName(), e.getMessage()));
-                logger.error("运行异常，结束增量同步：{}", metaId, e);
+                logger.error("运行异常，结束增量同步：{}", mappingId, e);
             }
         });
         worker.setName("increment-worker-" + mapping.getId());
@@ -159,7 +164,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
      * 启动监听。自动恢复（服务重启）时，为避免数据库晚于本服务启动导致 CDC 监听连接失败，
      * 按 {@link IncrementRecoveryConfig} 配置的次数与间隔重试；手动启动仅尝试一次。
      */
-    private void startListener(Mapping mapping, String metaId, Listener listener, boolean autoRecovery) throws Exception {
+    private void startListener(Mapping mapping, String taskId, Listener listener, boolean autoRecovery) throws Exception {
         int maxAttempts = autoRecovery ? incrementRecoveryConfig.getRetryTimes() : 1;
         for (int i = 1; i <= maxAttempts; i++) {
             try {
@@ -175,8 +180,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 }
                 logger.error("增量同步启动失败，任务名称:{} {}ms后重试", mapping.getName(), incrementRecoveryConfig.getRetryInterval(), e);
                 TimeUnit.MILLISECONDS.sleep(incrementRecoveryConfig.getRetryInterval());
-                if (!map.containsKey(metaId)) {
-                    logger.info("增量同步任务已关闭，终止重试：{}, {}", metaId, mapping.getName());
+                if (!map.containsKey(taskId)) {
+                    logger.info("增量同步任务已关闭，终止重试：{}, {}", taskId, mapping.getName());
                     return;
                 }
             }
@@ -189,14 +194,13 @@ public final class IncrementPuller extends AbstractPuller implements Application
      * @param mapping 驱动
      */
     public void captureAndSaveOffset(Mapping mapping) {
-        final String metaId = mapping.getMetaId();
-        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector connector = connectorProfile.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
-        Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Connector targetConnector = connectorProfile.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
         List<TableGroup> list = loadSortedTableGroups(mapping.getId());
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = taskMetaProfile.getMeta(mapping.getId());
         Assert.notNull(meta, "Meta不能为空.");
         Listener listener = buildListener(mapping, connector, targetConnector, list, meta);
         Map<String, String> snapshot = meta.getSnapshot();
@@ -205,32 +209,54 @@ public final class IncrementPuller extends AbstractPuller implements Application
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
-        FullTableProgressUtil.clear(snapshot);
+        snapshot.remove(ParserEnum.TABLE_PROGRESS.getCode());
+        FullTableProgressUtil.clearAll(taskMetaProfile, tableGroupProfile, mapping.getId());
         meta.getSuccess().set(0);
         meta.getFail().set(0);
-        profileComponent.editConfigModel(meta);
-        logger.info("全量+增量模式已保存增量位点：{}, {}", metaId, snapshot);
+        taskMetaProfile.updateMeta(meta);
+        logger.info("全量+增量模式已保存增量位点：{}, {}", mapping.getName(), snapshot);
     }
 
     @Override
-    public void close(String metaId) {
-        map.compute(metaId, (k, listener) -> {
+    public void close(String taskId) {
+        map.compute(taskId, (k, listener) -> {
             if (listener != null) {
                 listener.close();
             }
-            bufferActuatorRouter.unbind(metaId);
-            tableGroupContext.clear(metaId);
-            publishClosedEvent(metaId);
-            logger.info("关闭成功:{}", metaId);
+            bufferActuatorRouter.unbind(taskId);
+            tableGroupContext.clear(taskId);
+            if (shouldPublishClosedAfterStop(taskId)) {
+                publishClosedEvent(taskId);
+            }
+            logger.info("关闭成功:{}", taskId);
             return null;
         });
     }
 
     @Override
+    public List<String> getTaskId() {
+        return new ArrayList<>(map.keySet());
+    }
+
+    /**
+     * 用户停止后 Meta 为 STOPPING，需 ClosedEvent 收口；本机围栏停止不发。
+     *
+     * @param taskId
+     * @return true 应发布 ClosedEvent
+     */
+    private boolean shouldPublishClosedAfterStop(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return false;
+        }
+        Meta meta = taskMetaProfile.getMeta(taskId);
+        return meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode();
+    }
+
+    @Override
     public void onApplicationEvent(RefreshOffsetEvent event) {
         ChangedOffset offset = event.getChangedOffset();
-        if (offset != null && map.containsKey(offset.getMetaId())) {
-            map.get(offset.getMetaId()).refreshEvent(offset);
+        if (offset != null && map.containsKey(offset.getTaskId())) {
+            map.get(offset.getTaskId()).refreshEvent(offset);
         }
     }
 
@@ -249,8 +275,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, metaProfile, profileComponent, pluginFactory, logService, meta.getId(),
-                list, mapping.getChannelSize()));
+        ParserConsumer consumer = parserConsumer.clone();
+        consumer.build(meta.getTaskId(), list, mapping.getChannelSize());
+        listener.register(consumer);
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
@@ -278,8 +305,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
             String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), connector.getId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
             String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnector.getId(), ConnectorInstanceUtil.TARGET_SUFFIX);
-            abstractListener.setConnectorInstance(connectorFactory.connect(sourceInstanceId));
-            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
+            abstractListener.setConnectorInstance(connectorFactory.connect(sourceInstanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema()));
+            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId, targetConnector.getConfig(), mapping.getTargetDatabase(), mapping.getTargetSchema()));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             setRsaConfig(abstractListener);
             abstractListener.setConnectorConfig(connectorConfig);
@@ -288,7 +315,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setSourceTable(sourceTable);
             abstractListener.setCustomTable(customTable);
             abstractListener.setSnapshot(meta.getSnapshot());
-            abstractListener.setMetaId(meta.getId());
+            abstractListener.setTaskId(meta.getId());
         }
 
         listener.init();
@@ -296,9 +323,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     private void setRsaConfig(AbstractListener listener) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig.isEnableOpenAPI()) {
             listener.setRsaManager(rsaManager);
-            listener.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            listener.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 

@@ -4,9 +4,7 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.config.PackageFormatConfig;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -14,20 +12,22 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.PackageZipUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailMetaProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TaskImportResult;
 import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
-import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -43,14 +43,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 /**
- * {@link TaskProfile} 实现。
- *
  * @author wuji
  * @version 1.0.0
  */
@@ -63,7 +60,10 @@ public class TaskProfileImpl implements TaskProfile {
     private OperationTemplate operationTemplate;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskDetailMetaProfile taskDetailMetaProfile;
+
+    @Resource
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -80,12 +80,12 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey) {
+    public <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey, List<String> ids) {
         Assert.notNull(clazz, "Task class can not be null.");
         int safePageNum = pageNum > 0 ? pageNum : 1;
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         try {
-            ConfigModel probe = (ConfigModel) clazz.newInstance();
+            ConfigModel probe = clazz.newInstance();
             Query query = new Query(safePageNum, safePageSize);
             query.setType(StorageEnum.TASK);
             if (StringUtil.isNotBlank(probe.getType())) {
@@ -93,6 +93,9 @@ public class TaskProfileImpl implements TaskProfile {
             }
             if (StringUtil.isNotBlank(searchKey)) {
                 query.addFilter(ConfigConstant.CONFIG_MODEL_NAME, searchKey, false);
+            }
+            if (!CollectionUtils.isEmpty(ids)) {
+                query.getBooleanFilter().add(new InFilter(ConfigConstant.CONFIG_MODEL_ID, new ArrayList<>(ids)));
             }
             query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
             Paging paging = storageService.query(query);
@@ -126,7 +129,7 @@ public class TaskProfileImpl implements TaskProfile {
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         int pageNum = 1;
         while (true) {
-            Paging<T> paging = queryTasks(clazz, pageNum, safePageSize,null);
+            Paging<T> paging = queryTasks(clazz, pageNum, safePageSize, null, null);
             if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
@@ -192,18 +195,6 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public boolean existsTask(String id) {
-        if (StringUtil.isBlank(id)) {
-            return false;
-        }
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.TASK);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
-        Paging paging = storageService.query(query);
-        return paging != null && !CollectionUtils.isEmpty(paging.getData());
-    }
-
-    @Override
     public int countAllTasks() {
         return countTasks(null);
     }
@@ -261,6 +252,11 @@ public class TaskProfileImpl implements TaskProfile {
             }
             String type = map.get(ConfigConstant.CONFIG_MODEL_TYPE) == null
                     ? null : String.valueOf(map.get(ConfigConstant.CONFIG_MODEL_TYPE));
+            // 导入兼容历史大写 TYPE，规范后再解析/落库
+            type = CommonTaskTypeEnum.normalizeImportType(type);
+            if (StringUtil.isNotBlank(type)) {
+                map.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
+            }
             String itemJson = JsonUtil.objToJson(map);
             if (StringUtil.equals(ConfigConstant.MAPPING, type) || StringUtil.isBlank(type)) {
                 Mapping mapping = JsonUtil.jsonToObj(itemJson, Mapping.class);
@@ -276,12 +272,14 @@ public class TaskProfileImpl implements TaskProfile {
             if (taskType == CommonTaskTypeEnum.VALIDATE_SYNC) {
                 ValidateSyncTask task = JsonUtil.jsonToObj(itemJson, ValidateSyncTask.class);
                 if (task != null) {
+                    task.setType(taskType.getCode());
                     importTask(task);
                     enterpriseTasks.add(task);
                 }
             } else if (taskType == CommonTaskTypeEnum.DATABASE_SYNC) {
                 DatabaseSyncTask task = JsonUtil.jsonToObj(itemJson, DatabaseSyncTask.class);
                 if (task != null) {
+                    task.setType(taskType.getCode());
                     importTask(task);
                     enterpriseTasks.add(task);
                 }
@@ -341,79 +339,44 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public void deleteTableRunMeta(String taskId) {
-        metaProfile.deleteMetaByTableGroupIds(tableGroupProfile.listTableGroupIds(taskId));
-    }
-
-    @Override
-    public void clearRunData(String taskId) {
+    public void deleteRunData(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        List<String> groupIds = tableGroupProfile.listTableGroupIds(taskId);
-        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
-        if (CollectionUtils.isEmpty(groupIds)) {
+        // 清空明细分表数据（任务仍在）；表级 Meta 重置而非删除，供分片选表 JOIN
+        taskDetailMetaProfile.clearData(taskId);
+        resetTableDetailMetas(taskId);
+    }
+
+    @Override
+    public void resetTableDetailMetas(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
             return;
         }
-        // 就地重置已有明细 Meta，避免 delete + insert 写放大；缺失的再补插
-        Map<String, Meta> existing = metaProfile.getDetailMetaMap(groupIds);
-        long now = System.currentTimeMillis();
-        List<Meta> toUpdate = new ArrayList<>();
-        List<Meta> toAdd = new ArrayList<>();
-        for (String groupId : groupIds) {
-            Meta meta = existing.get(groupId);
-            if (meta != null) {
-                if (isDetailMetaClean(meta)) {
-                    continue;
-                }
-                resetDetailMeta(meta, groupId, now);
-                toUpdate.add(meta);
-            } else {
-                Meta created = new Meta();
-                resetDetailMeta(created, groupId, now);
-                created.setCreateTime(now);
-                toAdd.add(created);
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
+            if (CollectionUtils.isEmpty(tableGroups)) {
+                return;
             }
-        }
-        if (!CollectionUtils.isEmpty(toUpdate)) {
-            metaProfile.updateMetaBatch(toUpdate);
-        }
-        if (!CollectionUtils.isEmpty(toAdd)) {
-            TaskSplitUtil.split(toAdd, ConfigConstant.PAGE_SIZE, metaProfile::addMetaBatch);
-        }
-    }
-
-    /**
-     * 明细 Meta 归零：状态 READY、计数清零、快照清空。{@link Meta#clear()} 会把 isTaskDetail 置 0，须再写回明细层级。
-     */
-    private void resetDetailMeta(Meta meta, String groupId, long now) {
-        meta.clear();
-        meta.setTaskId(groupId);
-        meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
-        meta.setUpdateTime(now);
-    }
-
-    private boolean isDetailMetaClean(Meta meta) {
-        if (meta == null) {
-            return false;
-        }
-        if (meta.getState() != CommonTaskStatusEnum.READY.getCode()) {
-            return false;
-        }
-        if (counterValue(meta.getTotal()) != 0L || counterValue(meta.getSuccess()) != 0L
-                || counterValue(meta.getFail()) != 0L || counterValue(meta.getDiff()) != 0L
-                || counterValue(meta.getFixed()) != 0L) {
-            return false;
-        }
-        return meta.getSnapshot() == null || meta.getSnapshot().isEmpty();
+            List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
+            FullTableProgressUtil.resetAll(taskMetaProfile, groupIds);
+        });
     }
 
     @Override
-    public void createRunDetailTable(String taskId) {
+    public void dropTaskDetailTable(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        storageService.ensure(StorageEnum.TASK_DETAIL, taskId);
+        // 物理 DROP 明细分表，不重建
+        taskDetailMetaProfile.dropTaskDetailTable(taskId);
+        deleteTableGroupDetailMetas(taskId);
+    }
+
+    private void deleteTableGroupDetailMetas(String taskId) {
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, tableGroups -> {
+            List<String> groupIds = tableGroups.stream().map(TableGroup::getId).collect(Collectors.toList());
+            taskDetailMetaProfile.deleteMetaByTableGroupIds(groupIds);
+        });
     }
 
     @Override
@@ -422,45 +385,7 @@ public class TaskProfileImpl implements TaskProfile {
             return;
         }
         for (String taskId : taskIds) {
-            createRunDetailTable(taskId);
+            taskDetailMetaProfile.clearData(taskId);
         }
-    }
-
-    @Override
-    public void resetRunProgress(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return;
-        }
-        Meta meta = metaProfile.getMetaByTaskId(taskId, TaskLevelEnum.TASK);
-        if (meta == null) {
-            return;
-        }
-        zeroTaskMetaCounters(meta);
-        meta.clear();
-        meta.setTaskId(taskId);
-        meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
-        meta.setUpdateTime(System.currentTimeMillis());
-        metaProfile.updateMeta(meta);
-    }
-
-    private void zeroTaskMetaCounters(Meta meta) {
-        long total = counterValue(meta.getTotal());
-        long success = counterValue(meta.getSuccess());
-        long fail = counterValue(meta.getFail());
-        long diff = counterValue(meta.getDiff());
-        long fixed = counterValue(meta.getFixed());
-        if (total == 0L && success == 0L && fail == 0L && diff == 0L && fixed == 0L) {
-            return;
-        }
-        metaProfile.incrementMeta(MetaIncrement.of(meta.getId())
-                .total(-total)
-                .success(-success)
-                .fail(-fail)
-                .diff(-diff)
-                .fixed(-fixed));
-    }
-
-    private static long counterValue(AtomicLong value) {
-        return value == null ? 0L : value.get();
     }
 }

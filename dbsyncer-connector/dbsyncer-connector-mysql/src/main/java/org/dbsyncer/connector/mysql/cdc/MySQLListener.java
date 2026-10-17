@@ -19,6 +19,7 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
@@ -216,6 +217,26 @@ public class MySQLListener extends AbstractDatabaseListener {
                     errorEvent(wrapException(log + e.getMessage()));
                     return;
                 }
+            }
+            // 事件组中间失败时，客户端可能已将位点推进到 nextPosition，需落盘避免重启回到坏点
+            if (BinaryLogRemoteClient.isIncompleteEventGroupFailure(e)) {
+                String snapFile = snapshot.get(binlogFilenameKey);
+                long snapPos = NumberUtil.toLong(snapshot.get(binlogPositionKey), -1L);
+                String fileName = client.getBinlogFilename();
+                long position = client.getBinlogPosition();
+                boolean advanced = position > 0 && position != snapPos;
+                refreshSnapshot(fileName, position);
+                forceFlushEvent();
+                if (advanced) {
+                    errorEvent(wrapException(String.format(
+                            "[%s]binlog位点落在事件组中间，已跳过至%s/%d（原%s/%d）。若持续告警请重置位点。原因：%s",
+                            client.getWorkerThreadName(), fileName, position, snapFile, snapPos, e.getMessage())));
+                } else {
+                    errorEvent(wrapException(String.format(
+                            "[%s]binlog位点落在事件组中间(%s/%d)，但无法解析nextPosition，请重置位点。原因：%s",
+                            client.getWorkerThreadName(), fileName, position, e.getMessage())));
+                }
+                return;
             }
             errorEvent(wrapException(e.getMessage()));
         }

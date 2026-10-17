@@ -11,13 +11,14 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Field;
@@ -36,8 +37,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @version 1.0.0
  * @author AE86
+ * @version 1.0.0
  * @date 2021-11-18 22:22
  */
 @Component
@@ -49,10 +50,10 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
-    private MetaProfile metaProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
     private LogService logService;
@@ -63,7 +64,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     @Override
     public void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
         // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
-        if (!profileComponent.getSystemConfig().isEnableStorageWriteFull()) {
+        if (!systemConfigProfile.getSystemConfig().isEnableStorageWriteFull()) {
             // 不记录全量数据，只统计成功失败总数
             refreshTotal(result);
 
@@ -84,15 +85,13 @@ public final class FlushStrategyImpl implements FlushStrategy {
     }
 
     private void asyncWrite(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean success, List<Map> data, String error) {
-        String metaId = result.getMetaId();
-        // 明细分表键用任务级 Meta.taskId；metaId 仍用于任务级 Meta 计数增量
-        String shardId = metaProfile.resolveTaskDetailShardId(metaId);
+        String taskId = result.getTaskId();
         String event = result.getEvent();
         String tableGroupId = result.getTableGroupId();
         String targetTableGroupName = result.getTargetTableGroupName();
 
         long now = Instant.now().toEpochMilli();
-        data.forEach(r-> {
+        data.forEach(r -> {
             Map<String, Object> row = new HashMap<>();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             // 明细分表：TABLE_GROUP_ID 关联表映射；事件写入 TYPE；成功状态写入 IS_SUCCESS
@@ -113,13 +112,13 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 });
                 logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化。字段类型详情: {}", typeInfo, e);
             }
-            storageBufferActuator.offer(new StorageRequest(shardId, row));
+            storageBufferActuator.offer(new StorageRequest(taskId, row));
         });
     }
 
     private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data, Map<String, Field> fieldMap) {
         BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
-        data.forEach((k, v)-> {
+        data.forEach((k, v) -> {
             if (null != v) {
                 // DDL
                 if (fieldMap == null) {
@@ -149,22 +148,23 @@ public final class FlushStrategyImpl implements FlushStrategy {
         if (success == 0 && fail == 0) {
             return;
         }
-        // 与 FullPuller snapshot flush 共用锁，避免并发 editConfigModel 回写覆盖 DB 原子 success/fail
-        synchronized (MetaLockUtil.lock(writer.getMetaId())) {
-            metaProfile.incrementMeta(MetaIncrement.of(writer.getMetaId()).success(success).fail(fail));
+        // 与 FullTableProgressUtil.save 共用 tableLock；进度更新走 updateMetaProgress（写前重载），避免覆盖原子计数
+        synchronized (MetaLockUtil.lock(writer.getTaskId())) {
+            taskMetaProfile.incrementMeta(MetaIncrement.of(writer.getTaskId()).success(success).fail(fail));
         }
         incrementTableMeta(writer.getTableGroupId(), success, fail);
     }
 
     /**
-     * 同步表级 Meta：taskId=table_group.id，isTaskDetail=1；主键由 ADD 路径生成雪花。
+     * 同步表级 Meta 计数：taskId=table_group.id，isTaskDetail=1；主键由 ADD 路径生成雪花。
+     * <p>原子累加 success/fail；与 {@link FullTableProgressUtil#save} 共用表锁。
      */
     private void incrementTableMeta(String tableGroupId, long success, long fail) {
         if (StringUtil.isBlank(tableGroupId)) {
             return;
         }
-        synchronized (("table-meta-" + tableGroupId).intern()) {
-            Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        synchronized (FullTableProgressUtil.tableLock(tableGroupId)) {
+            Meta tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
             if (tableMeta == null) {
                 tableMeta = new Meta();
                 tableMeta.setTaskId(tableGroupId);
@@ -172,16 +172,17 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 long now = Instant.now().toEpochMilli();
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);
-                profileComponent.addConfigModel(tableMeta);
+                taskMetaProfile.addMeta(tableMeta);
+                tableMeta = taskMetaProfile.getMetaDetail(tableGroupId);
             }
-            metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).success(success).fail(fail));
+            taskMetaProfile.incrementMeta(MetaIncrement.of(tableMeta.getTaskId()).success(success).fail(fail));
         }
     }
 
     private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap) {
         refreshTotal(result);
 
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         // 是否写失败数据
         if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
             final String error = StringUtil.substring(result.getError().toString(), 0, systemConfig.getMaxStorageErrorLength());

@@ -48,6 +48,7 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_DATABASE = "SELECT datname FROM pg_database WHERE datistemplate = FALSE order by datname";
     private final String QUERY_SCHEMA = "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name NOT IN ('information_schema') ORDER BY schema_name";
+
     /**
      * 列出普通表/分区主表/视图/物化视图；排除子分区，避免与主表重复映射。
      * 分区主表类型归一为 TABLE，兼容现有 TableTypeEnum 与增量过滤逻辑。

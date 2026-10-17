@@ -23,14 +23,6 @@ public interface PluginService {
     List<PluginVO> listPlugins();
 
     /**
-     * 获取所有插件（含正在使用该插件的驱动名称）。
-     * 仅插件管理页使用，会扫描全部驱动与表映射。
-     *
-     * @return 插件及关联驱动名
-     */
-    List<PluginVO> getPluginAll();
-
-    /**
      * 获取插件上传路径
      *
      * @return

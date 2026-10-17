@@ -31,7 +31,7 @@ public interface UserProfile {
      *
      * @return 首个用户 id（兼容旧返回值）
      */
-    String syncUserConfig(UserConfig config);
+    String saveUserConfig(UserConfig config);
 
     /**
      * 用户行数。

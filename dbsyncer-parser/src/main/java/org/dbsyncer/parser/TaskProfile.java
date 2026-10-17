@@ -22,18 +22,18 @@ import java.util.zip.ZipFile;
  */
 public interface TaskProfile {
 
-
     /**
      * 按 id 查询一条任务配置。
      */
     <T extends ConfigModel> T getTask(String id, Class<T> clazz);
 
     /**
-     * 按模型类型分页查询任务，可选按名称模糊搜索。
+     * 按模型类型分页查询任务，并按 ID IN 过滤。
      *
      * @param searchKey 可选；非空时对 {@code name} 做 LIKE
+     * @param ids       资源 ID 集合；空或 null 不加 ID 条件
      */
-    <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey);
+    <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey, List<String> ids);
 
     /**
      * 按模型类型分页回调遍历全部任务。
@@ -64,11 +64,6 @@ public interface TaskProfile {
      * 按 TYPE 统计任务数量。
      */
     int countTasks(String type);
-
-    /**
-     * 任务 id 是否存在于 {@code dbsyncer_task}。
-     */
-    boolean existsTask(String id);
 
     /**
      * 全部任务行数。
@@ -105,30 +100,24 @@ public interface TaskProfile {
      */
     String exportTaskDetailSchemasJson(List<String> taskIds);
 
-    // ---------- 任务运行结果 ----------
+    /**
+     * 清空任务运行数据：重置表级 Meta（保留行）、清空 TASK_DETAIL 分表数据（编辑/重置用）。
+     */
+    void deleteRunData(String taskId);
 
     /**
-     * 删除任务下各表映射的运行 Meta（按 table_group.id）。
+     * 仅重置表级明细 Meta（计数/快照归 READY），不 TRUNCATE 明细分表。
      */
-    void deleteTableRunMeta(String taskId);
+    void resetTableDetailMetas(String taskId);
 
     /**
-     * 清空任务运行数据：删表级 Meta、清空 TASK_DETAIL；表映射仍在时补回空明细 Meta。
+     * 删除任务运行数据：删表级 Meta，并物理 DROP 明细分表（不重建）。
      */
-    void clearRunData(String taskId);
-
-    /**
-     * 预建运行明细分表 {@code dbsyncer_task_detail_{taskId}}。
-     */
-    void createRunDetailTable(String taskId);
-
+    void dropTaskDetailTable(String taskId);
+    
     /**
      * 批量预建运行明细分表（配置包导入）。
      */
     void createRunDetailTables(List<String> taskIds);
 
-    /**
-     * 重置任务级运行进度（计数归零、state=READY，保留 Meta 行）。
-     */
-    void resetRunProgress(String taskId);
 }

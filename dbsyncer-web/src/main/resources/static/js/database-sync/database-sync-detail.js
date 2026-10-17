@@ -109,7 +109,10 @@
         var detailRows = parseMigrationDetailRows(row);
         var bodyHtml = '';
         if (detailRows.length === 0) {
-            bodyHtml = '<tr><td colspan="2" class="text-center text-gray-400">暂无错误详情</td></tr>';
+            var failHint = Number(row.failTotal) > 0
+                ? '有失败计数但未落库错误样本（历史任务可重跑后查看）'
+                : '暂无错误详情';
+            bodyHtml = '<tr><td colspan="2" class="text-center text-gray-400">' + failHint + '</td></tr>';
         } else {
             detailRows.forEach(function (item) {
                 var errorText = item.error || '-';
@@ -247,7 +250,8 @@
                     type: typeCode,
                     sourceTable: row.sourceTable || '',
                     targetTable: row.targetTable || '',
-                    content: row.content || ''
+                    content: row.content || '',
+                    failTotal: row.failTotal
                 };
                 return '<tr>'
                     + '<td>' + index + '</td>'

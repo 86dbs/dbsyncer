@@ -28,6 +28,7 @@ import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.dbsyncer.sdk.storage.migrate.StorageDataMigrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
@@ -144,6 +145,25 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     @Override
+    public int update(String sql, Object[] args) {
+        try {
+            Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, args));
+            return rows == null ? 0 : rows;
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                logger.debug("update skip missing table: {}", e.getMessage());
+                return 0;
+            }
+            throw new H2Exception(e);
+        }
+    }
+
+    @Override
+    public <T> List<T> query(String sql, Object[] args, Class<T> beanClass) {
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.query(sql, args, new BeanPropertyRowMapper<>(beanClass)));
+    }
+
+    @Override
     protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         // 读路径：分表不存在时不建表，避免错误 shardId 产生孤儿表
@@ -179,6 +199,34 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     @Override
+    protected Map selectOne(String sharding, Query query) {
+        // 读路径：分表不存在时不建表
+        Executor executor = getExecutor(query.getType(), sharding, false);
+        if (executor == null) {
+            return null;
+        }
+        try {
+            StringBuilder sql = new StringBuilder(executor.getQuery());
+            List<Object> args = new ArrayList<>();
+            buildQuerySqlWithParams(query, args, sql, null);
+            List<Map<String, Object>> data = connectorInstance.execute(
+                    databaseTemplate -> databaseTemplate.queryForList(sql.toString(), args.toArray()));
+            if (CollectionUtils.isEmpty(data)) {
+                return null;
+            }
+            data = normalizeResultKeys(data, executor.getFields());
+            return data.get(0);
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                tables.remove(sharding);
+                logger.debug("selectOne skip missing table, sharding={}: {}", sharding, e.getMessage());
+                return null;
+            }
+            throw e instanceof RuntimeException ? (RuntimeException) e : new H2Exception(e);
+        }
+    }
+
+    @Override
     protected void delete(String sharding, Query query) {
         Executor executor = getExecutor(query.getType(), sharding, false);
         if (executor == null) {
@@ -201,12 +249,22 @@ public class H2StorageService extends AbstractStorageService {
             executeSql(String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(sharding)));
             return;
         }
-        // 动态分表：无论是否在内存缓存，都尝试 DROP，避免删任务后孤儿表残留
+        // 动态分表：物理 DROP（删除任务）
         String tableName = PREFIX_TABLE.concat(sharding);
         try {
             executeSql(String.format(DROP_TABLE, tableName));
         } catch (Exception e) {
             logger.debug("drop table {} skipped: {}", tableName, e.getMessage());
+        }
+    }
+
+    @Override
+    protected void truncateAll(String sharding) {
+        String tableName = PREFIX_TABLE.concat(sharding);
+        try {
+            executeSql(String.format(TRUNCATE_TABLE, tableName));
+        } catch (Exception e) {
+            logger.debug("truncate table {} skipped: {}", tableName, e.getMessage());
         }
     }
 
@@ -227,7 +285,7 @@ public class H2StorageService extends AbstractStorageService {
             return;
         }
         final String sql = executor.getDelete();
-        final List<Object[]> args = ids.stream().map(id -> new Object[] {id}).collect(Collectors.toList());
+        final List<Object[]> args = ids.stream().map(id -> new Object[]{id}).collect(Collectors.toList());
         connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
@@ -262,7 +320,8 @@ public class H2StorageService extends AbstractStorageService {
             sql.append(", ").append(connector.buildWithQuotation(updateTimeColumn)).append(" = ?");
             args.add(System.currentTimeMillis());
         }
-        sql.append(" WHERE ").append(connector.buildWithQuotation(ConfigConstant.CONFIG_MODEL_ID.toUpperCase())).append(" = ?");
+        String taskId = resolveColumn(executor, ConfigConstant.TABLE_GROUP_TASK_ID);
+        sql.append(" WHERE ").append(connector.buildWithQuotation(taskId)).append(" = ?");
         args.add(id);
         final List<Object[]> batchArgs = new ArrayList<>();
         batchArgs.add(args.toArray());
@@ -561,7 +620,8 @@ public class H2StorageService extends AbstractStorageService {
 
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.CONNECTOR_IS_SOURCE, ConfigConstant.CONNECTOR_IS_TARGET, ConfigConstant.CONFIG_MODEL_JSON);
+                ConfigConstant.CONNECTOR_IS_SOURCE, ConfigConstant.CONNECTOR_IS_TARGET, ConfigConstant.CONNECTOR_STATUS,
+                ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> connectorFields = builder.getFields();
 
         // 表映射关系：关联信息拆分列 + json(字段映射/command等)
@@ -597,6 +657,17 @@ public class H2StorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
+        // 业务分组
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> groupFields = builder.getFields();
+
+        // 业务分组关系
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.GROUP_REL_GROUP_ID, ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID);
+        List<Field> groupRelFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -605,6 +676,8 @@ public class H2StorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+        tables.computeIfAbsent(StorageEnum.GROUP.getType(), k -> new Executor(k, groupFields, true, true));
+        tables.computeIfAbsent(StorageEnum.GROUP_REL.getType(), k -> new Executor(k, groupRelFields, true, true));
 
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
@@ -623,14 +696,14 @@ public class H2StorageService extends AbstractStorageService {
         // 兼容升级（临时脚本，若干版本后可删）
         StorageDataMigrator migrator = new H2StorageDataMigrator(this, connectorInstance);
         if (!newStorageSchema) {
-            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS），执行兼容升级");
+            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS / 历史企业任务 TYPE），执行兼容升级");
         }
         migrator.run();
         dropTaskStatusColumnIfPresent();
     }
 
     /**
-     * 是否已是新版本存储：关键拆表齐全，且 dbsyncer_task 无旧 STATUS 列。
+     * 是否已是新版本存储：关键拆表齐全，dbsyncer_task 无旧 STATUS 列，且无历史企业任务 TYPE。
      */
     private boolean isNewStorageSchema() {
         String taskTable = PREFIX_TABLE.concat(StorageEnum.TASK.getType());
@@ -639,7 +712,27 @@ public class H2StorageService extends AbstractStorageService {
                 && tableExists(taskTable)
                 && tableExists(PREFIX_TABLE.concat(StorageEnum.TABLE_GROUP.getType()))
                 && tableExists(PREFIX_TABLE.concat(StorageEnum.META.getType()))
-                && !columnExists(taskTable, "STATUS");
+                && !columnExists(taskTable, "STATUS")
+                && !hasLegacyEnterpriseTaskType(taskTable);
+    }
+
+    /**
+     * 任务表是否仍存在历史大写 TYPE（VALIDATE_SYNC / DATABASE_SYNC），需跑驼峰化迁移。
+     */
+    private boolean hasLegacyEnterpriseTaskType(String taskTable) {
+        if (StringUtil.isBlank(taskTable) || !tableExists(taskTable)) {
+            return false;
+        }
+        try {
+            String sql = "SELECT COUNT(1) FROM " + connector.buildWithQuotation(taskTable)
+                    + " WHERE " + connector.buildWithQuotation("TYPE") + " IN (?, ?)";
+            Long cnt = connectorInstance.execute(tpl -> tpl.queryForObject(sql,
+                    new Object[]{"VALIDATE_SYNC", "DATABASE_SYNC"}, Long.class));
+            return cnt != null && cnt > 0;
+        } catch (Exception e) {
+            logger.debug("hasLegacyEnterpriseTaskType({}) failed: {}", taskTable, e.getMessage());
+            return true;
+        }
     }
 
     private boolean columnExists(String tableName, String columnName) {
@@ -721,6 +814,7 @@ public class H2StorageService extends AbstractStorageService {
         if (StorageEnum.CONNECTOR.getType().equals(type)) {
             addColumnIfNotExist(table, "IS_SOURCE", "INT NOT NULL DEFAULT 1");
             addColumnIfNotExist(table, "IS_TARGET", "INT NOT NULL DEFAULT 1");
+            addColumnIfNotExist(table, "STATUS", "INT NOT NULL DEFAULT 1");
             return;
         }
         if (StorageEnum.TABLE_GROUP.getType().equals(type)) {
@@ -797,7 +891,7 @@ public class H2StorageService extends AbstractStorageService {
 
     private boolean tableExists(String tableName) {
         try {
-            Long count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(QUERY_TABLE_EXISTS, new Object[] {tableName}, Long.class));
+            Long count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(QUERY_TABLE_EXISTS, new Object[]{tableName}, Long.class));
             return count != null && count > 0;
         } catch (Exception e) {
             logger.debug("tableExists({}) failed: {}", tableName, e.getMessage());
@@ -807,7 +901,7 @@ public class H2StorageService extends AbstractStorageService {
 
     private boolean indexExists(String tableName, String indexName) {
         Long count = connectorInstance.execute(databaseTemplate ->
-                databaseTemplate.queryForObject(QUERY_INDEX_EXISTS, new Object[] {tableName, indexName}, Long.class));
+                databaseTemplate.queryForObject(QUERY_INDEX_EXISTS, new Object[]{tableName, indexName}, Long.class));
         return count != null && count > 0;
     }
 
@@ -914,6 +1008,7 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.CONNECTOR_IS_SOURCE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CONNECTOR_IS_TARGET, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CONNECTOR_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),
@@ -945,7 +1040,10 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_NICKNAME, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_EMAIL, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         String columnName = UnderlineToCamelUtils.camelToUnderline(field.getName());

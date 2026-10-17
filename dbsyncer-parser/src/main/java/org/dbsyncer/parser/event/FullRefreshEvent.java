@@ -1,13 +1,12 @@
 package org.dbsyncer.parser.event;
 
-import org.dbsyncer.parser.model.Task;
-
+import org.dbsyncer.sdk.model.Task;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ApplicationContextEvent;
 
 public final class FullRefreshEvent extends ApplicationContextEvent {
 
-    private Task task;
+    private final Task task;
 
     /**
      * Create a new ContextStartedEvent.

@@ -14,9 +14,9 @@ import java.util.Properties;
 /**
  * 存储服务（支持记录配置/日志/同步数据）
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2019-11-16 23:22
+ * @author AE86
+ * @version 1.0.0
+ * @date 2019-11-16 23:22
  */
 public interface StorageService {
 
@@ -27,113 +27,74 @@ public interface StorageService {
 
     /**
      * 查询所有数据
-     *
-     * @param query
-     * @return
      */
     Paging query(Query query);
 
     /**
+     * 按主键查询单条记录（不走分页、不统计总数）。
+     */
+    Map queryObject(Query query);
+
+    /**
      * 根据条件删除
-     *
-     * @param query
      */
     void delete(Query query);
 
     /**
-     * 清空数据/日志
-     *
-     * @param type
-     * @param metaId
+     * 清空数据/日志（保留表结构）。
      */
-    void clear(StorageEnum type, String metaId);
+    void clear(StorageEnum type, String taskId);
 
     /**
-     * 确保分片表存在（仅建表结构，不写数据）。
-     * <p>用于配置导入预建 {@link StorageEnum#TASK_DETAIL} 等动态分表。
-     *
-     * @param type   存储类型
-     * @param metaId 分片键（TASK_DETAIL 为任务 ID）
+     * 删除存储分片（动态分表物理 DROP）。
+     * <p>删除任务时使用；与 {@link #clear} 不同，会去掉物理表。
      */
-    void ensure(StorageEnum type, String metaId);
+    void drop(StorageEnum type, String taskId);
 
     /**
      * 添加
-     *
-     * @param type
-     * @param params
      */
     void add(StorageEnum type, Map params);
 
     /**
      * 添加
-     *
-     * @param type
-     * @param metaId
-     * @param params
      */
-    void add(StorageEnum type, String metaId, Map params);
+    void add(StorageEnum type, String taskId, Map params);
 
     /**
      * 批量添加
-     *
-     * @param type
-     * @param metaId
-     * @param list
      */
-    void addBatch(StorageEnum type, String metaId, List<Map> list);
+    void addBatch(StorageEnum type, String taskId, List<Map> list);
 
     /**
      * 修改
-     *
-     * @param type
-     * @param params
      */
     void edit(StorageEnum type, Map params);
 
     /**
      * 修改
-     *
-     * @param type
-     * @param metaId
-     * @param params
      */
-    void edit(StorageEnum type, String metaId, Map params);
+    void edit(StorageEnum type, String taskId, Map params);
 
     /**
      * 批量修改
-     *
-     * @param type
-     * @param metaId
-     * @param list
      */
-    void editBatch(StorageEnum type, String metaId, List<Map> list);
+    void editBatch(StorageEnum type, String taskId, List<Map> list);
 
     /**
      * 删除
-     *
-     * @param type
-     * @param id
      */
     void remove(StorageEnum type, String id);
 
     /**
      * 删除
-     *
-     * @param type
-     * @param metaId
-     * @param id
      */
-    void remove(StorageEnum type, String metaId, String id);
+    void remove(StorageEnum type, String taskId, String id);
 
     /**
      * 批量删除
-     *
-     * @param type
-     * @param metaId
-     * @param ids
      */
-    void removeBatch(StorageEnum type, String metaId, List<String> ids);
+    void removeBatch(StorageEnum type, String taskId, List<String> ids);
 
     /**
      * 原子增量更新（按列自增，如 COL = GREATEST(COL + ?, 0)），用于严格走库下的 Meta 计数；结果小于 0 时钳为 0
@@ -145,10 +106,20 @@ public interface StorageService {
     void increment(StorageEnum type, String id, Map<String, Long> deltas);
 
     /**
-     * 执行原生查询 SQL（系统配置库）；{@link SqlQuery#isPaged()} 为 true 时带分页。
+     * 执行原生查询 SQL（系统配置库）；{@link ExecuteRequest#isPaged()} 为 true 时带分页。
      *
      * @param query SQL 与可选分页参数
      * @return 行列表，无结果时空列表
      */
-    List<Map<String, Object>> queryList(SqlQuery query);
+    List<Map<String, Object>> queryList(ExecuteRequest query);
+
+    /**
+     * 执行原生更新
+     */
+    int update(String sql, Object[] args);
+
+    /**
+     * 执行原生查询
+     */
+    <T> List<T> query(String sql, Object[] args, Class<T> beanClass);
 }

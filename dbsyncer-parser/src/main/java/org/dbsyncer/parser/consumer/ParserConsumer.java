@@ -6,8 +6,7 @@ package org.dbsyncer.parser.consumer;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
@@ -16,35 +15,38 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.QuartzListenerContext;
 import org.dbsyncer.sdk.listener.Watcher;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * @Version 1.0.0
- * @Author AE86
- * @Date 2023-11-12 01:32
+ * @author AE86
+ * @version 1.0.0
+ * @date 2023-11-12 01:32
  */
-public final class ParserConsumer implements Watcher {
+@Component
+public final class ParserConsumer implements Watcher, Cloneable {
 
-    private final BufferActuatorRouterService bufferActuatorRouter;
-    private final MetaProfile metaProfile;
-    private final ProfileComponent profileComponent;
-    private final PluginFactory pluginFactory;
-    private final LogService logService;
-    private final String metaId;
+    @Resource
+    private BufferActuatorRouterService bufferActuatorRouter;
 
-    public ParserConsumer(BufferActuatorRouterService bufferActuatorRouter, MetaProfile metaProfile, ProfileComponent profileComponent,
-                          PluginFactory pluginFactory, LogService logService, String metaId,
-                          List<TableGroup> tableGroups, int channelSize) {
-        this.bufferActuatorRouter = bufferActuatorRouter;
-        this.metaProfile = metaProfile;
-        this.profileComponent = profileComponent;
-        this.pluginFactory = pluginFactory;
-        this.logService = logService;
-        this.metaId = metaId;
-        bufferActuatorRouter.bind(metaId, extractSourceTableNames(tableGroups), channelSize);
+    @Resource
+    private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private PluginFactory pluginFactory;
+
+    @Resource
+    private LogService logService;
+
+    private String taskId;
+
+    public void build(String taskId, List<TableGroup> tableGroups, int channelSize) {
+        this.taskId = taskId;
+        bufferActuatorRouter.bind(taskId, extractSourceTableNames(tableGroups), channelSize);
     }
 
     @Override
@@ -54,15 +56,15 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public void changeEvent(ChangedEvent event) {
-        bufferActuatorRouter.execute(metaId, event);
+        bufferActuatorRouter.execute(taskId, event);
     }
 
     @Override
     public void flushEvent(Map<String, String> snapshot) {
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         if (meta != null) {
             meta.setSnapshot(snapshot);
-            profileComponent.editConfigModel(meta);
+            taskMetaProfile.updateMeta(meta);
         }
     }
 
@@ -73,8 +75,17 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public long getMetaUpdateTime() {
-        Meta meta = metaProfile.getMeta(metaId);
+        Meta meta = taskMetaProfile.getMeta(taskId);
         return meta != null ? meta.getUpdateTime() : 0L;
+    }
+
+    @Override
+    public ParserConsumer clone() {
+        try {
+            return (ParserConsumer) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 
     private List<String> extractSourceTableNames(List<TableGroup> tableGroups) {

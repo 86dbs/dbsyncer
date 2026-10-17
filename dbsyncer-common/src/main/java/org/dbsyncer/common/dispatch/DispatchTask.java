@@ -8,9 +8,9 @@ import org.dbsyncer.common.enums.DispatchTaskEnum;
 import java.util.function.Consumer;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-12 23:54
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-12 23:54
  */
 public interface DispatchTask extends Runnable {
 

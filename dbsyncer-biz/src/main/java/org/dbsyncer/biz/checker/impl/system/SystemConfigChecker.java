@@ -6,7 +6,6 @@ package org.dbsyncer.biz.checker.impl.system;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.common.model.ApiKeyConfig;
-import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.rsa.RsaManager;
@@ -15,7 +14,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
 public class SystemConfigChecker extends AbstractChecker {
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private LogService logService;
@@ -48,19 +47,19 @@ public class SystemConfigChecker extends AbstractChecker {
     private RsaManager rsaManager;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public SystemConfig checkAddConfigModel(Map<String, String> params) {
         SystemConfig systemConfig = new SystemConfig();
         systemConfig.setName("系统配置");
 
         // 修改基本配置
         this.modifyConfigModel(systemConfig, params);
 
-        profileComponent.addConfigModel(systemConfig);
+        systemConfigProfile.saveSystemConfig(systemConfig);
         return systemConfig;
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public SystemConfig checkEditConfigModel(Map<String, String> params) {
         printParams(params);
         Assert.notEmpty(params, "Config check params is null.");
         Map<String, Object> newParams = new HashMap<>();
@@ -77,20 +76,20 @@ public class SystemConfigChecker extends AbstractChecker {
         }
         params.put("watermark", watermark);
 
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
-        Assert.notNull(systemConfig, "配置文件为空.");
-        BeanUtil.mapToBean(newParams, systemConfig);
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        SystemConfig newConfig = systemConfig.clone();
+        BeanUtil.mapToBean(newParams, newConfig);
         // 修改 API 密钥配置
-        saveApiKeyConfig(systemConfig, params);
+        saveApiKeyConfig(newConfig, params);
         // 修改RSA配置
-        saveRsaConfig(systemConfig, params);
+        saveRsaConfig(newConfig, params);
         // 修改 IP 白名单配置
-        saveIpWhitelistConfig(systemConfig, params);
+        saveIpWhitelistConfig(newConfig, params);
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置
-        this.modifyConfigModel(systemConfig, params);
-        return systemConfig;
+        this.modifyConfigModel(newConfig, params);
+        return newConfig;
     }
 
     private void saveApiKeyConfig(SystemConfig systemConfig, Map<String, String> params) {

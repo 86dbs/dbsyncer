@@ -4,26 +4,16 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
-import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
-import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.manager.ManagerFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskProfile;
-import org.dbsyncer.parser.command.impl.PreloadCommand;
-import org.dbsyncer.parser.enums.CommandEnum;
+import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -39,8 +29,8 @@ import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.notice.MessageService;
-import org.dbsyncer.sdk.spi.TaskService;
-import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.sdk.service.ScheduledScanManager;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -49,12 +39,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.stream.Stream;
 
 /**
  * 预加载配置模板
@@ -68,34 +57,23 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /**
-     * 版本信息
-     */
-    public static final String DBS_VERSION_INFO = "versionInfo";
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
-    private TableGroupProfile tableGroupProfile;
+    private TaskMetaProfile taskMetaProfile;
 
     @Resource
-    private MetaProfile metaProfile;
-
-    @Resource
-    private TaskProfile taskProfile;
-
-    @Resource
-    private ManagerFactory managerFactory;
+    private MappingProfile mappingProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
 
     @Resource
     private PluginFactory pluginFactory;
-
-    @Resource
-    private StorageService storageService;
 
     @Resource
     private MessageService messageService;
@@ -109,7 +87,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private boolean preloadCompleted;
 
     @Resource
-    private TaskService<ConfigModel> taskService;
+    private ClusterService clusterService;
+
+    @Resource
+    private ScheduledScanManager scheduledScanManager;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -120,16 +101,17 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load Notification Channels
         loadNotificationChannel();
 
-        // Load connectorInstances
-        loadConnectorInstance();
-
-        // 同步驱动：按任务级 Meta 恢复 Mapping
-        launchSyncMappings();
-
-        // 订正校验 / 整库迁移
-        resumeValidateSyncTasks();
-        resumeDatabaseSyncTasks();
-
+        // 单机/集群共用：半停态 Meta 归 READY，避免一直「停止中」
+        reconcileStoppingMappingMetas();
+        clusterService.init();
+        if (clusterService.isStandalone()) {
+            // Load connectorInstances
+            loadConnectorInstance();
+            // 同步任务：按任务级 Meta 恢复 Mapping
+            launchSyncMappings();
+            //初始化定时检测任务
+            scheduledScanManager.start();
+        }
         preloadCompleted = true;
     }
 
@@ -186,7 +168,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * @return 已有或新建的系统配置
      */
     private SystemConfig initSystemConfigIfAbsent() {
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         if (systemConfig != null) {
             return systemConfig;
         }
@@ -195,55 +177,36 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         long now = System.currentTimeMillis();
         systemConfig.setCreateTime(now);
         systemConfig.setUpdateTime(now);
-        profileComponent.addConfigModel(systemConfig);
+        systemConfigProfile.saveSystemConfig(systemConfig);
         logger.warn("No system config found, created default system config");
         return systemConfig;
     }
 
     /**
      * 是否完成预加载配置
-     *
-     * @return
      */
     public boolean isPreloadCompleted() {
         return preloadCompleted;
     }
 
-    public void reload(String json) {
-        Map<String, Map> map = JsonUtil.jsonToObj(json, Map.class);
-        if (CollectionUtils.isEmpty(map)) {
-            return;
-        }
-        // 版本信息检查
-        Map versionInfo = map.get(DBS_VERSION_INFO);
-        Assert.isTrue(versionInfo != null, "不支持导入低版本或配置不完整");
-        VersionInfo info = JsonUtil.jsonToObj(versionInfo.toString(), VersionInfo.class);
-        logger.info("upload config: appName={}, version={}, createTime={}", info.getAppName(), info.getVersion(), DateFormatUtil.timestampToString(new Timestamp(info.getCreateTime())));
-
-        // Load configModels
-        Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING, CommandEnum.PRELOAD_META)
-                .forEach(commandEnum->reload(map, commandEnum));
-
-        afterConfigImport();
-    }
-
     /**
-     * 配置导入完成后的收尾：重建连接实例，恢复同步驱动与企业任务。
+     * 配置导入完成后的收尾：重建连接实例，恢复同步驱动；其余运行中任务由续跑。
      */
     public void afterConfigImport() {
-        loadConnectorInstance();
+        // 集群不预热全部连接器；单机仍全量预热
+        if (clusterService.isStandalone()) {
+            loadConnectorInstance();
+        }
+        reconcileStoppingMappingMetas();
         launchSyncMappings();
-        resumeValidateSyncTasks();
-        resumeDatabaseSyncTasks();
     }
 
     /**
-     * 恢复同步驱动(Mapping)。
-     * <p>先按任务类型 {@code mapping} 分页拉取任务，再批量查任务级 Meta（{@code isTaskDetail=0}），
-     * 避免一次性加载全部 Meta。明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
+     * 将仍为 STOPPING 的同步任务 Meta 归为 READY（进程重启 / 半停收口兜底）。
+     * <p>单机与集群启动均调用；不启动任务，仅纠正控制面状态。
      */
-    private void launchSyncMappings() {
-        taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappings -> {
+    public void reconcileStoppingMappingMetas() {
+        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappings -> {
             if (CollectionUtils.isEmpty(mappings)) {
                 return;
             }
@@ -253,7 +216,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     taskIds.add(mapping.getId());
                 }
             }
-            Map<String, Meta> metaMap = metaProfile.getTaskMetaMap(taskIds);
+            Map<String, Meta> metaMap = taskMetaProfile.getTaskMetaMap(taskIds);
             if (CollectionUtils.isEmpty(metaMap)) {
                 return;
             }
@@ -262,19 +225,53 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     continue;
                 }
                 Meta meta = metaMap.get(mapping.getId());
-                if (meta == null) {
+                if (meta == null || meta.getState() != CommonTaskStatusEnum.STOPPING.getCode()) {
+                    continue;
+                }
+                try {
+                    changeMetaState(meta, CommonTaskStatusEnum.READY);
+                } catch (Exception e) {
+                    logger.error("半停态 Meta 收口失败, taskId={}, name={}, err={}", mapping.getId(), mapping.getName(), e.getMessage(), e);
+                }
+            }
+        });
+    }
+
+    /**
+     * 恢复同步驱动(Mapping)：仅续跑 Meta=RUNNING 的任务。
+     * <p>STOPPING 收口见 {@link #reconcileStoppingMappingMetas()}。
+     * <p>先按任务类型 {@code mapping} 分页拉取任务，再批量查任务级 Meta（{@code isTaskDetail=0}），
+     * 避免一次性加载全部 Meta。明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
+     */
+    private void launchSyncMappings() {
+        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappings -> {
+            if (CollectionUtils.isEmpty(mappings)) {
+                return;
+            }
+            List<String> taskIds = new ArrayList<>();
+            for (Mapping mapping : mappings) {
+                if (mapping != null && StringUtil.isNotBlank(mapping.getId())) {
+                    taskIds.add(mapping.getId());
+                }
+            }
+            Map<String, Meta> metaMap = taskMetaProfile.getTaskMetaMap(taskIds);
+            if (CollectionUtils.isEmpty(metaMap)) {
+                return;
+            }
+            for (Mapping mapping : mappings) {
+                if (mapping == null || StringUtil.isBlank(mapping.getId())) {
+                    continue;
+                }
+                Meta meta = metaMap.get(mapping.getId());
+                if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
                     continue;
                 }
                 try {
                     reConnect(mapping);
-                    // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
-                    if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
-                        managerFactory.start(mapping, true);
-                    } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
-                        managerFactory.changeMetaState(meta.getId(), CommonTaskStatusEnum.READY);
-                    }
+                    // 自动恢复：CDC 监听启动失败时按配置重试
+                    clusterService.start(mapping, true);
                 } catch (Exception e) {
-                    logger.error("恢复同步驱动失败, metaId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
+                    logger.error("恢复同步驱动失败, taskId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
                 }
             }
         });
@@ -296,43 +293,18 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                           String targetConnectorId, String targetDatabase, String targetSchema) {
         String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
-        Connector connector = profileComponent.getConnector(sourceConnectorId);
+        Connector connector = connectorProfile.getConnector(sourceConnectorId);
         ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), sourceDatabase, sourceSchema);
         Assert.notNull(instance, "Source connector instance can not null");
-        connector = profileComponent.getConnector(targetConnectorId);
+        connector = connectorProfile.getConnector(targetConnectorId);
         instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), targetDatabase, targetSchema);
         Assert.notNull(instance, "Target connector instance can not null");
     }
 
-    private void reload(Map<String, Map> map, CommandEnum commandEnum) {
-        reload(map, commandEnum, commandEnum.getModelType());
-    }
-
-    private void reload(Map<String, Map> map, CommandEnum commandEnum, String groupId) {
-        Map config = map.get(groupId);
-        if (null == config) {
-            return;
-        }
-        Group group = JsonUtil.jsonToObj(config.toString(), Group.class);
-        if (null == group || group.isEmpty()) {
-            return;
-        }
-
-        for (String id : group.getIndex()) {
-            Map m = map.get(id);
-            ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, m.toString()));
-            profileComponent.addConfigModel(model);
-            // Load tableGroups
-            if (CommandEnum.PRELOAD_MAPPING == commandEnum) {
-                reload(map, CommandEnum.PRELOAD_TABLE_GROUP, tableGroupProfile.getPreloadGroupKey(model.getId()));
-            }
-        }
-    }
-
     private void loadConnectorInstance() {
-        List<Connector> list = profileComponent.getConnectorAll();
+        List<Connector> list = connectorProfile.getConnectorAll();
         if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(connector->generalExecutor.execute(()-> {
+            list.forEach(connector -> generalExecutor.execute(() -> {
                 try {
                     ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
                     logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
@@ -344,64 +316,21 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
     }
 
-    /**
-     * 恢复订正校验任务。
-     * <p>任务配置在 {@code dbsyncer_task}，表映射在 {@code dbsyncer_table_group}；
-     * TaskService 企业实现启动时已从库加载缓存，此处只做连接器预热与运行中任务续跑。
-     */
-    private void resumeValidateSyncTasks() {
-        List<ConfigModel> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.VALIDATE_SYNC);
-        if (CollectionUtils.isEmpty(taskAll)) {
-            return;
-        }
-        for (ConfigModel commonTask : taskAll) {
-            if (!(commonTask instanceof ValidateSyncTask)) {
-                continue;
+    public void changeMetaState(Meta meta, CommonTaskStatusEnum status) {
+        if (null != meta && meta.getState() != status.getCode()) {
+            long now = Instant.now().toEpochMilli();
+            meta.setState(status.getCode());
+            meta.setUpdateTime(now);
+            // 进入运行中时记录本轮启动时间，供耗时（updateTime - startTime）计算
+            if (CommonTaskStatusEnum.RUNNING == status) {
+                meta.setStartTime(now);
             }
-            ValidateSyncTask task = (ValidateSyncTask) commonTask;
-            try {
-                reConnect(task);
-            } catch (Exception e) {
-                logger.error("校验任务连接器预热失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
-            }
+            taskMetaProfile.updateMeta(meta);
         }
-        resumeRunningCommonTasks(taskAll);
     }
 
-    /**
-     * 恢复整库迁移任务。
-     * <p>库表关联已下沉 {@code dbsyncer_table_group}，不再依赖任务 JSON 内 mappings；
-     * 连接器在 Handler 启动时按 table_group 初始化，此处只续跑运行中任务。
-     */
-    private void resumeDatabaseSyncTasks() {
-        List<ConfigModel> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC);
-        if (CollectionUtils.isEmpty(taskAll)) {
-            return;
-        }
-        resumeRunningCommonTasks(taskAll);
-    }
-
-    /**
-     * 将中断前 Meta.state=RUNNING 的任务重新拉起（先将 Meta 置 READY，再 start）。
-     */
-    private void resumeRunningCommonTasks(List<ConfigModel> taskAll) {
-        for (ConfigModel task : taskAll) {
-            if (task == null || StringUtil.isBlank(task.getId())) {
-                continue;
-            }
-            Meta meta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
-            if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
-                continue;
-            }
-            try {
-                meta.setState(CommonTaskStatusEnum.READY.getCode());
-                meta.setUpdateTime(System.currentTimeMillis());
-                profileComponent.editConfigModel(meta);
-                taskService.start(task.getId());
-                logger.info("已恢复运行中任务: type={}, taskId={}, name={}", task.getType(), task.getId(), task.getName());
-            } catch (Exception e) {
-                logger.error("恢复任务失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
-            }
-        }
+    public void changeMetaState(String taskId, CommonTaskStatusEnum status) {
+        Meta meta = taskMetaProfile.getMeta(taskId);
+        changeMetaState(meta, status);
     }
 }
