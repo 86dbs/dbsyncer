@@ -250,7 +250,7 @@ public class ClusterNodeMetricAggregator {
         try {
             HttpResult result = HttpClientUtil.get(base + "/cluster/internal/metrics", HttpClientUtil.clusterTokenHeaders(internalToken), CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
             if (!result.isOk()) {
-                logger.warn("拉取节点指标失败, node={}, http={}", node.getId(), result.getStatusCode());
+                logger.warn("拉取节点指标失败, node={}, http={}", node.getNodeId(), result.getStatusCode());
                 return unreachable();
             }
             RestResult<ClusterNodeMetricVO> res = JsonUtil.jsonToObj(result.getBody(), new TypeReference<RestResult<ClusterNodeMetricVO>>() {
