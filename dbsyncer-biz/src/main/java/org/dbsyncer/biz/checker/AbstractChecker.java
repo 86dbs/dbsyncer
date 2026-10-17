@@ -46,9 +46,6 @@ public abstract class AbstractChecker implements Checker {
     /**
      * 修改基本配置
      * <p>id,type,name,createTime,updateTime</p>
-     *
-     * @param model
-     * @param params
      */
     protected void modifyConfigModel(ConfigModel model, Map<String, String> params) {
         Assert.notNull(model, "ConfigModel can not be null.");
@@ -67,9 +64,6 @@ public abstract class AbstractChecker implements Checker {
 
     /**
      * 修改高级配置：过滤条件/转换配置/插件配置
-     *
-     * @param model
-     * @param params
      */
     protected void modifySuperConfigModel(AbstractConfigModel model, Map<String, String> params) {
         // 全局参数
@@ -111,8 +105,6 @@ public abstract class AbstractChecker implements Checker {
 
     /**
      * 打印参数（数据脱敏）
-     *
-     * @param params
      */
     protected void printParams(Map<String, String> params) {
         Map<Object, Object> checkParams = new HashMap<>(params);

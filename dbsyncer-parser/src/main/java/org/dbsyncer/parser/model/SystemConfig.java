@@ -124,6 +124,11 @@ public class SystemConfig extends ConfigModel {
      */
     private long shardTimeoutMs = 300_000L;
 
+    /**
+     * 集群节点间内部接口共享密钥，生产集群各节点必须配置相同值，防止未鉴权启停任务。
+     */
+    private String clusterSecret = "9r+KZ1FNjSpob+shIVXPeuP+u6m2d9z/7RgeY/1vzp0=";
+
     public int getExpireDataDays() {
         return expireDataDays;
     }
@@ -282,5 +287,13 @@ public class SystemConfig extends ConfigModel {
 
     public void setShardTimeoutMs(long shardTimeoutMs) {
         this.shardTimeoutMs = shardTimeoutMs;
+    }
+
+    public String getClusterSecret() {
+        return clusterSecret;
+    }
+
+    public void setClusterSecret(String clusterSecret) {
+        this.clusterSecret = clusterSecret;
     }
 }
