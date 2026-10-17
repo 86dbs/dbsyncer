@@ -47,96 +47,96 @@
 </div>
 
 <script>
-function copyMapping(id) {
-    doPoster("/mapping/copy", { id: id }, function (response) {
-        if (response.success) {
-            bootGrowl('复制成功', 'success');
-            backIndexPage();
-        } else {
-            bootGrowl('复制失败: ' + response.message, 'danger');
-        }
-    });
-}
-
-function changeMappingState(id, url, title) {
-    const btn = event.target.closest('.table-action-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="'+ title +'中"></i>';
-    btn.disabled = true;
-    doPoster(url, {id: id}, function (response) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        if (response.success) {
-            bootGrowl(title +'成功', 'success');
-            refreshIndexList();
-        } else {
-            // 映射关系不存在：后端会抛出 BizException（例如：映射关系不能为空）
-            if (url === '/mapping/start' && response.message && response.message.indexOf('映射关系') !== -1) {
-                bootGrowl('映射关系不存在，不允许启动', 'warning');
-                return;
+    function copyMapping(id) {
+        doPoster("/mapping/copy", {id: id}, function (response) {
+            if (response.success) {
+                bootGrowl('复制成功', 'success');
+                backIndexPage();
+            } else {
+                bootGrowl('复制失败: ' + response.message, 'danger');
             }
-            bootGrowl(title +'失败: ' + response.message, 'danger');
-        }
-    })
-}
+        });
+    }
 
-function deleteMapping(id) {
-    showConfirm({
-        title: '确定要删除驱动？',
-        icon: 'warning',
-        size: 'large',
-        confirmType: 'danger',
-        onConfirm: function () {
-            // 禁用按钮，防止重复点击
-            doPoster('/mapping/remove', {id: id}, function (response) {
-                if (response.success === true) {
-                    bootGrowl("删除成功！", "success");
-                    const rawStr = localStorage.getItem("dbsyncer.pagination.mapping-list");
-                    const raw = JSON.parse(rawStr);
-                    raw.pageNum = 1;
-                    localStorage.setItem('dbsyncer.pagination.mapping-list', JSON.stringify(raw));
-                    backIndexPage();
-                } else {
-                    bootGrowl(response.message || "删除失败", "danger");
+    function changeMappingState(id, url, title) {
+        const btn = event.target.closest('.table-action-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="' + title + '中"></i>';
+        btn.disabled = true;
+        doPoster(url, {id: id}, function (response) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            if (response.success) {
+                bootGrowl(title + '成功', 'success');
+                refreshIndexList();
+            } else {
+                // 映射关系不存在：后端会抛出 BizException（例如：映射关系不能为空）
+                if (url === '/mapping/start' && response.message && response.message.indexOf('映射关系') !== -1) {
+                    bootGrowl('映射关系不存在，不允许启动', 'warning');
+                    return;
                 }
-            });
-        }
-    });
-}
-
-// 启动按钮渲染：交由后端兜底校验（避免误判：统计任务未完成 total 可能为 0）
-function renderStateButtonWithMappingCheck(state, mapping) {
-    return renderStateButton(state, mapping.id);
-}
-
-
-// 页面初始化
-$(document).ready(function() {
-    // 定义返回函数，子页面返回
-    window.backIndexPage = function () {
-        doLoader('/mapping/list');
-    };
-    let groupToolbar = null;
-    // 初始化分页管理器
-    const pagination = new PaginationManager({
-        requestUrl: '/mapping/search',
-        tableBodySelector: '#mappingTableBody',
-        storageKey: 'mapping-list',
-        pageSize: 5,
-        refreshCompleted: function () {
-            if (groupToolbar) {
-                groupToolbar.setListTotal(pagination.total || 0);
+                bootGrowl(title + '失败: ' + response.message, 'danger');
             }
-        },
-        renderRow: function(mapping, index) {
-            const source = mapping.sourceConnector || {};
-            const target = mapping.targetConnector || {};
-            const sourceName = source.name || '连接器已删除';
-            const targetName = target.name || '连接器已删除';
-            const sourceType = (source.config && source.config.connectorType) || '';
-            const targetType = (target.config && target.config.connectorType) || '';
-            const meta = mapping.meta || {};
-            return `
+        })
+    }
+
+    function deleteMapping(id) {
+        showConfirm({
+            title: '确定要删除驱动？',
+            icon: 'warning',
+            size: 'large',
+            confirmType: 'danger',
+            onConfirm: function () {
+                // 禁用按钮，防止重复点击
+                doPoster('/mapping/remove', {id: id}, function (response) {
+                    if (response.success === true) {
+                        bootGrowl("删除成功！", "success");
+                        const rawStr = localStorage.getItem("dbsyncer.pagination.mapping-list");
+                        const raw = JSON.parse(rawStr);
+                        raw.pageNum = 1;
+                        localStorage.setItem('dbsyncer.pagination.mapping-list', JSON.stringify(raw));
+                        backIndexPage();
+                    } else {
+                        bootGrowl(response.message || "删除失败", "danger");
+                    }
+                });
+            }
+        });
+    }
+
+    // 启动按钮渲染：交由后端兜底校验（避免误判：统计任务未完成 total 可能为 0）
+    function renderStateButtonWithMappingCheck(state, mapping) {
+        return renderStateButton(state, mapping.id);
+    }
+
+
+    // 页面初始化
+    $(document).ready(function () {
+        // 定义返回函数，子页面返回
+        window.backIndexPage = function () {
+            doLoader('/mapping/list');
+        };
+        let groupToolbar = null;
+        // 初始化分页管理器
+        const pagination = new PaginationManager({
+            requestUrl: '/mapping/search',
+            tableBodySelector: '#mappingTableBody',
+            storageKey: 'mapping-list',
+            pageSize: 5,
+            refreshCompleted: function () {
+                if (groupToolbar) {
+                    groupToolbar.setListTotal(pagination.total || 0);
+                }
+            },
+            renderRow: function (mapping, index) {
+                const source = mapping.sourceConnector || {};
+                const target = mapping.targetConnector || {};
+                const sourceName = source.name || '连接器已删除';
+                const targetName = target.name || '连接器已删除';
+                const sourceType = (source.config && source.config.connectorType) || '';
+                const targetType = (target.config && target.config.connectorType) || '';
+                const meta = mapping.meta || {};
+                return `
                 <tr>
                     <td>${index}</td>
                     <td title="${escapeHtml(mapping.name)}">
@@ -171,40 +171,40 @@ $(document).ready(function() {
                     </td>
                 </tr>
             `;
-        },
-        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>',
-        customPageSize: true,
-    });
+            },
+            emptyHtml: '<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无同步任务</p><p class="empty-description">点击"添加"按钮创建第一个任务</p></td>',
+            customPageSize: true,
+        });
 
-    let searchInput = null;
-    groupToolbar = GroupToolbar.initListToolbar({
-        containerSelector: '#mappingGroupToolbar',
-        createButtonHostSelector: '#mappingGroupCreateHost',
-        resourceType: 'mapping',
-        searchUrl: '/mapping/search',
-        addPageUrl: '/mapping/pageAdd',
-        addButtonSelector: '#mappingAddBtn',
-        onChange: function () {
-            pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput ? searchInput.getValue() : '' }), 1);
-        }
-    });
-    groupToolbar.setListTotal(pagination.total || 0);
+        let searchInput = null;
+        groupToolbar = GroupToolbar.initListToolbar({
+            containerSelector: '#mappingGroupToolbar',
+            createButtonHostSelector: '#mappingGroupCreateHost',
+            resourceType: 'mapping',
+            searchUrl: '/mapping/search',
+            addPageUrl: '/mapping/pageAdd',
+            addButtonSelector: '#mappingAddBtn',
+            onChange: function () {
+                pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchInput ? searchInput.getValue() : ''}), 1);
+            }
+        });
+        groupToolbar.setListTotal(pagination.total || 0);
 
-    // 搜索框输入事件
-    searchInput = initSearch('searchMapping', function (searchKey) {
-        pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchKey }), 1);
-    });
+        // 搜索框输入事件
+        searchInput = initSearch('searchMapping', function (searchKey) {
+            pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchKey}), 1);
+        });
 
-    // 列表局部刷新（启动/停止等操作后保持当前页与分页大小）
-    window.refreshIndexList = function () {
-        pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput.getValue() }), pagination.currentPage);
-    };
+        // 列表局部刷新（启动/停止等操作后保持当前页与分页大小）
+        window.refreshIndexList = function () {
+            pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchInput.getValue()}), pagination.currentPage);
+        };
 
-    // 注册到全局定时刷新管理器
-    PageRefreshManager.register(() => {
-        pagination.doSearch(groupToolbar.getSearchParams({ searchKey: searchInput.getValue() }), pagination.currentPage);
+        // 注册到全局定时刷新管理器
+        PageRefreshManager.register(() => {
+            pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchInput.getValue()}), pagination.currentPage);
+        });
     });
-});
 </script>
 
 </html>
