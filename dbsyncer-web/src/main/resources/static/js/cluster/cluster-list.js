@@ -112,7 +112,7 @@
     function initCharts() {
         charts.queue = initLineChart('clusterQueueChart', '堆积', 'rgba(250, 173, 20, 1)', false);
         charts.tps = initLineChart('clusterTpsChart', 'TPS', 'rgba(245, 108, 108, 1)', false);
-        charts.workItem = initLineChart('clusterWorkItemChart', '任务分片', 'rgba(24, 144, 255, 1)', true);
+        charts.workItem = initLineChart('clusterWorkItemChart', '分片任务', 'rgba(24, 144, 255, 1)', true);
     }
 
     function updateLineChart(chart, labels, data) {
@@ -363,7 +363,7 @@
             {label: '启动', value: formatDate(item.startTime)}
         ]);
         var taskHtml = stackCell([
-            {label: '任务分片', value: escapeHtml(fullWorkItems)},
+            {label: '分片任务', value: escapeHtml(fullWorkItems)},
             {label: '增量任务', value: escapeHtml(incremental)}
         ]);
         var throughputHtml = stackCell([
