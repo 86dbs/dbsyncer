@@ -298,14 +298,27 @@
             $addBtn = $();
         }
 
+        /**
+         * 切换显隐。按钮同时有 .btn（display:inline-flex）与 .hidden（display:none）时，
+         * 后加载的 buttons.css 会盖住 .hidden，需用内联 display 保证「全部」时编辑/删除真正隐藏。
+         */
+        function setBtnVisible($btn, visible) {
+            if (!$btn || !$btn.length) {
+                return;
+            }
+            $btn.toggleClass('hidden', !visible);
+            $btn.css('display', visible ? '' : 'none');
+        }
+
         function syncVisibility() {
             var showFilter = hasGroups;
+            // 「全部」value 为空，不可编辑/删除
             var showEditRemove = hasGroups && isRealGroupId(currentGroupId);
             var showAdd = listTotal > 0;
             $filterWrap.toggleClass('hidden', !showFilter);
-            $editBtn.toggleClass('hidden', !showEditRemove);
-            $removeBtn.toggleClass('hidden', !showEditRemove);
-            $addBtn.toggleClass('hidden', !showAdd);
+            setBtnVisible($editBtn, showEditRemove);
+            setBtnVisible($removeBtn, showEditRemove);
+            setBtnVisible($addBtn, showAdd);
             // 中间筛选区：无下拉且无编辑删除时隐藏
             $container.toggleClass('hidden', !showFilter && !showEditRemove);
             if ($createHost.length) {
