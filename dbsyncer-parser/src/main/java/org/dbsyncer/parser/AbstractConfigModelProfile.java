@@ -81,15 +81,20 @@ public abstract class AbstractConfigModelProfile<T extends ConfigModel> implemen
     @Override
     public void removeCacheAndNotice(String id) {
         removeCache(id);
-        RemoveCacheMessage message = new RemoveCacheMessage();
-        message.setId(id);
-        message.setConfigModelType(configModelType);
-        clusterService.pushMessage(message);
+        pushMessage(id);
     }
 
     @Override
     public void removeCache(String id) {
         cacheService.remove(buildCacheKey(id));
+    }
+
+    @Override
+    public void pushMessage(String id) {
+        RemoveCacheMessage message = new RemoveCacheMessage();
+        message.setId(id);
+        message.setConfigModelType(configModelType);
+        clusterService.pushMessage(message);
     }
 
     protected ConfigModel getConfigModel(String id) {

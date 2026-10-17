@@ -21,7 +21,7 @@ public interface SystemConfigProfile {
     /**
      * 保存系统配置（新增或更新）。
      */
-    String saveSystemConfig(SystemConfig config);
+    void saveSystemConfig(SystemConfig config);
 
     /**
      * 系统配置行数。

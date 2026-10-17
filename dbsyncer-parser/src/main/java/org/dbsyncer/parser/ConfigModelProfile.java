@@ -18,4 +18,6 @@ public interface ConfigModelProfile {
 
     void removeCache(String id);
 
+    void pushMessage(String id);
+
 }

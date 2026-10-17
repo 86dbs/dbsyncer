@@ -48,7 +48,7 @@ public final class SystemConfigProfileImpl extends AbstractConfigModelProfile<Sy
     }
 
     @Override
-    public String saveSystemConfig(SystemConfig config) {
+    public void saveSystemConfig(SystemConfig config) {
         Assert.notNull(config, "SystemConfig can not be null.");
         long now = System.currentTimeMillis();
         if (config.getCreateTime() == null) {
@@ -63,8 +63,8 @@ public final class SystemConfigProfileImpl extends AbstractConfigModelProfile<Sy
         } else {
             storageService.edit(StorageEnum.CONFIG, ConfigModelUtil.convertModelToMap(config));
         }
-        removeCacheAndNotice(null);
-        return config.getId();
+        pushMessage(null);
+        removeCache(null);
     }
 
     @Override
