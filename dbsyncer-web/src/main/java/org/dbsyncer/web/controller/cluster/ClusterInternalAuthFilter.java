@@ -25,7 +25,6 @@ import java.security.MessageDigest;
 /**
  * 校验节点间共享密钥，保护 {@code /cluster/internal/**}。
  * <p>
- * 配置项 {@code dbsyncer.cluster.internal-token} 未设置时一律拒绝（生产默认安全）。
  * 请求须携带头 {@link HttpClientUtil#CLUSTER_TOKEN_HEADER}。
  * {@code /cluster/ping} 仅存活探测，不在本过滤器范围内。
  * <p>
@@ -62,7 +61,7 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
         }
         String clusterSecret = systemConfigProfile.getSystemConfig().getClusterSecret();
         if (StringUtil.isBlank(clusterSecret)) {
-            reject(response, HttpServletResponse.SC_FORBIDDEN, "集群内部接口未配置 dbsyncer.cluster.internal-token，已拒绝访问");
+            reject(response, HttpServletResponse.SC_FORBIDDEN, "集群内部接口未配置集群鉴权密钥，已拒绝访问");
             return;
         }
         String provided = request.getHeader(HttpClientUtil.CLUSTER_TOKEN_HEADER);
