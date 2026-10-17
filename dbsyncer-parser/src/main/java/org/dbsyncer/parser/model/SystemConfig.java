@@ -112,7 +112,12 @@ public class SystemConfig extends ConfigModel implements Cloneable {
     /**
      * 并发表数
      */
-    private int concurrentTableCount = 10;
+    private int maxTableCount = 10;
+
+    /**
+     * 并发分片数
+     */
+    private int maxPlanCount = 10;
 
     /**
      * 分片总数（与任务 readNum×threadNum 相除得到每波预切片数）
@@ -265,12 +270,20 @@ public class SystemConfig extends ConfigModel implements Cloneable {
         this.noticeConfig = noticeConfig;
     }
 
-    public int getConcurrentTableCount() {
-        return concurrentTableCount;
+    public int getMaxTableCount() {
+        return maxTableCount;
     }
 
-    public void setConcurrentTableCount(int concurrentTableCount) {
-        this.concurrentTableCount = concurrentTableCount;
+    public void setMaxTableCount(int maxTableCount) {
+        this.maxTableCount = maxTableCount;
+    }
+
+    public int getMaxPlanCount() {
+        return maxPlanCount;
+    }
+
+    public void setMaxPlanCount(int maxPlanCount) {
+        this.maxPlanCount = maxPlanCount;
     }
 
     public int getShardTotal() {
