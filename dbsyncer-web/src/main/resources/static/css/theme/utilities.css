@@ -58,14 +58,6 @@
 .inline-block { display: inline-block; }
 .hidden { display: none; }
 
-/* 与 .flex / .inline-flex / .btn 等同用时，保证 hidden 优先生效 */
-.flex.hidden,
-.inline-flex.hidden,
-.grid.hidden,
-.btn.hidden {
-  display: none !important;
-}
-
 /* Flex对齐 */
 .flex-row { flex-direction: row; }
 .flex-col { flex-direction: column; }
