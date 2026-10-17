@@ -220,15 +220,7 @@ public class CacheServiceImpl implements CacheService, DisposableBean {
         if (executor == null) {
             return;
         }
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        executor.shutdownNow();
         logger.debug("CacheService 已停止");
     }
 
