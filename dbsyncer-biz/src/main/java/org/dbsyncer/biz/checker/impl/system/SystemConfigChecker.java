@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.checker.impl.system;
 
+import org.apache.commons.beanutils.BeanUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.common.model.ApiKeyConfig;
@@ -77,19 +78,25 @@ public class SystemConfigChecker extends AbstractChecker {
         params.put("watermark", watermark);
 
         SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
-        Assert.notNull(systemConfig, "配置文件为空.");
-        BeanUtil.mapToBean(newParams, systemConfig);
+        SystemConfig newConfig = new SystemConfig();
+        try {
+            BeanUtils.copyProperties(newConfig, systemConfig);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        BeanUtil.mapToBean(newParams, newConfig);
         // 修改 API 密钥配置
-        saveApiKeyConfig(systemConfig, params);
+        saveApiKeyConfig(newConfig, params);
         // 修改RSA配置
-        saveRsaConfig(systemConfig, params);
+        saveRsaConfig(newConfig, params);
         // 修改 IP 白名单配置
-        saveIpWhitelistConfig(systemConfig, params);
+        saveIpWhitelistConfig(newConfig, params);
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置
-        this.modifyConfigModel(systemConfig, params);
-        return systemConfig;
+        this.modifyConfigModel(newConfig, params);
+        return newConfig;
     }
 
     private void saveApiKeyConfig(SystemConfig systemConfig, Map<String, String> params) {
