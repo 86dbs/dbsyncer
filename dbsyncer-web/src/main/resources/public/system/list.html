@@ -65,15 +65,6 @@
                                name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
                     </div>
                 </div>
-                <div class="form-item">
-                    <label class="form-label">表执行器上限数<i class="fa fa-question-circle"
-                                                               title="每新增一张驱动表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong
-                            class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <input type="number" class="form-control" min="1" max="200" required
-                               name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
-                    </div>
-                </div>
                 <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
                     <label class="form-label">集群鉴权密钥<i class="fa fa-question-circle"
                                                              title="集群节点间内部接口共享密钥，生产集群各节点必须配置相同值，防止未鉴权启停任务"></i></label>
@@ -87,9 +78,18 @@
                         </div>
                     </div>
                 </div>
+                <div class="form-item">
+                    <label class="form-label">增量表执行器数<i class="fa fa-question-circle"
+                                                               title="每新增一张同步任务表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong
+                            class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="200" required
+                               name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
+                    </div>
+                </div>
                 <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
-                    <label class="form-label">并发表数<i class="fa fa-question-circle"
-                                                         title="同步任务(全量同步，订正校验，整库迁移)，并发处理表的数量"></i><strong
+                    <label class="form-label">全量表并发数<i class="fa fa-question-circle"
+                                                             title="全量任务(全量同步，订正校验，整库迁移)，并发处理表的数量"></i><strong
                             class="text-primary">*</strong></label>
                     <div class="form-control-area">
                         <input type="number" class="form-control" min="1" max="64" required
@@ -97,7 +97,7 @@
                     </div>
                 </div>
                 <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
-                    <label class="form-label">并发分片数<i class="fa fa-question-circle"
+                    <label class="form-label">全量分片并发数<i class="fa fa-question-circle"
                                                            title="同步任务(全量同步，订正校验，整库迁移)，并发处理分片数量"></i><strong
                             class="text-primary">*</strong></label>
                     <div class="form-control-area">
@@ -144,6 +144,8 @@
                                th:value="${config?.expireFileLogDays}"/>
                     </div>
                 </div>
+            </div>
+            <div class="grid mt-5 grid-cols-2">
                 <div class="form-item">
                     <label class="form-label">水印<i class="fa fa-question-circle" title="刷新页面生效"></i></label>
                     <div class="form-control-area">
