@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz.checker.impl.system;
 
-import org.apache.commons.beanutils.BeanUtils;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.common.model.ApiKeyConfig;
@@ -78,13 +77,7 @@ public class SystemConfigChecker extends AbstractChecker {
         params.put("watermark", watermark);
 
         SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
-        SystemConfig newConfig = new SystemConfig();
-        try {
-            BeanUtils.copyProperties(newConfig, systemConfig);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
+        SystemConfig newConfig = systemConfig.clone();
         BeanUtil.mapToBean(newParams, newConfig);
         // 修改 API 密钥配置
         saveApiKeyConfig(newConfig, params);

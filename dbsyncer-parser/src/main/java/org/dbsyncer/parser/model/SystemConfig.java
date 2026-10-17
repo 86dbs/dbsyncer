@@ -18,7 +18,7 @@ import org.dbsyncer.sdk.model.NoticeConfig;
  * @version 1.0.0
  * @date 2020-05-29 20:13
  */
-public class SystemConfig extends ConfigModel {
+public class SystemConfig extends ConfigModel implements Cloneable {
 
     public SystemConfig() {
         super.setType(ConfigConstant.SYSTEM);
@@ -295,5 +295,14 @@ public class SystemConfig extends ConfigModel {
 
     public void setClusterSecret(String clusterSecret) {
         this.clusterSecret = clusterSecret;
+    }
+
+    @Override
+    public SystemConfig clone() {
+        try {
+            return (SystemConfig) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
