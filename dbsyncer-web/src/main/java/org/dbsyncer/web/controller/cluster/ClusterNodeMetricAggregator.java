@@ -17,6 +17,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UnderlineToCamelUtils;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
@@ -65,8 +66,8 @@ public class ClusterNodeMetricAggregator {
     @Resource
     private ClusterService clusterService;
 
-    @Value("${dbsyncer.cluster.internal-token:}")
-    private String internalToken;
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     /**
      * 拉取全部节点指标（本机直采，远端 HTTP）。
@@ -248,7 +249,7 @@ public class ClusterNodeMetricAggregator {
             return unreachable();
         }
         try {
-            HttpResult result = HttpClientUtil.get(base + "/cluster/internal/metrics", HttpClientUtil.clusterTokenHeaders(internalToken), CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
+            HttpResult result = HttpClientUtil.get(base + "/cluster/internal/metrics", HttpClientUtil.clusterTokenHeaders(getClusterSecret()), CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
             if (!result.isOk()) {
                 logger.warn("拉取节点指标失败, node={}, http={}", node.getNodeId(), result.getStatusCode());
                 return unreachable();
@@ -268,6 +269,10 @@ public class ClusterNodeMetricAggregator {
             logger.warn("拉取节点指标异常, node={}: {}", node.getId(), e.getMessage());
             return unreachable();
         }
+    }
+
+    public String getClusterSecret() {
+        return systemConfigProfile.getSystemConfig().getClusterSecret();
     }
 
     private ClusterNodeMetricVO unreachable() {

@@ -8,7 +8,7 @@ import org.dbsyncer.common.util.HttpClientUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.springframework.beans.factory.annotation.Value;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
 
@@ -38,8 +38,8 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
 
     private final UrlPathHelper urlPathHelper = new UrlPathHelper();
 
-    @Value("${dbsyncer.cluster.internal-token:}")
-    private String internalToken;
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private PreloadTemplate preloadTemplate;
@@ -60,12 +60,13 @@ public class ClusterInternalAuthFilter extends OncePerRequestFilter {
         if (!preloadTemplate.isPreloadCompleted()) {
             return;
         }
-        if (StringUtil.isBlank(internalToken)) {
+        String clusterSecret = systemConfigProfile.getSystemConfig().getClusterSecret();
+        if (StringUtil.isBlank(clusterSecret)) {
             reject(response, HttpServletResponse.SC_FORBIDDEN, "集群内部接口未配置 dbsyncer.cluster.internal-token，已拒绝访问");
             return;
         }
         String provided = request.getHeader(HttpClientUtil.CLUSTER_TOKEN_HEADER);
-        if (!matches(internalToken, provided)) {
+        if (!matches(clusterSecret, provided)) {
             reject(response, HttpServletResponse.SC_UNAUTHORIZED, "集群内部接口鉴权失败");
             return;
         }
