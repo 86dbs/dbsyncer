@@ -29,33 +29,21 @@ public interface MonitorService {
 
     /**
      * 查询同步数据
-     *
-     * @param params
-     * @return
      */
     Paging queryData(Map<String, String> params);
 
     /**
-     * 清空驱动同步数据；tableGroupId 非空时仅清空该表映射下明细与表级 Meta。
-     *
-     * @param id           任务 Meta ID
-     * @param tableGroupId 表映射 ID，空则清空全部
-     * @return
+     * 清空同步数据；tableGroupId 非空时仅清空该表映射下明细与表级 Meta。
      */
     String clearData(String id, String tableGroupId);
 
     /**
      * 查询操作日志
-     *
-     * @param params
-     * @return
      */
     Paging queryLog(Map<String, String> params);
 
     /**
      * 清空操作日志
-     *
-     * @return
      */
     String clearLog();
 

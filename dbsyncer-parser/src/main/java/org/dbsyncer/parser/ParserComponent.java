@@ -26,18 +26,11 @@ public interface ParserComponent {
 
     /**
      * 获取表元信息
-     *
-     * @param context
-     * @return
      */
     List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context);
 
     /**
      * 获取映射关系执行命令
-     *
-     * @param mapping
-     * @param tableGroup
-     * @return
      */
     Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
 
@@ -48,20 +41,11 @@ public interface ParserComponent {
 
     /**
      * 全量同步
-     *
-     * @param task
-     * @param mapping
-     * @param tableGroup
-     * @param executor
      */
     void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor);
 
     /**
      * 批执行
-     *
-     * @param pluginContext
-     * @param executor
-     * @return
      */
     Result writeBatch(PluginContext pluginContext, Executor executor);
 }

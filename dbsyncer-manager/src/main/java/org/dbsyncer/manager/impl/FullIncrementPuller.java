@@ -47,6 +47,9 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
     private TableGroupProfile tableGroupProfile;
 
     @Resource
+    private MappingProfile mappingProfile;
+
+    @Resource
     private FullPuller fullPuller;
 
     @Resource
@@ -54,9 +57,6 @@ public final class FullIncrementPuller extends AbstractPuller implements FullInc
 
     @Resource
     private LogService logService;
-
-    @Resource
-    private MappingProfile mappingProfile;
 
     @Override
     public void start(Mapping mapping) {

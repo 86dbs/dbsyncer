@@ -35,8 +35,4 @@ public enum TaskLevelEnum {
         return desc;
     }
 
-    public boolean isTaskLevel() {
-        return this == TASK;
-    }
-
 }

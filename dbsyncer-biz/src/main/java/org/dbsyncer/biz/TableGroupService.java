@@ -30,46 +30,31 @@ public interface TableGroupService {
 
     /**
      * 按多组参数批量新增表关系（每组可含独立 fieldMappings）；遇重复跳过；不提交统计任务。
-     *
-     * @return 实际新增条数
      */
     int addWithoutCountBatch(List<Map<String, String>> paramsList);
 
     /**
      * 修改表关系
-     *
-     * @param params
      */
     String edit(Map<String, String> params);
 
     /**
      * 刷新表字段
-     *
-     * @param id
      */
     String refreshFields(String id);
 
     /**
      * 删除表关系
-     *
-     * @param mappingId
-     * @param ids
      */
     String remove(String mappingId, String ids);
 
     /**
      * 获取表关系
-     *
-     * @param id
-     * @return
      */
     TableGroup getTableGroup(String id);
 
     /**
      * 分页搜索
-     *
-     * @param params
-     * @return
      */
     Paging<TableGroup> search(Map<String, String> params);
 

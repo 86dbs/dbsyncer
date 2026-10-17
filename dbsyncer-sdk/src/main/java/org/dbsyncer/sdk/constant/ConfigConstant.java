@@ -30,6 +30,8 @@ public class ConfigConstant {
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
     public static final String TASK = "task";
+    public static final String GROUP = "group";
+    public static final String GROUP_REL = "groupRel";
 
     /**
      * 连接器配置字段
@@ -43,12 +45,6 @@ public class ConfigConstant {
      */
     public static final String VALIDATE_SYNC = "validateSync";
     public static final String DATABASE_SYNC = "databaseSync";
-
-    /**
-     * 业务分组 / 分组关系（模型 type，路由到独立表）
-     */
-    public static final String GROUP = "group";
-    public static final String GROUP_REL = "groupRel";
 
     /**
      * 业务分组关系表(dbsyncer_group_rel)拆分列

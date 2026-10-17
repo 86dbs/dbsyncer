@@ -17,7 +17,6 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -41,7 +40,6 @@ import org.dbsyncer.sdk.spi.FullFlushService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -71,16 +69,10 @@ public class ParserComponentImpl implements ParserComponent {
     private PluginFactory pluginFactory;
 
     @Resource
-    private FlushStrategy flushStrategy;
-
-    @Resource
     private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private ConnectorProfile connectorProfile;
-
-    @Resource
-    private ApplicationContext applicationContext;
 
     @Resource
     private RsaManager rsaManager;

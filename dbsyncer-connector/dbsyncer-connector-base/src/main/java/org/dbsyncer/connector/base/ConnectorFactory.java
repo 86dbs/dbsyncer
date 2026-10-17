@@ -116,10 +116,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 获取监听器
-     *
-     * @param connectorType
-     * @param listenerType
-     * @return
      */
     public Listener getListener(String connectorType, String listenerType) {
         return getConnectorService(connectorType).getListener(listenerType);
@@ -127,10 +123,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 检查连接配置是否可用
-     *
-     * @param instanceId
-     * @param config
-     * @return
      */
     public boolean isAlive(String instanceId, ConnectorConfig config) {
         Assert.hasText(instanceId, "ConnectorConfigId can not be null.");
@@ -144,10 +136,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 获取配置表
-     *
-     * @param connectorInstance
-     * @param context
-     * @return
      */
     public List<Table> getTables(ConnectorInstance connectorInstance, ConnectorServiceContext context) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
@@ -159,10 +147,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 获取配置表元信息
-     *
-     * @param connectorInstance
-     * @param context
-     * @return
      */
     public List<MetaInfo> getMetaInfo(ConnectorInstance connectorInstance, ConnectorServiceContext context) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
@@ -176,10 +160,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 获取连接器同步参数
-     *
-     * @param sourceCommandConfig
-     * @param targetCommandConfig
-     * @return
      */
     public Map<String, String> getCommand(CommandConfig sourceCommandConfig, CommandConfig targetCommandConfig) {
         Assert.notNull(sourceCommandConfig, "SourceCommandConfig can not be null.");
@@ -260,8 +240,6 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 断开连接
-     *
-     * @param instanceId
      */
     public void disconnect(String instanceId) {
         ConnectorInstance instance = pool.get(instanceId);

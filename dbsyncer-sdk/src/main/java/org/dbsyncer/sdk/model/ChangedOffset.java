@@ -4,8 +4,8 @@ package org.dbsyncer.sdk.model;
  * 增量偏移量
  *
  * @version 1.0.0
- * @Author AE86
- * @Date 2023-08-23 20:00
+ * @author AE86
+ * @date 2023-08-23 20:00
  */
 public final class ChangedOffset {
 
