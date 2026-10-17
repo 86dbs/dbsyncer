@@ -1,6 +1,5 @@
 package org.dbsyncer.parser.model;
 
-import com.alibaba.fastjson2.annotation.JSONField;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -31,14 +30,12 @@ public class Connector extends ConfigModel {
     /**
      * 可作为源端，默认开启
      */
-    @JSONField(name = "isSource")
-    private boolean isSource = true;
+    private boolean source = true;
 
     /**
      * 可作为目标端，默认开启
      */
-    @JSONField(name = "isTarget")
-    private boolean isTarget = true;
+    private boolean target = true;
 
     /**
      * 连接状态：1-在线，0-离线；默认在线
@@ -63,19 +60,19 @@ public class Connector extends ConfigModel {
     }
 
     public boolean isSource() {
-        return isSource;
+        return source;
     }
 
-    public void setIsSource(boolean isSource) {
-        this.isSource = isSource;
+    public void setSource(boolean source) {
+        this.source = source;
     }
 
     public boolean isTarget() {
-        return isTarget;
+        return target;
     }
 
-    public void setIsTarget(boolean isTarget) {
-        this.isTarget = isTarget;
+    public void setTarget(boolean target) {
+        this.target = target;
     }
 
     public int getStatus() {

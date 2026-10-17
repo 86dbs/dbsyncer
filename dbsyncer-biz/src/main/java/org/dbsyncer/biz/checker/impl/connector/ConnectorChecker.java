@@ -87,8 +87,8 @@ public class ConnectorChecker extends AbstractChecker {
         boolean isSource = StringUtil.isNotBlank(params.get(ConfigConstant.CONNECTOR_IS_SOURCE));
         boolean isTarget = StringUtil.isNotBlank(params.get(ConfigConstant.CONNECTOR_IS_TARGET));
         Assert.isTrue(isSource || isTarget, "至少开启「可作为源」或「可作为目标」之一");
-        connector.setIsSource(isSource);
-        connector.setIsTarget(isTarget);
+        connector.setSource(isSource);
+        connector.setTarget(isTarget);
     }
 
     /**
