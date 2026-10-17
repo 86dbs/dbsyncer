@@ -75,6 +75,18 @@
                     </div>
                 </div>
                 <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
+                    <label class="form-label">集群鉴权密钥<i class="fa fa-question-circle" title="集群节点间内部接口共享密钥，生产集群各节点必须配置相同值，防止未鉴权启停任务"></i></label>
+                    <div class="form-control-area flex">
+                        <input type="text" class="form-control" name="clusterSecret"
+                               th:value="${config?.clusterSecret}"/>
+                        <div class="form-actions ml-2">
+                            <button type="button" class="btn btn-outline" id="generateClusterSecret">
+                                <span class="fa fa-refresh"></span> 生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
                     <label class="form-label">并发表数<i class="fa fa-question-circle"
                                                          title="同步任务(全量同步，订正校验，整库迁移)，并发处理表的数量"></i><strong
                             class="text-primary">*</strong></label>
@@ -120,18 +132,6 @@
                     <div class="form-control-area">
                         <input type="number" class="form-control" min="1" max="180" required name="expireFileLogDays"
                                th:value="${config?.expireFileLogDays}"/>
-                    </div>
-                </div>
-                <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
-                    <label class="form-label">集群鉴权密钥<i class="fa fa-question-circle" title="集群节点间内部接口共享密钥，生产集群各节点必须配置相同值，防止未鉴权启停任务"></i></label>
-                    <div class="form-control-area flex">
-                        <input type="text" class="form-control" name="clusterSecret"
-                               th:value="${config?.clusterSecret}"/>
-                        <div class="form-actions ml-2">
-                            <button type="button" class="btn btn-outline" id="generateClusterSecret">
-                                <span class="fa fa-refresh"></span> 生成
-                            </button>
-                        </div>
                     </div>
                 </div>
                 <div class="form-item">
