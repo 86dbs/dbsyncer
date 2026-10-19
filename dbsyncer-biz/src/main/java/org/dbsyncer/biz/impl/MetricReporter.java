@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -216,9 +217,11 @@ public class MetricReporter implements ScheduledTaskJob {
                 dashboardMetric.reset();
                 return;
             }
-            dashboardMetric.setSuccess(getMappingSuccess(metaAll));
-            dashboardMetric.setFail(getMappingFail(metaAll));
-            dashboardMetric.setYesterdayData(getMappingYesterdayAll(metaAll));
+            // 成功/失败：直接汇总任务级 Meta（dbsyncer_meta.SUCCESS/FAIL，IS_TASK_DETAIL=0）
+            long successTotal = sumMetaCounter(metaAll, Meta::getSuccess);
+            long failTotal = sumMetaCounter(metaAll, Meta::getFail);
+            dashboardMetric.setSuccess(successTotal);
+            dashboardMetric.setFail(failTotal);
             dashboardMetric.setInsert(getMappingInsert(metaAll));
             dashboardMetric.setUpdate(getMappingUpdate(metaAll));
             dashboardMetric.setDelete(getMappingDelete(metaAll));
@@ -239,8 +242,8 @@ public class MetricReporter implements ScheduledTaskJob {
                 if (CommonTaskStatusEnum.isRunning(meta.getState())) {
                     running.incrementAndGet();
                 }
-                // 统计失败数
-                if (meta.getFail().get() > 0) {
+                // 统计失败任务数
+                if (meta.getFail() != null && meta.getFail().get() > 0) {
                     fail.incrementAndGet();
                 }
             });
@@ -335,17 +338,20 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     /**
-     * 获取所有同步任务成功数
+     * 汇总任务级 Meta 计数器（SUCCESS / FAIL 等）。
      */
-    private long getMappingSuccess(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
-    }
-
-    /**
-     * 获取所有同步任务失败数
-     */
-    private long getMappingFail(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
+    private long sumMetaCounter(List<Meta> metaAll, Function<Meta, AtomicLong> getter) {
+        if (CollectionUtils.isEmpty(metaAll) || getter == null) {
+            return 0L;
+        }
+        long total = 0L;
+        for (Meta meta : metaAll) {
+            AtomicLong counter = getter.apply(meta);
+            if (counter != null) {
+                total += counter.get();
+            }
+        }
+        return total;
     }
 
     /**
@@ -356,17 +362,6 @@ public class MetricReporter implements ScheduledTaskJob {
             LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, time);
             IntFilter success = new IntFilter(ConfigConstant.DETAIL_IS_SUCCESS, status.getValue());
             query.setBooleanFilter(new BooleanFilter().add(filter).add(success));
-        });
-    }
-
-    /**
-     * 获取昨天同步任务成功+失败数
-     */
-    private long getMappingYesterdayAll(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> {
-            long yesterday = Timestamp.valueOf(LocalDateTime.now().minusDays(1)).getTime();
-            LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, yesterday);
-            query.setBooleanFilter(new BooleanFilter().add(filter));
         });
     }
 

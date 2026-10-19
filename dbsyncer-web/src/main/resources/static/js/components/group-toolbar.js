@@ -438,7 +438,7 @@
                 var resourceApi = null;
                 var dialog = showConfirm({
                     title: '编辑分组',
-                    size: 'large',
+                    size: 'xlarge',
                     position: 'center',
                     body: '<div class="group-dialog-body">' +
                         '<div class="form-item"><label class="form-label">名称<strong class="text-primary">*</strong></label>' +
@@ -512,6 +512,7 @@
                     title: '确定要删除分组「' + escapeHtml(groupName) + '」？',
                     message: '该分组下共 ' + count + ' 个资源，删除后仅解除本组成属关系（资源本身及其它组归属保留）。',
                     icon: 'warning',
+                    size: 'large',
                     confirmType: 'danger',
                     confirmText: '删除',
                     onConfirm: function () {

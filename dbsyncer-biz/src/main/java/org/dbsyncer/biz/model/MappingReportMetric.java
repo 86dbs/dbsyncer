@@ -32,11 +32,6 @@ public class MappingReportMetric {
      */
     private long ddl;
 
-    /**
-     * 昨天同步总数（成功+失败）
-     */
-    private long yesterdayData;
-
     public long getSuccess() {
         return success;
     }
@@ -85,14 +80,6 @@ public class MappingReportMetric {
         this.ddl = ddl;
     }
 
-    public long getYesterdayData() {
-        return yesterdayData;
-    }
-
-    public void setYesterdayData(long yesterdayData) {
-        this.yesterdayData = yesterdayData;
-    }
-
     public void reset() {
         this.success = 0;
         this.fail = 0;
@@ -100,6 +87,5 @@ public class MappingReportMetric {
         this.update = 0;
         this.delete = 0;
         this.ddl = 0;
-        this.yesterdayData = 0;
     }
 }
