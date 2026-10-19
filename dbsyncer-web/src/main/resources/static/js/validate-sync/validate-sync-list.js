@@ -254,6 +254,7 @@
             tableBodySelector: '#validate-sync-table',
             storageKey: 'validate-sync-list',
             pageSize: 20,
+            params: {groupId: (window.GroupToolbar && GroupToolbar.peekStoredGroupId('validateSync')) || ''},
             refreshCompleted: function () {
                 if (groupToolbar) {
                     groupToolbar.setListTotal(pagination.total || 0);

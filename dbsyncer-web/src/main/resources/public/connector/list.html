@@ -58,6 +58,7 @@ $(document).ready(function() {
     const pagination = new PaginationManager({
         requestUrl: '/connector/search',
         tableBodySelector: '#connectorTableBody',
+        params: {groupId: (window.GroupToolbar && GroupToolbar.peekStoredGroupId('connector')) || ''},
         refreshCompleted: function () {
             if (groupToolbar) {
                 groupToolbar.setListTotal(pagination.total || 0);
