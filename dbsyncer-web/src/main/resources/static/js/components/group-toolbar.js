@@ -7,6 +7,7 @@
     'use strict';
 
     var groupsCache = null;
+    var GROUP_FILTER_STORAGE_PREFIX = 'dbsyncer.group.filter.';
 
     function escapeHtml(text) {
         if (typeof window.escapeHtml === 'function') {
@@ -15,6 +16,36 @@
         var div = document.createElement('div');
         div.textContent = text == null ? '' : String(text);
         return div.innerHTML;
+    }
+
+    function groupFilterStorageKey(resourceType) {
+        return GROUP_FILTER_STORAGE_PREFIX + (resourceType || 'default');
+    }
+
+    /**
+     * 读取已缓存的分组筛选（供列表首屏查询与工具栏恢复共用）。
+     */
+    function peekStoredGroupId(resourceType) {
+        if (!resourceType) {
+            return '';
+        }
+        try {
+            return localStorage.getItem(groupFilterStorageKey(resourceType)) || '';
+        } catch (e) {
+            console.warn('[GroupToolbar] 读取分组筛选缓存失败', e);
+            return '';
+        }
+    }
+
+    function saveStoredGroupId(resourceType, groupId) {
+        if (!resourceType) {
+            return;
+        }
+        try {
+            localStorage.setItem(groupFilterStorageKey(resourceType), groupId || '');
+        } catch (e) {
+            console.warn('[GroupToolbar] 保存分组筛选缓存失败', e);
+        }
     }
 
     function loadGroups(callback) {
@@ -266,7 +297,8 @@
 
         var resourceType = options.resourceType || '';
         var searchUrl = options.searchUrl || '';
-        var currentGroupId = '';
+        // 从缓存恢复，避免编辑/删除整页重载后筛选回到「全部」
+        var currentGroupId = peekStoredGroupId(resourceType);
         var listTotal = 0;
         var hasGroups = false;
         var filterData = [];
@@ -340,6 +372,7 @@
                 return;
             }
             currentGroupId = value || '';
+            saveStoredGroupId(resourceType, currentGroupId);
             syncVisibility();
             notifyChange();
         }
@@ -349,6 +382,7 @@
                 hasGroups = (groups || []).length > 0;
                 var selected = resolveSelected(groups, preferId != null ? preferId : currentGroupId);
                 currentGroupId = selected;
+                saveStoredGroupId(resourceType, currentGroupId);
                 filterData = buildFilterData(groups);
                 // 先显隐再初始化 dbSelect，避免父级 display:none 时宽度为 0
                 syncVisibility();
@@ -363,6 +397,7 @@
                     selectApi = null;
                     $select.empty();
                     currentGroupId = '';
+                    saveStoredGroupId(resourceType, '');
                     syncVisibility();
                 }
             });
@@ -438,7 +473,7 @@
                 var resourceApi = null;
                 var dialog = showConfirm({
                     title: '编辑分组',
-                    size: 'large',
+                    size: 'xlarge',
                     position: 'center',
                     body: '<div class="group-dialog-body">' +
                         '<div class="form-item"><label class="form-label">名称<strong class="text-primary">*</strong></label>' +
@@ -512,6 +547,7 @@
                     title: '确定要删除分组「' + escapeHtml(groupName) + '」？',
                     message: '该分组下共 ' + count + ' 个资源，删除后仅解除本组成属关系（资源本身及其它组归属保留）。',
                     icon: 'warning',
+                    size: 'large',
                     confirmType: 'danger',
                     confirmText: '删除',
                     onConfirm: function () {
@@ -539,7 +575,7 @@
         }
 
         syncVisibility();
-        refreshSelect('');
+        refreshSelect(currentGroupId);
         return {
             getGroupId: function () {
                 return currentGroupId;
@@ -560,6 +596,7 @@
 
     window.GroupToolbar = {
         initListToolbar: initListToolbar,
-        isRealGroupId: isRealGroupId
+        isRealGroupId: isRealGroupId,
+        peekStoredGroupId: peekStoredGroupId
     };
 })(window, jQuery);

@@ -14,6 +14,7 @@ import org.dbsyncer.biz.model.Sample;
 import org.dbsyncer.biz.vo.SyncTrendStackVO;
 import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.metric.Bucket;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Paging;
@@ -59,6 +60,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -195,59 +197,87 @@ public class MetricReporter implements ScheduledTaskJob {
         // 刷新报表
         try {
             running = true;
-            // 先分页扫描同步任务(Mapping)，再按任务 ID 批量 IN 查任务级 Meta
-            final List<Meta> metaAll = new ArrayList<>();
-            mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, mappings -> {
-                if (CollectionUtils.isEmpty(mappings)) {
+            // 分页扫描任务级 Meta，按页累计，避免一次性装入内存
+            AtomicLong successTotal = new AtomicLong();
+            AtomicLong failTotal = new AtomicLong();
+            AtomicLong insertTotal = new AtomicLong();
+            AtomicLong updateTotal = new AtomicLong();
+            AtomicLong deleteTotal = new AtomicLong();
+            AtomicLong ddlTotal = new AtomicLong();
+            AtomicLong totalMeta = new AtomicLong();
+            AtomicLong runningMeta = new AtomicLong();
+            AtomicLong failMeta = new AtomicLong();
+            AtomicLong lastWeekMeta = new AtomicLong();
+            long lastWeekTime = Timestamp.valueOf(LocalDateTime.now().minusWeeks(1)).getTime();
+
+            SyncTrendStackVO trend = dashboardMetric.getTrend();
+            boolean needTrendHistory = CollectionUtils.isEmpty(trend.getLabels());
+            LocalDateTime now = LocalDateTime.now();
+            long[] dayCutoff = null;
+            long[] histSuccess = null;
+            long[] histFail = null;
+            if (needTrendHistory) {
+                int histDays = SHOW_REPORT_DAYS - 1;
+                dayCutoff = new long[histDays];
+                histSuccess = new long[histDays];
+                histFail = new long[histDays];
+                int idx = 0;
+                for (int i = SHOW_REPORT_DAYS - 1; i > 0; i--) {
+                    dayCutoff[idx++] = Timestamp.valueOf(now.minusDays(i)).getTime();
+                }
+            }
+
+            final long[] dayCutoffRef = dayCutoff;
+            final long[] histSuccessRef = histSuccess;
+            final long[] histFailRef = histFail;
+            taskMetaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+                if (CollectionUtils.isEmpty(page)) {
                     return;
                 }
-                List<String> taskIds = new ArrayList<>();
-                for (Mapping mapping : mappings) {
-                    if (mapping != null && StringUtil.isNotBlank(mapping.getId())) {
-                        taskIds.add(mapping.getId());
+                successTotal.addAndGet(sumMetaCounter(page, Meta::getSuccess));
+                failTotal.addAndGet(sumMetaCounter(page, Meta::getFail));
+                insertTotal.addAndGet(getMappingInsert(page));
+                updateTotal.addAndGet(getMappingUpdate(page));
+                deleteTotal.addAndGet(getMappingDelete(page));
+                ddlTotal.addAndGet(getMappingDll(page));
+                for (Meta meta : page) {
+                    if (meta == null) {
+                        continue;
+                    }
+                    totalMeta.incrementAndGet();
+                    if (meta.getCreateTime() <= lastWeekTime) {
+                        lastWeekMeta.incrementAndGet();
+                    }
+                    if (CommonTaskStatusEnum.isRunning(meta.getState())) {
+                        runningMeta.incrementAndGet();
+                    }
+                    if (meta.getFail() != null && meta.getFail().get() > 0) {
+                        failMeta.incrementAndGet();
                     }
                 }
-                Map<String, Meta> metaMap = taskMetaProfile.getTaskMetaMap(taskIds);
-                if (!CollectionUtils.isEmpty(metaMap)) {
-                    metaAll.addAll(metaMap.values());
+                if (needTrendHistory && dayCutoffRef != null) {
+                    for (int d = 0; d < dayCutoffRef.length; d++) {
+                        histSuccessRef[d] += getMappingDataCount(page, dayCutoffRef[d], StorageDataStatusEnum.SUCCESS);
+                        histFailRef[d] += getMappingDataCount(page, dayCutoffRef[d], StorageDataStatusEnum.FAIL);
+                    }
                 }
             });
-            if (CollectionUtils.isEmpty(metaAll)) {
+
+            if (totalMeta.get() == 0) {
                 dashboardMetric.reset();
                 return;
             }
-            dashboardMetric.setSuccess(getMappingSuccess(metaAll));
-            dashboardMetric.setFail(getMappingFail(metaAll));
-            dashboardMetric.setYesterdayData(getMappingYesterdayAll(metaAll));
-            dashboardMetric.setInsert(getMappingInsert(metaAll));
-            dashboardMetric.setUpdate(getMappingUpdate(metaAll));
-            dashboardMetric.setDelete(getMappingDelete(metaAll));
-            dashboardMetric.setDdl(getMappingDll(metaAll));
-            // 获取同步趋势数据
-            updateSyncTrendData(metaAll, dashboardMetric);
-
-            AtomicLong running = new AtomicLong();
-            AtomicLong fail = new AtomicLong();
-            AtomicLong lastWeek = new AtomicLong();
-            long lastWeekTime = Timestamp.valueOf(LocalDateTime.now().minusWeeks(1)).getTime();
-            metaAll.forEach(meta -> {
-                // 统计上周任务总数
-                if (meta.getCreateTime() <= lastWeekTime) {
-                    lastWeek.incrementAndGet();
-                }
-                // 统计运行中
-                if (CommonTaskStatusEnum.isRunning(meta.getState())) {
-                    running.incrementAndGet();
-                }
-                // 统计失败数
-                if (meta.getFail().get() > 0) {
-                    fail.incrementAndGet();
-                }
-            });
-            dashboardMetric.setTotalMeta(metaAll.size());
-            dashboardMetric.setLastWeekMeta(lastWeek.get());
-            dashboardMetric.setRunningMeta(running.get());
-            dashboardMetric.setFailMeta(fail.get());
+            dashboardMetric.setSuccess(successTotal.get());
+            dashboardMetric.setFail(failTotal.get());
+            dashboardMetric.setInsert(insertTotal.get());
+            dashboardMetric.setUpdate(updateTotal.get());
+            dashboardMetric.setDelete(deleteTotal.get());
+            dashboardMetric.setDdl(ddlTotal.get());
+            dashboardMetric.setTotalMeta(totalMeta.get());
+            dashboardMetric.setLastWeekMeta(lastWeekMeta.get());
+            dashboardMetric.setRunningMeta(runningMeta.get());
+            dashboardMetric.setFailMeta(failMeta.get());
+            updateSyncTrendData(dashboardMetric, histSuccess, histFail);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
@@ -255,42 +285,41 @@ public class MetricReporter implements ScheduledTaskJob {
         }
     }
 
-    private void updateSyncTrendData(List<Meta> metaAll, DashboardMetric dashboardMetric) {
+    /**
+     * 更新同步趋势；历史日数据在分页扫描时按页累计传入，避免再持有全量 Meta。
+     */
+    private void updateSyncTrendData(DashboardMetric dashboardMetric, long[] historySuccess, long[] historyFail) {
         SyncTrendStackVO stack = dashboardMetric.getTrend();
         LocalDateTime now = LocalDateTime.now();
-        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
+        Timestamp timestamp = Timestamp.valueOf(now);
         String today = DateFormatUtil.timestampToString(timestamp, DateFormatUtil.MM_DD);
-        // 未加载数据
         List<String> labels = stack.getLabels();
         if (CollectionUtils.isEmpty(labels)) {
-            // 获取30天前的数据
             for (int i = SHOW_REPORT_DAYS - 1; i > 0; i--) {
                 Timestamp time = Timestamp.valueOf(now.minusDays(i));
                 labels.add(DateFormatUtil.timestampToString(time, DateFormatUtil.MM_DD));
-                stack.getSuccess().add(getMappingDataCount(metaAll, time.getTime(), StorageDataStatusEnum.SUCCESS));
-                stack.getFail().add(getMappingDataCount(metaAll, time.getTime(), StorageDataStatusEnum.FAIL));
+                int idx = SHOW_REPORT_DAYS - 1 - i;
+                long success = historySuccess != null && idx < historySuccess.length ? historySuccess[idx] : 0L;
+                long fail = historyFail != null && idx < historyFail.length ? historyFail[idx] : 0L;
+                stack.getSuccess().add(success);
+                stack.getFail().add(fail);
             }
-            // 记录今日数据
             labels.add(today);
             stack.getSuccess().add(dashboardMetric.getSuccess());
             stack.getFail().add(dashboardMetric.getFail());
             return;
         }
 
-        // 日期发生变更
         if (!StringUtil.equals(today, labels.get(labels.size() - 1))) {
-            // 移除最早的日期
             List<String> newLabels = labels.stream().skip(1).collect(Collectors.toList());
             labels.clear();
             labels.addAll(newLabels);
-            // 记录今日数据
             labels.add(today);
             stack.getSuccess().add(dashboardMetric.getSuccess());
             stack.getFail().add(dashboardMetric.getFail());
             return;
         }
 
-        // 更新今日数据
         stack.getSuccess().set(stack.getSuccess().size() - 1, dashboardMetric.getSuccess());
         stack.getFail().set(stack.getFail().size() - 1, dashboardMetric.getFail());
     }
@@ -335,76 +364,62 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     /**
-     * 获取所有同步任务成功数
+     * 汇总当页任务级 Meta 计数器（SUCCESS / FAIL 等）。
      */
-    private long getMappingSuccess(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
+    private long sumMetaCounter(List<Meta> page, Function<Meta, AtomicLong> getter) {
+        if (CollectionUtils.isEmpty(page) || getter == null) {
+            return 0L;
+        }
+        long total = 0L;
+        for (Meta meta : page) {
+            if (meta == null) {
+                continue;
+            }
+            AtomicLong counter = getter.apply(meta);
+            if (counter != null) {
+                total += counter.get();
+            }
+        }
+        return total;
     }
 
     /**
-     * 获取所有同步任务失败数
+     * 当页任务明细表按时间/状态统计条数。
      */
-    private long getMappingFail(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
-    }
-
-    /**
-     * 获取所有同步任务数据总数
-     */
-    private long getMappingDataCount(List<Meta> metaAll, long time, StorageDataStatusEnum status) {
-        return queryMappingMetricCount(metaAll, (query) -> {
+    private long getMappingDataCount(List<Meta> page, long time, StorageDataStatusEnum status) {
+        return queryMappingMetricCount(page, (query) -> {
             LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, time);
             IntFilter success = new IntFilter(ConfigConstant.DETAIL_IS_SUCCESS, status.getValue());
             query.setBooleanFilter(new BooleanFilter().add(filter).add(success));
         });
     }
 
-    /**
-     * 获取昨天同步任务成功+失败数
-     */
-    private long getMappingYesterdayAll(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> {
-            long yesterday = Timestamp.valueOf(LocalDateTime.now().minusDays(1)).getTime();
-            LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, yesterday);
-            query.setBooleanFilter(new BooleanFilter().add(filter));
-        });
+    private long getMappingInsert(List<Meta> page) {
+        return queryMappingMetricCount(page, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_INSERT));
     }
 
-    /**
-     * 获取所有同步任务事件插入数
-     */
-    private long getMappingInsert(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_INSERT));
+    private long getMappingUpdate(List<Meta> page) {
+        return queryMappingMetricCount(page, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_UPDATE));
     }
 
-    /**
-     * 获取所有同步任务事件更新数
-     */
-    private long getMappingUpdate(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_UPDATE));
+    private long getMappingDelete(List<Meta> page) {
+        return queryMappingMetricCount(page, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_DELETE));
     }
 
-    /**
-     * 获取所有同步任务事件删除数
-     */
-    private long getMappingDelete(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_DELETE));
+    private long getMappingDll(List<Meta> page) {
+        return queryMappingMetricCount(page, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_ALTER));
     }
 
-    /**
-     * 获取所有DDL事件数
-     */
-    private long getMappingDll(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_ALTER));
-    }
-
-    private long queryMappingMetricCount(List<Meta> metaAll, Consumer<Query> operation) {
-        if (CollectionUtils.isEmpty(metaAll)) {
+    private long queryMappingMetricCount(List<Meta> page, Consumer<Query> operation) {
+        if (CollectionUtils.isEmpty(page)) {
             return 0L;
         }
         // 明细分表：逐任务分表(dbsyncer_task_detail_{taskId})统计后累加
         long total = 0L;
-        for (Meta meta : metaAll) {
+        for (Meta meta : page) {
+            if (meta == null || StringUtil.isBlank(meta.getTaskId())) {
+                continue;
+            }
             Query query = new Query(1, 1);
             query.setQueryTotal(true);
             query.setType(StorageEnum.TASK_DETAIL);

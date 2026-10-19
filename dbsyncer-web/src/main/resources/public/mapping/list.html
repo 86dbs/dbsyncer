@@ -123,6 +123,7 @@
             tableBodySelector: '#mappingTableBody',
             storageKey: 'mapping-list',
             pageSize: 5,
+            params: {groupId: (window.GroupToolbar && GroupToolbar.peekStoredGroupId('mapping')) || ''},
             refreshCompleted: function () {
                 if (groupToolbar) {
                     groupToolbar.setListTotal(pagination.total || 0);

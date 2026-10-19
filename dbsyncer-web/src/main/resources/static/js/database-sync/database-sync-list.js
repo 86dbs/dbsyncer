@@ -281,6 +281,7 @@
             requestUrl: '/database-sync/search',
             tableBodySelector: '#database-sync-table',
             storageKey: 'database-sync-list',
+            params: {groupId: (window.GroupToolbar && GroupToolbar.peekStoredGroupId('databaseSync')) || ''},
             refreshCompleted: function () {
                 if (groupToolbar) {
                     groupToolbar.setListTotal(pagination.total || 0);

@@ -272,19 +272,7 @@
             }
 
             function renderAllData(r) {
-                const total = r.success + r.fail;
-                const isIncrease = r.yesterdayData <= total;
-                const diff = isIncrease ? (total - r.yesterdayData) : (r.yesterdayData - total);
-                const percent = r.yesterdayData > 0 ? (diff / r.yesterdayData * 100) : 0;
-                const config = isIncrease ? {
-                    class: 'fa-arrow-up',
-                    text: '增长',
-                    colorClass: 'text-success'
-                } : {
-                    class: 'fa-arrow-down',
-                    text: '降低',
-                    colorClass: 'text-warning'
-                };
+                const total = (r.success || 0) + (r.fail || 0);
                 return `<div class="flex items-center justify-between">
                 <p class="text-gray-500">同步总数</p>
                 <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
@@ -293,11 +281,7 @@
             </div>
             <div class="flex items-end success">
                 <span class="text-xxl font-bold">${total}</span>
-                <span class="${config.colorClass} text-sm mb-1 flex items-center ml-2">
-                    <i class="fa ${config.class} mr-1"></i> ${percent.toFixed(2)}%
-                </span>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">较昨日${config.text}</p>`;
+            </div>`;
             }
 
             function renderStatistic(r) {

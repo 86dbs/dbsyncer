@@ -22,7 +22,18 @@ public final class KingbaseSQLTimestampType extends TimestampType {
 
     private enum TypeEnum {
 
-        TIMESTAMP("timestamp"), TIMESTAMP_TZ("timestamptz");
+        /**
+         * 标准时间戳
+         */
+        TIMESTAMP("timestamp"),
+        /**
+         * 带时区时间戳
+         */
+        TIMESTAMP_TZ("timestamptz"),
+        /**
+         * MySQL 兼容模式常见类型名
+         */
+        DATETIME("datetime");
 
         private final String value;
 
@@ -46,8 +57,11 @@ public final class KingbaseSQLTimestampType extends TimestampType {
             OffsetDateTime offsetDateTime = (OffsetDateTime) val;
             return Timestamp.from(offsetDateTime.toInstant());
         }
-        if (val instanceof Timestamp) {
-           return DateFormatUtil.stringToTimestamp((String) val);
+        if (val instanceof String) {
+            Timestamp timestamp = DateFormatUtil.stringToTimestamp((String) val);
+            if (timestamp != null) {
+                return timestamp;
+            }
         }
         return throwUnsupportedException(val, field);
     }
