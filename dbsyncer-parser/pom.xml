@@ -38,6 +38,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.scxhtb</groupId>
+            <artifactId>dbsyncer-platform</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>provided</scope>
