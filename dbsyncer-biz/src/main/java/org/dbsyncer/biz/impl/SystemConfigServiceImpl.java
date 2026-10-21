@@ -33,9 +33,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,12 +166,5 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public RsaVersion createRSAConfig(int keyLength) {
         Assert.isTrue(keyLength >= 1024 && keyLength <= 8192, "密钥长度支持的范围[1024-8192]");
         return RSAUtil.createKeys(keyLength);
-    }
-
-    @Override
-    public String generateApiSecret() {
-        byte[] bytes = new byte[32];
-        new SecureRandom().nextBytes(bytes);
-        return Base64.getEncoder().encodeToString(bytes);
     }
 }

@@ -32,4 +32,15 @@ public interface FlushStrategy {
      * @param targetFieldMap 目标表字段集合
      */
     void flushIncrementData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap);
+
+    /**
+     * 仅写入成功/失败明细到存储，不刷新 Meta 计数。
+     * <p>供已单独汇总成功/失败计数的路径使用，避免与 Meta 双计。
+     * 失败明细受「记录同步失败数据」开关控制；成功明细需同时开启「记录全量数据」与「记录同步成功数据」。
+     *
+     * @param result               同步结果（须已设置 taskId，明细分表键）
+     * @param targetSchemaResolver 目标字段解析器
+     * @param targetFieldMap       目标表字段集合
+     */
+    void writeStorageOnly(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap);
 }
