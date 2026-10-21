@@ -24,12 +24,12 @@ public class PermissionChecker {
 
     public void requirePermission(String username, String permissionCode) {
         Assert.hasText(username, "无法获取登录用户.");
-        Assert.isTrue(permissionService.hasPermission(username, permissionCode), "No permission.");
+        Assert.isTrue(permissionService.hasPermission(username, permissionCode), "无权限");
     }
 
     public void requireAdmin(String username) {
         Assert.hasText(username, "无法获取登录用户.");
-        Assert.isTrue(permissionService.isAdmin(username), "No permission.");
+        Assert.isTrue(permissionService.isAdmin(username), "无权限");
     }
 
     public boolean isAdmin(String username) {
