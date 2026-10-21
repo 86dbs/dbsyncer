@@ -636,7 +636,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         // 完成任务则重置状态，便于再次全量
         if (!CommonTaskStatusEnum.isRunning(meta.getState()) && meta.getSuccess().addAndGet(meta.getFail().get()) == meta.getTotal().get()) {
             taskMetaProfile.resetMeta(taskId);
-            taskDetailMetaProfile.clearData(taskId);
             taskProfile.deleteRunData(taskId);
         }
     }
