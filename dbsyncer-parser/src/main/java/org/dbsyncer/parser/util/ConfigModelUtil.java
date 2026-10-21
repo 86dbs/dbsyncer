@@ -7,8 +7,12 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.Permission;
+import org.dbsyncer.parser.model.Role;
+import org.dbsyncer.parser.model.RolePermission;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserInfo;
+import org.dbsyncer.parser.model.UserRole;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.model.Table;
@@ -37,6 +41,18 @@ public abstract class ConfigModelUtil {
         // GroupRel：严格按 dbsyncer_group_rel 拆分列，无 name/json；RESOURCE_TYPE 存资源类型
         if (model instanceof GroupRel) {
             return convertGroupRelToMap((GroupRel) model);
+        }
+        if (model instanceof Role) {
+            return convertRoleToMap((Role) model);
+        }
+        if (model instanceof Permission) {
+            return convertPermissionToMap((Permission) model);
+        }
+        if (model instanceof RolePermission) {
+            return convertRolePermissionToMap((RolePermission) model);
+        }
+        if (model instanceof UserRole) {
+            return convertUserRoleToMap((UserRole) model);
         }
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
@@ -106,6 +122,34 @@ public abstract class ConfigModelUtil {
         if (GroupRel.class.equals(clazz)) {
             return (T) parseGroupRel(row);
         }
+        if (Role.class.equals(clazz)) {
+            Role role = JsonUtil.mapToObj(row, Role.class);
+            if (role != null) {
+                role.setType(ConfigConstant.ROLE);
+            }
+            return (T) role;
+        }
+        if (Permission.class.equals(clazz)) {
+            Permission permission = JsonUtil.mapToObj(row, Permission.class);
+            if (permission != null) {
+                permission.setType(ConfigConstant.PERMISSION);
+            }
+            return (T) permission;
+        }
+        if (RolePermission.class.equals(clazz)) {
+            RolePermission rel = JsonUtil.mapToObj(row, RolePermission.class);
+            if (rel != null) {
+                rel.setType(ConfigConstant.ROLE_PERMISSION);
+            }
+            return (T) rel;
+        }
+        if (UserRole.class.equals(clazz)) {
+            UserRole rel = JsonUtil.mapToObj(row, UserRole.class);
+            if (rel != null) {
+                rel.setType(ConfigConstant.USER_ROLE_REL);
+            }
+            return (T) rel;
+        }
         Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
         if (json == null) {
             return null;
@@ -131,6 +175,51 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.GROUP_REL_GROUP_ID, StringUtil.getIfBlank(rel.getGroupId(), StringUtil.EMPTY));
         params.put(ConfigConstant.GROUP_REL_RESOURCE_TYPE, StringUtil.getIfBlank(rel.getResourceType(), StringUtil.EMPTY));
         params.put(ConfigConstant.GROUP_REL_RESOURCE_ID, StringUtil.getIfBlank(rel.getResourceId(), StringUtil.EMPTY));
+        return params;
+    }
+
+    private static Map<String, Object> convertRoleToMap(Role role) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, role.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, role.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, role.getUpdateTime());
+        params.put(ConfigConstant.ROLE_CODE, StringUtil.getIfBlank(role.getCode(), StringUtil.EMPTY));
+        params.put(ConfigConstant.CONFIG_MODEL_NAME, StringUtil.getIfBlank(role.getName(), StringUtil.EMPTY));
+        params.put(ConfigConstant.ROLE_BUILTIN, role.getBuiltin());
+        params.put(ConfigConstant.ROLE_REMARK, StringUtil.getIfBlank(role.getRemark(), StringUtil.EMPTY));
+        return params;
+    }
+
+    private static Map<String, Object> convertPermissionToMap(Permission permission) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, permission.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, permission.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, permission.getUpdateTime());
+        params.put(ConfigConstant.PERMISSION_CODE, StringUtil.getIfBlank(permission.getCode(), StringUtil.EMPTY));
+        params.put(ConfigConstant.CONFIG_MODEL_NAME, StringUtil.getIfBlank(permission.getName(), StringUtil.EMPTY));
+        params.put(ConfigConstant.PERMISSION_MODULE, StringUtil.getIfBlank(permission.getModule(), StringUtil.EMPTY));
+        params.put(ConfigConstant.PERMISSION_KIND, StringUtil.getIfBlank(permission.getKind(), StringUtil.EMPTY));
+        params.put(ConfigConstant.PERMISSION_REMARK, StringUtil.getIfBlank(permission.getRemark(), StringUtil.EMPTY));
+        return params;
+    }
+
+    private static Map<String, Object> convertRolePermissionToMap(RolePermission rel) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, rel.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, rel.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rel.getUpdateTime());
+        params.put(ConfigConstant.ROLE_PERMISSION_ROLE_ID, StringUtil.getIfBlank(rel.getRoleId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.ROLE_PERMISSION_PERMISSION_ID, StringUtil.getIfBlank(rel.getPermissionId(), StringUtil.EMPTY));
+        return params;
+    }
+
+    private static Map<String, Object> convertUserRoleToMap(UserRole rel) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, rel.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, rel.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rel.getUpdateTime());
+        params.put(ConfigConstant.USER_ROLE_USER_ID, StringUtil.getIfBlank(rel.getUserId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.USER_ROLE_ROLE_ID, StringUtil.getIfBlank(rel.getRoleId(), StringUtil.EMPTY));
         return params;
     }
 
@@ -218,6 +307,14 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.GROUP;
             case ConfigConstant.GROUP_REL:
                 return StorageEnum.GROUP_REL;
+            case ConfigConstant.ROLE:
+                return StorageEnum.ROLE;
+            case ConfigConstant.PERMISSION:
+                return StorageEnum.PERMISSION;
+            case ConfigConstant.ROLE_PERMISSION:
+                return StorageEnum.ROLE_PERMISSION;
+            case ConfigConstant.USER_ROLE_REL:
+                return StorageEnum.USER_ROLE;
             default:
                 // 后续新增的 CommonTaskTypeEnum 仍走 task 表
                 return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;

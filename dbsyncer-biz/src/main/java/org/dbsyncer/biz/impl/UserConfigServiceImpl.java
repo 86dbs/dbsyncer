@@ -4,6 +4,8 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.PermissionChecker;
+import org.dbsyncer.biz.PermissionService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.user.UserConfigChecker;
 import org.dbsyncer.biz.enums.UserRoleEnum;
@@ -40,6 +42,8 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     private static final String DEFAULT_PASSWORD = "0DPiKuNIrrVmD8IUCuw1hQxNqZc=";
 
+    private static final String PERM_USER_EDIT = "user:edit";
+
     @Resource
     private UserProfile userProfile;
 
@@ -48,6 +52,12 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     @Resource
     private LogService logService;
+
+    @Resource
+    private PermissionService permissionService;
+
+    @Resource
+    private PermissionChecker permissionChecker;
 
     @Override
     public synchronized String add(Map<String, String> params) {
@@ -60,17 +70,24 @@ public class UserConfigServiceImpl implements UserConfigService {
         String email = params.get("email");
         String phone = params.get("phone");
 
-        // 验证当前登录用户合法身份（必须是管理员操作）
+        String currentUserName = params.get(UserConfigService.CURRENT_USER_NAME);
+        permissionChecker.requirePermission(currentUserName, PERM_USER_EDIT);
+
         UserConfig userConfig = getUserConfig();
-        UserInfo currentUser = userConfig.getUserInfo(params.get(UserConfigService.CURRENT_USER_NAME));
-        Assert.isTrue(null == currentUser || UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
-        // 新用户合法性（用户不能重复）
+        UserInfo currentUser = userConfig.getUserInfo(currentUserName);
+        Assert.notNull(currentUser, "无法获取登录用户.");
         Assert.isNull(userConfig.getUserInfo(username), "用户已存在，请换个账号");
-        // 注册新用户
-        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password), UserRoleEnum.USER.getCode(), email, phone));
+
+        userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password),
+                UserRoleEnum.USER.getCode(), email, phone));
 
         logService.log(LogType.UserLog.INSERT, String.format("[%s]添加[%s]账号成功", currentUser.getUsername(), username));
-        return userProfile.saveUserConfig(userConfig);
+        String result = userProfile.saveUserConfig(userConfig);
+        UserInfo created = getUserConfig().getUserInfo(username);
+        if (created != null && StringUtil.isNotBlank(created.getId())) {
+            permissionService.bindUserRole(created.getId(), UserRoleEnum.USER.getCode());
+        }
+        return result;
     }
 
     @Override
@@ -83,24 +100,21 @@ public class UserConfigServiceImpl implements UserConfigService {
         String email = params.get("email");
         String phone = params.get("phone");
 
-        // 验证当前登录用户合法身份（管理员或本人操作）
+        String currentUserName = params.get(UserConfigService.CURRENT_USER_NAME);
         UserConfig userConfig = getUserConfig();
-        UserInfo currentUser = userConfig.getUserInfo(params.get(UserConfigService.CURRENT_USER_NAME));
-        boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
-        boolean self = null != currentUser && StringUtil.equals(currentUser.getUsername(), username);
-        Assert.isTrue(admin || self, "No permission.");
+        UserInfo currentUser = userConfig.getUserInfo(currentUserName);
+        Assert.notNull(currentUser, "无法获取登录用户.");
+        boolean canEditOthers = permissionService.hasPermission(currentUserName, PERM_USER_EDIT);
+        boolean self = StringUtil.equals(currentUser.getUsername(), username);
+        Assert.isTrue(canEditOthers || self, "No permission.");
 
-        // 修改自己或其他用户信息
         UserInfo updateUser = self ? currentUser : userConfig.getUserInfo(username);
         Assert.notNull(updateUser, "用户不存在");
 
-        // 用户昵称
         updateUser.setNickname(nickname);
         updateUser.setEmail(email);
         updateUser.setPhone(phone);
-        // 修改密码
         if (StringUtil.isNotBlank(newPwd)) {
-            // 修改自己的密码需要验证
             if (self) {
                 String oldPwd = params.get("oldPwd");
                 Assert.hasText(oldPwd, "旧密码不能为空.");
@@ -123,17 +137,19 @@ public class UserConfigServiceImpl implements UserConfigService {
         String username = params.get("username");
         Assert.hasText(username, "The username is null.");
 
-        // 验证当前登录用户合法身份（必须是管理员操作）
-        UserConfig userConfig = getUserConfig();
-        UserInfo currentUser = userConfig.getUserInfo(params.get(UserConfigService.CURRENT_USER_NAME));
-        Assert.isTrue(UserRoleEnum.isAdmin(currentUser.getRoleCode()), "No permission.");
+        String currentUserName = params.get(UserConfigService.CURRENT_USER_NAME);
+        permissionChecker.requirePermission(currentUserName, PERM_USER_EDIT);
 
-        // 不能删除自己
+        UserConfig userConfig = getUserConfig();
+        UserInfo currentUser = userConfig.getUserInfo(currentUserName);
+        Assert.notNull(currentUser, "无法获取登录用户.");
         Assert.isTrue(!StringUtil.equals(currentUser.getUsername(), username), "不能删除自己.");
 
-        // 删除用户
         UserInfo deleteUser = userConfig.getUserInfo(username);
         Assert.notNull(deleteUser, "用户已删除.");
+        if (StringUtil.isNotBlank(deleteUser.getId())) {
+            permissionService.unbindAllUserRoles(deleteUser.getId());
+        }
         userConfig.removeUserInfo(username);
         userProfile.saveUserConfig(userConfig);
         logService.log(LogType.UserLog.DELETE, String.format("[%s]删除[%s]账号成功", currentUser.getUsername(), username));
@@ -147,11 +163,11 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     @Override
     public UserInfoVO getUserInfoVo(String currentUserName, String username) {
-        // 管理员可以查看所有用户，普通用户只能查看自己
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
-        boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
-        boolean self = null != currentUser && StringUtil.equals(currentUser.getUsername(), username);
+        Assert.notNull(currentUser, "无法获取登录用户.");
+        boolean admin = permissionService.isAdmin(currentUserName);
+        boolean self = StringUtil.equals(currentUser.getUsername(), username);
         Assert.isTrue(admin || self, "No permission.");
 
         UserInfo userInfo = getUserConfig().getUserInfo(username);
@@ -160,17 +176,15 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     @Override
     public List<UserInfoVO> getUserInfoAll(String currentUserName) {
-        // 系统管理员可以查看所有用户，其他用户只能查看自己
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
-        boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
-        if (admin) {
-            return getUserConfig().getUserInfoList().stream().map(user->convertUserInfo2Vo(user)).collect(Collectors.toList());
+        Assert.notNull(currentUser, "无法获取登录用户.");
+        if (permissionService.isAdmin(currentUserName)) {
+            return getUserConfig().getUserInfoList().stream().map(this::convertUserInfo2Vo).collect(Collectors.toList());
         }
 
         List<UserInfoVO> list = new ArrayList<>();
-        UserInfo userInfo = userConfig.getUserInfo(currentUserName);
-        list.add(convertUserInfo2Vo(userInfo));
+        list.add(convertUserInfo2Vo(currentUser));
         return list;
     }
 
@@ -187,6 +201,10 @@ public class UserConfigServiceImpl implements UserConfigService {
                 config = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
                 config.getUserInfoList().add(getDefaultUser());
                 userProfile.saveUserConfig(config);
+                UserInfo admin = getUserConfig().getUserInfo(DEFAULT_USERNAME);
+                if (admin != null && StringUtil.isNotBlank(admin.getId())) {
+                    permissionService.bindUserRole(admin.getId(), UserRoleEnum.ADMIN.getCode());
+                }
             }
             return config;
         }
@@ -201,7 +219,6 @@ public class UserConfigServiceImpl implements UserConfigService {
         UserInfoVO userInfoVo = new UserInfoVO();
         if (null != userInfo) {
             BeanUtils.copyProperties(userInfo, userInfoVo);
-            // 避免密码直接暴露
             userInfoVo.setPassword("***");
             userInfoVo.setRoleName(UserRoleEnum.getNameByCode(userInfo.getRoleCode()));
         }

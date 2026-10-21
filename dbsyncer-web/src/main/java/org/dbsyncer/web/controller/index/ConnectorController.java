@@ -67,6 +67,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
         try {
+            requirePermission("connector:edit");
             return RestResult.restSuccess(connectorConfigService.copy(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -78,6 +79,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
+            requirePermission("connector:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(connectorConfigService.add(params));
         } catch (Exception e) {
@@ -90,6 +92,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
+            requirePermission("connector:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(connectorConfigService.edit(params));
         } catch (Exception e) {
@@ -113,6 +116,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult remove(HttpServletRequest request, @RequestParam(value = "id") String id) {
         try {
+            requirePermission("connector:edit");
             return RestResult.restSuccess(connectorConfigService.remove(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

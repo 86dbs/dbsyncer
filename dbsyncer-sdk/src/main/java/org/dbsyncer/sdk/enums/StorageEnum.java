@@ -61,7 +61,23 @@ public enum StorageEnum {
     /**
      * 业务分组关系
      */
-    GROUP_REL("group_rel");
+    GROUP_REL("group_rel"),
+    /**
+     * 角色
+     */
+    ROLE("role"),
+    /**
+     * 权限点
+     */
+    PERMISSION("permission"),
+    /**
+     * 角色-权限
+     */
+    ROLE_PERMISSION("role_permission"),
+    /**
+     * 用户-角色
+     */
+    USER_ROLE("user_role");
 
     private final String type;
 

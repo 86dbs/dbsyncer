@@ -1,5 +1,6 @@
 package org.dbsyncer.web.config;
 
+import org.dbsyncer.biz.PermissionService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
@@ -68,6 +69,9 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Resource
     private UserConfigService userConfigService;
+
+    @Resource
+    private PermissionService permissionService;
 
     /**
      * 是否重置管理员密码
@@ -166,7 +170,8 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         if (null == userInfo || !StringUtil.equals(userInfo.getPassword(), password)) {
             throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
         }
-        List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(userInfo.getRoleCode());
+        String authorityString = permissionService.buildAuthorityString(username);
+        List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(authorityString);
         return new UsernamePasswordAuthenticationToken(username, password, authorities);
     }
 

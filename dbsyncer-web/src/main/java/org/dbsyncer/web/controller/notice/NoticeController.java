@@ -41,6 +41,7 @@ public class NoticeController extends BaseController {
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
+            requirePermission("notice:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(systemConfigService.editNoticeConfig(params));
         } catch (Exception e) {
@@ -53,6 +54,7 @@ public class NoticeController extends BaseController {
     @ResponseBody
     public RestResult test(HttpServletRequest request) {
         try {
+            requirePermission("notice:edit");
             return RestResult.restSuccess(messageService.testSendMessage());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

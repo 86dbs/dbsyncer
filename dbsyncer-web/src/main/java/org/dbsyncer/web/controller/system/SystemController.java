@@ -39,6 +39,7 @@ public class SystemController extends BaseController {
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
+            requirePermission("system:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(systemConfigService.edit(params));
         } catch (Exception e) {
@@ -51,6 +52,7 @@ public class SystemController extends BaseController {
     @ResponseBody
     public RestResult generateRSA(HttpServletRequest request, @RequestParam(value = "keyLength") int keyLength) {
         try {
+            requirePermission("system:edit");
             return RestResult.restSuccess(systemConfigService.createRSAConfig(keyLength));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -65,6 +67,7 @@ public class SystemController extends BaseController {
     @ResponseBody
     public RestResult generateApiSecret(HttpServletRequest request) {
         try {
+            requirePermission("system:edit");
             return RestResult.restSuccess(systemConfigService.generateApiSecret());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

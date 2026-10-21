@@ -157,6 +157,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(mappingService.add(params));
         } catch (Exception e) {
@@ -169,6 +170,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(mappingService.edit(params));
         } catch (Exception e) {
@@ -181,6 +183,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult remove(@RequestParam(value = "id") String id) {
         try {
+            requirePermission("mapping:edit");
             return RestResult.restSuccess(mappingService.remove(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -192,6 +195,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult start(@RequestParam(value = "id") String id) {
         try {
+            requirePermission("mapping:operate");
             return RestResult.restSuccess(mappingService.start(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -203,6 +207,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult stop(@RequestParam(value = "id") String id) {
         try {
+            requirePermission("mapping:operate");
             return RestResult.restSuccess(mappingService.stop(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

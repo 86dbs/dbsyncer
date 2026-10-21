@@ -99,6 +99,7 @@ public class LicenseController extends BaseController {
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {
         try {
+            requirePermission("license:edit");
             if (files != null && files[0] != null) {
                 String filename = "license";
                 File dest = new File(licenseService.getLicensePath() + filename);
@@ -120,6 +121,7 @@ public class LicenseController extends BaseController {
     @ResponseBody
     public RestResult activate(HttpServletRequest request) {
         try {
+            requirePermission("license:edit");
             String content = getLicenseContent(getParams(request));
             if (StringUtil.isNotBlank(content)) {
                 String filename = "license";

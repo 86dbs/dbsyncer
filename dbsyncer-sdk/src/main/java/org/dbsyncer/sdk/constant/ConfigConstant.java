@@ -32,6 +32,13 @@ public class ConfigConstant {
     public static final String TASK = "task";
     public static final String GROUP = "group";
     public static final String GROUP_REL = "groupRel";
+    public static final String ROLE = "role";
+    public static final String PERMISSION = "permission";
+    public static final String ROLE_PERMISSION = "rolePermission";
+    /**
+     * 用户-角色关系配置类型（勿与用户表列 {@link #USER_ROLE} 混淆）
+     */
+    public static final String USER_ROLE_REL = "userRole";
 
     /**
      * 连接器配置字段
@@ -55,6 +62,33 @@ public class ConfigConstant {
      */
     public static final String GROUP_REL_RESOURCE_TYPE = "resourceType";
     public static final String GROUP_REL_RESOURCE_ID = "resourceId";
+
+    /**
+     * 角色表(dbsyncer_role)拆分列
+     */
+    public static final String ROLE_CODE = "code";
+    public static final String ROLE_BUILTIN = "builtin";
+    public static final String ROLE_REMARK = "remark";
+
+    /**
+     * 权限点表(dbsyncer_permission)拆分列；KIND=MENU/API/ACTION（避免与配置路由 type 混淆）
+     */
+    public static final String PERMISSION_CODE = "code";
+    public static final String PERMISSION_MODULE = "module";
+    public static final String PERMISSION_KIND = "kind";
+    public static final String PERMISSION_REMARK = "remark";
+
+    /**
+     * 角色权限关系表(dbsyncer_role_permission)拆分列
+     */
+    public static final String ROLE_PERMISSION_ROLE_ID = "roleId";
+    public static final String ROLE_PERMISSION_PERMISSION_ID = "permissionId";
+
+    /**
+     * 用户角色关系表(dbsyncer_user_role)拆分列
+     */
+    public static final String USER_ROLE_USER_ID = "userId";
+    public static final String USER_ROLE_ROLE_ID = "roleId";
 
     /**
      * 用户表(dbsyncer_user)拆分列

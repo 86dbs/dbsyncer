@@ -18,6 +18,10 @@ import org.dbsyncer.sdk.storage.strategy.UserStrategy;
 import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
 import org.dbsyncer.sdk.storage.strategy.GroupStrategy;
 import org.dbsyncer.sdk.storage.strategy.GroupRelStrategy;
+import org.dbsyncer.sdk.storage.strategy.RoleStrategy;
+import org.dbsyncer.sdk.storage.strategy.PermissionStrategy;
+import org.dbsyncer.sdk.storage.strategy.RolePermissionStrategy;
+import org.dbsyncer.sdk.storage.strategy.UserRoleStrategy;
 
 /**
  * 存储策略枚举
@@ -91,7 +95,27 @@ public enum StorageStrategyEnum {
     /**
      * 业务分组关系
      */
-    GROUP_REL(StorageEnum.GROUP_REL, new GroupRelStrategy());
+    GROUP_REL(StorageEnum.GROUP_REL, new GroupRelStrategy()),
+
+    /**
+     * 角色
+     */
+    ROLE(StorageEnum.ROLE, new RoleStrategy()),
+
+    /**
+     * 权限点
+     */
+    PERMISSION(StorageEnum.PERMISSION, new PermissionStrategy()),
+
+    /**
+     * 角色-权限
+     */
+    ROLE_PERMISSION(StorageEnum.ROLE_PERMISSION, new RolePermissionStrategy()),
+
+    /**
+     * 用户-角色
+     */
+    USER_ROLE(StorageEnum.USER_ROLE, new UserRoleStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

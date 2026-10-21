@@ -714,6 +714,27 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.GROUP_REL_GROUP_ID, ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID);
         List<Field> groupRelFields = builder.getFields();
 
+        // 角色
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.ROLE_CODE, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.ROLE_BUILTIN, ConfigConstant.ROLE_REMARK);
+        List<Field> roleFields = builder.getFields();
+
+        // 权限点
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.PERMISSION_CODE, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.PERMISSION_MODULE,
+                ConfigConstant.PERMISSION_KIND, ConfigConstant.PERMISSION_REMARK);
+        List<Field> permissionFields = builder.getFields();
+
+        // 角色-权限
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.ROLE_PERMISSION_ROLE_ID, ConfigConstant.ROLE_PERMISSION_PERMISSION_ID);
+        List<Field> rolePermissionFields = builder.getFields();
+
+        // 用户-角色
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.USER_ROLE_USER_ID, ConfigConstant.USER_ROLE_ROLE_ID);
+        List<Field> userRoleFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -727,6 +748,10 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_PLAN.getType(), k -> new Executor(k, taskPlanFields, true, false));
         tables.computeIfAbsent(StorageEnum.GROUP.getType(), k -> new Executor(k, groupFields, true, true));
         tables.computeIfAbsent(StorageEnum.GROUP_REL.getType(), k -> new Executor(k, groupRelFields, true, true));
+        tables.computeIfAbsent(StorageEnum.ROLE.getType(), k -> new Executor(k, roleFields, true, true));
+        tables.computeIfAbsent(StorageEnum.PERMISSION.getType(), k -> new Executor(k, permissionFields, true, true));
+        tables.computeIfAbsent(StorageEnum.ROLE_PERMISSION.getType(), k -> new Executor(k, rolePermissionFields, true, true));
+        tables.computeIfAbsent(StorageEnum.USER_ROLE.getType(), k -> new Executor(k, userRoleFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
@@ -1057,7 +1082,15 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.PLAN_LAST_PAGE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.ROLE_CODE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.ROLE_BUILTIN, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.ROLE_REMARK, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PERMISSION_MODULE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PERMISSION_KIND, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.ROLE_PERMISSION_ROLE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.ROLE_PERMISSION_PERMISSION_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_ROLE_USER_ID, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线
