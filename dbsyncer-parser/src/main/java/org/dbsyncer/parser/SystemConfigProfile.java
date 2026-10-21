@@ -32,4 +32,12 @@ public interface SystemConfigProfile {
      * 从 system.json 数组导入。
      */
     void importFromJson(String json);
+
+    /**
+     * 生成并保存 API 密钥（OpenAPI 登录凭证）
+     * 返回明文密钥，仅展示一次，请妥善保管
+     *
+     * @return 新生成的 API 密钥
+     */
+    String generateApiSecret();
 }

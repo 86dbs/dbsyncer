@@ -177,6 +177,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         long now = System.currentTimeMillis();
         systemConfig.setCreateTime(now);
         systemConfig.setUpdateTime(now);
+        systemConfig.setClusterSecret(systemConfigProfile.generateApiSecret());
         systemConfigProfile.saveSystemConfig(systemConfig);
         logger.warn("No system config found, created default system config");
         return systemConfig;
