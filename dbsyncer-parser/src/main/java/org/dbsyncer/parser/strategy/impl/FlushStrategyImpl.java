@@ -195,4 +195,21 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
     }
 
+    @Override
+    public void writeStorageOnly(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
+        if (result == null || StringUtil.isBlank(result.getTaskId())) {
+            return;
+        }
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
+            final String error = StringUtil.substring(result.getError().toString(), 0, systemConfig.getMaxStorageErrorLength());
+            asyncWrite(result, targetSchemaResolver, targetFieldMap, false, result.getFailData(), error);
+        }
+        // 全量成功行体量大，默认不落；与 flushFullData 开启「记录全量数据」后的成功写入语义对齐
+        if (systemConfig.isEnableStorageWriteFull() && systemConfig.isEnableStorageWriteSuccess()
+                && !CollectionUtils.isEmpty(result.getSuccessData())) {
+            asyncWrite(result, targetSchemaResolver, targetFieldMap, true, result.getSuccessData(), "");
+        }
+    }
+
 }
