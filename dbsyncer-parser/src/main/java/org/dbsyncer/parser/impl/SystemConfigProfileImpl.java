@@ -22,6 +22,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -97,5 +99,12 @@ public final class SystemConfigProfileImpl extends AbstractConfigModelProfile<Sy
     @Override
     public void onApplicationEvent(RemoveSystemConfigCacheEvent event) {
         removeCache(null);
+    }
+
+    @Override
+    public String generateApiSecret() {
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getEncoder().encodeToString(bytes);
     }
 }

@@ -5,6 +5,7 @@ package org.dbsyncer.web.controller.system;
 
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,9 @@ public class SystemController extends BaseController {
 
     @Resource
     private SystemConfigService systemConfigService;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     @RequestMapping("")
     public String index(ModelMap model) {
@@ -68,7 +72,7 @@ public class SystemController extends BaseController {
     public RestResult generateApiSecret(HttpServletRequest request) {
         try {
             requirePermission("system:edit");
-            return RestResult.restSuccess(systemConfigService.generateApiSecret());
+            return RestResult.restSuccess(systemConfigProfile.generateApiSecret());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
