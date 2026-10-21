@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">角色管理</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4" data-permission="user:edit">
+            <button class="btn btn-primary" type="button" onclick="doLoader('/role/page/add')">
+                <i class="fa fa-plus"></i> 添加
+            </button>
+        </div>
+        <p class="text-sm text-tertiary mb-4">可自建角色并分配权限；内置角色仅可查看，不可编辑或删除。</p>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>编码</th>
+                <th>名称</th>
+                <th>类型</th>
+                <th>权限数</th>
+                <th>备注</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="roleList">
+            <tr th:if="${roles == null or roles.isEmpty()}">
+                <td colspan="6" class="text-center text-tertiary py-8">暂无角色数据</td>
+            </tr>
+            <tr th:each="r : ${roles}">
+                <td>
+                    <span class="font-medium text-primary" th:text="${r?.code}"></span>
+                </td>
+                <td th:text="${r?.name}"></td>
+                <td>
+                    <span class="badge"
+                          th:classappend="${r?.builtin == 1} ? 'badge-success' : ''"
+                          th:text="${r?.builtin == 1} ? '内置' : '自定义'"></span>
+                </td>
+                <td th:text="${r?.permissionCount}"></td>
+                <td>
+                    <span class="text-sm text-secondary" th:text="${r?.remark ?: ''}"></span>
+                </td>
+                <td>
+                    <div class="flex items-center">
+                        <button class="table-action-btn view editRoleBtn" title="查看权限"
+                                th:if="${r?.builtin == 1}"
+                                th:data-id="${r?.id}">
+                            <i class="fa fa-eye"></i>
+                        </button>
+                        <button class="table-action-btn view editRoleBtn" title="配置权限"
+                                th:if="${r?.builtin != 1}"
+                                th:data-id="${r?.id}">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button class="table-action-btn delete removeRoleBtn" title="删除"
+                                th:if="${r?.builtin != 1}"
+                                th:data-id="${r?.id}"
+                                th:data-code="${r?.code}"
+                                data-permission="user:edit">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        window.backIndexPage = function () {
+            doLoader('/role');
+        };
+
+        $('.editRoleBtn').on('click', function () {
+            doLoader('/role/page/edit?id=' + $(this).data('id'));
+        });
+
+        $('.removeRoleBtn').on('click', function () {
+            const roleId = $(this).data('id');
+            const code = $(this).data('code');
+            const $btn = $(this);
+            showConfirm({
+                title: '确定删除角色「' + code + '」？',
+                icon: 'warning',
+                size: 'large',
+                confirmType: 'danger',
+                onConfirm: function () {
+                    const originalText = $btn.html();
+                    $btn.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
+                    doPoster('/role/remove', {roleId: roleId}, function (data) {
+                        $btn.html(originalText).prop('disabled', false);
+                        if (data.success === true) {
+                            bootGrowl('删除成功！', 'success');
+                            doLoader('/role?refresh=' + new Date().getTime());
+                        } else {
+                            bootGrowl(data.message || '删除失败', 'danger');
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
+</html>

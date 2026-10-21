@@ -77,7 +77,11 @@ public enum StorageEnum {
     /**
      * 用户-角色
      */
-    USER_ROLE("user_role");
+    USER_ROLE("user_role"),
+    /**
+     * 资源访问控制
+     */
+    RESOURCE_ACL("resource_acl");
 
     private final String type;
 

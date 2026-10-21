@@ -17,11 +17,17 @@
         </div>
         <form id="user-form-edit" method="post">
             <div class="grid grid-cols-2">
-                <!-- 角色 -->
+                <!-- 角色：有 user:edit 可换绑，否则只读展示 -->
                 <div class="form-item">
                     <label class="form-label">角色</label>
                     <div class="form-control-area">
-                        <input class="form-control" name="roleName" type="text" readonly
+                        <select id="roleCode" class="form-control" name="roleCode" th:if="${canAssignRole}" required>
+                            <option th:each="r : ${roles}"
+                                    th:value="${r.code}"
+                                    th:text="${r.name + ' (' + r.code + ')'}"
+                                    th:selected="${r.code == currentUser?.roleCode}"></option>
+                        </select>
+                        <input class="form-control" type="text" readonly th:unless="${canAssignRole}"
                                th:value="${currentUser?.roleName}"/>
                     </div>
                 </div>
@@ -84,6 +90,8 @@
                 </div>
             </div>
         </form>
+        <!-- 为角色 dbSelect 下拉预留高度，避免被 form-container 裁切 -->
+        <div class="blank-block-md" th:if="${canAssignRole}"></div>
     </div>
 </div>
 
@@ -92,6 +100,10 @@
 
     // 绑定多值输入框事件
     initMultipleInputTags();
+
+    if ($('#roleCode').length) {
+        $('#roleCode').dbSelect({type: 'single'});
+    }
 
     //保存
     $("#user-btn-submit").on('click', function () {

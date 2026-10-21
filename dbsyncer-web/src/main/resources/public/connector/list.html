@@ -20,8 +20,8 @@
                 <div id="connectorGroupToolbar" class="flex items-center gap-2"></div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-                <span id="connectorGroupCreateHost"></span>
-                <button id="connectorAddBtn" class="btn btn-primary" type="button">
+                <span id="connectorGroupCreateHost" data-permission="connector:edit"></span>
+                <button id="connectorAddBtn" class="btn btn-primary" type="button" data-permission="connector:edit">
                     <i class="fa fa-plus"></i> 添加
                 </button>
             </div>
@@ -63,8 +63,24 @@ $(document).ready(function() {
             if (groupToolbar) {
                 groupToolbar.setListTotal(pagination.total || 0);
             }
+            if (window.DBSPermission) {
+                DBSPermission.apply('#mainContent');
+            }
         },
         renderRow: function(connector, index) {
+            const canEdit = !window.DBSPermission || DBSPermission.has('connector:edit');
+            const editBtn = canEdit ? `
+                            <button class="table-action-btn view" title="修改" onclick="doLoader('/connector/page/edit?id=${connector.id}')">
+                                <i class="fa fa-edit"></i>
+                            </button>` : '';
+            const copyBtn = canEdit ? `
+                            <button class="table-action-btn copy" title="复制" onclick="copyConnector('${connector.id}')">
+                                <i class="fa fa-copy"></i>
+                            </button>` : '';
+            const deleteBtn = canEdit ? `
+                            <button class="table-action-btn delete" title="删除" onclick="deleteConnector('${connector.id}')">
+                                <i class="fa fa-trash"></i>
+                            </button>` : '';
             return `
                 <tr>
                     <td>${index}</td>
@@ -76,18 +92,12 @@ $(document).ready(function() {
                     <td>${Number(connector.status) === 1 ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}</td>
                     <td>
                         <div class="flex items-center">
-                            <button class="table-action-btn view" title="修改" onclick="doLoader('/connector/page/edit?id=${connector.id}')">
-                                <i class="fa fa-edit"></i>
-                            </button>
+                            ${editBtn}
                             <button class="table-action-btn play" title="测试" onclick="testConnector('${connector.id}')">
                                 <i class="fa fa-flash"></i>
                             </button>
-                            <button class="table-action-btn copy" title="复制" onclick="copyConnector('${connector.id}')">
-                                <i class="fa fa-copy"></i>
-                            </button>
-                            <button class="table-action-btn delete" title="删除" onclick="deleteConnector('${connector.id}')">
-                                <i class="fa fa-trash"></i>
-                            </button>
+                            ${copyBtn}
+                            ${deleteBtn}
                         </div>
                     </td>
                 </tr>

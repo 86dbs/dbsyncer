@@ -46,7 +46,27 @@ public interface PermissionService {
     void bindUserRole(String userId, String roleCode);
 
     /**
+     * 覆盖用户角色绑定（先清空再绑一个）。
+     */
+    void replaceUserRole(String userId, String roleCode);
+
+    /**
      * 删除用户全部角色绑定。
      */
     void unbindAllUserRoles(String userId);
+
+    /**
+     * 用户主角色编码（取第一条 user_role；无则回退用户表 ROLE）。
+     */
+    String resolvePrimaryRoleCode(String userId, String fallbackRoleCode);
+
+    /**
+     * 用户主角色名称。
+     */
+    String resolvePrimaryRoleName(String userId, String fallbackRoleCode);
+
+    /**
+     * 绑定了指定角色编码的用户数。
+     */
+    int countUsersByRoleCode(String roleCode);
 }

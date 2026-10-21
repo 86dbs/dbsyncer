@@ -1,5 +1,7 @@
 package org.dbsyncer.web.controller.user;
 
+import org.dbsyncer.biz.PermissionService;
+import org.dbsyncer.biz.RoleService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.UserInfoVO;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -39,6 +42,12 @@ public class UserController extends BaseController {
     @Resource
     private UserConfigService userConfigService;
 
+    @Resource
+    private PermissionService permissionService;
+
+    @Resource
+    private RoleService roleService;
+
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("currentUser", getUserInfoVo());
@@ -48,6 +57,8 @@ public class UserController extends BaseController {
 
     @GetMapping("/page/add")
     public String pageAdd(ModelMap model) {
+        requirePermission("user:edit");
+        model.put("roles", roleService.listRoles());
         return "user/add";
     }
 
@@ -57,6 +68,8 @@ public class UserController extends BaseController {
         username = StringUtil.isBlank(username) ? currentUserName : username;
         model.put(UserConfigService.CURRENT_USER_NAME, currentUserName);
         model.put("currentUser", userConfigService.getUserInfoVo(currentUserName, username));
+        model.put("roles", roleService.listRoles());
+        model.put("canAssignRole", permissionService.hasPermission(currentUserName, "user:edit"));
         return "user/edit";
     }
 
@@ -109,13 +122,16 @@ public class UserController extends BaseController {
     }
 
     /**
-     * 获取登录用户信息
-     *
-     * @return
+     * 获取登录用户信息（含权限码，供前端显隐）。
      */
     private UserInfoVO getUserInfoVo() {
         String currentUserName = getUserName();
-        return userConfigService.getUserInfoVo(currentUserName, currentUserName);
+        UserInfoVO vo = userConfigService.getUserInfoVo(currentUserName, currentUserName);
+        if (vo != null) {
+            vo.setAdmin(permissionService.isAdmin(currentUserName));
+            vo.setPermissions(new ArrayList<>(permissionService.listPermissionCodes(currentUserName)));
+        }
+        return vo;
     }
 
     private String getUserName() {

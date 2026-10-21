@@ -22,6 +22,7 @@ import org.dbsyncer.sdk.storage.strategy.RoleStrategy;
 import org.dbsyncer.sdk.storage.strategy.PermissionStrategy;
 import org.dbsyncer.sdk.storage.strategy.RolePermissionStrategy;
 import org.dbsyncer.sdk.storage.strategy.UserRoleStrategy;
+import org.dbsyncer.sdk.storage.strategy.ResourceAclStrategy;
 
 /**
  * 存储策略枚举
@@ -115,7 +116,12 @@ public enum StorageStrategyEnum {
     /**
      * 用户-角色
      */
-    USER_ROLE(StorageEnum.USER_ROLE, new UserRoleStrategy());
+    USER_ROLE(StorageEnum.USER_ROLE, new UserRoleStrategy()),
+
+    /**
+     * 资源访问控制
+     */
+    RESOURCE_ACL(StorageEnum.RESOURCE_ACL, new ResourceAclStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

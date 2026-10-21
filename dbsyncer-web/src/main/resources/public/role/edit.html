@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center"
+            th:text="${createMode} ? '添加角色' : (${readonly} ? '查看角色权限' : '配置角色权限')">配置角色权限</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="roleSubmitBtn" class="btn btn-primary" type="button" data-permission="user:edit"
+                    th:unless="${readonly}">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button class="btn btn-outline" type="button" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 返回
+            </button>
+        </div>
+        <form id="role-form-edit" method="post">
+            <input type="hidden" name="roleId" th:value="${role?.id}"/>
+            <div class="grid grid-cols-2 mb-4">
+                <div class="form-item">
+                    <label class="form-label">编码<strong class="text-primary" th:if="${createMode}">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="code" type="text" maxlength="32"
+                               th:readonly="${!createMode or readonly}"
+                               th:required="${createMode}"
+                               th:value="${role?.code}"
+                               placeholder="小写字母开头，如 operator"/>
+                        <div class="form-help" th:if="${createMode}">仅小写字母、数字、下划线，长度 2~32</div>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">类型</label>
+                    <div class="form-control-area">
+                        <input class="form-control" type="text" readonly
+                               th:value="${createMode == true or role?.builtin != 1} ? '自定义' : '内置'"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">名称<strong class="text-primary" th:unless="${readonly}">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="name" type="text" maxlength="64"
+                               th:required="${!readonly}"
+                               th:readonly="${readonly}"
+                               placeholder="请输入角色名称" th:value="${role?.name}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">备注</label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="remark" type="text" maxlength="200"
+                               th:readonly="${readonly}"
+                               placeholder="可选备注" th:value="${role?.remark}"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="card-title mb-0">功能权限</h4>
+                <div class="checkbox-group checkbox-group-inline"
+                     th:if="${!readonly and permissionGroups != null and !permissionGroups.isEmpty()}">
+                    <input type="checkbox" id="rolePermSelectAll" class="rolePermSelectAll"/>
+                    <label for="rolePermSelectAll">全选</label>
+                </div>
+            </div>
+            <p class="text-sm text-tertiary mb-4"
+               th:text="${readonly} ? '内置角色仅可查看，不可修改。' : '勾选后保存即按权限码生效；菜单显隐刷新页面后更新。'">
+            </p>
+
+            <table class="table" id="rolePermissionTable">
+                <thead>
+                <tr>
+                    <th>模块</th>
+                    <th>权限名称</th>
+                    <th>权限码</th>
+                    <th>授权</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${permissionGroups == null or permissionGroups.isEmpty()}">
+                    <td colspan="4" class="text-center text-tertiary py-8">暂无权限点</td>
+                </tr>
+                <th:block th:each="entry : ${permissionGroups}">
+                    <tr th:each="p, stat : ${entry.value}">
+                        <td th:if="${stat.first}" th:rowspan="${#lists.size(entry.value)}"
+                            class="font-medium text-primary" th:text="${entry.key}"></td>
+                        <td th:text="${p.name}"></td>
+                        <td>
+                            <span class="text-sm text-secondary" th:text="${p.code}"></span>
+                        </td>
+                        <td>
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="permissionCode" class="rolePermissionCheckbox"
+                                       th:id="'perm_' + ${p.code}"
+                                       th:value="${p.code}"
+                                       th:checked="${p.granted}"
+                                       th:disabled="${readonly}"
+                                       th:title="${p.name}"/>
+                            </div>
+                        </td>
+                    </tr>
+                </th:block>
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>
+
+<script type="text/javascript" th:inline="javascript">
+    $(function () {
+        const createMode = [[${createMode == true}]];
+        const readonly = [[${readonly == true}]];
+
+        window.backIndexPage = function () {
+            doLoader('/role');
+        };
+
+        const canEdit = !readonly && (!window.DBSPermission || DBSPermission.has('user:edit'));
+        const $checks = $('.rolePermissionCheckbox');
+        $checks.prop('disabled', !canEdit);
+        $('input[name="name"], input[name="remark"]').prop('readonly', !canEdit);
+        if (createMode) {
+            $('input[name="code"]').prop('readonly', !canEdit);
+        }
+        $('#rolePermSelectAll').prop('disabled', !canEdit);
+
+        $checks.checkboxGroup({
+            theme: 'primary',
+            size: 'md'
+        });
+        $('#rolePermSelectAll').checkboxGroup({
+            theme: 'primary',
+            size: 'md'
+        });
+
+        let syncingSelectAll = false;
+
+        function paintCheckbox($el, checked) {
+            $el.prop('checked', !!checked);
+            const $item = $el.closest('.checkbox-group-item');
+            if ($item.length) {
+                $item.toggleClass('active', !!checked);
+            }
+        }
+
+        function syncSelectAll() {
+            if (syncingSelectAll) {
+                return;
+            }
+            const $all = $checks.filter(':not(:disabled)');
+            const checked = $all.length > 0 && $all.filter(':checked').length === $all.length;
+            paintCheckbox($('#rolePermSelectAll'), checked);
+        }
+
+        $checks.on('change', syncSelectAll);
+        syncSelectAll();
+
+        $('#rolePermSelectAll').on('change', function () {
+            if (!canEdit || syncingSelectAll) {
+                return;
+            }
+            syncingSelectAll = true;
+            const checked = $(this).is(':checked');
+            $checks.each(function () {
+                paintCheckbox($(this), checked);
+            });
+            syncingSelectAll = false;
+        });
+
+        $('#roleSubmitBtn').on('click', function () {
+            if (readonly) {
+                bootGrowl('内置角色不可编辑', 'warning');
+                return;
+            }
+            if (!canEdit) {
+                bootGrowl('无权限', 'danger');
+                return;
+            }
+            const $form = $('#role-form-edit');
+            if (!validateForm($form)) {
+                return;
+            }
+            const codes = [];
+            $form.find('.rolePermissionCheckbox:checked').each(function () {
+                codes.push($(this).val());
+            });
+            const data = {
+                roleId: $form.find('input[name="roleId"]').val(),
+                code: $form.find('input[name="code"]').val(),
+                name: $form.find('input[name="name"]').val(),
+                remark: $form.find('input[name="remark"]').val(),
+                permissionCodes: codes.join(',')
+            };
+            const url = createMode ? '/role/add' : '/role/edit';
+            const $btn = $(this);
+            const originalText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            doPoster(url, data, function (response) {
+                $btn.html(originalText).prop('disabled', false);
+                if (response.success !== true) {
+                    bootGrowl(response.message || '保存失败', 'danger');
+                    return;
+                }
+                bootGrowl(createMode ? '新增成功！' : '保存成功！', 'success');
+                if (window.DBSPermission) {
+                    refreshLoginUser();
+                }
+                backIndexPage();
+            });
+        });
+    });
+</script>
+</html>

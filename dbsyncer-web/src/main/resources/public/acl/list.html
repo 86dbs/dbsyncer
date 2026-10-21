@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">资源授权</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4" data-permission="acl:edit">
+            <button class="btn btn-primary" type="button" onclick="doLoader('/acl/page/add')">
+                <i class="fa fa-plus"></i> 添加
+            </button>
+        </div>
+        <p class="text-sm text-tertiary mb-4">
+            将业务分组授权给角色或用户；未授权的非管理员默认不可见组内资源。后续可细化到连接、同步任务、订正校验、整库迁移。
+        </p>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>主体类型</th>
+                <th>主体</th>
+                <th>资源类型</th>
+                <th>资源</th>
+                <th>动作</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${acls == null or acls.isEmpty()}">
+                <td colspan="6" class="text-center text-tertiary py-8">暂无资源授权</td>
+            </tr>
+            <tr th:each="a : ${acls}">
+                <td>
+                    <span class="badge" th:text="${a.subjectType == 'ROLE'} ? '角色' : '用户'"></span>
+                </td>
+                <td th:text="${a.subjectName}"></td>
+                <td>
+                    <span class="text-sm" th:switch="${a.resourceType}">
+                        <th:block th:case="'group'">业务分组</th:block>
+                        <th:block th:case="'connector'">连接</th:block>
+                        <th:block th:case="'mapping'">同步任务</th:block>
+                        <th:block th:case="'validateSync'">订正校验任务</th:block>
+                        <th:block th:case="'databaseSync'">整库迁移任务</th:block>
+                        <th:block th:case="*" th:text="${a.resourceType}"></th:block>
+                    </span>
+                </td>
+                <td th:text="${a.resourceName}"></td>
+                <td>
+                    <span class="text-sm text-secondary" th:text="${a.actions}"></span>
+                </td>
+                <td>
+                    <div class="flex items-center">
+                        <button class="table-action-btn view editAclBtn" title="修改"
+                                th:data-id="${a.id}" data-permission="acl:edit">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button class="table-action-btn delete removeAclBtn" title="删除"
+                                th:data-id="${a.id}" data-permission="acl:edit">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        window.backIndexPage = function () {
+            doLoader('/acl');
+        };
+
+        $('.editAclBtn').on('click', function () {
+            doLoader('/acl/page/edit?id=' + $(this).data('id'));
+        });
+
+        $('.removeAclBtn').on('click', function () {
+            const id = $(this).data('id');
+            const $btn = $(this);
+            showConfirm({
+                title: '确定删除该资源授权？',
+                icon: 'warning',
+                size: 'large',
+                confirmType: 'danger',
+                onConfirm: function () {
+                    const originalText = $btn.html();
+                    $btn.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
+                    doPoster('/acl/remove', {id: id}, function (data) {
+                        $btn.html(originalText).prop('disabled', false);
+                        if (data.success === true) {
+                            bootGrowl('删除成功！', 'success');
+                            doLoader('/acl?refresh=' + new Date().getTime());
+                        } else {
+                            bootGrowl(data.message || '删除失败', 'danger');
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
+</html>

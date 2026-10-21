@@ -8,6 +8,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Permission;
+import org.dbsyncer.parser.model.ResourceAcl;
 import org.dbsyncer.parser.model.Role;
 import org.dbsyncer.parser.model.RolePermission;
 import org.dbsyncer.parser.model.TableGroup;
@@ -53,6 +54,9 @@ public abstract class ConfigModelUtil {
         }
         if (model instanceof UserRole) {
             return convertUserRoleToMap((UserRole) model);
+        }
+        if (model instanceof ResourceAcl) {
+            return convertResourceAclToMap((ResourceAcl) model);
         }
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
@@ -150,6 +154,13 @@ public abstract class ConfigModelUtil {
             }
             return (T) rel;
         }
+        if (ResourceAcl.class.equals(clazz)) {
+            ResourceAcl acl = JsonUtil.mapToObj(row, ResourceAcl.class);
+            if (acl != null) {
+                acl.setType(ConfigConstant.RESOURCE_ACL);
+            }
+            return (T) acl;
+        }
         Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
         if (json == null) {
             return null;
@@ -220,6 +231,19 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rel.getUpdateTime());
         params.put(ConfigConstant.USER_ROLE_USER_ID, StringUtil.getIfBlank(rel.getUserId(), StringUtil.EMPTY));
         params.put(ConfigConstant.USER_ROLE_ROLE_ID, StringUtil.getIfBlank(rel.getRoleId(), StringUtil.EMPTY));
+        return params;
+    }
+
+    private static Map<String, Object> convertResourceAclToMap(ResourceAcl acl) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, acl.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, acl.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, acl.getUpdateTime());
+        params.put(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, StringUtil.getIfBlank(acl.getSubjectType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, StringUtil.getIfBlank(acl.getSubjectId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.GROUP_REL_RESOURCE_TYPE, StringUtil.getIfBlank(acl.getResourceType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.GROUP_REL_RESOURCE_ID, StringUtil.getIfBlank(acl.getResourceId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.RESOURCE_ACL_ACTIONS, StringUtil.getIfBlank(acl.getActions(), StringUtil.EMPTY));
         return params;
     }
 
@@ -315,6 +339,8 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.ROLE_PERMISSION;
             case ConfigConstant.USER_ROLE_REL:
                 return StorageEnum.USER_ROLE;
+            case ConfigConstant.RESOURCE_ACL:
+                return StorageEnum.RESOURCE_ACL;
             default:
                 // 后续新增的 CommonTaskTypeEnum 仍走 task 表
                 return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;

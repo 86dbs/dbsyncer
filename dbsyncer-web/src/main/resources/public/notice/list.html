@@ -20,11 +20,11 @@
         <form id="notice-form-edit">
             <!-- 管理员操作区域 -->
             <div class="form-actions mb-4 flex justify-end">
-                <button id="testNoticeBtn" type="button" class="btn btn-default mr-2"
+                <button id="testNoticeBtn" type="button" class="btn btn-default mr-2" data-permission="notice:edit"
                         th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.dingTalk?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
                     <span class="fa fa-flash"></span> 测试
                 </button>
-                <button id="updateNoticeBtn" type="button" class="btn btn-primary">
+                <button id="updateNoticeBtn" type="button" class="btn btn-primary" data-permission="notice:edit">
                     <span class="fa fa-save"></span> 保存
                 </button>
             </div>

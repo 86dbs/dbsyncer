@@ -67,8 +67,9 @@ public class RbacSeedService implements ApplicationListener<ContextRefreshedEven
     }
 
     private void seed() {
-        Role adminRole = ensureRole(ROLE_ADMIN, "管理员", 1, "内置管理员");
-        Role userRole = ensureRole(ROLE_USER, "普通用户", 1, "内置普通用户");
+        // 仅内置超级管理员；历史「普通用户」角色若存在则降为非内置（可删可改）
+        Role adminRole = ensureRole(ROLE_ADMIN, "超级管理员", 1, "内置超级管理员");
+        demoteLegacyUserRoleIfPresent();
 
         List<PermissionDef> defs = permissionDefs();
         for (PermissionDef def : defs) {
@@ -76,36 +77,55 @@ public class RbacSeedService implements ApplicationListener<ContextRefreshedEven
             ensureRolePermission(adminRole.getId(), permission.getId());
         }
 
-        List<String> userCodes = Arrays.asList(
-                "connector:view", "mapping:view", "mapping:operate",
-                "notice:view", "license:view", "system:view"
-        );
-        for (String code : userCodes) {
-            Permission permission = rbacProfile.getPermissionByCode(code);
-            if (permission != null) {
-                ensureRolePermission(userRole.getId(), permission.getId());
-            }
-        }
-
         List<UserInfo> users = userProfile.listUserInfos();
         if (CollectionUtils.isEmpty(users)) {
-            logger.info("RBAC 种子完成：角色/权限已就绪，暂无用户可绑角色");
+            logger.info("RBAC 种子完成：内置角色=超级管理员，permissions={}，暂无用户可绑角色", defs.size());
             return;
         }
+        int bound = 0;
         for (UserInfo user : users) {
             if (user == null || StringUtil.isBlank(user.getId())) {
                 continue;
             }
-            String roleCode = StringUtil.equals(ROLE_ADMIN, user.getRoleCode()) ? ROLE_ADMIN : ROLE_USER;
-            Role role = ROLE_ADMIN.equals(roleCode) ? adminRole : userRole;
-            ensureUserRole(user.getId(), role.getId());
+            // 仅将 ROLE=admin 的用户绑到超级管理员；其余由管理员在用户管理中指定角色
+            if (StringUtil.equals(ROLE_ADMIN, user.getRoleCode())) {
+                ensureUserRole(user.getId(), adminRole.getId());
+                bound++;
+            }
         }
-        logger.info("RBAC 种子完成：roles=2, permissions={}, users={}", defs.size(), users.size());
+        logger.info("RBAC 种子完成：内置角色=超级管理员，permissions={}，users={}，admin绑定={}",
+                defs.size(), users.size(), bound);
+    }
+
+    /**
+     * 历史种子曾内置 user 角色；现仅保留超级管理员为内置，将 user 降为自定义。
+     */
+    private void demoteLegacyUserRoleIfPresent() {
+        Role userRole = rbacProfile.getRoleByCode(ROLE_USER);
+        if (userRole == null || userRole.getBuiltin() != 1) {
+            return;
+        }
+        userRole.setBuiltin(0);
+        if (StringUtil.isBlank(userRole.getRemark()) || StringUtil.equals("内置普通用户", userRole.getRemark())) {
+            userRole.setRemark("自定义角色（由历史内置普通用户降级）");
+        }
+        userRole.setUpdateTime(System.currentTimeMillis());
+        rbacProfile.updateRole(userRole);
+        logger.info("已将历史内置角色 user 降为非内置");
     }
 
     private Role ensureRole(String code, String name, int builtin, String remark) {
         Role existing = rbacProfile.getRoleByCode(code);
         if (existing != null) {
+            // 同步内置超级管理员展示名
+            if (ROLE_ADMIN.equals(code) && (existing.getBuiltin() != 1
+                    || !StringUtil.equals(name, existing.getName()))) {
+                existing.setBuiltin(1);
+                existing.setName(name);
+                existing.setRemark(remark);
+                existing.setUpdateTime(System.currentTimeMillis());
+                rbacProfile.updateRole(existing);
+            }
             return existing;
         }
         long now = System.currentTimeMillis();
@@ -182,7 +202,9 @@ public class RbacSeedService implements ApplicationListener<ContextRefreshedEven
                 new PermissionDef("license:view", "查看授权", "license", KIND_MENU),
                 new PermissionDef("license:edit", "管理授权", "license", KIND_ACTION),
                 new PermissionDef("system:view", "查看系统配置", "system", KIND_MENU),
-                new PermissionDef("system:edit", "编辑系统配置", "system", KIND_ACTION)
+                new PermissionDef("system:edit", "编辑系统配置", "system", KIND_ACTION),
+                new PermissionDef("acl:view", "查看资源授权", "acl", KIND_MENU),
+                new PermissionDef("acl:edit", "编辑资源授权", "acl", KIND_ACTION)
         );
     }
 

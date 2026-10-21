@@ -735,6 +735,12 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.USER_ROLE_USER_ID, ConfigConstant.USER_ROLE_ROLE_ID);
         List<Field> userRoleFields = builder.getFields();
 
+        // 资源 ACL
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, ConfigConstant.RESOURCE_ACL_SUBJECT_ID,
+                ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID, ConfigConstant.RESOURCE_ACL_ACTIONS);
+        List<Field> resourceAclFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -752,6 +758,7 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.PERMISSION.getType(), k -> new Executor(k, permissionFields, true, true));
         tables.computeIfAbsent(StorageEnum.ROLE_PERMISSION.getType(), k -> new Executor(k, rolePermissionFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER_ROLE.getType(), k -> new Executor(k, userRoleFields, true, true));
+        tables.computeIfAbsent(StorageEnum.RESOURCE_ACL.getType(), k -> new Executor(k, resourceAclFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
@@ -1090,7 +1097,10 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.PERMISSION_KIND, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.ROLE_PERMISSION_ROLE_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.ROLE_PERMISSION_PERMISSION_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_ROLE_USER_ID, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.USER_ROLE_USER_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.RESOURCE_ACL_ACTIONS, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

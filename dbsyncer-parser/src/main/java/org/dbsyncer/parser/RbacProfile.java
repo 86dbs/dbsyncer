@@ -27,6 +27,11 @@ public interface RbacProfile {
 
     String updateRole(Role role);
 
+    /**
+     * 按 ID 删除角色。
+     */
+    void removeRole(String roleId);
+
     Permission getPermissionByCode(String code);
 
     List<Permission> listPermissions();
@@ -41,9 +46,19 @@ public interface RbacProfile {
 
     String addRolePermission(RolePermission rel);
 
+    /**
+     * 删除角色全部权限绑定。
+     */
+    void removeRolePermissionsByRoleId(String roleId);
+
     UserRole getUserRole(String userId, String roleId);
 
     List<UserRole> listUserRolesByUserId(String userId);
+
+    /**
+     * 按角色查用户绑定（用于删除前占用校验）。
+     */
+    List<UserRole> listUserRolesByRoleId(String roleId);
 
     String addUserRole(UserRole rel);
 

@@ -3,6 +3,8 @@ package org.dbsyncer.web.controller;
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.PermissionChecker;
 import org.dbsyncer.biz.PluginService;
+import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.sdk.spi.LicenseService;
@@ -38,6 +40,9 @@ public abstract class BaseController {
     @Resource
     private PermissionChecker permissionChecker;
 
+    @Resource
+    private ResourceAclService resourceAclService;
+
     /**
      * 当前登录用户名。
      */
@@ -57,12 +62,20 @@ public abstract class BaseController {
     }
 
     /**
-     * 获取请求参数
+     * 断言当前用户对资源具备动作权限。
+     */
+    protected void requireResource(String resourceType, String resourceId, String action) {
+        resourceAclService.require(currentUsername(), resourceType, resourceId, action);
+    }
+
+    /**
+     * 获取请求参数（附带当前登录用户名，供 Service 层 ACL 过滤）。
      */
     protected Map<String, String> getParams(HttpServletRequest request) {
         Map<String, String[]> map = request.getParameterMap();
         Map<String, String> res = new HashMap<>();
         map.forEach((k, v)->res.put(k, v[0]));
+        res.put(UserConfigService.CURRENT_USER_NAME, currentUsername());
         return res;
     }
 

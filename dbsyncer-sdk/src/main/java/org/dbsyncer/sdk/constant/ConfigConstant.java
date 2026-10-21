@@ -39,6 +39,10 @@ public class ConfigConstant {
      * 用户-角色关系配置类型（勿与用户表列 {@link #USER_ROLE} 混淆）
      */
     public static final String USER_ROLE_REL = "userRole";
+    /**
+     * 资源访问控制
+     */
+    public static final String RESOURCE_ACL = "resourceAcl";
 
     /**
      * 连接器配置字段
@@ -89,6 +93,13 @@ public class ConfigConstant {
      */
     public static final String USER_ROLE_USER_ID = "userId";
     public static final String USER_ROLE_ROLE_ID = "roleId";
+
+    /**
+     * 资源 ACL 表(dbsyncer_resource_acl)拆分列
+     */
+    public static final String RESOURCE_ACL_SUBJECT_TYPE = "subjectType";
+    public static final String RESOURCE_ACL_SUBJECT_ID = "subjectId";
+    public static final String RESOURCE_ACL_ACTIONS = "actions";
 
     /**
      * 用户表(dbsyncer_user)拆分列

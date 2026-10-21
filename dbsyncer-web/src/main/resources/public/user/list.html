@@ -7,9 +7,9 @@
         <h3 class="card-title text-center">用户管理</h3>
     </div>
     <div class="card-body">
-        <!-- 管理员操作区域 -->
-        <div class="form-actions mb-4" th:if="${currentUser?.roleCode eq 'admin'}">
-            <button class="btn btn-primary" onclick="doLoader('/user/page/add')">
+        <!-- 具备 user:edit 或管理员可添加 -->
+        <div class="form-actions mb-4" th:if="${currentUser?.admin or currentUser?.roleCode eq 'admin'}">
+            <button class="btn btn-primary" onclick="doLoader('/user/page/add')" data-permission="user:edit">
                 <i class="fa fa-plus"></i> 添加
             </button>
         </div>
@@ -57,11 +57,11 @@
                 <td>
                     <div class="flex items-center">
                         <!-- 管理员或本人可以修改 -->
-                        <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}" th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}">
+                        <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}" th:if="${currentUser?.admin or currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}">
                             <i class="fa fa-edit"></i>
                         </button>
                         <!-- 仅管理员可以删除其他用户 -->
-                        <button class="table-action-btn delete removeUserBtn" title="删除" th:data-username="${u?.username}" th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}">
+                        <button class="table-action-btn delete removeUserBtn" title="删除" th:data-username="${u?.username}" th:if="${(currentUser?.admin or currentUser?.roleCode eq 'admin') and currentUser?.username != u?.username}">
                             <i class="fa fa-trash"></i>
                         </button>
                     </div>

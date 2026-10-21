@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center" th:text="${acl != null} ? '修改资源授权' : '添加资源授权'">资源授权</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="aclSubmitBtn" class="btn btn-primary" type="button" data-permission="acl:edit">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button class="btn btn-outline" type="button" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 返回
+            </button>
+        </div>
+        <form id="acl-form-edit" method="post">
+            <input type="hidden" name="id" th:value="${acl?.id}"/>
+
+            <h4 class="card-title mb-3">授权主体</h4>
+            <p class="text-sm text-tertiary mb-4">选择授权对象：角色｜用户</p>
+            <div class="grid grid-cols-2 mb-4">
+                <div class="form-item">
+                    <label class="form-label">主体类型<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <select id="subjectType" class="form-control" name="subjectType" required>
+                            <option value="ROLE" th:selected="${acl == null or acl.subjectType == 'ROLE'}">角色</option>
+                            <option value="USER" th:selected="${acl?.subjectType == 'USER'}">用户</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" id="subjectPickLabel">角色<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <div id="roleSelectWrap">
+                            <select id="subjectRoleId" class="form-control" name="subjectId">
+                                <option value="">请选择角色</option>
+                                <option th:each="r : ${roles}"
+                                        th:value="${r.id}"
+                                        th:text="${r.name + ' (' + r.code + ')'}"
+                                        th:selected="${acl?.subjectType == 'ROLE' and acl?.subjectId == r.id}"></option>
+                            </select>
+                        </div>
+                        <div id="userSelectWrap" class="hidden">
+                            <select id="subjectUsername" class="form-control" name="username">
+                                <option value="">请选择用户</option>
+                                <option th:each="u : ${users}"
+                                        th:value="${u.username}"
+                                        th:text="${u.nickname + ' (' + u.username + ')'}"
+                                        th:selected="${acl?.subjectType == 'USER' and acl?.subjectId == u.id}"></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="card-title mb-3">资源范围</h4>
+            <p class="text-sm text-tertiary mb-4">
+                当前可授业务分组（组内连接、同步任务、订正校验、整库迁移继承）；后续可细化到单个资源。
+            </p>
+            <div class="grid grid-cols-2 mb-4">
+                <div class="form-item">
+                    <label class="form-label">资源类型<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <select id="resourceType" class="form-control" name="resourceType" required>
+                            <option value="group"
+                                    th:selected="${acl == null or acl.resourceType == null or acl.resourceType == 'group'}">
+                                业务分组
+                            </option>
+                            <option value="connector" disabled
+                                    th:selected="${acl?.resourceType == 'connector'}">连接（后续开放）
+                            </option>
+                            <option value="mapping" disabled
+                                    th:selected="${acl?.resourceType == 'mapping'}">同步任务（后续开放）
+                            </option>
+                            <option value="validateSync" disabled
+                                    th:selected="${acl?.resourceType == 'validateSync'}">订正校验任务（后续开放）
+                            </option>
+                            <option value="databaseSync" disabled
+                                    th:selected="${acl?.resourceType == 'databaseSync'}">整库迁移任务（后续开放）
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" id="resourcePickLabel">业务分组<strong
+                            class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <div id="groupResourceWrap">
+                            <select id="resourceId" class="form-control" name="resourceId">
+                                <option value="">请选择分组</option>
+                                <option th:each="g : ${groups}"
+                                        th:value="${g.id}"
+                                        th:text="${g.name}"
+                                        th:selected="${acl?.resourceId == g.id}"></option>
+                            </select>
+                        </div>
+                        <div id="leafResourceHint" class="hidden">
+                            <input class="form-control" type="text" readonly value="该资源类型尚未开放"/>
+                            <div class="form-help">请先使用「业务分组」授权。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="card-title mb-3">动作权限</h4>
+            <p class="text-sm text-tertiary mb-4">勾选允许的操作；至少选择一项。</p>
+            <table class="table mb-4" id="aclActionTable">
+                <thead>
+                <tr>
+                    <th>动作</th>
+                    <th>说明</th>
+                    <th>授权</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><span class="text-sm text-secondary">read</span></td>
+                    <td>查看资源与列表</td>
+                    <td>
+                        <div class="checkbox-group" id="aclActReadGroup">
+                            <input type="checkbox" id="act_read" name="actionItem" value="read"
+                                   th:checked="${acl == null or #strings.contains(acl?.actions, 'read')}"/>
+                            <label for="act_read">允许</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="text-sm text-secondary">write</span></td>
+                    <td>新增、修改、删除配置</td>
+                    <td>
+                        <div class="checkbox-group" id="aclActWriteGroup">
+                            <input type="checkbox" id="act_write" name="actionItem" value="write"
+                                   th:checked="${acl != null and #strings.contains(acl?.actions, 'write')}"/>
+                            <label for="act_write">允许</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="text-sm text-secondary">operate</span></td>
+                    <td>启停、执行等运行时操作</td>
+                    <td>
+                        <div class="checkbox-group" id="aclActOperateGroup">
+                            <input type="checkbox" id="act_operate" name="actionItem" value="operate"
+                                   th:checked="${acl != null and #strings.contains(acl?.actions, 'operate')}"/>
+                            <label for="act_operate">允许</label>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </form>
+        <div class="blank-block-md"></div>
+    </div>
+</div>
+
+<script type="text/javascript" th:inline="javascript">
+    $(function () {
+        const editingUser = [[${acl != null and acl.subjectType == 'USER'
+    }]]
+        ;
+        const initResourceType = /*[[${acl != null and acl.resourceType != null ? acl.resourceType : 'group'}]]*/ 'group';
+
+        window.backIndexPage = function () {
+            doLoader('/acl');
+        };
+
+        // 必须各自初始化：多选器一次 dbSelect 会把全部 option 合并到第一个下拉
+        $('#subjectRoleId').dbSelect({type: 'single'});
+        $('#subjectUsername').dbSelect({type: 'single'});
+        $('#resourceId').dbSelect({type: 'single'});
+        $('#aclActionTable input[type="checkbox"]').checkboxGroup({theme: 'primary', size: 'md'});
+
+        function syncSubjectType(type) {
+            const current = (type || 'ROLE').toUpperCase();
+            if (current === 'USER') {
+                $('#roleSelectWrap').addClass('hidden');
+                $('#userSelectWrap').removeClass('hidden');
+                $('#subjectPickLabel').html('用户<strong class="text-primary">*</strong>');
+            } else {
+                $('#userSelectWrap').addClass('hidden');
+                $('#roleSelectWrap').removeClass('hidden');
+                $('#subjectPickLabel').html('角色<strong class="text-primary">*</strong>');
+            }
+        }
+
+        function syncResourceType(type) {
+            const current = (type || 'group').toLowerCase();
+            if (current === 'group') {
+                $('#leafResourceHint').addClass('hidden');
+                $('#groupResourceWrap').removeClass('hidden');
+                $('#resourcePickLabel').html('业务分组<strong class="text-primary">*</strong>');
+                return;
+            }
+            $('#groupResourceWrap').addClass('hidden');
+            $('#leafResourceHint').removeClass('hidden');
+            const labels = {
+                connector: '连接',
+                mapping: '同步任务',
+                validatesync: '订正校验任务',
+                databasesync: '整库迁移任务'
+            };
+            const label = labels[current] || '资源';
+            $('#resourcePickLabel').html(label + '<strong class="text-primary">*</strong>');
+        }
+
+        $('#subjectType').dbSelect({
+            type: 'single',
+            defaultValue: editingUser ? 'USER' : 'ROLE',
+            onSelect: function (values) {
+                syncSubjectType(values && values.length ? values[0] : 'ROLE');
+            }
+        });
+        syncSubjectType(editingUser ? 'USER' : 'ROLE');
+
+        $('#resourceType').dbSelect({
+            type: 'single',
+            defaultValue: initResourceType || 'group',
+            onSelect: function (values) {
+                syncResourceType(values && values.length ? values[0] : 'group');
+            }
+        });
+        syncResourceType(initResourceType || 'group');
+
+        $('#aclSubmitBtn').on('click', function () {
+            const subjectType = ($('#subjectType').val() || 'ROLE').toUpperCase();
+            const resourceType = ($('#resourceType').val() || 'group').toLowerCase();
+            if (subjectType === 'ROLE' && !$('#subjectRoleId').val()) {
+                bootGrowl('请选择角色', 'warning');
+                return;
+            }
+            if (subjectType === 'USER' && !$('#subjectUsername').val()) {
+                bootGrowl('请选择用户', 'warning');
+                return;
+            }
+            if (resourceType !== 'group') {
+                bootGrowl('当前仅支持授业务分组', 'warning');
+                return;
+            }
+            if (!$('#resourceId').val()) {
+                bootGrowl('请选择业务分组', 'warning');
+                return;
+            }
+            const actions = [];
+            $('#acl-form-edit').find('input[name="actionItem"]:checked').each(function () {
+                actions.push($(this).val());
+            });
+            if (!actions.length) {
+                bootGrowl('请至少选择一个动作', 'warning');
+                return;
+            }
+            const data = {
+                id: $('#acl-form-edit').find('input[name="id"]').val(),
+                subjectType: subjectType,
+                subjectId: subjectType === 'ROLE' ? $('#subjectRoleId').val() : '',
+                username: subjectType === 'USER' ? $('#subjectUsername').val() : '',
+                resourceType: resourceType,
+                resourceId: $('#resourceId').val(),
+                actions: actions.join(',')
+            };
+            const $btn = $(this);
+            const originalText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            doPoster('/acl/save', data, function (response) {
+                $btn.html(originalText).prop('disabled', false);
+                if (response.success !== true) {
+                    bootGrowl(response.message || '保存失败', 'danger');
+                    return;
+                }
+                bootGrowl('保存成功！', 'success');
+                backIndexPage();
+            });
+        });
+    });
+</script>
+</html>

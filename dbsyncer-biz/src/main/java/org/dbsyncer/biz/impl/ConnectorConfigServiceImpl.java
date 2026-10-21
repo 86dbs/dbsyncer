@@ -7,6 +7,8 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
+import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.connector.ConnectorChecker;
 import org.dbsyncer.common.enums.YesNoEnum;
 import org.dbsyncer.common.model.Paging;
@@ -83,6 +85,9 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
 
     @Resource
     private GroupService groupService;
+
+    @Resource
+    private ResourceAclService resourceAclService;
 
     @Override
     public String add(Map<String, String> params) {
@@ -243,6 +248,9 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         // 过滤源库或目标库类型
         String role = params.get("role");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.CONNECTOR);
+        Set<String> allowedIds = resourceAclService.resolveAllowedIds(
+                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.CONNECTOR, ResourceAclService.ACTION_READ);
+        groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);
         }

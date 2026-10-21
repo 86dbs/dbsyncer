@@ -35,6 +35,19 @@
                     </div>
                 </div>
 
+                <!-- 角色 -->
+                <div class="form-item">
+                    <label class="form-label">角色<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <select id="roleCode" class="form-control" name="roleCode" required>
+                            <option value="">请选择角色</option>
+                            <option th:each="r : ${roles}"
+                                    th:value="${r.code}"
+                                    th:text="${r.name + ' (' + r.code + ')'}"></option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- 密码 -->
                 <div class="form-item">
                     <label class="form-label">密码<strong class="text-primary">*</strong></label>
@@ -65,12 +78,16 @@
                 </div>
             </div>
         </form>
+        <!-- 为角色 dbSelect 下拉预留高度，避免被 form-container 裁切 -->
+        <div class="blank-block-md"></div>
     </div>
 </div>
 
 <script type="text/javascript">
     // 绑定多值输入框事件
     initMultipleInputTags();
+
+    $('#roleCode').dbSelect({type: 'single'});
 
     //保存
     $("#userSubmitBtn").on('click', function () {

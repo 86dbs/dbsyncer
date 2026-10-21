@@ -14,7 +14,9 @@ import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.RbacProfile;
 import org.dbsyncer.parser.UserProfile;
+import org.dbsyncer.parser.model.Role;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
 
@@ -42,10 +44,17 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     private static final String DEFAULT_PASSWORD = "0DPiKuNIrrVmD8IUCuw1hQxNqZc=";
 
+    private static final String PERM_USER_VIEW = "user:view";
+
     private static final String PERM_USER_EDIT = "user:edit";
+
+    private static final String ROLE_ADMIN = "admin";
 
     @Resource
     private UserProfile userProfile;
+
+    @Resource
+    private RbacProfile rbacProfile;
 
     @Resource
     private UserConfigChecker userConfigChecker;
@@ -78,14 +87,17 @@ public class UserConfigServiceImpl implements UserConfigService {
         Assert.notNull(currentUser, "无法获取登录用户.");
         Assert.isNull(userConfig.getUserInfo(username), "用户已存在，请换个账号");
 
+        Assert.hasText(params.get("roleCode"), "请选择角色");
+        String roleCode = resolveAssignableRoleCode(params.get("roleCode"), null);
+
         userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password),
-                UserRoleEnum.USER.getCode(), email, phone));
+                roleCode, email, phone));
 
         logService.log(LogType.UserLog.INSERT, String.format("[%s]添加[%s]账号成功", currentUser.getUsername(), username));
         String result = userProfile.saveUserConfig(userConfig);
         UserInfo created = getUserConfig().getUserInfo(username);
         if (created != null && StringUtil.isNotBlank(created.getId())) {
-            permissionService.bindUserRole(created.getId(), UserRoleEnum.USER.getCode());
+            permissionService.replaceUserRole(created.getId(), roleCode);
         }
         return result;
     }
@@ -129,6 +141,20 @@ public class UserConfigServiceImpl implements UserConfigService {
             logService.log(LogType.UserLog.UPDATE, String.format("[%s]修改[%s]账号密码成功", currentUser.getUsername(), username));
         }
 
+        if (canEditOthers && params.containsKey("roleCode")) {
+            String roleCode = resolveAssignableRoleCode(params.get("roleCode"), updateUser.getRoleCode());
+            String oldRoleCode = permissionService.resolvePrimaryRoleCode(updateUser.getId(), updateUser.getRoleCode());
+            if (!StringUtil.equals(oldRoleCode, roleCode)) {
+                assertNotDemoteLastAdmin(updateUser.getId(), oldRoleCode, roleCode);
+                updateUser.setRoleCode(roleCode);
+                if (StringUtil.isNotBlank(updateUser.getId())) {
+                    permissionService.replaceUserRole(updateUser.getId(), roleCode);
+                }
+                logService.log(LogType.UserLog.UPDATE,
+                        String.format("[%s]将[%s]角色由[%s]改为[%s]", currentUser.getUsername(), username, oldRoleCode, roleCode));
+            }
+        }
+
         return userProfile.saveUserConfig(userConfig);
     }
 
@@ -166,9 +192,9 @@ public class UserConfigServiceImpl implements UserConfigService {
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
         Assert.notNull(currentUser, "无法获取登录用户.");
-        boolean admin = permissionService.isAdmin(currentUserName);
         boolean self = StringUtil.equals(currentUser.getUsername(), username);
-        Assert.isTrue(admin || self, "No permission.");
+        boolean canEdit = permissionService.hasPermission(currentUserName, PERM_USER_EDIT);
+        Assert.isTrue(canEdit || self, "No permission.");
 
         UserInfo userInfo = getUserConfig().getUserInfo(username);
         return convertUserInfo2Vo(userInfo);
@@ -179,7 +205,8 @@ public class UserConfigServiceImpl implements UserConfigService {
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
         Assert.notNull(currentUser, "无法获取登录用户.");
-        if (permissionService.isAdmin(currentUserName)) {
+        if (permissionService.hasPermission(currentUserName, PERM_USER_VIEW)
+                || permissionService.isAdmin(currentUserName)) {
             return getUserConfig().getUserInfoList().stream().map(this::convertUserInfo2Vo).collect(Collectors.toList());
         }
 
@@ -220,9 +247,29 @@ public class UserConfigServiceImpl implements UserConfigService {
         if (null != userInfo) {
             BeanUtils.copyProperties(userInfo, userInfoVo);
             userInfoVo.setPassword("***");
-            userInfoVo.setRoleName(UserRoleEnum.getNameByCode(userInfo.getRoleCode()));
+            String roleCode = permissionService.resolvePrimaryRoleCode(userInfo.getId(), userInfo.getRoleCode());
+            String roleName = permissionService.resolvePrimaryRoleName(userInfo.getId(), userInfo.getRoleCode());
+            if (StringUtil.isNotBlank(roleCode)) {
+                userInfoVo.setRoleCode(roleCode);
+            }
+            userInfoVo.setRoleName(StringUtil.isNotBlank(roleName) ? roleName : UserRoleEnum.getNameByCode(userInfo.getRoleCode()));
         }
         return userInfoVo;
+    }
+
+    private String resolveAssignableRoleCode(String roleCode, String defaultCode) {
+        String code = StringUtil.isBlank(roleCode) ? defaultCode : roleCode.trim();
+        Assert.hasText(code, "请选择角色");
+        Role role = rbacProfile.getRoleByCode(code);
+        Assert.notNull(role, "角色不存在: " + code);
+        return role.getCode();
+    }
+
+    private void assertNotDemoteLastAdmin(String userId, String oldRoleCode, String newRoleCode) {
+        if (!StringUtil.equals(ROLE_ADMIN, oldRoleCode) || StringUtil.equals(ROLE_ADMIN, newRoleCode)) {
+            return;
+        }
+        Assert.isTrue(permissionService.countUsersByRoleCode(ROLE_ADMIN) > 1, "不能取消最后一个管理员的角色");
     }
 
 }

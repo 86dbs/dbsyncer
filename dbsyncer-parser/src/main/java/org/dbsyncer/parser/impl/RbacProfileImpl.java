@@ -67,6 +67,14 @@ public class RbacProfileImpl implements RbacProfile {
     }
 
     @Override
+    public void removeRole(String roleId) {
+        if (StringUtil.isBlank(roleId)) {
+            return;
+        }
+        storageService.remove(StorageEnum.ROLE, roleId);
+    }
+
+    @Override
     public Permission getPermissionByCode(String code) {
         if (StringUtil.isBlank(code)) {
             return null;
@@ -120,6 +128,17 @@ public class RbacProfileImpl implements RbacProfile {
     }
 
     @Override
+    public void removeRolePermissionsByRoleId(String roleId) {
+        if (StringUtil.isBlank(roleId)) {
+            return;
+        }
+        Query query = new Query();
+        query.setType(StorageEnum.ROLE_PERMISSION);
+        query.addFilter(ConfigConstant.ROLE_PERMISSION_ROLE_ID, roleId);
+        storageService.delete(query);
+    }
+
+    @Override
     public UserRole getUserRole(String userId, String roleId) {
         if (StringUtil.isBlank(userId) || StringUtil.isBlank(roleId)) {
             return null;
@@ -138,6 +157,16 @@ public class RbacProfileImpl implements RbacProfile {
         }
         Query condition = new Query();
         condition.addFilter(ConfigConstant.USER_ROLE_USER_ID, userId);
+        return operationTemplate.queryList(StorageEnum.USER_ROLE, condition, UserRole.class);
+    }
+
+    @Override
+    public List<UserRole> listUserRolesByRoleId(String roleId) {
+        if (StringUtil.isBlank(roleId)) {
+            return Collections.emptyList();
+        }
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.USER_ROLE_ROLE_ID, roleId);
         return operationTemplate.queryList(StorageEnum.USER_ROLE, condition, UserRole.class);
     }
 

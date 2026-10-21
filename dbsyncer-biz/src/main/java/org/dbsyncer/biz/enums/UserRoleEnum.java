@@ -12,12 +12,12 @@ import org.dbsyncer.common.util.StringUtil;
 public enum UserRoleEnum {
 
     /**
-     * 管理员
+     * 超级管理员（唯一内置角色）
      */
-    ADMIN("admin", "管理员"),
+    ADMIN("admin", "超级管理员"),
 
     /**
-     * 普通用户
+     * 兼容旧 ROLE 列取值；不再作为内置角色种子
      */
     USER("user", "普通用户");
 

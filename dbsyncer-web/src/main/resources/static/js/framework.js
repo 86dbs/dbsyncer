@@ -533,6 +533,8 @@ function doLoader(url) {
             hideLoading();
             if (status !== 'success') {
                 bootGrowl('页面加载失败，请稍后重试', "danger");
+            } else if (window.DBSPermission && DBSPermission.isLoaded()) {
+                DBSPermission.apply($mainContent);
             }
         });
     }
@@ -700,12 +702,15 @@ function logout() {
     });
 }
 
-// 刷新登录人信息
+// 刷新登录人信息（含功能权限码，驱动菜单/按钮显隐）
 function refreshLoginUser() {
-    // 刷新登录用户
     doGetter("/user/getUserInfo.json", {}, function (response) {
         if (response.success) {
             $("#currentUser").text(response.data.nickname);
+            if (window.DBSPermission) {
+                DBSPermission.load(response.data || {});
+                DBSPermission.apply(document);
+            }
         }
     });
 }
@@ -1063,14 +1068,18 @@ function renderStateButton(state, mappingId) {
     const config = stateConfig[state] || stateConfig[0];
     const disabledAttr = config.disabled ? ' disabled' : '';
     const onclickAttr = config.onclick ? ` onclick="${config.onclick}"` : '';
+    const canOperate = !window.DBSPermission || DBSPermission.has('mapping:operate');
+    const canEdit = !window.DBSPermission || DBSPermission.has('mapping:edit');
     const stateBtn = [];
-    stateBtn.push(`
+    if (canOperate) {
+        stateBtn.push(`
         <button class="table-action-btn play" data-id="${mappingId}" title="${config.title}"${onclickAttr}${disabledAttr}>
             <i class="fa ${config.icon}"></i>
         </button>
     `);
+    }
     // 未运行才显示删除按钮
-    if (state === 0) {
+    if (state === 0 && canEdit) {
         stateBtn.push(`
             <button class="table-action-btn delete" title="删除" onclick="deleteMapping('${mappingId}')">
                 <i class="fa fa-trash"></i>

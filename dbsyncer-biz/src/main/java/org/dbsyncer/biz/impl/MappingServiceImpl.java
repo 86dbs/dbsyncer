@@ -7,7 +7,9 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.task.MappingMatchTableTask;
@@ -131,6 +133,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private GroupService groupService;
+
+    @Resource
+    private ResourceAclService resourceAclService;
 
     @Override
     public String add(Map<String, String> params) {
@@ -294,6 +299,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.MAPPING);
+        Set<String> allowedIds = resourceAclService.resolveAllowedIds(
+                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.MAPPING, ResourceAclService.ACTION_READ);
+        groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
         if (groupFilter.isEmptyResult()) {
             return result;
