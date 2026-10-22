@@ -113,6 +113,14 @@ public class ConfigConstant {
     public static final String USER_ROLE = "role";
     public static final String USER_EMAIL = "email";
     public static final String USER_PHONE = "phone";
+    /**
+     * 连续登录失败次数
+     */
+    public static final String USER_LOGIN_FAIL_COUNT = "loginFailCount";
+    /**
+     * 锁定截止时间（毫秒时间戳，0 表示未锁定）
+     */
+    public static final String USER_LOCK_UNTIL = "lockUntil";
 
     /**
      * 表映射关系表(dbsyncer_table_group)拆分列

@@ -615,7 +615,8 @@ public class H2StorageService extends AbstractStorageService {
         // 用户配置：一行一用户，严格按 dbsyncer_user 拆分列
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.USER_USERNAME, ConfigConstant.USER_PASSWORD, ConfigConstant.USER_NICKNAME,
-                ConfigConstant.USER_ROLE, ConfigConstant.USER_EMAIL, ConfigConstant.USER_PHONE);
+                ConfigConstant.USER_ROLE, ConfigConstant.USER_EMAIL, ConfigConstant.USER_PHONE,
+                ConfigConstant.USER_LOGIN_FAIL_COUNT, ConfigConstant.USER_LOCK_UNTIL);
         List<Field> userFields = builder.getFields();
 
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE,
@@ -849,6 +850,11 @@ public class H2StorageService extends AbstractStorageService {
             addColumnIfNotExist(table, "STATUS", "INT NOT NULL DEFAULT 1");
             return;
         }
+        if (StorageEnum.USER.getType().equals(type)) {
+            addColumnIfNotExist(table, "LOGIN_FAIL_COUNT", "INT NOT NULL DEFAULT 0");
+            addColumnIfNotExist(table, "LOCK_UNTIL", "BIGINT NOT NULL DEFAULT 0");
+            return;
+        }
         if (StorageEnum.TABLE_GROUP.getType().equals(type)) {
             createIndexIfNotExist(table, "IDX_TASK_SORT", "`TASK_ID`,`SORT_INDEX`");
             createIndexIfNotExist(table, "IDX_TG_MAPPING",
@@ -1073,6 +1079,8 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_EMAIL, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_LOGIN_FAIL_COUNT, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.USER_LOCK_UNTIL, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR),

@@ -27,6 +27,11 @@ public class UserInfoVO extends UserInfo {
      */
     private List<String> permissions = new ArrayList<>();
 
+    /**
+     * 是否因登录失败被临时锁定（进程内状态，不持久化）
+     */
+    private boolean locked;
+
     public String getRoleName() {
         return roleName;
     }
@@ -49,5 +54,13 @@ public class UserInfoVO extends UserInfo {
 
     public void setPermissions(List<String> permissions) {
         this.permissions = permissions;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
     }
 }

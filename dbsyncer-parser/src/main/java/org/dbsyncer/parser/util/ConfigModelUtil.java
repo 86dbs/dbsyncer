@@ -107,6 +107,8 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.USER_ROLE, user.getRoleCode());
         params.put(ConfigConstant.USER_EMAIL, StringUtil.getIfBlank(user.getEmail(), StringUtil.EMPTY));
         params.put(ConfigConstant.USER_PHONE, StringUtil.getIfBlank(user.getPhone(), StringUtil.EMPTY));
+        params.put(ConfigConstant.USER_LOGIN_FAIL_COUNT, user.getLoginFailCount());
+        params.put(ConfigConstant.USER_LOCK_UNTIL, user.getLockUntil());
         return params;
     }
 

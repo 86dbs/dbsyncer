@@ -151,6 +151,61 @@ public final class UserProfileImpl implements UserProfile {
     }
 
     @Override
+    public UserInfo getByUsername(String username) {
+        if (StringUtil.isBlank(username)) {
+            return null;
+        }
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.USER);
+        query.addFilter(ConfigConstant.USER_USERNAME, username);
+        Paging paging = storageService.query(query);
+        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+            return null;
+        }
+        List<Map> data = (List<Map>) paging.getData();
+        return ConfigModelUtil.parseFromRow(data.get(0), UserInfo.class);
+    }
+
+    @Override
+    public synchronized boolean updateLoginLock(String username, int loginFailCount, long lockUntil) {
+        if (StringUtil.isBlank(username)) {
+            return false;
+        }
+        UserInfo user = getByUsername(username);
+        if (user == null) {
+            return false;
+        }
+        user.setLoginFailCount(loginFailCount);
+        user.setLockUntil(lockUntil);
+        user.setUpdateTime(System.currentTimeMillis());
+        storageService.edit(StorageEnum.USER, ConfigModelUtil.convertUserInfoToMap(user));
+        return true;
+    }
+
+    @Override
+    public synchronized Boolean recordLoginFailure(String username, int maxAttempts, long lockMillis) {
+        if (StringUtil.isBlank(username)) {
+            return null;
+        }
+        UserInfo user = getByUsername(username);
+        if (user == null) {
+            return null;
+        }
+        long now = System.currentTimeMillis();
+        long lockUntil = user.getLockUntil();
+        if (lockUntil > 0 && now < lockUntil) {
+            return Boolean.TRUE;
+        }
+        int failCount = (lockUntil > 0 && now >= lockUntil) ? 1 : user.getLoginFailCount() + 1;
+        long nextLockUntil = failCount >= maxAttempts ? now + lockMillis : 0L;
+        user.setLoginFailCount(failCount);
+        user.setLockUntil(nextLockUntil);
+        user.setUpdateTime(now);
+        storageService.edit(StorageEnum.USER, ConfigModelUtil.convertUserInfoToMap(user));
+        return nextLockUntil > now;
+    }
+
+    @Override
     public void importFromJson(String json) {
         if (StringUtil.isBlank(json)) {
             return;

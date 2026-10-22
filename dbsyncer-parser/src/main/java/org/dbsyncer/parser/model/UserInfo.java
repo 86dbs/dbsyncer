@@ -52,6 +52,16 @@ public class UserInfo {
      */
     private String phone;
 
+    /**
+     * 连续登录失败次数
+     */
+    private int loginFailCount;
+
+    /**
+     * 锁定截止时间（毫秒时间戳，0 表示未锁定）
+     */
+    private long lockUntil;
+
     public UserInfo() {
     }
 
@@ -134,6 +144,22 @@ public class UserInfo {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public int getLoginFailCount() {
+        return loginFailCount;
+    }
+
+    public void setLoginFailCount(int loginFailCount) {
+        this.loginFailCount = loginFailCount;
+    }
+
+    public long getLockUntil() {
+        return lockUntil;
+    }
+
+    public void setLockUntil(long lockUntil) {
+        this.lockUntil = lockUntil;
     }
 
     @Override

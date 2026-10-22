@@ -20,12 +20,13 @@
                 <th>角色</th>
                 <th>邮箱</th>
                 <th>手机</th>
+                <th>状态</th>
                 <th>操作</th>
             </tr>
             </thead>
             <tbody id="userList">
             <tr th:if="${users == null or users.isEmpty()}">
-                <td colspan="5" class="text-center text-tertiary py-8">暂无用户数据</td>
+                <td colspan="6" class="text-center text-tertiary py-8">暂无用户数据</td>
             </tr>
             <tr th:each="u : ${users}">
                 <td>
@@ -55,10 +56,19 @@
                     <span class="text-sm text-secondary" th:text="${u?.phone ?: ''}"></span>
                 </td>
                 <td>
+                    <span class="badge badge-error" th:if="${u?.locked}">已锁定</span>
+                    <span class="badge badge-success" th:unless="${u?.locked}">正常</span>
+                </td>
+                <td>
                     <div class="flex items-center">
                         <!-- 管理员或本人可以修改 -->
                         <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}" th:if="${currentUser?.admin or currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}">
                             <i class="fa fa-edit"></i>
+                        </button>
+                        <!-- 具备 user:edit 可提前解锁 -->
+                        <button class="table-action-btn unlockUserBtn" title="解锁" th:data-username="${u?.username}"
+                                th:if="${u?.locked}" data-permission="user:edit">
+                            <i class="fa fa-unlock"></i>
                         </button>
                         <!-- 仅管理员可以删除其他用户 -->
                         <button class="table-action-btn delete removeUserBtn" title="删除" th:data-username="${u?.username}" th:if="${(currentUser?.admin or currentUser?.roleCode eq 'admin') and currentUser?.username != u?.username}">
@@ -105,6 +115,29 @@
                             doLoader("/user?refresh=" + new Date().getTime());
                         } else {
                             bootGrowl(data.message || "删除失败", "danger");
+                        }
+                    });
+                }
+            });
+        });
+
+        // 绑定解锁按钮事件
+        $(".unlockUserBtn").on('click', function () {
+            const username = $(this).data('username');
+            const $btn = $(this);
+            showConfirm({
+                title: '确定要解锁该用户？',
+                icon: 'warning',
+                onConfirm: function () {
+                    const originalText = $btn.html();
+                    $btn.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
+                    doPoster('/user/unlock', {username: username}, function (data) {
+                        $btn.html(originalText).prop('disabled', false);
+                        if (data.success === true) {
+                            bootGrowl("解锁成功！", "success");
+                            doLoader("/user?refresh=" + new Date().getTime());
+                        } else {
+                            bootGrowl(data.message || "解锁失败", "danger");
                         }
                     });
                 }
