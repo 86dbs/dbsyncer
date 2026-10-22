@@ -55,6 +55,7 @@ public class RoleServiceImpl implements RoleService {
         names.put("notice", "告警通知");
         names.put("license", "授权许可");
         names.put("system", "系统配置");
+        names.put("acl", "资源");
         MODULE_NAMES = Collections.unmodifiableMap(names);
     }
 

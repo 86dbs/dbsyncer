@@ -4,9 +4,11 @@
 package org.dbsyncer.web.controller.database.sync;
 
 import org.dbsyncer.biz.DatabaseSyncService;
+import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 /**
  * 整库迁移
@@ -61,6 +64,7 @@ public class DatabaseSyncController extends BaseController {
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
                       @RequestParam(value = "detailStatus", required = false) String detailStatus,
                       @RequestParam(value = "detailType", required = false) String detailType) {
+        requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclService.ACTION_READ);
         if ("detail".equals(page)) {
             Assert.hasText(id, "任务 ID 不能为空");
             DatabaseSyncTaskVO task = databaseSyncService.get(id);
@@ -93,6 +97,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             return RestResult.restSuccess(databaseSyncService.add(getParams(request)));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -104,7 +109,10 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(databaseSyncService.edit(getParams(request)));
+            requirePermission("mapping:edit");
+            Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.DATABASE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_WRITE);
+            return RestResult.restSuccess(databaseSyncService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -115,6 +123,8 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult remove(@RequestParam("id") String id) {
         try {
+            requirePermission("mapping:edit");
+            requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclService.ACTION_WRITE);
             return RestResult.restSuccess(databaseSyncService.delete(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -126,6 +136,8 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult start(@RequestParam("id") String id) {
         try {
+            requirePermission("mapping:operate");
+            requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclService.ACTION_OPERATE);
             return RestResult.restSuccess(databaseSyncService.start(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -137,6 +149,8 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult stop(@RequestParam("id") String id) {
         try {
+            requirePermission("mapping:operate");
+            requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclService.ACTION_OPERATE);
             return RestResult.restSuccess(databaseSyncService.stop(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -151,7 +165,9 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult searchResult(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(databaseSyncService.searchResult(getParams(request)));
+            Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.DATABASE_SYNC, params.get("taskId"), ResourceAclService.ACTION_READ);
+            return RestResult.restSuccess(databaseSyncService.searchResult(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -162,6 +178,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult previewTables(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             return RestResult.restSuccess(databaseSyncService.previewTables(getParams(request)));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

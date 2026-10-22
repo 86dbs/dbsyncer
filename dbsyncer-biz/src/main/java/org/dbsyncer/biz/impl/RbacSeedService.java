@@ -26,8 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * RBAC 一期种子：按 CODE 幂等灌入内置角色/权限/绑权，并按用户 ROLE 列同步 user_role。
- * 不改变现网鉴权行为（仍读 dbsyncer_user.ROLE）。
+ * RBAC ：按 CODE 幂等灌入内置角色/权限/绑权，并按用户 ROLE 列同步 user_role。
  *
  * @author wuji
  * @version 1.0.0
@@ -93,7 +92,7 @@ public class RbacSeedService implements ApplicationListener<ContextRefreshedEven
                 bound++;
             }
         }
-        logger.info("RBAC 种子完成：内置角色=超级管理员，permissions={}，users={}，admin绑定={}",
+        logger.info("内置角色=超级管理员，permissions={}，users={}，admin绑定={}",
                 defs.size(), users.size(), bound);
     }
 

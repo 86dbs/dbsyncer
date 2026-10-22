@@ -21,7 +21,17 @@ public interface ResourceAclService {
 
     String SUBJECT_ROLE = "ROLE";
     String SUBJECT_USER = "USER";
+
+    /** 业务分组（组内叶子继承） */
     String RESOURCE_GROUP = "group";
+    /** 连接 */
+    String RESOURCE_CONNECTOR = "connector";
+    /** 同步任务 */
+    String RESOURCE_MAPPING = "mapping";
+    /** 订正校验任务 */
+    String RESOURCE_VALIDATE_SYNC = "validateSync";
+    /** 整库迁移任务 */
+    String RESOURCE_DATABASE_SYNC = "databaseSync";
 
     String ACTION_READ = "read";
     String ACTION_WRITE = "write";
@@ -37,6 +47,12 @@ public interface ResourceAclService {
     String save(Map<String, String> params);
 
     String remove(Map<String, String> params);
+
+    /**
+     * 创建/复制后授予操作者完整叶子 ACL（read,write,operate）。
+     * admin 或无效用户跳过；已存在则覆盖为完整动作。
+     */
+    void grantOwner(String username, String resourceType, String resourceId);
 
     /**
      * 用户对资源是否具备动作（admin 跳过）。

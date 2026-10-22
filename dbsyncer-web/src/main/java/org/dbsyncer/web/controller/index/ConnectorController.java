@@ -72,7 +72,7 @@ public class ConnectorController extends BaseController {
         try {
             requirePermission("connector:edit");
             requireResource(ConfigConstant.CONNECTOR, id, ResourceAclService.ACTION_WRITE);
-            return RestResult.restSuccess(connectorConfigService.copy(id));
+            return RestResult.restSuccess(connectorConfigService.copy(id, currentUsername()));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

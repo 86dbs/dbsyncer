@@ -146,6 +146,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
         refreshMappingTables(id);
         Mapping mapping = mappingProfile.get(id);
+        resourceAclService.grantOwner(params.get(UserConfigService.CURRENT_USER_NAME),
+                ConfigConstant.MAPPING, id);
 
         // 匹配相似表 / 自定义表映射（异步落库后统一 MappingCountTask）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
@@ -163,7 +165,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String copy(String id) {
+    public String copy(String id, String username) {
         Mapping mapping = mappingProfile.get(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
 
@@ -195,6 +197,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 log(LogType.TableGroupLog.COPY, newTableGroup);
             }
         });
+        resourceAclService.grantOwner(username, ConfigConstant.MAPPING, newMapping.getId());
         return newMapping.getId();
     }
 

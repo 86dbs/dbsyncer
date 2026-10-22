@@ -158,7 +158,7 @@ public class MappingController extends BaseController {
         try {
             requirePermission("mapping:edit");
             requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_WRITE);
-            return RestResult.restSuccess(mappingService.copy(id));
+            return RestResult.restSuccess(mappingService.copy(id, currentUsername()));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

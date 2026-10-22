@@ -17,7 +17,7 @@ public enum UserRoleEnum {
     ADMIN("admin", "超级管理员"),
 
     /**
-     * 兼容旧 ROLE 列取值；不再作为内置角色种子
+     * 普通用户
      */
     USER("user", "普通用户");
 

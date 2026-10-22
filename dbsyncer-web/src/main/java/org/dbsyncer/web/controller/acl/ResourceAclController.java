@@ -3,11 +3,20 @@
  */
 package org.dbsyncer.web.controller.acl;
 
+import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.RoleService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.GroupProfile;
+import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.ValidateSyncProfile;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +29,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,6 +55,18 @@ public class ResourceAclController extends BaseController {
 
     @Resource
     private GroupProfile groupProfile;
+
+    @Resource
+    private ConnectorConfigService connectorConfigService;
+
+    @Resource
+    private MappingProfile mappingProfile;
+
+    @Resource
+    private ValidateSyncProfile validateSyncProfile;
+
+    @Resource
+    private DatabaseSyncProfile databaseSyncProfile;
 
     @Resource
     private UserConfigService userConfigService;
@@ -101,5 +125,42 @@ public class ResourceAclController extends BaseController {
         model.put("roles", roleService.listRoles());
         model.put("groups", groupProfile.listGroups());
         model.put("users", userConfigService.getUserInfoAll(currentUsername()));
+        model.put("connectors", connectorConfigService.getConnectorAll());
+        model.put("mappings", listMappings());
+        model.put("validateSyncTasks", listValidateSyncTasks());
+        model.put("databaseSyncTasks", listDatabaseSyncTasks());
+    }
+
+    private List<Mapping> listMappings() {
+        List<Mapping> list = new ArrayList<>();
+        mappingProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, page -> {
+            if (!CollectionUtils.isEmpty(page)) {
+                list.addAll(page);
+            }
+        });
+        list.sort(Comparator.comparing(Mapping::getName, Comparator.nullsLast(String::compareToIgnoreCase)));
+        return list;
+    }
+
+    private List<ValidateSyncTask> listValidateSyncTasks() {
+        List<ValidateSyncTask> list = new ArrayList<>();
+        validateSyncProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, page -> {
+            if (!CollectionUtils.isEmpty(page)) {
+                list.addAll(page);
+            }
+        });
+        list.sort(Comparator.comparing(ValidateSyncTask::getName, Comparator.nullsLast(String::compareToIgnoreCase)));
+        return list;
+    }
+
+    private List<DatabaseSyncTask> listDatabaseSyncTasks() {
+        List<DatabaseSyncTask> list = new ArrayList<>();
+        databaseSyncProfile.pageScanTasks(ConfigConstant.PAGE_SIZE, page -> {
+            if (!CollectionUtils.isEmpty(page)) {
+                list.addAll(page);
+            }
+        });
+        list.sort(Comparator.comparing(DatabaseSyncTask::getName, Comparator.nullsLast(String::compareToIgnoreCase)));
+        return list;
     }
 }

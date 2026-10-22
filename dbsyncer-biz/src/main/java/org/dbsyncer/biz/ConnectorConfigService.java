@@ -23,8 +23,11 @@ public interface ConnectorConfigService {
 
     /**
      * 复制连接器
+     *
+     * @param id       源连接器 ID
+     * @param username 操作者用户名（用于授予新资源 ACL）
      */
-    String copy(String id);
+    String copy(String id, String username);
 
     /**
      * 修改连接器

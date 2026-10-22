@@ -11,19 +11,27 @@ import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.ResourceAclVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.GroupProfile;
 import org.dbsyncer.parser.GroupRelProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.RbacProfile;
 import org.dbsyncer.parser.ResourceAclProfile;
 import org.dbsyncer.parser.UserProfile;
+import org.dbsyncer.parser.ValidateSyncProfile;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.GroupRel;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.ResourceAcl;
 import org.dbsyncer.parser.model.Role;
 import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.parser.model.UserRole;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -53,6 +61,14 @@ public class ResourceAclServiceImpl implements ResourceAclService {
 
     private static final String PERM_ACL_EDIT = "acl:edit";
 
+    private static final Set<String> RESOURCE_TYPES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+            RESOURCE_GROUP,
+            RESOURCE_CONNECTOR,
+            RESOURCE_MAPPING,
+            RESOURCE_VALIDATE_SYNC,
+            RESOURCE_DATABASE_SYNC
+    )));
+
     @Resource
     private ResourceAclProfile resourceAclProfile;
 
@@ -61,6 +77,18 @@ public class ResourceAclServiceImpl implements ResourceAclService {
 
     @Resource
     private GroupRelProfile groupRelProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
+
+    @Resource
+    private MappingProfile mappingProfile;
+
+    @Resource
+    private ValidateSyncProfile validateSyncProfile;
+
+    @Resource
+    private DatabaseSyncProfile databaseSyncProfile;
 
     @Resource
     private RbacProfile rbacProfile;
@@ -112,29 +140,28 @@ public class ResourceAclServiceImpl implements ResourceAclService {
 
         String subjectType = normalizeSubjectType(params.get("subjectType"));
         String subjectId = resolveSubjectId(subjectType, params.get("subjectId"), params.get("subjectCode"), params.get("username"));
-        String resourceType = StringUtil.isBlank(params.get("resourceType")) ? RESOURCE_GROUP : params.get("resourceType").trim();
-        Assert.isTrue(RESOURCE_GROUP.equals(resourceType), "当前仅支持授业务分组");
-        String resourceId = params.get("resourceId");
-        Assert.hasText(resourceId, "请选择分组");
-        Group group = groupProfile.getGroup(resourceId);
-        Assert.notNull(group, "分组不存在");
-
         String actions = normalizeActions(params.get("actions"));
         Assert.hasText(actions, "请至少选择一个动作");
 
-        long now = System.currentTimeMillis();
         String id = params.get("id");
-        ResourceAcl existing = StringUtil.isNotBlank(id)
-                ? resourceAclProfile.get(id)
-                : resourceAclProfile.getByUnique(subjectType, subjectId, resourceType, resourceId);
-
-        if (existing != null) {
+        // 编辑单条：带 id 时只更新该记录
+        if (StringUtil.isNotBlank(id)) {
+            String resourceType = normalizeResourceType(params.get("resourceType"));
+            List<String> resourceIds = parseResourceIds(params.get("resourceIds"), params.get("resourceId"));
+            Assert.isTrue(!CollectionUtils.isEmpty(resourceIds), "请选择资源");
+            String resourceId = resourceIds.get(0);
+            assertResourceExists(resourceType, resourceId);
+            ResourceAcl existing = resourceAclProfile.get(id);
+            Assert.notNull(existing, "授权不存在");
+            ResourceAcl conflict = resourceAclProfile.getByUnique(subjectType, subjectId, resourceType, resourceId);
+            Assert.isTrue(conflict == null || StringUtil.equals(conflict.getId(), id),
+                    "该主体已存在相同资源授权，请勿重复");
             existing.setSubjectType(subjectType);
             existing.setSubjectId(subjectId);
             existing.setResourceType(resourceType);
             existing.setResourceId(resourceId);
             existing.setActions(actions);
-            existing.setUpdateTime(now);
+            existing.setUpdateTime(System.currentTimeMillis());
             resourceAclProfile.update(existing);
             logService.log(LogType.UserLog.UPDATE,
                     String.format("[%s]更新资源授权 %s/%s -> %s/%s [%s]",
@@ -142,6 +169,60 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             return existing.getId();
         }
 
+        // 新增：支持多类型批量，payload 形如 group:id1,id2|connector:id3
+        List<String[]> bindings = parseResourceBindings(params);
+        Assert.isTrue(!CollectionUtils.isEmpty(bindings), "请选择资源");
+        int created = 0;
+        int updated = 0;
+        for (String[] binding : bindings) {
+            String resourceType = binding[0];
+            String resourceId = binding[1];
+            assertResourceExists(resourceType, resourceId);
+            if (upsertAcl(subjectType, subjectId, resourceType, resourceId, actions)) {
+                created++;
+            } else {
+                updated++;
+            }
+        }
+        logService.log(LogType.UserLog.INSERT,
+                String.format("[%s]批量资源授权 %s/%s -> %d 项 (新增%d/覆盖%d) [%s]",
+                        currentUserName, subjectType, subjectId, bindings.size(), created, updated, actions));
+        return String.format("成功授权 %d 项（新增 %d，覆盖 %d）", bindings.size(), created, updated);
+    }
+
+    @Override
+    public synchronized void grantOwner(String username, String resourceType, String resourceId) {
+        if (StringUtil.isBlank(username) || StringUtil.isBlank(resourceType) || StringUtil.isBlank(resourceId)) {
+            return;
+        }
+        if (permissionService.isAdmin(username)) {
+            return;
+        }
+        if (!RESOURCE_TYPES.contains(resourceType) || RESOURCE_GROUP.equals(resourceType)) {
+            return;
+        }
+        UserInfo user = findUser(username);
+        if (user == null || StringUtil.isBlank(user.getId())) {
+            return;
+        }
+        String actions = String.join(StringUtil.COMMA, ACTION_READ, ACTION_WRITE, ACTION_OPERATE);
+        upsertAcl(SUBJECT_USER, user.getId(), resourceType, resourceId, actions);
+    }
+
+    /**
+     * 按唯一键新增或覆盖动作。
+     *
+     * @return true 新增，false 覆盖
+     */
+    private boolean upsertAcl(String subjectType, String subjectId, String resourceType, String resourceId, String actions) {
+        long now = System.currentTimeMillis();
+        ResourceAcl existing = resourceAclProfile.getByUnique(subjectType, subjectId, resourceType, resourceId);
+        if (existing != null) {
+            existing.setActions(actions);
+            existing.setUpdateTime(now);
+            resourceAclProfile.update(existing);
+            return false;
+        }
         ResourceAcl acl = new ResourceAcl();
         acl.setSubjectType(subjectType);
         acl.setSubjectId(subjectId);
@@ -150,11 +231,50 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         acl.setActions(actions);
         acl.setCreateTime(now);
         acl.setUpdateTime(now);
-        String newId = resourceAclProfile.add(acl);
-        logService.log(LogType.UserLog.INSERT,
-                String.format("[%s]新增资源授权 %s/%s -> %s/%s [%s]",
-                        currentUserName, subjectType, subjectId, resourceType, resourceId, actions));
-        return newId;
+        resourceAclProfile.add(acl);
+        return true;
+    }
+
+    /**
+     * 解析批量资源：优先 resourcePayload（type:id,...|type:id），否则单类型 resourceType + resourceIds。
+     * 每项为 [resourceType, resourceId]。
+     */
+    private List<String[]> parseResourceBindings(Map<String, String> params) {
+        List<String[]> bindings = new ArrayList<>();
+        String payload = params.get("resourcePayload");
+        if (StringUtil.isNotBlank(payload)) {
+            for (String segment : payload.split("\\|")) {
+                if (StringUtil.isBlank(segment) || !segment.contains(":")) {
+                    continue;
+                }
+                int idx = segment.indexOf(':');
+                String type = normalizeResourceType(segment.substring(0, idx));
+                for (String resourceId : parseResourceIds(segment.substring(idx + 1), null)) {
+                    bindings.add(new String[]{type, resourceId});
+                }
+            }
+            return bindings;
+        }
+        String resourceType = normalizeResourceType(params.get("resourceType"));
+        for (String resourceId : parseResourceIds(params.get("resourceIds"), params.get("resourceId"))) {
+            bindings.add(new String[]{resourceType, resourceId});
+        }
+        return bindings;
+    }
+
+    private List<String> parseResourceIds(String resourceIds, String resourceId) {
+        String raw = resourceIds;
+        if (StringUtil.isBlank(raw)) {
+            raw = resourceId;
+        }
+        if (StringUtil.isBlank(raw)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(raw.split(StringUtil.COMMA))
+                .map(StringUtil::trim)
+                .filter(StringUtil::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -365,7 +485,53 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             Group group = groupProfile.getGroup(resourceId);
             return group == null ? resourceId : group.getName();
         }
+        if (RESOURCE_CONNECTOR.equals(resourceType)) {
+            Connector connector = connectorProfile.getConnector(resourceId);
+            return connector == null ? resourceId : connector.getName();
+        }
+        if (RESOURCE_MAPPING.equals(resourceType)) {
+            Mapping mapping = mappingProfile.get(resourceId);
+            return mapping == null ? resourceId : mapping.getName();
+        }
+        if (RESOURCE_VALIDATE_SYNC.equals(resourceType)) {
+            ValidateSyncTask task = validateSyncProfile.get(resourceId);
+            return task == null ? resourceId : task.getName();
+        }
+        if (RESOURCE_DATABASE_SYNC.equals(resourceType)) {
+            DatabaseSyncTask task = databaseSyncProfile.get(resourceId);
+            return task == null ? resourceId : task.getName();
+        }
         return resourceId;
+    }
+
+    private String normalizeResourceType(String raw) {
+        String type = StringUtil.isBlank(raw) ? RESOURCE_GROUP : raw.trim();
+        Assert.isTrue(RESOURCE_TYPES.contains(type), "不支持的资源类型: " + type);
+        return type;
+    }
+
+    private void assertResourceExists(String resourceType, String resourceId) {
+        if (RESOURCE_GROUP.equals(resourceType)) {
+            Assert.notNull(groupProfile.getGroup(resourceId), "分组不存在");
+            return;
+        }
+        if (RESOURCE_CONNECTOR.equals(resourceType)) {
+            Assert.notNull(connectorProfile.getConnector(resourceId), "连接不存在");
+            return;
+        }
+        if (RESOURCE_MAPPING.equals(resourceType)) {
+            Assert.notNull(mappingProfile.get(resourceId), "同步任务不存在");
+            return;
+        }
+        if (RESOURCE_VALIDATE_SYNC.equals(resourceType)) {
+            Assert.notNull(validateSyncProfile.get(resourceId), "订正校验任务不存在");
+            return;
+        }
+        if (RESOURCE_DATABASE_SYNC.equals(resourceType)) {
+            Assert.notNull(databaseSyncProfile.get(resourceId), "整库迁移任务不存在");
+            return;
+        }
+        throw new IllegalArgumentException("不支持的资源类型: " + resourceType);
     }
 
     private String resolveSubjectId(String subjectType, String subjectId, String subjectCode, String username) {

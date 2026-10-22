@@ -7,7 +7,9 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
+import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.ValidateSyncTableGroupChecker;
@@ -150,6 +152,9 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     @Resource
     private GroupService groupService;
 
+    @Resource
+    private ResourceAclService resourceAclService;
+
     /**
      * 任务启停锁
      */
@@ -202,6 +207,8 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             String id = validateSyncProfile.add(task);
             validateSyncProfile.syncTaskTableMetaDetails(id);
             preloadTemplate.reConnect(task);
+            resourceAclService.grantOwner(params.get(UserConfigService.CURRENT_USER_NAME),
+                    ConfigConstant.VALIDATE_SYNC, id);
             return id;
         } else {
             Assert.hasText(params.get("sourceConnectorId"), "数据源不能为空");
@@ -234,6 +241,8 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
                 // sync 内部会 TRUNCATE 一次并重建骨架，勿再提前 clearData
                 validateSyncProfile.syncTaskTableMetaDetails(id);
             }
+            resourceAclService.grantOwner(params.get(UserConfigService.CURRENT_USER_NAME),
+                    ConfigConstant.VALIDATE_SYNC, id);
             return id;
         }
 
@@ -370,7 +379,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     }
 
     @Override
-    public String copy(String id) {
+    public String copy(String id, String username) {
         ValidateSyncTask task = validateSyncProfile.get(id);
         Assert.notNull(task, "Task not found");
         String json = JsonUtil.objToJson(task);
@@ -403,6 +412,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         });
         preloadTemplate.reConnect(newTask);
         validateSyncProfile.syncTaskTableMetaDetails(newId);
+        resourceAclService.grantOwner(username, ConfigConstant.VALIDATE_SYNC, newId);
         return newId;
     }
 
@@ -453,6 +463,9 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.VALIDATE_SYNC);
+        Set<String> allowedIds = resourceAclService.resolveAllowedIds(
+                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.VALIDATE_SYNC, ResourceAclService.ACTION_READ);
+        groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);
         }

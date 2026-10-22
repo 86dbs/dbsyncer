@@ -94,11 +94,14 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         Connector connector = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.INSERT, connector);
 
-        return connectorProfile.addConnector(connector);
+        String id = connectorProfile.addConnector(connector);
+        resourceAclService.grantOwner(params.get(UserConfigService.CURRENT_USER_NAME),
+                ConfigConstant.CONNECTOR, id);
+        return id;
     }
 
     @Override
-    public String copy(String id) {
+    public String copy(String id, String username) {
         Connector connector = connectorProfile.getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
@@ -126,7 +129,9 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         Connector model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);
 
-        return connectorProfile.addConnector(model);
+        String newId = connectorProfile.addConnector(model);
+        resourceAclService.grantOwner(username, ConfigConstant.CONNECTOR, newId);
+        return newId;
     }
 
     @Override

@@ -29,8 +29,11 @@ public interface ValidateSyncService {
 
     /**
      * 复制任务
+     *
+     * @param id       源任务 ID
+     * @param username 操作者用户名（用于授予新资源 ACL）
      */
-    String copy(String id);
+    String copy(String id, String username);
 
     /**
      * 删除任务
