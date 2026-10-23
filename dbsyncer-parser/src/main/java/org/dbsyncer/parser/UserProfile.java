@@ -32,6 +32,11 @@ public interface UserProfile {
     UserInfo getByUsername(String username);
 
     /**
+     * 按用户 ID 查询用户行。
+     */
+    UserInfo getById(String id);
+
+    /**
      * 按账号同步增删改用户行（替代原 OperationTemplate.syncUserConfig）。
      *
      * @return 首个用户 id（兼容旧返回值）
@@ -47,16 +52,6 @@ public interface UserProfile {
      * 从 user.json 数组导入。
      */
     void importFromJson(String json);
-
-    /**
-     * 用户 id 是否存在。
-     */
-    boolean existsUser(String id);
-
-    /**
-     * 删除用户行。
-     */
-    void removeUser(String id);
 
     /**
      * 更新登录失败次数与锁定截止时间（单用户行）。

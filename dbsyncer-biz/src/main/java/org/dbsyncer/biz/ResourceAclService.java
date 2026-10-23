@@ -19,24 +19,6 @@ import java.util.function.Function;
  */
 public interface ResourceAclService {
 
-    String SUBJECT_ROLE = "ROLE";
-    String SUBJECT_USER = "USER";
-
-    /** 业务分组（组内叶子继承） */
-    String RESOURCE_GROUP = "group";
-    /** 连接 */
-    String RESOURCE_CONNECTOR = "connector";
-    /** 同步任务 */
-    String RESOURCE_MAPPING = "mapping";
-    /** 订正校验任务 */
-    String RESOURCE_VALIDATE_SYNC = "validateSync";
-    /** 整库迁移任务 */
-    String RESOURCE_DATABASE_SYNC = "databaseSync";
-
-    String ACTION_READ = "read";
-    String ACTION_WRITE = "write";
-    String ACTION_OPERATE = "operate";
-
     List<ResourceAclVO> listAll();
 
     ResourceAclVO get(String id);
@@ -49,7 +31,7 @@ public interface ResourceAclService {
     String remove(Map<String, String> params);
 
     /**
-     * 创建/复制后授予操作者完整叶子 ACL（read,write,operate）。
+     * *授予用户成为该资源的所有者
      * admin 或无效用户跳过；已存在则覆盖为完整动作。
      */
     void grantOwner(String username, String resourceType, String resourceId);
@@ -66,11 +48,6 @@ public interface ResourceAclService {
 
     /**
      * 解析用户对某类资源可访问的 ID 集合。
-     * <ul>
-     *   <li>{@code null}：不过滤（admin）</li>
-     *   <li>空集：无任何权限</li>
-     *   <li>非空：仅这些 ID</li>
-     * </ul>
      */
     Set<String> resolveAllowedIds(String username, String resourceType, String action);
 

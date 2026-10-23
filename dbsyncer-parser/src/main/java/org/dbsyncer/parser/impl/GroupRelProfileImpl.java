@@ -17,10 +17,10 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * {@link GroupRelProfile} 实现。
@@ -84,13 +84,9 @@ public class GroupRelProfileImpl implements GroupRelProfile {
     }
 
     @Override
-    public List<GroupRel> listByGroup(String groupId) {
-        return listByGroup(groupId, null);
-    }
-
-    @Override
     public List<String> listResourceIds(String groupId, String resourceType) {
-        return toResourceIds(listByGroup(groupId, resourceType));
+        List<GroupRel> groupRel = listByGroup(groupId, resourceType);
+        return CollectionUtils.isEmpty(groupRel) ? null : groupRel.stream().map(GroupRel::getResourceId).collect(Collectors.toList());
     }
 
     @Override
@@ -150,18 +146,5 @@ public class GroupRelProfileImpl implements GroupRelProfile {
         query.setType(StorageEnum.GROUP_REL);
         query.addFilter(ConfigConstant.GROUP_REL_GROUP_ID, groupId);
         storageService.delete(query);
-    }
-
-    private List<String> toResourceIds(List<GroupRel> list) {
-        if (CollectionUtils.isEmpty(list)) {
-            return Collections.emptyList();
-        }
-        List<String> ids = new ArrayList<>(list.size());
-        for (GroupRel rel : list) {
-            if (rel != null && StringUtil.isNotBlank(rel.getResourceId())) {
-                ids.add(rel.getResourceId());
-            }
-        }
-        return ids;
     }
 }

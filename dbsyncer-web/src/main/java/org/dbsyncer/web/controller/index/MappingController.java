@@ -5,7 +5,7 @@ package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.model.DataSyncRequest;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.RestResult;
@@ -66,7 +66,7 @@ public class MappingController extends BaseController {
                        @RequestParam(value = "detailStatus", required = false) String detailStatus,
                        @RequestParam(value = "tableGroupId", required = false) String tableGroupId,
                        @RequestParam(value = "status", required = false) String status) {
-        requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_READ);
+        requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.READ.getCode());
         if (StringUtil.equals("detail", page)) {
             model.put("mappingId", id);
             model.put("mapping", mappingService.getMapping(id));
@@ -99,7 +99,7 @@ public class MappingController extends BaseController {
 
     @GetMapping("/pageCustomTable")
     public String page(ModelMap model, @RequestParam(value = "id") String id, @RequestParam(value = "type") String type) {
-        requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_READ);
+        requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.READ.getCode());
         model.put("mapping", mappingService.getMappingCustomTable(id, type));
         model.put("type", type);
         List<DataTypeEnum> dataTypeEnums = Arrays.asList(DataTypeEnum.values());
@@ -112,7 +112,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult get(@RequestParam(value = "id") String id) {
         try {
-            requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.getMapping(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -144,7 +144,7 @@ public class MappingController extends BaseController {
             if (StringUtil.isBlank(mappingId)) {
                 mappingId = params.get("id");
             }
-            requireResource(ConfigConstant.MAPPING, mappingId, ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.MAPPING, mappingId, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.searchTableGroupResult(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -157,7 +157,7 @@ public class MappingController extends BaseController {
     public RestResult add(@RequestParam("id") String id) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.copy(id, currentUsername()));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -184,7 +184,7 @@ public class MappingController extends BaseController {
         try {
             requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -197,7 +197,7 @@ public class MappingController extends BaseController {
     public RestResult remove(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.remove(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -210,7 +210,7 @@ public class MappingController extends BaseController {
     public RestResult start(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:operate");
-            requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_OPERATE);
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(mappingService.start(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -223,7 +223,7 @@ public class MappingController extends BaseController {
     public RestResult stop(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:operate");
-            requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_OPERATE);
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(mappingService.stop(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -236,7 +236,7 @@ public class MappingController extends BaseController {
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.MAPPING, id, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.refreshMappingTables(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -249,7 +249,7 @@ public class MappingController extends BaseController {
     public RestResult searchTables(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.searchTables(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -262,7 +262,7 @@ public class MappingController extends BaseController {
     public RestResult searchCustomTable(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.searchCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -276,7 +276,7 @@ public class MappingController extends BaseController {
         try {
             requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.saveCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -290,7 +290,7 @@ public class MappingController extends BaseController {
         try {
             requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.removeCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

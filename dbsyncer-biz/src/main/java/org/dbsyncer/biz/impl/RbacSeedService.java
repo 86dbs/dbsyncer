@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.enums.PermissionModuleEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.RbacProfile;
@@ -17,8 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -33,7 +32,6 @@ import java.util.List;
  * @date 2026-10-21
  */
 @Component
-@Order(Ordered.LOWEST_PRECEDENCE)
 public class RbacSeedService implements ApplicationListener<ContextRefreshedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -189,21 +187,21 @@ public class RbacSeedService implements ApplicationListener<ContextRefreshedEven
 
     private static List<PermissionDef> permissionDefs() {
         return Arrays.asList(
-                new PermissionDef("user:view", "查看用户", "user", KIND_MENU),
-                new PermissionDef("user:edit", "编辑用户", "user", KIND_ACTION),
-                new PermissionDef("connector:view", "查看连接器", "connector", KIND_MENU),
-                new PermissionDef("connector:edit", "编辑连接器", "connector", KIND_ACTION),
-                new PermissionDef("mapping:view", "查看同步任务", "mapping", KIND_MENU),
-                new PermissionDef("mapping:edit", "编辑同步任务", "mapping", KIND_ACTION),
-                new PermissionDef("mapping:operate", "启停同步任务", "mapping", KIND_ACTION),
-                new PermissionDef("notice:view", "查看告警配置", "notice", KIND_MENU),
-                new PermissionDef("notice:edit", "编辑告警配置", "notice", KIND_ACTION),
-                new PermissionDef("license:view", "查看授权", "license", KIND_MENU),
-                new PermissionDef("license:edit", "管理授权", "license", KIND_ACTION),
-                new PermissionDef("system:view", "查看系统配置", "system", KIND_MENU),
-                new PermissionDef("system:edit", "编辑系统配置", "system", KIND_ACTION),
-                new PermissionDef("acl:view", "查看资源授权", "acl", KIND_MENU),
-                new PermissionDef("acl:edit", "编辑资源授权", "acl", KIND_ACTION)
+                new PermissionDef("user:view", "查看用户", PermissionModuleEnum.USER, KIND_MENU),
+                new PermissionDef("user:edit", "编辑用户", PermissionModuleEnum.USER, KIND_ACTION),
+                new PermissionDef("connector:view", "查看连接器", PermissionModuleEnum.CONNECTOR, KIND_MENU),
+                new PermissionDef("connector:edit", "编辑连接器", PermissionModuleEnum.CONNECTOR, KIND_ACTION),
+                new PermissionDef("mapping:view", "查看同步任务", PermissionModuleEnum.MAPPING, KIND_MENU),
+                new PermissionDef("mapping:edit", "编辑同步任务", PermissionModuleEnum.MAPPING, KIND_ACTION),
+                new PermissionDef("mapping:operate", "启停同步任务", PermissionModuleEnum.MAPPING, KIND_ACTION),
+                new PermissionDef("notice:view", "查看告警配置", PermissionModuleEnum.NOTICE, KIND_MENU),
+                new PermissionDef("notice:edit", "编辑告警配置", PermissionModuleEnum.NOTICE, KIND_ACTION),
+                new PermissionDef("license:view", "查看授权", PermissionModuleEnum.LICENSE, KIND_MENU),
+                new PermissionDef("license:edit", "管理授权", PermissionModuleEnum.LICENSE, KIND_ACTION),
+                new PermissionDef("system:view", "查看系统配置", PermissionModuleEnum.SYSTEM, KIND_MENU),
+                new PermissionDef("system:edit", "编辑系统配置", PermissionModuleEnum.SYSTEM, KIND_ACTION),
+                new PermissionDef("acl:view", "查看资源授权", PermissionModuleEnum.ACL, KIND_MENU),
+                new PermissionDef("acl:edit", "编辑资源授权", PermissionModuleEnum.ACL, KIND_ACTION)
         );
     }
 
@@ -213,10 +211,10 @@ public class RbacSeedService implements ApplicationListener<ContextRefreshedEven
         private final String module;
         private final String kind;
 
-        private PermissionDef(String code, String name, String module, String kind) {
+        private PermissionDef(String code, String name, PermissionModuleEnum module, String kind) {
             this.code = code;
             this.name = name;
-            this.module = module;
+            this.module = module.getCode();
             this.kind = kind;
         }
     }

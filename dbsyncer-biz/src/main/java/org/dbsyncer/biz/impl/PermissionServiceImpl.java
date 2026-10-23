@@ -47,7 +47,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (StringUtil.isBlank(username)) {
             return false;
         }
-        UserInfo user = findUser(username);
+        UserInfo user = userProfile.getByUsername(username);
         if (user == null) {
             return false;
         }
@@ -77,7 +77,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public Set<String> listPermissionCodes(String username) {
-        UserInfo user = findUser(username);
+        UserInfo user = userProfile.getByUsername(username);
         if (user == null) {
             return Collections.emptySet();
         }
@@ -174,38 +174,25 @@ public class PermissionServiceImpl implements PermissionService {
         if (role == null || StringUtil.isBlank(role.getId())) {
             return 0;
         }
-        List<UserRole> rels = rbacProfile.listUserRolesByRoleId(role.getId());
-        return CollectionUtils.isEmpty(rels) ? 0 : rels.size();
+        List<UserRole> userRoles = rbacProfile.listUserRolesByRoleId(role.getId());
+        return CollectionUtils.isEmpty(userRoles) ? 0 : userRoles.size();
     }
 
     private Role resolvePrimaryRole(String userId) {
         if (StringUtil.isBlank(userId)) {
             return null;
         }
-        List<UserRole> rels = rbacProfile.listUserRolesByUserId(userId);
-        if (CollectionUtils.isEmpty(rels)) {
+        List<UserRole> userRoles = rbacProfile.listUserRolesByUserId(userId);
+        if (CollectionUtils.isEmpty(userRoles)) {
             return null;
         }
-        for (UserRole rel : rels) {
+        for (UserRole rel : userRoles) {
             if (rel == null || StringUtil.isBlank(rel.getRoleId())) {
                 continue;
             }
             Role role = rbacProfile.getRoleById(rel.getRoleId());
             if (role != null) {
                 return role;
-            }
-        }
-        return null;
-    }
-
-    private UserInfo findUser(String username) {
-        List<UserInfo> users = userProfile.listUserInfos();
-        if (CollectionUtils.isEmpty(users)) {
-            return null;
-        }
-        for (UserInfo user : users) {
-            if (user != null && StringUtil.equals(username, user.getUsername())) {
-                return user;
             }
         }
         return null;

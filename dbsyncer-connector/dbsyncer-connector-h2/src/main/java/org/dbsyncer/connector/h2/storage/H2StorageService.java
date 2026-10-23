@@ -696,6 +696,12 @@ public class H2StorageService extends AbstractStorageService {
                 ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID, ConfigConstant.RESOURCE_ACL_ACTIONS);
         List<Field> resourceAclFields = builder.getFields();
 
+        // 告警 @ 覆盖规则
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, ConfigConstant.NOTICE_MENTION_SCOPE_ID,
+                ConfigConstant.NOTICE_MENTION_AT_ALL, ConfigConstant.NOTICE_MENTION_AT_MOBILES);
+        List<Field> noticeMentionRuleFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -711,6 +717,7 @@ public class H2StorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.ROLE_PERMISSION.getType(), k -> new Executor(k, rolePermissionFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER_ROLE.getType(), k -> new Executor(k, userRoleFields, true, true));
         tables.computeIfAbsent(StorageEnum.RESOURCE_ACL.getType(), k -> new Executor(k, resourceAclFields, true, true));
+        tables.computeIfAbsent(StorageEnum.NOTICE_MENTION_RULE.getType(), k -> new Executor(k, noticeMentionRuleFields, true, true));
 
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
@@ -1094,7 +1101,11 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_ROLE_USER_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.RESOURCE_ACL_ACTIONS, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.RESOURCE_ACL_ACTIONS, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_MENTION_SCOPE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_MENTION_AT_ALL, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_MENTION_AT_MOBILES, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         String columnName = UnderlineToCamelUtils.camelToUnderline(field.getName());

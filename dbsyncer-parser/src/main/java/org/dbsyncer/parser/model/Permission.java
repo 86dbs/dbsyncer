@@ -18,7 +18,7 @@ public class Permission extends ConfigModel {
     private String code;
     private String module;
     /**
-     * MENU / API / ACTION
+     * 种类、类别 MENU / API / ACTION
      */
     private String kind;
     private String remark = "";

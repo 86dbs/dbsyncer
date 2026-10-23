@@ -19,13 +19,11 @@ import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.model.Role;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -145,7 +143,7 @@ public class UserConfigServiceImpl implements UserConfigService {
             String roleCode = resolveAssignableRoleCode(params.get("roleCode"), updateUser.getRoleCode());
             String oldRoleCode = permissionService.resolvePrimaryRoleCode(updateUser.getId(), updateUser.getRoleCode());
             if (!StringUtil.equals(oldRoleCode, roleCode)) {
-                assertNotDemoteLastAdmin(updateUser.getId(), oldRoleCode, roleCode);
+                assertNotDemoteLastAdmin(oldRoleCode, roleCode);
                 updateUser.setRoleCode(roleCode);
                 if (StringUtil.isNotBlank(updateUser.getId())) {
                     permissionService.replaceUserRole(updateUser.getId(), roleCode);
@@ -265,7 +263,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         return role.getCode();
     }
 
-    private void assertNotDemoteLastAdmin(String userId, String oldRoleCode, String newRoleCode) {
+    private void assertNotDemoteLastAdmin(String oldRoleCode, String newRoleCode) {
         if (!StringUtil.equals(ROLE_ADMIN, oldRoleCode) || StringUtil.equals(ROLE_ADMIN, newRoleCode)) {
             return;
         }

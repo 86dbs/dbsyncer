@@ -62,6 +62,13 @@ public abstract class BaseController {
     }
 
     /**
+     * 断言当前用户具备任一权限码。
+     */
+    protected void requireAnyPermission(String... permissionCodes) {
+        permissionChecker.requireAnyPermission(currentUsername(), permissionCodes);
+    }
+
+    /**
      * 断言当前用户对资源具备动作权限。
      */
     protected void requireResource(String resourceType, String resourceId, String action) {

@@ -43,6 +43,10 @@ public class ConfigConstant {
      * 资源访问控制
      */
     public static final String RESOURCE_ACL = "resourceAcl";
+    /**
+     * 告警 @ 覆盖规则
+     */
+    public static final String NOTICE_MENTION_RULE = "noticeMentionRule";
 
     /**
      * 连接器配置字段
@@ -100,6 +104,14 @@ public class ConfigConstant {
     public static final String RESOURCE_ACL_SUBJECT_TYPE = "subjectType";
     public static final String RESOURCE_ACL_SUBJECT_ID = "subjectId";
     public static final String RESOURCE_ACL_ACTIONS = "actions";
+
+    /**
+     * 告警 @ 规则表(dbsyncer_notice_mention_rule)拆分列
+     */
+    public static final String NOTICE_MENTION_SCOPE_TYPE = "scopeType";
+    public static final String NOTICE_MENTION_SCOPE_ID = "scopeId";
+    public static final String NOTICE_MENTION_AT_ALL = "atAll";
+    public static final String NOTICE_MENTION_AT_MOBILES = "atMobiles";
 
     /**
      * 用户表(dbsyncer_user)拆分列

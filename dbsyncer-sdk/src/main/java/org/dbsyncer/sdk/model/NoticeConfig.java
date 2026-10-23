@@ -8,6 +8,9 @@ import org.dbsyncer.common.model.HttpNoticeChannel;
 import org.dbsyncer.common.model.MailNoticeChannel;
 import org.dbsyncer.common.model.WeChatNoticeChannel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 通知配置
  *
@@ -21,6 +24,11 @@ public class NoticeConfig {
     private DingTalkNoticeChannel dingTalk = new DingTalkNoticeChannel();
     private HttpNoticeChannel http = new HttpNoticeChannel();
     private MailNoticeChannel mail = new MailNoticeChannel();
+
+    /**
+     * 告警策略列表（空则运行时按内置默认策略种子）
+     */
+    private List<NoticeStrategyDef> strategies = new ArrayList<>();
 
     /**
      * 同步任务有失败数据
@@ -73,6 +81,14 @@ public class NoticeConfig {
 
     public void setMail(MailNoticeChannel mail) {
         this.mail = mail;
+    }
+
+    public List<NoticeStrategyDef> getStrategies() {
+        return strategies;
+    }
+
+    public void setStrategies(List<NoticeStrategyDef> strategies) {
+        this.strategies = strategies;
     }
 
     public boolean isEnableMappingError() {

@@ -8,6 +8,7 @@ import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.model.TableProgressBundle;
 import org.dbsyncer.biz.vo.DatabaseMappingVO;
@@ -260,7 +261,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         String searchKey = params.get("searchKey");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.DATABASE_SYNC);
         Set<String> allowedIds = resourceAclService.resolveAllowedIds(
-                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.DATABASE_SYNC, ResourceAclService.ACTION_READ);
+                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.DATABASE_SYNC, ResourceAclActionEnum.READ.getCode());
         groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);

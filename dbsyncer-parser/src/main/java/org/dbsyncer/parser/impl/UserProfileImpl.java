@@ -131,26 +131,6 @@ public final class UserProfileImpl implements UserProfile {
     }
 
     @Override
-    public boolean existsUser(String id) {
-        if (StringUtil.isBlank(id)) {
-            return false;
-        }
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.USER);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
-        Paging paging = storageService.query(query);
-        return paging != null && !CollectionUtils.isEmpty(paging.getData());
-    }
-
-    @Override
-    public void removeUser(String id) {
-        if (StringUtil.isBlank(id)) {
-            return;
-        }
-        storageService.remove(StorageEnum.USER, id);
-    }
-
-    @Override
     public UserInfo getByUsername(String username) {
         if (StringUtil.isBlank(username)) {
             return null;
@@ -158,6 +138,21 @@ public final class UserProfileImpl implements UserProfile {
         Query query = new Query(1, 1);
         query.setType(StorageEnum.USER);
         query.addFilter(ConfigConstant.USER_USERNAME, username);
+        return queryOne(query);
+    }
+
+    @Override
+    public UserInfo getById(String id) {
+        if (StringUtil.isBlank(id)) {
+            return null;
+        }
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.USER);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        return queryOne(query);
+    }
+
+    private UserInfo queryOne(Query query) {
         Paging paging = storageService.query(query);
         if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
             return null;

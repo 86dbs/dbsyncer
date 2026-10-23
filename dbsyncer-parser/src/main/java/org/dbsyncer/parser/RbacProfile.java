@@ -36,15 +36,13 @@ public interface RbacProfile {
 
     List<Permission> listPermissions();
 
-    String addPermission(Permission permission);
-
-    String updatePermission(Permission permission);
+    void addPermission(Permission permission);
 
     RolePermission getRolePermission(String roleId, String permissionId);
 
     List<RolePermission> listRolePermissionsByRoleId(String roleId);
 
-    String addRolePermission(RolePermission rel);
+    void addRolePermission(RolePermission rel);
 
     /**
      * 删除角色全部权限绑定。

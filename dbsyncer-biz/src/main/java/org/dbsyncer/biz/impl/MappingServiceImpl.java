@@ -8,6 +8,7 @@ import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
@@ -303,7 +304,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String searchKey = params.get("searchKey");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.MAPPING);
         Set<String> allowedIds = resourceAclService.resolveAllowedIds(
-                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.MAPPING, ResourceAclService.ACTION_READ);
+                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.MAPPING, ResourceAclActionEnum.READ.getCode());
         groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
         if (groupFilter.isEmptyResult()) {
@@ -399,6 +400,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             content.setTitle("手动停止同步任务");
             content.setName(mapping.getName());
             content.setModel(ModelEnum.getModelEnum(mapping.getModel()));
+            content.setResourceType(ConfigConstant.MAPPING);
+            content.setResourceId(mapping.getId());
             sendNotifyMessage(content);
         }
         return "同步任务停止成功";

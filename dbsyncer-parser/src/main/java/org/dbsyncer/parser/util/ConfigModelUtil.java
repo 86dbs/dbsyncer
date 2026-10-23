@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.NoticeMentionRule;
 import org.dbsyncer.parser.model.Permission;
 import org.dbsyncer.parser.model.ResourceAcl;
 import org.dbsyncer.parser.model.Role;
@@ -57,6 +58,9 @@ public abstract class ConfigModelUtil {
         }
         if (model instanceof ResourceAcl) {
             return convertResourceAclToMap((ResourceAcl) model);
+        }
+        if (model instanceof NoticeMentionRule) {
+            return convertNoticeMentionRuleToMap((NoticeMentionRule) model);
         }
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
@@ -163,6 +167,13 @@ public abstract class ConfigModelUtil {
             }
             return (T) acl;
         }
+        if (NoticeMentionRule.class.equals(clazz)) {
+            NoticeMentionRule rule = JsonUtil.mapToObj(row, NoticeMentionRule.class);
+            if (rule != null) {
+                rule.setType(ConfigConstant.NOTICE_MENTION_RULE);
+            }
+            return (T) rule;
+        }
         Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
         if (json == null) {
             return null;
@@ -246,6 +257,18 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.GROUP_REL_RESOURCE_TYPE, StringUtil.getIfBlank(acl.getResourceType(), StringUtil.EMPTY));
         params.put(ConfigConstant.GROUP_REL_RESOURCE_ID, StringUtil.getIfBlank(acl.getResourceId(), StringUtil.EMPTY));
         params.put(ConfigConstant.RESOURCE_ACL_ACTIONS, StringUtil.getIfBlank(acl.getActions(), StringUtil.EMPTY));
+        return params;
+    }
+
+    private static Map<String, Object> convertNoticeMentionRuleToMap(NoticeMentionRule rule) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, rule.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, rule.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rule.getUpdateTime());
+        params.put(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, StringUtil.getIfBlank(rule.getScopeType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_MENTION_SCOPE_ID, StringUtil.getIfBlank(rule.getScopeId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_MENTION_AT_ALL, rule.getAtAll());
+        params.put(ConfigConstant.NOTICE_MENTION_AT_MOBILES, StringUtil.getIfBlank(rule.getAtMobiles(), StringUtil.EMPTY));
         return params;
     }
 
@@ -343,6 +366,8 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.USER_ROLE;
             case ConfigConstant.RESOURCE_ACL:
                 return StorageEnum.RESOURCE_ACL;
+            case ConfigConstant.NOTICE_MENTION_RULE:
+                return StorageEnum.NOTICE_MENTION_RULE;
             default:
                 // 后续新增的 CommonTaskTypeEnum 仍走 task 表
                 return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;

@@ -22,8 +22,6 @@ public interface ResourceAclProfile {
 
     List<ResourceAcl> listBySubject(String subjectType, String subjectId);
 
-    List<ResourceAcl> listByResource(String resourceType, String resourceId);
-
     ResourceAcl getByUnique(String subjectType, String subjectId, String resourceType, String resourceId);
 
     String add(ResourceAcl acl);

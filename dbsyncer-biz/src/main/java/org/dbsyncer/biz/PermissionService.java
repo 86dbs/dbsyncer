@@ -16,9 +16,9 @@ import java.util.Set;
 public interface PermissionService {
 
     /**
-     * Spring Security 角色前缀：拥有 admin 角色时写入 Authority。
+     * 拥有 admin 角色时写入 Authority 的标记。
      */
-    String AUTHORITY_ROLE_ADMIN = "ROLE_admin";
+    String AUTHORITY_ROLE_ADMIN = "role_admin";
 
     /**
      * 用户是否具备管理员角色（role.code=admin）。

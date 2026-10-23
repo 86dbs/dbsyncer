@@ -81,7 +81,11 @@ public enum StorageEnum {
     /**
      * 资源访问控制
      */
-    RESOURCE_ACL("resource_acl");
+    RESOURCE_ACL("resource_acl"),
+    /**
+     * 告警 @ 覆盖规则
+     */
+    NOTICE_MENTION_RULE("notice_mention_rule");
 
     private final String type;
 

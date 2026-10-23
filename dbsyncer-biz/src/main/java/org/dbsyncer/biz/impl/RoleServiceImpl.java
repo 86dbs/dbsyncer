@@ -7,6 +7,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PermissionChecker;
 import org.dbsyncer.biz.RoleService;
 import org.dbsyncer.biz.UserConfigService;
+import org.dbsyncer.biz.enums.PermissionModuleEnum;
 import org.dbsyncer.biz.vo.PermissionVO;
 import org.dbsyncer.biz.vo.RoleVO;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -44,20 +45,6 @@ import java.util.stream.Collectors;
 public class RoleServiceImpl implements RoleService {
 
     private static final String PERM_USER_EDIT = "user:edit";
-
-    private static final Map<String, String> MODULE_NAMES;
-
-    static {
-        Map<String, String> names = new java.util.LinkedHashMap<>();
-        names.put("user", "用户");
-        names.put("connector", "连接器");
-        names.put("mapping", "同步任务");
-        names.put("notice", "告警通知");
-        names.put("license", "授权许可");
-        names.put("system", "系统配置");
-        names.put("acl", "资源");
-        MODULE_NAMES = Collections.unmodifiableMap(names);
-    }
 
     @Resource
     private RbacProfile rbacProfile;
@@ -119,7 +106,7 @@ public class RoleServiceImpl implements RoleService {
             PermissionVO vo = new PermissionVO();
             BeanUtils.copyProperties(permission, vo);
             vo.setGranted(grantedIds.contains(permission.getId()));
-            vo.setModuleName(resolveModuleName(permission.getModule()));
+            vo.setModuleName(PermissionModuleEnum.resolveName(permission.getModule()));
             result.add(vo);
         }
         result.sort(Comparator
@@ -272,18 +259,18 @@ public class RoleServiceImpl implements RoleService {
     private RoleVO toRoleVO(Role role, boolean withCodes) {
         RoleVO vo = new RoleVO();
         BeanUtils.copyProperties(role, vo);
-        List<RolePermission> rels = rbacProfile.listRolePermissionsByRoleId(role.getId());
-        if (CollectionUtils.isEmpty(rels)) {
+        List<RolePermission> rolePermissions = rbacProfile.listRolePermissionsByRoleId(role.getId());
+        if (CollectionUtils.isEmpty(rolePermissions)) {
             vo.setPermissionCount(0);
             vo.setPermissionCodes(Collections.emptyList());
             return vo;
         }
-        vo.setPermissionCount(rels.size());
+        vo.setPermissionCount(rolePermissions.size());
         if (!withCodes) {
             return vo;
         }
         List<String> codes = new ArrayList<>();
-        for (RolePermission rel : rels) {
+        for (RolePermission rel : rolePermissions) {
             if (rel == null || StringUtil.isBlank(rel.getPermissionId())) {
                 continue;
             }
@@ -307,11 +294,5 @@ public class RoleServiceImpl implements RoleService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private String resolveModuleName(String module) {
-        if (StringUtil.isBlank(module)) {
-            return "其他";
-        }
-        String name = MODULE_NAMES.get(module);
-        return StringUtil.isNotBlank(name) ? name : module;
-    }
 }
+

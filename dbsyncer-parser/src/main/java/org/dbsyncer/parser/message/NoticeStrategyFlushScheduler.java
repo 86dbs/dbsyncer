@@ -4,11 +4,14 @@
 package org.dbsyncer.parser.message;
 
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.model.NoticeStrategy;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * 周期策略 Cron 调度：到点 flush 缓冲队列并逐条发送。
@@ -28,9 +31,21 @@ public class NoticeStrategyFlushScheduler {
     @Resource
     private StrategyBucketManager strategyBucketManager;
 
-    @PostConstruct
-    private void start() {
-        for (NoticeStrategy strategy : DefaultNoticeStrategy.all()) {
+    private final Set<String> registeredIds = new HashSet<>();
+
+    /**
+     * 按策略列表重建周期任务。
+     */
+    public synchronized void reload(List<NoticeStrategy> strategies) {
+        for (String id : registeredIds) {
+            scheduledTaskService.stop(TASK_KEY_PREFIX + id);
+        }
+        registeredIds.clear();
+        strategyBucketManager.clear();
+        if (CollectionUtils.isEmpty(strategies)) {
+            return;
+        }
+        for (NoticeStrategy strategy : strategies) {
             register(strategy);
         }
     }
@@ -41,8 +56,8 @@ public class NoticeStrategyFlushScheduler {
         }
         strategyBucketManager.register(strategy);
         String taskKey = TASK_KEY_PREFIX + strategy.getId();
-
         scheduledTaskService.start(taskKey, strategy.getCron(),
                 () -> strategyBucketManager.flush(strategy.getId()));
+        registeredIds.add(strategy.getId());
     }
 }

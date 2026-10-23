@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.web.controller.validate.sync;
 
-import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.vo.RestResult;
@@ -70,18 +70,18 @@ public class ValidateSyncController extends BaseController {
     public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
                            @RequestParam(value = "detailStatus", required = false) String detailStatus) {
         if (StringUtil.equals("detail", page)) {
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.READ.getCode());
             model.put("taskId", id);
             ValidateSyncTaskVO detailTask = validateSyncService.get(id);
             model.put("taskName", detailTask != null ? detailTask.getName() : id);
             model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
         } else if (StringUtil.equals("editTableGroup", page)) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
-            requireResource(ConfigConstant.VALIDATE_SYNC, tableGroup.getTaskId(), ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, tableGroup.getTaskId(), ResourceAclActionEnum.READ.getCode());
             model.put("tableGroup", tableGroup);
             model.put("task", validateSyncService.get(tableGroup.getTaskId()));
         } else {
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.READ.getCode());
             model.put("task", validateSyncService.get(id));
         }
         initConditionConfig(model);
@@ -113,7 +113,7 @@ public class ValidateSyncController extends BaseController {
         try {
             requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.VALIDATE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -126,7 +126,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult add(@RequestParam("id") String id) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.copy(id, currentUsername()));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -142,7 +142,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult remove(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.delete(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -158,7 +158,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult start(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:operate");
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_OPERATE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(validateSyncService.start(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -174,7 +174,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult stop(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:operate");
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_OPERATE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(validateSyncService.stop(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -199,7 +199,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult searchTableGroup(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.VALIDATE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(validateSyncService.searchTableGroup(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -212,7 +212,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.refreshTables(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -228,7 +228,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult searchTables(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.VALIDATE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(validateSyncService.searchTables(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -241,7 +241,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult refreshFields(@RequestParam(value = "id") String id) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.refreshFields(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -255,7 +255,7 @@ public class ValidateSyncController extends BaseController {
         try {
             requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.VALIDATE_SYNC, params.get("taskId"), ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, params.get("taskId"), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.addTableGroup(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -270,7 +270,7 @@ public class ValidateSyncController extends BaseController {
             requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
             TableGroup tableGroup = tableGroupService.getTableGroup(params.get(ConfigConstant.CONFIG_MODEL_ID));
-            requireResource(ConfigConstant.VALIDATE_SYNC, tableGroup.getTaskId(), ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, tableGroup.getTaskId(), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.editTableGroup(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -285,7 +285,7 @@ public class ValidateSyncController extends BaseController {
             @RequestParam(value = "ids") String ids) {
         try {
             requirePermission("mapping:edit");
-            requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclService.ACTION_WRITE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.removeTableGroup(taskId, ids));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -300,7 +300,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult result(@RequestParam(value = "id") String id) {
         try {
-            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(validateSyncService.result(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -316,7 +316,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult searchResult(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            requireResource(ConfigConstant.VALIDATE_SYNC, params.get("taskId"), ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, params.get("taskId"), ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(validateSyncService.searchResult(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -331,7 +331,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult getResultDetail(@RequestParam("taskId") String taskId, @RequestParam("id") String id) {
         try {
-            requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclService.ACTION_READ);
+            requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclActionEnum.READ.getCode());
             Object detail = validateSyncService.getValidateResultDetail(taskId, id);
             if (detail == null) {
                 return RestResult.restFail("记录不存在", 404);
@@ -351,7 +351,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult manualRevise(@RequestParam("taskId") String taskId, @RequestParam("id") String id) {
         try {
             requirePermission("mapping:operate");
-            requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclService.ACTION_OPERATE);
+            requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(validateSyncService.manualReviseDetail(taskId, id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

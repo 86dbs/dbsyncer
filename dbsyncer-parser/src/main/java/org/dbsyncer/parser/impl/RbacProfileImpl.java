@@ -91,13 +91,8 @@ public class RbacProfileImpl implements RbacProfile {
     }
 
     @Override
-    public String addPermission(Permission permission) {
-        return operationTemplate.execute(permission, CommandEnum.OPR_ADD);
-    }
-
-    @Override
-    public String updatePermission(Permission permission) {
-        return operationTemplate.execute(permission, CommandEnum.OPR_EDIT);
+    public void addPermission(Permission permission) {
+        operationTemplate.execute(permission, CommandEnum.OPR_ADD);
     }
 
     @Override
@@ -123,8 +118,8 @@ public class RbacProfileImpl implements RbacProfile {
     }
 
     @Override
-    public String addRolePermission(RolePermission rel) {
-        return operationTemplate.execute(rel, CommandEnum.OPR_ADD);
+    public void addRolePermission(RolePermission rel) {
+        operationTemplate.execute(rel, CommandEnum.OPR_ADD);
     }
 
     @Override

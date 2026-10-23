@@ -27,6 +27,7 @@ import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.sdk.notice.NoticeDecisionEngine;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -69,6 +70,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private NoticeConfigChecker noticeConfigChecker;
 
     @Resource
+    private NoticeDecisionEngine noticeDecisionEngine;
+
+    @Resource
     private UserConfigService userConfigService;
 
     @Resource
@@ -92,6 +96,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         SystemConfig systemConfig = noticeConfigChecker.checkEditConfigModel(params);
         systemConfigProfile.saveSystemConfig(systemConfig);
         preloadTemplate.loadNotificationChannel();
+        noticeDecisionEngine.reload();
         return "修改成功.";
     }
 

@@ -27,12 +27,17 @@ public class PermissionChecker {
         Assert.isTrue(permissionService.hasPermission(username, permissionCode), "无权限");
     }
 
-    public void requireAdmin(String username) {
+    /**
+     * 具备任一权限码即可（如业务分组跨模块管理）。
+     */
+    public void requireAnyPermission(String username, String... permissionCodes) {
         Assert.hasText(username, "无法获取登录用户.");
-        Assert.isTrue(permissionService.isAdmin(username), "无权限");
-    }
-
-    public boolean isAdmin(String username) {
-        return StringUtil.isNotBlank(username) && permissionService.isAdmin(username);
+        Assert.isTrue(permissionCodes != null && permissionCodes.length > 0, "权限码不能为空");
+        for (String code : permissionCodes) {
+            if (StringUtil.isNotBlank(code) && permissionService.hasPermission(username, code)) {
+                return;
+            }
+        }
+        Assert.isTrue(false, "无权限");
     }
 }

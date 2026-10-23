@@ -8,6 +8,7 @@ import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.ValidateSyncService;
@@ -464,7 +465,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         String searchKey = params.get("searchKey");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.VALIDATE_SYNC);
         Set<String> allowedIds = resourceAclService.resolveAllowedIds(
-                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.VALIDATE_SYNC, ResourceAclService.ACTION_READ);
+                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.VALIDATE_SYNC, ResourceAclActionEnum.READ.getCode());
         groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);

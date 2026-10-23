@@ -6,14 +6,16 @@ package org.dbsyncer.parser.message;
 import org.dbsyncer.sdk.enums.NoticeFrequencyEnum;
 import org.dbsyncer.sdk.enums.NoticeTypeEnum;
 import org.dbsyncer.sdk.model.NoticeStrategy;
+import org.dbsyncer.sdk.model.NoticeStrategyDef;
 
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * 内置默认告警策略。
+ * 内置默认告警策略（配置为空时的种子）。
  *
  * @author wuji
  * @version 1.0.0
@@ -33,6 +35,13 @@ public final class DefaultNoticeStrategy {
 
     public static List<NoticeStrategy> all() {
         return Arrays.asList(interval10m(), immediate(), interval1d());
+    }
+
+    /**
+     * 可持久化的默认策略定义。
+     */
+    public static List<NoticeStrategyDef> allDefs() {
+        return all().stream().map(NoticeStrategyConverter::toDef).collect(Collectors.toList());
     }
 
     public static NoticeStrategy interval10m() {

@@ -8,6 +8,9 @@ import org.dbsyncer.biz.PermissionChecker;
 import org.dbsyncer.biz.PermissionService;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.UserConfigService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
+import org.dbsyncer.biz.enums.ResourceAclSubjectEnum;
+import org.dbsyncer.biz.enums.ResourceTypeEnum;
 import org.dbsyncer.biz.vo.ResourceAclVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -61,14 +64,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
 
     private static final String PERM_ACL_EDIT = "acl:edit";
 
-    private static final Set<String> RESOURCE_TYPES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
-            RESOURCE_GROUP,
-            RESOURCE_CONNECTOR,
-            RESOURCE_MAPPING,
-            RESOURCE_VALIDATE_SYNC,
-            RESOURCE_DATABASE_SYNC
-    )));
-
     @Resource
     private ResourceAclProfile resourceAclProfile;
 
@@ -114,7 +109,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         List<ResourceAclVO> result = new ArrayList<>(list.size());
         for (ResourceAcl acl : list) {
             if (acl != null) {
-                result.add(toVO(acl));
+                result.add(toResourceAclVO(acl));
             }
         }
         result.sort(Comparator
@@ -129,7 +124,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         Assert.hasText(id, "授权ID不能为空");
         ResourceAcl acl = resourceAclProfile.get(id);
         Assert.notNull(acl, "授权不存在");
-        return toVO(acl);
+        return toResourceAclVO(acl);
     }
 
     @Override
@@ -198,15 +193,15 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         if (permissionService.isAdmin(username)) {
             return;
         }
-        if (!RESOURCE_TYPES.contains(resourceType) || RESOURCE_GROUP.equals(resourceType)) {
+        if (!ResourceTypeEnum.isLeaf(resourceType)) {
             return;
         }
-        UserInfo user = findUser(username);
+        UserInfo user = userProfile.getByUsername(username);
         if (user == null || StringUtil.isBlank(user.getId())) {
             return;
         }
-        String actions = String.join(StringUtil.COMMA, ACTION_READ, ACTION_WRITE, ACTION_OPERATE);
-        upsertAcl(SUBJECT_USER, user.getId(), resourceType, resourceId, actions);
+        upsertAcl(ResourceAclSubjectEnum.USER.getCode(), user.getId(), resourceType, resourceId,
+                ResourceAclActionEnum.joinAllCodes());
     }
 
     /**
@@ -302,12 +297,13 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         if (permissionService.isAdmin(username)) {
             return true;
         }
-        UserInfo user = findUser(username);
+        UserInfo user = userProfile.getByUsername(username);
         if (user == null || StringUtil.isBlank(user.getId())) {
             return false;
         }
         String need = action.trim().toLowerCase(Locale.ROOT);
-        if (hasAction(resourceAclProfile.listBySubject(SUBJECT_USER, user.getId()), resourceType, resourceId, need)) {
+        if (hasAction(resourceAclProfile.listBySubject(ResourceAclSubjectEnum.USER.getCode(), user.getId()),
+                resourceType, resourceId, need)) {
             return true;
         }
         List<UserRole> userRoles = rbacProfile.listUserRolesByUserId(user.getId());
@@ -316,7 +312,8 @@ public class ResourceAclServiceImpl implements ResourceAclService {
                 if (ur == null || StringUtil.isBlank(ur.getRoleId())) {
                     continue;
                 }
-                if (hasAction(resourceAclProfile.listBySubject(SUBJECT_ROLE, ur.getRoleId()), resourceType, resourceId, need)) {
+                if (hasAction(resourceAclProfile.listBySubject(ResourceAclSubjectEnum.ROLE.getCode(), ur.getRoleId()),
+                        resourceType, resourceId, need)) {
                     return true;
                 }
             }
@@ -338,20 +335,19 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         if (permissionService.isAdmin(username)) {
             return null;
         }
-        UserInfo user = findUser(username);
+        UserInfo user = userProfile.getByUsername(username);
         if (user == null || StringUtil.isBlank(user.getId())) {
             return Collections.emptySet();
         }
-        String need = action.trim().toLowerCase(Locale.ROOT);
         Set<String> allowed = new LinkedHashSet<>();
-        collectAllowedIds(resourceAclProfile.listBySubject(SUBJECT_USER, user.getId()), resourceType, need, allowed);
+        //运行用户资源id
+        collectAllowedIds(resourceAclProfile.listBySubject(ResourceAclSubjectEnum.USER.getCode(), user.getId()), resourceType, action, allowed);
         List<UserRole> userRoles = rbacProfile.listUserRolesByUserId(user.getId());
         if (!CollectionUtils.isEmpty(userRoles)) {
             for (UserRole ur : userRoles) {
-                if (ur == null || StringUtil.isBlank(ur.getRoleId())) {
-                    continue;
-                }
-                collectAllowedIds(resourceAclProfile.listBySubject(SUBJECT_ROLE, ur.getRoleId()), resourceType, need, allowed);
+                //允许角色范围资源id
+                collectAllowedIds(resourceAclProfile.listBySubject(ResourceAclSubjectEnum.ROLE.getCode(), ur.getRoleId()),
+                        resourceType, action, allowed);
             }
         }
         return allowed;
@@ -407,20 +403,20 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         return result;
     }
 
-    private void collectAllowedIds(List<ResourceAcl> acls, String resourceType, String need, Set<String> out) {
-        if (CollectionUtils.isEmpty(acls) || out == null) {
+    private void collectAllowedIds(List<ResourceAcl> resourceIds, String resourceType, String need, Set<String> out) {
+        if (CollectionUtils.isEmpty(resourceIds) || out == null) {
             return;
         }
-        for (ResourceAcl acl : acls) {
-            if (acl == null || !containsAction(acl.getActions(), need)) {
+        for (ResourceAcl resource : resourceIds) {
+            if (resource == null || !containsAction(resource.getActions(), need)) {
                 continue;
             }
-            if (StringUtil.equals(resourceType, acl.getResourceType()) && StringUtil.isNotBlank(acl.getResourceId())) {
-                out.add(acl.getResourceId());
+            if (StringUtil.equals(resourceType, resource.getResourceType())) {
+                out.add(resource.getResourceId());
                 continue;
             }
-            if (RESOURCE_GROUP.equals(acl.getResourceType()) && StringUtil.isNotBlank(acl.getResourceId())) {
-                List<String> memberIds = groupRelProfile.listResourceIds(acl.getResourceId(), resourceType);
+            if (StringUtil.equals(ResourceTypeEnum.GROUP.getCode(), resource.getResourceType()) && StringUtil.isNotBlank(resource.getResourceId())) {
+                List<String> memberIds = groupRelProfile.listResourceIds(resource.getResourceId(), resourceType);
                 if (!CollectionUtils.isEmpty(memberIds)) {
                     out.addAll(memberIds);
                 }
@@ -440,7 +436,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
                     && StringUtil.equals(resourceId, acl.getResourceId())) {
                 return true;
             }
-            if (RESOURCE_GROUP.equals(acl.getResourceType()) && StringUtil.isNotBlank(acl.getResourceId())) {
+            if (ResourceTypeEnum.GROUP.getCode().equals(acl.getResourceType()) && StringUtil.isNotBlank(acl.getResourceId())) {
                 List<GroupRel> rels = groupRelProfile.listByResource(resourceType, resourceId);
                 if (!CollectionUtils.isEmpty(rels)) {
                     for (GroupRel rel : rels) {
@@ -454,7 +450,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         return false;
     }
 
-    private ResourceAclVO toVO(ResourceAcl acl) {
+    private ResourceAclVO toResourceAclVO(ResourceAcl acl) {
         ResourceAclVO vo = new ResourceAclVO();
         BeanUtils.copyProperties(acl, vo);
         vo.setSubjectName(resolveSubjectName(acl.getSubjectType(), acl.getSubjectId()));
@@ -463,17 +459,19 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     }
 
     private String resolveSubjectName(String subjectType, String subjectId) {
-        if (SUBJECT_ROLE.equals(subjectType)) {
+        ResourceAclSubjectEnum subject = ResourceAclSubjectEnum.get(subjectType);
+        if (subject == null) {
+            return subjectId;
+        }
+        if (subject.isRole()) {
             Role role = rbacProfile.getRoleById(subjectId);
             return role == null ? subjectId : role.getName() + " (" + role.getCode() + ")";
         }
-        if (SUBJECT_USER.equals(subjectType)) {
-            List<UserInfo> users = userProfile.listUserInfos();
-            if (!CollectionUtils.isEmpty(users)) {
-                for (UserInfo user : users) {
-                    if (user != null && StringUtil.equals(subjectId, user.getId())) {
-                        return user.getNickname() + " (" + user.getUsername() + ")";
-                    }
+        List<UserInfo> users = userProfile.listUserInfos();
+        if (!CollectionUtils.isEmpty(users)) {
+            for (UserInfo user : users) {
+                if (user != null && StringUtil.equals(subjectId, user.getId())) {
+                    return user.getNickname() + " (" + user.getUsername() + ")";
                 }
             }
         }
@@ -481,76 +479,80 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     }
 
     private String resolveResourceName(String resourceType, String resourceId) {
-        if (RESOURCE_GROUP.equals(resourceType)) {
-            Group group = groupProfile.getGroup(resourceId);
-            return group == null ? resourceId : group.getName();
+        ResourceTypeEnum type = ResourceTypeEnum.get(resourceType);
+        if (type == null) {
+            return resourceId;
         }
-        if (RESOURCE_CONNECTOR.equals(resourceType)) {
-            Connector connector = connectorProfile.getConnector(resourceId);
-            return connector == null ? resourceId : connector.getName();
+        switch (type) {
+            case GROUP:
+                Group group = groupProfile.getGroup(resourceId);
+                return group == null ? resourceId : group.getName();
+            case CONNECTOR:
+                Connector connector = connectorProfile.getConnector(resourceId);
+                return connector == null ? resourceId : connector.getName();
+            case MAPPING:
+                Mapping mapping = mappingProfile.get(resourceId);
+                return mapping == null ? resourceId : mapping.getName();
+            case VALIDATE_SYNC:
+                ValidateSyncTask validateSyncTask = validateSyncProfile.get(resourceId);
+                return validateSyncTask == null ? resourceId : validateSyncTask.getName();
+            case DATABASE_SYNC:
+                DatabaseSyncTask databaseSyncTask = databaseSyncProfile.get(resourceId);
+                return databaseSyncTask == null ? resourceId : databaseSyncTask.getName();
+            default:
+                return resourceId;
         }
-        if (RESOURCE_MAPPING.equals(resourceType)) {
-            Mapping mapping = mappingProfile.get(resourceId);
-            return mapping == null ? resourceId : mapping.getName();
-        }
-        if (RESOURCE_VALIDATE_SYNC.equals(resourceType)) {
-            ValidateSyncTask task = validateSyncProfile.get(resourceId);
-            return task == null ? resourceId : task.getName();
-        }
-        if (RESOURCE_DATABASE_SYNC.equals(resourceType)) {
-            DatabaseSyncTask task = databaseSyncProfile.get(resourceId);
-            return task == null ? resourceId : task.getName();
-        }
-        return resourceId;
     }
 
     private String normalizeResourceType(String raw) {
-        String type = StringUtil.isBlank(raw) ? RESOURCE_GROUP : raw.trim();
-        Assert.isTrue(RESOURCE_TYPES.contains(type), "不支持的资源类型: " + type);
+        String type = StringUtil.isBlank(raw) ? ResourceTypeEnum.GROUP.getCode() : raw.trim();
+        Assert.isTrue(ResourceTypeEnum.isSupported(type), "不支持的资源类型: " + type);
         return type;
     }
 
     private void assertResourceExists(String resourceType, String resourceId) {
-        if (RESOURCE_GROUP.equals(resourceType)) {
-            Assert.notNull(groupProfile.getGroup(resourceId), "分组不存在");
-            return;
+        ResourceTypeEnum type = ResourceTypeEnum.get(resourceType);
+        Assert.notNull(type, "不支持的资源类型: " + resourceType);
+        switch (type) {
+            case GROUP:
+                Assert.notNull(groupProfile.getGroup(resourceId), "分组不存在");
+                return;
+            case CONNECTOR:
+                Assert.notNull(connectorProfile.getConnector(resourceId), "连接不存在");
+                return;
+            case MAPPING:
+                Assert.notNull(mappingProfile.get(resourceId), "同步任务不存在");
+                return;
+            case VALIDATE_SYNC:
+                Assert.notNull(validateSyncProfile.get(resourceId), "订正校验任务不存在");
+                return;
+            case DATABASE_SYNC:
+                Assert.notNull(databaseSyncProfile.get(resourceId), "整库迁移任务不存在");
+                return;
+            default:
+                throw new IllegalArgumentException("不支持的资源类型: " + resourceType);
         }
-        if (RESOURCE_CONNECTOR.equals(resourceType)) {
-            Assert.notNull(connectorProfile.getConnector(resourceId), "连接不存在");
-            return;
-        }
-        if (RESOURCE_MAPPING.equals(resourceType)) {
-            Assert.notNull(mappingProfile.get(resourceId), "同步任务不存在");
-            return;
-        }
-        if (RESOURCE_VALIDATE_SYNC.equals(resourceType)) {
-            Assert.notNull(validateSyncProfile.get(resourceId), "订正校验任务不存在");
-            return;
-        }
-        if (RESOURCE_DATABASE_SYNC.equals(resourceType)) {
-            Assert.notNull(databaseSyncProfile.get(resourceId), "整库迁移任务不存在");
-            return;
-        }
-        throw new IllegalArgumentException("不支持的资源类型: " + resourceType);
     }
 
     private String resolveSubjectId(String subjectType, String subjectId, String subjectCode, String username) {
+        ResourceAclSubjectEnum subject = ResourceAclSubjectEnum.get(subjectType);
+        Assert.notNull(subject, "主体类型仅支持 ROLE/USER");
         if (StringUtil.isNotBlank(subjectId)) {
-            if (SUBJECT_ROLE.equals(subjectType)) {
+            if (subject.isRole()) {
                 Assert.notNull(rbacProfile.getRoleById(subjectId), "角色不存在");
             } else {
-                Assert.notNull(findUserById(subjectId), "用户不存在");
+                Assert.notNull(userProfile.getById(subjectId), "用户不存在");
             }
             return subjectId;
         }
-        if (SUBJECT_ROLE.equals(subjectType)) {
+        if (subject.isRole()) {
             Assert.hasText(subjectCode, "请选择角色");
             Role role = rbacProfile.getRoleByCode(subjectCode.trim());
             Assert.notNull(role, "角色不存在");
             return role.getId();
         }
         Assert.hasText(username, "请选择用户");
-        UserInfo user = findUser(username.trim());
+        UserInfo user = userProfile.getByUsername(username.trim());
         Assert.notNull(user, "用户不存在");
         Assert.hasText(user.getId(), "用户ID无效");
         return user.getId();
@@ -558,16 +560,16 @@ public class ResourceAclServiceImpl implements ResourceAclService {
 
     private String normalizeSubjectType(String raw) {
         Assert.hasText(raw, "主体类型不能为空");
-        String type = raw.trim().toUpperCase(Locale.ROOT);
-        Assert.isTrue(SUBJECT_ROLE.equals(type) || SUBJECT_USER.equals(type), "主体类型仅支持 ROLE/USER");
-        return type;
+        ResourceAclSubjectEnum subject = ResourceAclSubjectEnum.get(raw);
+        Assert.notNull(subject, "主体类型仅支持 ROLE/USER");
+        return subject.getCode();
     }
 
     private String normalizeActions(String raw) {
         if (StringUtil.isBlank(raw)) {
             return StringUtil.EMPTY;
         }
-        Set<String> allowed = new LinkedHashSet<>(Arrays.asList(ACTION_READ, ACTION_WRITE, ACTION_OPERATE));
+        Set<String> allowed = ResourceAclActionEnum.allCodes();
         Set<String> selected = Arrays.stream(raw.split(StringUtil.COMMA))
                 .map(String::trim)
                 .filter(StringUtil::isNotBlank)
@@ -578,40 +580,11 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     }
 
     private boolean containsAction(String actions, String need) {
-        if (StringUtil.isBlank(actions) || StringUtil.isBlank(need)) {
-            return false;
-        }
         for (String part : actions.split(StringUtil.COMMA)) {
-            if (need.equalsIgnoreCase(part.trim())) {
+            if (StringUtil.equalsIgnoreCase(need, part)) {
                 return true;
             }
         }
         return false;
-    }
-
-    private UserInfo findUser(String username) {
-        List<UserInfo> users = userProfile.listUserInfos();
-        if (CollectionUtils.isEmpty(users)) {
-            return null;
-        }
-        for (UserInfo user : users) {
-            if (user != null && StringUtil.equals(username, user.getUsername())) {
-                return user;
-            }
-        }
-        return null;
-    }
-
-    private UserInfo findUserById(String userId) {
-        List<UserInfo> users = userProfile.listUserInfos();
-        if (CollectionUtils.isEmpty(users)) {
-            return null;
-        }
-        for (UserInfo user : users) {
-            if (user != null && StringUtil.equals(userId, user.getId())) {
-                return user;
-            }
-        }
-        return null;
     }
 }

@@ -59,17 +59,6 @@ public class ResourceAclProfileImpl implements ResourceAclProfile {
     }
 
     @Override
-    public List<ResourceAcl> listByResource(String resourceType, String resourceId) {
-        if (StringUtil.isBlank(resourceType) || StringUtil.isBlank(resourceId)) {
-            return Collections.emptyList();
-        }
-        Query condition = new Query();
-        condition.addFilter(ConfigConstant.GROUP_REL_RESOURCE_TYPE, resourceType);
-        condition.addFilter(ConfigConstant.GROUP_REL_RESOURCE_ID, resourceId);
-        return operationTemplate.queryList(StorageEnum.RESOURCE_ACL, condition, ResourceAcl.class);
-    }
-
-    @Override
     public ResourceAcl getByUnique(String subjectType, String subjectId, String resourceType, String resourceId) {
         if (StringUtil.isBlank(subjectType) || StringUtil.isBlank(subjectId)
                 || StringUtil.isBlank(resourceType) || StringUtil.isBlank(resourceId)) {

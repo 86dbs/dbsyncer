@@ -15,9 +15,14 @@ import org.dbsyncer.sdk.model.NoticeContent;
 public interface NoticeDecisionEngine {
 
     /**
-     * 接收业务事件并按内置策略路由。
+     * 接收业务事件并按策略路由。
      *
      * @param noticeContent 通知内容
      */
     void dispatch(NoticeContent noticeContent);
+
+    /**
+     * 从系统配置重新加载策略并刷新周期调度。
+     */
+    void reload();
 }

@@ -40,6 +40,13 @@ public class StrategyBucketManager {
         }
     }
 
+    /**
+     * 清空全部策略桶（配置 reload 时调用）。
+     */
+    public void clear() {
+        buckets.clear();
+    }
+
     public void offer(NoticeStrategy strategy, NoticeContent content) {
         if (strategy == null || content == null || !strategy.isInterval()) {
             return;
@@ -86,6 +93,7 @@ public class StrategyBucketManager {
         NoticeTypeEnum noticeType = content.getNoticeType();
         String type = noticeType == null ? StringUtil.EMPTY : noticeType.name();
         String title = content.getTitle() == null ? StringUtil.EMPTY : content.getTitle();
-        return type + '：' + title;
+        String resourceId = content.getResourceId() == null ? StringUtil.EMPTY : content.getResourceId();
+        return type + '：' + title + '：' + resourceId;
     }
 }
