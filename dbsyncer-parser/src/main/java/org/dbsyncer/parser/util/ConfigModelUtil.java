@@ -8,6 +8,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.NoticeMentionRule;
+import org.dbsyncer.parser.model.NoticeStrategyConfig;
 import org.dbsyncer.parser.model.Permission;
 import org.dbsyncer.parser.model.ResourceAcl;
 import org.dbsyncer.parser.model.Role;
@@ -61,6 +62,9 @@ public abstract class ConfigModelUtil {
         }
         if (model instanceof NoticeMentionRule) {
             return convertNoticeMentionRuleToMap((NoticeMentionRule) model);
+        }
+        if (model instanceof NoticeStrategyConfig) {
+            return convertNoticeStrategyConfigToMap((NoticeStrategyConfig) model);
         }
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
@@ -174,6 +178,13 @@ public abstract class ConfigModelUtil {
             }
             return (T) rule;
         }
+        if (NoticeStrategyConfig.class.equals(clazz)) {
+            NoticeStrategyConfig strategy = JsonUtil.mapToObj(row, NoticeStrategyConfig.class);
+            if (strategy != null) {
+                strategy.setType(ConfigConstant.NOTICE_STRATEGY);
+            }
+            return (T) strategy;
+        }
         Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
         if (json == null) {
             return null;
@@ -269,6 +280,19 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.NOTICE_MENTION_SCOPE_ID, StringUtil.getIfBlank(rule.getScopeId(), StringUtil.EMPTY));
         params.put(ConfigConstant.NOTICE_MENTION_AT_ALL, rule.getAtAll());
         params.put(ConfigConstant.NOTICE_MENTION_AT_MOBILES, StringUtil.getIfBlank(rule.getAtMobiles(), StringUtil.EMPTY));
+        return params;
+    }
+
+    private static Map<String, Object> convertNoticeStrategyConfigToMap(NoticeStrategyConfig config) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, config.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_NAME, StringUtil.getIfBlank(config.getName(), StringUtil.EMPTY));
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, config.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, config.getUpdateTime());
+        params.put(ConfigConstant.NOTICE_STRATEGY_ENABLED, config.getEnabled());
+        params.put(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, StringUtil.getIfBlank(config.getFrequency(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_STRATEGY_CRON, StringUtil.getIfBlank(config.getCron(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, StringUtil.getIfBlank(config.getNoticeTypes(), StringUtil.EMPTY));
         return params;
     }
 
@@ -368,6 +392,8 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.RESOURCE_ACL;
             case ConfigConstant.NOTICE_MENTION_RULE:
                 return StorageEnum.NOTICE_MENTION_RULE;
+            case ConfigConstant.NOTICE_STRATEGY:
+                return StorageEnum.NOTICE_STRATEGY;
             default:
                 // 后续新增的 CommonTaskTypeEnum 仍走 task 表
                 return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;

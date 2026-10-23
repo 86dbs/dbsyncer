@@ -423,6 +423,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
         validateSyncProfile.delete(id);
         groupService.bind(null, ConfigConstant.VALIDATE_SYNC, id);
+        resourceAclService.revokeAllForResource(ConfigConstant.VALIDATE_SYNC, id);
         return "删除成功";
     }
 

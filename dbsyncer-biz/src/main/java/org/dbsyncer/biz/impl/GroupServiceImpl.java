@@ -6,6 +6,8 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
+import org.dbsyncer.parser.NoticeMentionRuleProfile;
+import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.enums.ResourceTypeEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -38,6 +40,12 @@ public class GroupServiceImpl implements GroupService {
 
     @Resource
     private GroupRelProfile groupRelProfile;
+
+    @Resource
+    private ResourceAclService resourceAclService;
+
+    @Resource
+    private NoticeMentionRuleProfile noticeMentionRuleProfile;
 
     @Override
     public String add(Map<String, String> params) {
@@ -72,6 +80,10 @@ public class GroupServiceImpl implements GroupService {
         // 铁律②：先清 rel 再删组
         groupRelProfile.removeByGroup(id);
         groupProfile.removeGroup(id);
+        //删除授权资源
+        resourceAclService.revokeAllForResource(ConfigConstant.GROUP, id);
+        //删除告警通知规则
+        noticeMentionRuleProfile.removeByScopeId(ConfigConstant.GROUP, id);
         return id;
     }
 

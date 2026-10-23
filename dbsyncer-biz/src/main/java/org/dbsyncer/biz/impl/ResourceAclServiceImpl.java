@@ -289,6 +289,22 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     }
 
     @Override
+    public void revokeAllForResource(String resourceType, String resourceId) {
+        if (StringUtil.isBlank(resourceType) || StringUtil.isBlank(resourceId)) {
+            return;
+        }
+        resourceAclProfile.removeByResource(resourceType, resourceId);
+    }
+
+    @Override
+    public void revokeAllForSubject(String subjectType, String subjectId) {
+        if (StringUtil.isBlank(subjectType) || StringUtil.isBlank(subjectId)) {
+            return;
+        }
+        resourceAclProfile.removeBySubject(subjectType, subjectId);
+    }
+
+    @Override
     public boolean check(String username, String resourceType, String resourceId, String action) {
         if (StringUtil.isBlank(username) || StringUtil.isBlank(resourceType)
                 || StringUtil.isBlank(resourceId) || StringUtil.isBlank(action)) {

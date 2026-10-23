@@ -5,8 +5,12 @@ package org.dbsyncer.sdk.storage;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.NullExecutorException;
 import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.NoticeFrequencyEnum;
+import org.dbsyncer.sdk.enums.NoticeTypeEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.StorageStrategyEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
@@ -16,6 +20,7 @@ import org.springframework.util.Assert;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +30,38 @@ import java.util.Map;
  * @date 2019-11-16 23:22
  */
 public abstract class AbstractStorageService implements StorageService, DisposableBean {
+
+    /**
+     * 告警策略表首次创建时灌入默认策略。
+     */
+    protected void initNoticeStrategy() {
+        long now = System.currentTimeMillis();
+        List<Map> list = new ArrayList<>(3);
+        list.add(noticeStrategyRow("interval_10m", "10分钟一次", NoticeFrequencyEnum.INTERVAL.name(),
+                "0 */10 * * * ?", now, NoticeTypeEnum.LICENSE_EXCEPTION.name()));
+        list.add(noticeStrategyRow("immediate", "立即发送", NoticeFrequencyEnum.IMMEDIATE.name(),
+                StringUtil.EMPTY, now,
+                NoticeTypeEnum.VALIDATE_SYNC_FAIL.name(), NoticeTypeEnum.MAPPING_STOP.name(),
+                NoticeTypeEnum.MAPPING_ERROR.name(), NoticeTypeEnum.CONNECTOR_OFFLINE.name()));
+        list.add(noticeStrategyRow("interval_1d", "每天一次", NoticeFrequencyEnum.INTERVAL.name(),
+                "0 0 9 * * ?", now,
+                NoticeTypeEnum.LICENSE_EXPIRE_REMIND.name(), NoticeTypeEnum.LICENSE_EXPIRED.name()));
+        batchInsert(StorageEnum.NOTICE_STRATEGY, getSharding(StorageEnum.NOTICE_STRATEGY, null), list);
+    }
+
+    private static Map<String, Object> noticeStrategyRow(String id, String name, String frequency, String cron,
+                                                         long now, String... noticeTypes) {
+        Map<String, Object> row = new HashMap<>();
+        row.put(ConfigConstant.CONFIG_MODEL_ID, id);
+        row.put(ConfigConstant.CONFIG_MODEL_NAME, name);
+        row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
+        row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, now);
+        row.put(ConfigConstant.NOTICE_STRATEGY_ENABLED, 1);
+        row.put(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, frequency);
+        row.put(ConfigConstant.NOTICE_STRATEGY_CRON, cron);
+        row.put(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, String.join(StringUtil.COMMA, noticeTypes));
+        return row;
+    }
 
     protected abstract Paging select(String sharding, Query query);
 

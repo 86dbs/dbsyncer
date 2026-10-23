@@ -49,4 +49,9 @@ public interface NoticeMentionRuleProfile {
      * 按主键删除。
      */
     void remove(String id);
+
+    /**
+     * 按作用域批量删除（分组/任务被删除时收尾）。
+     */
+    void removeByScopeId(String scopeType, String scopeId);
 }

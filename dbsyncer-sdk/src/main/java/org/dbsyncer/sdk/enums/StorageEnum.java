@@ -85,7 +85,11 @@ public enum StorageEnum {
     /**
      * 告警 @ 覆盖规则
      */
-    NOTICE_MENTION_RULE("notice_mention_rule");
+    NOTICE_MENTION_RULE("notice_mention_rule"),
+    /**
+     * 告警策略
+     */
+    NOTICE_STRATEGY("notice_strategy");
 
     private final String type;
 

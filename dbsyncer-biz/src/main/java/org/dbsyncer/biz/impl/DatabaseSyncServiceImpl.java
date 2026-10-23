@@ -221,6 +221,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         assertRunning(id);
         databaseSyncProfile.delete(id);
         groupService.bind(null, ConfigConstant.DATABASE_SYNC, id);
+        resourceAclService.revokeAllForResource(ConfigConstant.DATABASE_SYNC, id);
         return "删除成功";
     }
 

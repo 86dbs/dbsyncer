@@ -91,7 +91,7 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
     }
 
     /**
-     * 解析 @：MAPPING 规则优先，否则合并所属 GROUP 规则，否则保留渠道默认。
+     * 解析 @：MAPPING 规则优先，否则合并所属 GROUP 规则；无规则则不 @。
      */
     private NoticeConfig copyWithMentionOverride(NoticeConfig source, NoticeContent content) {
         NoticeMentionRule override = resolveMentionRule(content);

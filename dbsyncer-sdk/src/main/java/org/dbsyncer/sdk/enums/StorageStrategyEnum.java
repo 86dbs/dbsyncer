@@ -24,6 +24,7 @@ import org.dbsyncer.sdk.storage.strategy.RolePermissionStrategy;
 import org.dbsyncer.sdk.storage.strategy.UserRoleStrategy;
 import org.dbsyncer.sdk.storage.strategy.ResourceAclStrategy;
 import org.dbsyncer.sdk.storage.strategy.NoticeMentionRuleStrategy;
+import org.dbsyncer.sdk.storage.strategy.NoticeStrategyStorageStrategy;
 
 /**
  * 存储策略枚举
@@ -127,7 +128,12 @@ public enum StorageStrategyEnum {
     /**
      * 告警 @ 覆盖规则
      */
-    NOTICE_MENTION_RULE(StorageEnum.NOTICE_MENTION_RULE, new NoticeMentionRuleStrategy());
+    NOTICE_MENTION_RULE(StorageEnum.NOTICE_MENTION_RULE, new NoticeMentionRuleStrategy()),
+
+    /**
+     * 告警策略
+     */
+    NOTICE_STRATEGY(StorageEnum.NOTICE_STRATEGY, new NoticeStrategyStorageStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

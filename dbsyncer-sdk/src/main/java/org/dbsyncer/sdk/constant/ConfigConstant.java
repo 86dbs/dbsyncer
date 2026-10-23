@@ -47,6 +47,10 @@ public class ConfigConstant {
      * 告警 @ 覆盖规则
      */
     public static final String NOTICE_MENTION_RULE = "noticeMentionRule";
+    /**
+     * 告警策略
+     */
+    public static final String NOTICE_STRATEGY = "noticeStrategy";
 
     /**
      * 连接器配置字段
@@ -112,6 +116,14 @@ public class ConfigConstant {
     public static final String NOTICE_MENTION_SCOPE_ID = "scopeId";
     public static final String NOTICE_MENTION_AT_ALL = "atAll";
     public static final String NOTICE_MENTION_AT_MOBILES = "atMobiles";
+
+    /**
+     * 告警策略表(dbsyncer_notice_strategy)拆分列
+     */
+    public static final String NOTICE_STRATEGY_ENABLED = "enabled";
+    public static final String NOTICE_STRATEGY_FREQUENCY = "frequency";
+    public static final String NOTICE_STRATEGY_CRON = "cron";
+    public static final String NOTICE_STRATEGY_NOTICE_TYPES = "noticeTypes";
 
     /**
      * 用户表(dbsyncer_user)拆分列

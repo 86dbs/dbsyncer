@@ -96,4 +96,16 @@ public class NoticeMentionRuleProfileImpl implements NoticeMentionRuleProfile {
         }
         storageService.remove(StorageEnum.NOTICE_MENTION_RULE, id);
     }
+
+    @Override
+    public void removeByScopeId(String scopeType, String scopeId) {
+        if (StringUtil.isBlank(scopeType) || StringUtil.isBlank(scopeId)) {
+            return;
+        }
+        Query query = new Query();
+        query.setType(StorageEnum.NOTICE_MENTION_RULE);
+        query.addFilter(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, scopeType);
+        query.addFilter(ConfigConstant.NOTICE_MENTION_SCOPE_ID, scopeId);
+        storageService.delete(query);
+    }
 }

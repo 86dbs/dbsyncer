@@ -386,7 +386,8 @@ public class MySQLStorageService extends AbstractStorageService {
         }
         return tables.computeIfAbsent(sharding, table -> {
             Executor newExecutor = new Executor(template.getType(), template.getFields(), template.isSystemTable(), template.isOrderByUpdateTime());
-            return createTableIfNotExist(table, newExecutor);
+            createTableIfNotExist(table, newExecutor);
+            return newExecutor;
         });
     }
 
@@ -748,6 +749,13 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.NOTICE_MENTION_AT_ALL, ConfigConstant.NOTICE_MENTION_AT_MOBILES);
         List<Field> noticeMentionRuleFields = builder.getFields();
 
+        // 告警策略
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.NOTICE_STRATEGY_ENABLED, ConfigConstant.NOTICE_STRATEGY_FREQUENCY,
+                ConfigConstant.NOTICE_STRATEGY_CRON, ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES);
+        List<Field> noticeStrategyFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -767,12 +775,16 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.USER_ROLE.getType(), k -> new Executor(k, userRoleFields, true, true));
         tables.computeIfAbsent(StorageEnum.RESOURCE_ACL.getType(), k -> new Executor(k, resourceAclFields, true, true));
         tables.computeIfAbsent(StorageEnum.NOTICE_MENTION_RULE.getType(), k -> new Executor(k, noticeMentionRuleFields, true, true));
+        tables.computeIfAbsent(StorageEnum.NOTICE_STRATEGY.getType(), k -> new Executor(k, noticeStrategyFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
-                createTableIfNotExist(tableName, e);
+                boolean created = createTableIfNotExist(tableName, e);
+                if (created && StringUtil.equalsIgnoreCase(tableName, StorageEnum.NOTICE_STRATEGY.getType())) {
+                    initNoticeStrategy();
+                }
             }
         });
         // wait few seconds for execute sql
@@ -867,8 +879,12 @@ public class MySQLStorageService extends AbstractStorageService {
         }
     }
 
-    private Executor createTableIfNotExist(String table, Executor executor) {
+    /**
+     * 表不存在则创建；返回是否本次新建（复用已有 SHOW TABLES 判断）。
+     */
+    private boolean createTableIfNotExist(String table, Executor executor) {
         table = PREFIX_TABLE.concat(table);
+        boolean created = false;
         // show tables where Tables_in_dbsyncer = "dbsyncer_config"
         String sql = String.format(SHOW_TABLE, database, table);
         try {
@@ -877,6 +893,7 @@ public class MySQLStorageService extends AbstractStorageService {
             // 不存在表
             String ddl = readSql(executor.getType(), executor.isSystemTable(), table);
             executeSql(ddl);
+            created = true;
         }
 
         // 老版本升级：动态补齐新增字段
@@ -892,7 +909,7 @@ public class MySQLStorageService extends AbstractStorageService {
         String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(config);
         String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
-        return executor;
+        return created;
     }
 
     /**
@@ -1119,7 +1136,11 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.NOTICE_MENTION_SCOPE_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.NOTICE_MENTION_AT_ALL, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.NOTICE_MENTION_AT_MOBILES, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.NOTICE_MENTION_AT_MOBILES, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_ENABLED, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_CRON, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

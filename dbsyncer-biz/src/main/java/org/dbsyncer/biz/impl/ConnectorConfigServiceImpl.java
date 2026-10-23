@@ -8,9 +8,9 @@ import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.ResourceAclService;
-import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.connector.ConnectorChecker;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.common.enums.YesNoEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -130,6 +130,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         log(LogType.ConnectorLog.COPY, model);
 
         String newId = connectorProfile.addConnector(model);
+        //授权资源
         resourceAclService.grantOwner(username, ConfigConstant.CONNECTOR, newId);
         return newId;
     }
@@ -151,6 +152,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
             log(LogType.ConnectorLog.DELETE, connector);
             connectorProfile.removeConnector(id);
             groupService.bind(null, ConfigConstant.CONNECTOR, id);
+            resourceAclService.revokeAllForResource(ConfigConstant.CONNECTOR, id);
         }
         return "删除连接器成功!";
     }
@@ -253,8 +255,7 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         // 过滤源库或目标库类型
         String role = params.get("role");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.CONNECTOR);
-        Set<String> allowedIds = resourceAclService.resolveAllowedIds(
-                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.CONNECTOR, ResourceAclActionEnum.READ.getCode());
+        Set<String> allowedIds = resourceAclService.resolveAllowedIds(params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.CONNECTOR, ResourceAclActionEnum.READ.getCode());
         groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);

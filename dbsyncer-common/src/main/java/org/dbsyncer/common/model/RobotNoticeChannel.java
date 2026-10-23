@@ -4,7 +4,7 @@
 package org.dbsyncer.common.model;
 
 /**
- * 机器人告警渠道（企业微信 / 钉钉等）：webhook + @ 配置。
+ * 机器人告警渠道（企业微信 / 钉钉等）：webhook；发送时的 @ 由通知规则覆盖写入。
  *
  * @author wuji
  * @version 1.0.0

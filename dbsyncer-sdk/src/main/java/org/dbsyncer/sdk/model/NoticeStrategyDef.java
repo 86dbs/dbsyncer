@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 可持久化的告警策略定义（存入 {@link NoticeConfig}）。
+ * 可持久化的告警策略定义（DTO，对应表 dbsyncer_notice_strategy）。
  *
  * @author wuji
  * @version 1.0.0

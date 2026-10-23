@@ -7,11 +7,12 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.parser.NoticeMentionRuleProfile;
 import org.dbsyncer.biz.ResourceAclService;
-import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.task.MappingMatchTableTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
@@ -138,6 +139,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Resource
     private ResourceAclService resourceAclService;
 
+    @Resource
+    private NoticeMentionRuleProfile noticeMentionRuleProfile;
+
     @Override
     public String add(Map<String, String> params) {
         Mapping model = mappingChecker.checkAddConfigModel(params);
@@ -246,6 +250,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 删除同步任务
             mappingProfile.delete(id);
             groupService.bind(null, ConfigConstant.MAPPING, id);
+            resourceAclService.revokeAllForResource(ConfigConstant.MAPPING, id);
+            noticeMentionRuleProfile.removeByScopeId(ConfigConstant.MAPPING, id);
             log(LogType.MappingLog.DELETE, mapping);
         }
         return "同步任务删除成功";

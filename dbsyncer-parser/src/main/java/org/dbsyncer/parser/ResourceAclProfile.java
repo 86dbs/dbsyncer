@@ -29,4 +29,14 @@ public interface ResourceAclProfile {
     String update(ResourceAcl acl);
 
     void remove(String id);
+
+    /**
+     * 按资源类型 + 资源 ID 批量删除（资源被删除时收尾）。
+     */
+    void removeByResource(String resourceType, String resourceId);
+
+    /**
+     * 按主体类型 + 主体 ID 批量删除（用户/角色被删除时收尾）。
+     */
+    void removeBySubject(String subjectType, String subjectId);
 }

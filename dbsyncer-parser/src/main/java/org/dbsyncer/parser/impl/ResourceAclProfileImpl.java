@@ -102,4 +102,28 @@ public class ResourceAclProfileImpl implements ResourceAclProfile {
         }
         storageService.remove(StorageEnum.RESOURCE_ACL, id);
     }
+
+    @Override
+    public void removeByResource(String resourceType, String resourceId) {
+        if (StringUtil.isBlank(resourceType) || StringUtil.isBlank(resourceId)) {
+            return;
+        }
+        Query query = new Query();
+        query.setType(StorageEnum.RESOURCE_ACL);
+        query.addFilter(ConfigConstant.GROUP_REL_RESOURCE_TYPE, resourceType);
+        query.addFilter(ConfigConstant.GROUP_REL_RESOURCE_ID, resourceId);
+        storageService.delete(query);
+    }
+
+    @Override
+    public void removeBySubject(String subjectType, String subjectId) {
+        if (StringUtil.isBlank(subjectType) || StringUtil.isBlank(subjectId)) {
+            return;
+        }
+        Query query = new Query();
+        query.setType(StorageEnum.RESOURCE_ACL);
+        query.addFilter(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, subjectType);
+        query.addFilter(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, subjectId);
+        storageService.delete(query);
+    }
 }

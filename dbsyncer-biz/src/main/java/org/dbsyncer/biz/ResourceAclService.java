@@ -37,6 +37,16 @@ public interface ResourceAclService {
     void grantOwner(String username, String resourceType, String resourceId);
 
     /**
+     * 资源被删除时收尾：清除指向该资源的全部 ACL。
+     */
+    void revokeAllForResource(String resourceType, String resourceId);
+
+    /**
+     * 用户/角色被删除时收尾：清除该主体的全部 ACL。
+     */
+    void revokeAllForSubject(String subjectType, String subjectId);
+
+    /**
      * 用户对资源是否具备动作（admin 跳过）。
      */
     boolean check(String username, String resourceType, String resourceId, String action);

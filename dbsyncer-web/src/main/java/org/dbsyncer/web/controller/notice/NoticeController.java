@@ -5,12 +5,11 @@ package org.dbsyncer.web.controller.notice;
 
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.NoticeMentionRuleService;
+import org.dbsyncer.biz.NoticeStrategyService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.message.DefaultNoticeStrategy;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.sdk.enums.NoticeTypeEnum;
@@ -53,6 +52,9 @@ public class NoticeController extends BaseController {
     @Resource
     private NoticeMentionRuleService noticeMentionRuleService;
 
+    @Resource
+    private NoticeStrategyService noticeStrategyService;
+
     @RequestMapping("")
     public String index(ModelMap model) {
         SystemConfig systemConfig = systemConfigService.getSystemConfig();
@@ -61,10 +63,8 @@ public class NoticeController extends BaseController {
             noticeConfig = new NoticeConfig();
             systemConfig.setNoticeConfig(noticeConfig);
         }
-        if (CollectionUtils.isEmpty(noticeConfig.getStrategies())) {
-            noticeConfig.setStrategies(DefaultNoticeStrategy.allDefs());
-        }
         model.put("config", noticeConfig);
+        model.put("strategies", noticeStrategyService.listAll());
         model.put("mentionRules", noticeMentionRuleService.listAll());
         model.put("groups", groupService.list());
         Paging<Mapping> mappingPaging = mappingProfile.query(1, 500, null, null);
@@ -80,6 +80,32 @@ public class NoticeController extends BaseController {
             requirePermission("notice:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(systemConfigService.editNoticeConfig(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/strategy/save")
+    @ResponseBody
+    public RestResult saveStrategy(HttpServletRequest request) {
+        try {
+            requirePermission("notice:edit");
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(noticeStrategyService.save(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/strategy/remove")
+    @ResponseBody
+    public RestResult removeStrategy(HttpServletRequest request) {
+        try {
+            requirePermission("notice:edit");
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(noticeStrategyService.remove(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

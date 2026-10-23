@@ -5,9 +5,11 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PermissionChecker;
+import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.RoleService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.enums.PermissionModuleEnum;
+import org.dbsyncer.biz.enums.ResourceAclSubjectEnum;
 import org.dbsyncer.biz.vo.PermissionVO;
 import org.dbsyncer.biz.vo.RoleVO;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -54,6 +56,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Resource
     private LogService logService;
+
+    @Resource
+    private ResourceAclService resourceAclService;
 
     @Override
     public List<RoleVO> listRoles() {
@@ -196,6 +201,7 @@ public class RoleServiceImpl implements RoleService {
 
         rbacProfile.removeRolePermissionsByRoleId(roleId);
         rbacProfile.removeRole(roleId);
+        resourceAclService.revokeAllForSubject(ResourceAclSubjectEnum.ROLE.getCode(), roleId);
         logService.log(LogType.UserLog.DELETE,
                 String.format("[%s]删除角色[%s]", currentUserName, role.getCode()));
         return "删除角色成功";

@@ -6,8 +6,10 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PermissionChecker;
 import org.dbsyncer.biz.PermissionService;
+import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.user.UserConfigChecker;
+import org.dbsyncer.biz.enums.ResourceAclSubjectEnum;
 import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.biz.vo.UserInfoVO;
 import org.dbsyncer.common.util.SHA1Util;
@@ -65,6 +67,9 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     @Resource
     private PermissionChecker permissionChecker;
+
+    @Resource
+    private ResourceAclService resourceAclService;
 
     @Override
     public synchronized String add(Map<String, String> params) {
@@ -173,6 +178,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         Assert.notNull(deleteUser, "用户已删除.");
         if (StringUtil.isNotBlank(deleteUser.getId())) {
             permissionService.unbindAllUserRoles(deleteUser.getId());
+            resourceAclService.revokeAllForSubject(ResourceAclSubjectEnum.USER.getCode(), deleteUser.getId());
         }
         userConfig.removeUserInfo(username);
         userProfile.saveUserConfig(userConfig);
