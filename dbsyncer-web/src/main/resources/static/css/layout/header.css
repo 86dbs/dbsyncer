@@ -1,3 +1,38 @@
+/* ========== 顶栏 ========== */
+.app-header {
+  padding: 0 12px;
+  background-color: var(--bg-primary);
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebar-toggle:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
+.sidebar-toggle:focus {
+  outline: none;
+}
+
+.sidebar-toggle i {
+  font-size: 18px;
+}
+
 /* ========== 下拉菜单样式 ========== */
 .dropdown {
   position: relative;

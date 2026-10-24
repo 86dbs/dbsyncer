@@ -3,7 +3,12 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <!-- 顶部导航栏 -->
-<header th:fragment="header" class="h-14 border-b border-gray-200 flex items-center justify-end">
+<header th:fragment="header" class="app-header h-14 border-b border-gray-200 flex items-center justify-between">
+    <div class="flex items-center">
+        <button id="sidebarToggle" type="button" class="sidebar-toggle" title="收起侧栏">
+            <i class="fa fa-bars"></i>
+        </button>
+    </div>
     <div class="flex items-center">
         <div id="licenseInfo" class="hidden">
             <div class="dropdown license-dropdown flex items-center">

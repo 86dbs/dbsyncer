@@ -90,6 +90,9 @@
                     $el.addClass('hidden');
                 }
             });
+            if (typeof window.syncSidebarGroupVisibility === 'function') {
+                window.syncSidebarGroupVisibility();
+            }
         }
     };
 

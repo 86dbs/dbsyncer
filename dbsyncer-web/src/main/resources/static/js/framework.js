@@ -524,7 +524,11 @@ function doLoader(url) {
         if (typeof window.destroyDbSelectsIn === 'function') {
             window.destroyDbSelectsIn($mainContent);
         }
-        
+
+        if (typeof window.syncSidebarActive === 'function') {
+            window.syncSidebarActive(url);
+        }
+
         // 显示加载状态
         showLoading();
 
@@ -710,6 +714,10 @@ function refreshLoginUser() {
             if (window.DBSPermission) {
                 DBSPermission.load(response.data || {});
                 DBSPermission.apply(document);
+            }
+            if (typeof window.syncSidebarActive === 'function') {
+                const $active = $('.sidebar-item[url].active').first();
+                window.syncSidebarActive($active.length ? $active.attr('url') : '/index');
             }
         }
     });
@@ -1089,12 +1097,239 @@ function renderStateButton(state, mappingId) {
     return stateBtn.join('');
 }
 
+/**
+ * 侧栏：分组展开、收缩、按 url 高亮
+ */
+(function (window, $) {
+    'use strict';
+
+    const STORAGE_COLLAPSED = 'dbsyncer.sidebar.collapsed';
+    const STORAGE_GROUPS = 'dbsyncer.sidebar.groups';
+
+    function isCollapsed() {
+        return document.body.classList.contains('sidebar-collapsed');
+    }
+
+    function setCollapsed(collapsed) {
+        document.body.classList.toggle('sidebar-collapsed', !!collapsed);
+        try {
+            localStorage.setItem(STORAGE_COLLAPSED, collapsed ? '1' : '0');
+        } catch (e) {
+            // ignore
+        }
+        closeAllFlyouts();
+        const $btn = $('#sidebarToggle');
+        if ($btn.length) {
+            $btn.attr('title', collapsed ? '展开侧栏' : '收起侧栏');
+        }
+    }
+
+    function readCollapsed() {
+        try {
+            return localStorage.getItem(STORAGE_COLLAPSED) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function readOpenGroups() {
+        try {
+            const raw = sessionStorage.getItem(STORAGE_GROUPS);
+            if (!raw) {
+                return null;
+            }
+            const arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function saveOpenGroups() {
+        const keys = [];
+        $('.sidebar-group.open').each(function () {
+            const key = $(this).attr('data-group');
+            if (key) {
+                keys.push(key);
+            }
+        });
+        try {
+            sessionStorage.setItem(STORAGE_GROUPS, JSON.stringify(keys));
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    function closeAllFlyouts() {
+        $('.sidebar-group').removeClass('flyout-open');
+    }
+
+    function normalizeSidebarPath(url) {
+        if (!url) {
+            return '';
+        }
+        let path = String(url).split('?')[0];
+        if ($basePath && path.indexOf($basePath) === 0) {
+            path = path.substring($basePath.length);
+        }
+        if (path.charAt(0) !== '/') {
+            path = '/' + path;
+        }
+        return path;
+    }
+
+    function menuPrefix(menuUrl) {
+        if (!menuUrl) {
+            return '';
+        }
+        if (menuUrl.length > 5 && menuUrl.slice(-5) === '/list') {
+            return menuUrl.slice(0, -4);
+        }
+        return menuUrl.charAt(menuUrl.length - 1) === '/' ? menuUrl : menuUrl + '/';
+    }
+
+    function findBestSidebarItem(path) {
+        let best = null;
+        let bestLen = -1;
+        $('.sidebar-item[url]').each(function () {
+            const $item = $(this);
+            if ($item.hasClass('hidden')) {
+                return;
+            }
+            const u = $item.attr('url');
+            if (!u) {
+                return;
+            }
+            let matched = path === u;
+            if (!matched && path.indexOf(u + '/') === 0) {
+                matched = true;
+            }
+            if (!matched) {
+                const prefix = menuPrefix(u);
+                if (prefix && path.indexOf(prefix) === 0) {
+                    matched = true;
+                }
+            }
+            if (matched && u.length > bestLen) {
+                best = $item;
+                bestLen = u.length;
+            }
+        });
+        return best;
+    }
+
+    function expandGroupOf($item) {
+        if (!$item || !$item.length) {
+            return;
+        }
+        const $group = $item.closest('.sidebar-group');
+        if ($group.length) {
+            $group.addClass('open').addClass('has-active');
+            saveOpenGroups();
+        }
+    }
+
+    function syncSidebarActive(url) {
+        const path = normalizeSidebarPath(url || '/index');
+        $('.sidebar-item[url]').removeClass('active');
+        $('.sidebar-group').removeClass('has-active');
+        closeAllFlyouts();
+
+        const $best = findBestSidebarItem(path);
+        if ($best && $best.length) {
+            $best.addClass('active');
+            expandGroupOf($best);
+        }
+    }
+
+    function syncSidebarGroupVisibility() {
+        $('.sidebar-group').each(function () {
+            const $group = $(this);
+            const $visible = $group.find('.sidebar-item[url]').filter(function () {
+                return !$(this).hasClass('hidden');
+            });
+            if ($visible.length === 0) {
+                $group.addClass('hidden');
+                $group.removeClass('open flyout-open has-active');
+            } else {
+                $group.removeClass('hidden');
+            }
+        });
+    }
+
+    function restoreGroups() {
+        const saved = readOpenGroups();
+        $('.sidebar-group').removeClass('open');
+        if (saved && saved.length) {
+            saved.forEach(function (key) {
+                $('.sidebar-group[data-group="' + key + '"]').addClass('open');
+            });
+        }
+        const $active = $('.sidebar-item[url].active').first();
+        if ($active.length) {
+            expandGroupOf($active);
+        }
+    }
+
+    function initSidebar() {
+        setCollapsed(readCollapsed());
+        restoreGroups();
+
+        $(document).on('click', '.sidebar-item[url]', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = $(this).attr('url');
+            closeAllFlyouts();
+            doLoader(url);
+        });
+
+        $(document).on('click', '.sidebar-group-title', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            // 收缩态靠悬停弹出二级菜单，点击分组标题不切换
+            if (isCollapsed()) {
+                return;
+            }
+            $(this).closest('.sidebar-group').toggleClass('open');
+            saveOpenGroups();
+        });
+
+        // 收缩态：悬停分组弹出二级（兼容移入浮层）
+        $(document).on('mouseenter', '.sidebar-group', function () {
+            if (!isCollapsed()) {
+                return;
+            }
+            closeAllFlyouts();
+            $(this).addClass('flyout-open');
+        });
+        $(document).on('mouseleave', '.sidebar-group', function () {
+            if (!isCollapsed()) {
+                return;
+            }
+            $(this).removeClass('flyout-open');
+        });
+
+        $('#sidebarToggle').on('click', function (e) {
+            e.preventDefault();
+            setCollapsed(!isCollapsed());
+        });
+    }
+
+    window.syncSidebarActive = syncSidebarActive;
+    window.syncSidebarGroupVisibility = syncSidebarGroupVisibility;
+    window.initSidebar = initSidebar;
+})(window, jQuery);
+
 $(function () {
     // 定义返回函数，子页面返回
     window.backIndexPage = function () {
         doLoader('/index');
     };
     window.validateForm = validateForm;
+
+    if (typeof window.initSidebar === 'function') {
+        window.initSidebar();
+    }
 
     refreshLoginUser();
     refreshLicense();
@@ -1106,16 +1341,6 @@ $(function () {
             settings.watermark_txt = response.data.watermark;
             watermark();
         }
-    });
-
-    // 新导航链接点击事件
-    $('.sidebar-item[url]').on('click', function(e) {
-        e.preventDefault();
-        // 更新活动状态
-        $('.sidebar-item').removeClass('active');
-        $(this).addClass('active');
-        // 加载页面
-        doLoader($(this).attr('url'));
     });
 
     // 下拉菜单

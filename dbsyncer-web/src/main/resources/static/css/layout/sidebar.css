@@ -2,18 +2,30 @@
  * DBSyncer 左侧边栏样式
  */
 
-/* 侧边栏容器 */
-.sidebar {
-  position: fixed;
-  top: var(--header-height);
-  left: 0;
+.app-sidebar {
+  display: flex;
+  flex-direction: column;
   width: var(--sidebar-width);
-  height: calc(100vh - var(--header-height));
+  height: 100vh;
+  max-height: 100vh;
   background-color: var(--bg-primary);
-  border-right: 1px solid var(--border-secondary);
-  overflow-y: auto;
-  z-index: var(--z-sticky);
+  overflow: hidden;
   transition: width var(--transition-normal);
+}
+
+.sidebar-logo {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-text {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-nav {
+  min-height: 0;
 }
 
 .sidebar-item {
@@ -28,11 +40,13 @@
   user-select: none;
 }
 
-/* 确保 sidebar-item 与 hidden 同时存在时优先隐藏 */
 .sidebar-item.hidden {
   display: none;
 }
-.sidebar-item > *:not(:first-child) { margin-left: 12px; }
+
+.sidebar-item > *:not(:first-child) {
+  margin-left: 12px;
+}
 
 .sidebar-item:hover {
   background-color: rgba(22, 93, 255, 0.05);
@@ -56,4 +70,186 @@
 .sidebar-item span {
   font-size: 14px;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-item-sub {
+  padding-left: 44px;
+}
+
+.sidebar-item-sub span {
+  font-size: 13px;
+}
+
+/* 分组 */
+.sidebar-group {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.sidebar-group.hidden {
+  display: none;
+}
+
+.sidebar-group-title {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-lg);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sidebar-group-title > *:not(:first-child) {
+  margin-left: 12px;
+}
+
+.sidebar-group-title:hover {
+  background-color: rgba(22, 93, 255, 0.05);
+  color: var(--primary-color);
+}
+
+.sidebar-group.has-active > .sidebar-group-title {
+  color: var(--primary-color);
+}
+
+.sidebar-group-title i:first-child {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sidebar-group-title span {
+  font-size: 14px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-group-arrow {
+  font-size: 12px;
+  width: auto;
+  margin-left: auto;
+  transition: transform var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.sidebar-group.open > .sidebar-group-title .sidebar-group-arrow {
+  transform: rotate(180deg);
+}
+
+/* 二级展开：纵向抽屉 */
+.sidebar-group-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition-normal);
+}
+
+.sidebar-group.open > .sidebar-group-children {
+  grid-template-rows: 1fr;
+}
+
+.sidebar-group-drawer {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 浮层标题：仅收缩悬停时显示 */
+.sidebar-group-flyout-title {
+  display: none;
+}
+
+/* ========== 收缩态 ========== */
+body.sidebar-collapsed .app-sidebar {
+  width: var(--sidebar-collapsed-width);
+  overflow: visible;
+}
+
+body.sidebar-collapsed .sidebar-nav {
+  overflow: visible;
+}
+
+body.sidebar-collapsed .sidebar-brand {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+body.sidebar-collapsed .sidebar-brand-text,
+body.sidebar-collapsed .sidebar-item span,
+body.sidebar-collapsed .sidebar-group-title span,
+body.sidebar-collapsed .sidebar-group-arrow,
+body.sidebar-collapsed .sidebar-footer {
+  display: none;
+}
+
+body.sidebar-collapsed .sidebar-item,
+body.sidebar-collapsed .sidebar-group-title {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+body.sidebar-collapsed .sidebar-item > *:not(:first-child),
+body.sidebar-collapsed .sidebar-group-title > *:not(:first-child) {
+  margin-left: 0;
+}
+
+body.sidebar-collapsed .sidebar-item.active {
+  border-right: none;
+}
+
+/* 收缩态：悬停弹出二级菜单（贴侧栏右侧，浮于内容区之上） */
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children,
+body.sidebar-collapsed .sidebar-group.open > .sidebar-group-children {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  min-width: 160px;
+  padding: 0;
+  grid-template-rows: none;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-dropdown);
+}
+
+body.sidebar-collapsed .sidebar-group:hover > .sidebar-group-children,
+body.sidebar-collapsed .sidebar-group.flyout-open > .sidebar-group-children {
+  display: block;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-group-drawer {
+  overflow: visible;
+  min-height: auto;
+}
+
+body.sidebar-collapsed .sidebar-group-flyout-title {
+  display: block;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  white-space: nowrap;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-item-sub {
+  padding-left: 16px;
+  padding-right: 16px;
+  margin-bottom: 0;
+  border-radius: 0;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-item-sub span {
+  display: block;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-item-sub.active {
+  border-right: none;
 }
