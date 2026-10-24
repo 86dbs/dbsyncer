@@ -36,21 +36,21 @@ public interface RoleService {
     List<PermissionVO> listPermissions(String roleId);
 
     /**
-     * 自建角色（非内置），并绑定权限码。
+     * 新增角色并绑定权限码。
      *
-     * @param params code、name、remark、permissionCodes（逗号分隔）
+     * @param params name、permissionCodes（逗号分隔）
      */
     String add(Map<String, String> params);
 
     /**
-     * 更新角色名称/备注，并覆盖绑定权限码。
+     * 更新角色名称，并覆盖绑定权限码。
      *
-     * @param params roleId、name、remark、permissionCodes（逗号分隔）
+     * @param params roleId、name、permissionCodes（逗号分隔）
      */
     String edit(Map<String, String> params);
 
     /**
-     * 删除自定义角色（内置不可删；仍有用户绑定时不可删）。
+     * 删除角色（仍有用户绑定时不可删）。
      *
      * @param params roleId
      */

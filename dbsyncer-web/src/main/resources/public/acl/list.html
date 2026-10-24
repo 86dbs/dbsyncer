@@ -15,11 +15,11 @@
         <table class="table">
             <thead>
             <tr>
-                <th>主体类型</th>
-                <th>主体</th>
+                <th>授权类型</th>
+                <th>用户/角色</th>
                 <th>资源类型</th>
                 <th>资源</th>
-                <th>动作</th>
+                <th>权限</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -29,7 +29,7 @@
             </tr>
             <tr th:each="a : ${acls}">
                 <td>
-                    <span class="badge" th:text="${a.subjectType == 'ROLE'} ? '角色' : '用户'"></span>
+                    <span class="badge" th:text="${a.subjectTypeName}"></span>
                 </td>
                 <td th:text="${a.subjectName}"></td>
                 <td>
@@ -44,7 +44,7 @@
                 </td>
                 <td th:text="${a.resourceName}"></td>
                 <td>
-                    <span class="text-sm text-secondary" th:text="${a.actions}"></span>
+                    <span class="text-sm text-secondary" th:text="${a.permissionName}"></span>
                 </td>
                 <td>
                     <div class="flex items-center">

@@ -48,8 +48,8 @@ public class ResourceAclProfileImpl implements ResourceAclProfile {
     }
 
     @Override
-    public List<ResourceAcl> listBySubject(String subjectType, String subjectId) {
-        if (StringUtil.isBlank(subjectType) || StringUtil.isBlank(subjectId)) {
+    public List<ResourceAcl> listBySubject(int subjectType, String subjectId) {
+        if (StringUtil.isBlank(subjectId)) {
             return Collections.emptyList();
         }
         Query condition = new Query();
@@ -59,8 +59,8 @@ public class ResourceAclProfileImpl implements ResourceAclProfile {
     }
 
     @Override
-    public ResourceAcl getByUnique(String subjectType, String subjectId, String resourceType, String resourceId) {
-        if (StringUtil.isBlank(subjectType) || StringUtil.isBlank(subjectId)
+    public ResourceAcl getByUnique(int subjectType, String subjectId, String resourceType, String resourceId) {
+        if (StringUtil.isBlank(subjectId)
                 || StringUtil.isBlank(resourceType) || StringUtil.isBlank(resourceId)) {
             return null;
         }
@@ -116,8 +116,8 @@ public class ResourceAclProfileImpl implements ResourceAclProfile {
     }
 
     @Override
-    public void removeBySubject(String subjectType, String subjectId) {
-        if (StringUtil.isBlank(subjectType) || StringUtil.isBlank(subjectId)) {
+    public void removeBySubject(int subjectType, String subjectId) {
+        if (StringUtil.isBlank(subjectId)) {
             return;
         }
         Query query = new Query();

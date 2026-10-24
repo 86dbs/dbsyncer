@@ -7,7 +7,7 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
- * 权限点。
+ * 菜单权限。
  *
  * @author wuji
  * @version 1.0.0
@@ -17,11 +17,6 @@ public class Permission extends ConfigModel {
 
     private String code;
     private String module;
-    /**
-     * 种类、类别 MENU / API / ACTION
-     */
-    private String kind;
-    private String remark = "";
 
     public Permission() {
         super.setType(ConfigConstant.PERMISSION);
@@ -41,21 +36,5 @@ public class Permission extends ConfigModel {
 
     public void setModule(String module) {
         this.module = module;
-    }
-
-    public String getKind() {
-        return kind;
-    }
-
-    public void setKind(String kind) {
-        this.kind = kind;
-    }
-
-    public String getRemark() {
-        return remark;
-    }
-
-    public void setRemark(String remark) {
-        this.remark = remark;
     }
 }

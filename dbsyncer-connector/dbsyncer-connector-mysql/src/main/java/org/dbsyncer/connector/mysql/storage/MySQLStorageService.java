@@ -639,7 +639,7 @@ public class MySQLStorageService extends AbstractStorageService {
         // 用户配置：一行一用户，严格按 dbsyncer_user 拆分列
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.USER_USERNAME, ConfigConstant.USER_PASSWORD, ConfigConstant.USER_NICKNAME,
-                ConfigConstant.USER_ROLE, ConfigConstant.USER_EMAIL, ConfigConstant.USER_PHONE,
+                ConfigConstant.USER_ROLE,
                 ConfigConstant.USER_LOGIN_FAIL_COUNT, ConfigConstant.USER_LOCK_UNTIL);
         List<Field> userFields = builder.getFields();
 
@@ -718,13 +718,12 @@ public class MySQLStorageService extends AbstractStorageService {
 
         // 角色
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.ROLE_CODE, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.ROLE_BUILTIN, ConfigConstant.ROLE_REMARK);
+                ConfigConstant.CONFIG_MODEL_NAME);
         List<Field> roleFields = builder.getFields();
 
-        // 权限点
+        // 菜单权限
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.PERMISSION_CODE, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.PERMISSION_MODULE,
-                ConfigConstant.PERMISSION_KIND, ConfigConstant.PERMISSION_REMARK);
+                ConfigConstant.PERMISSION_CODE, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.PERMISSION_MODULE);
         List<Field> permissionFields = builder.getFields();
 
         // 角色-权限
@@ -740,20 +739,21 @@ public class MySQLStorageService extends AbstractStorageService {
         // 资源 ACL
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, ConfigConstant.RESOURCE_ACL_SUBJECT_ID,
-                ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID, ConfigConstant.RESOURCE_ACL_ACTIONS);
+                ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID, ConfigConstant.RESOURCE_ACL_PERMISSION);
         List<Field> resourceAclFields = builder.getFields();
 
-        // 告警 @ 覆盖规则
+        // 告警通知规则
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, ConfigConstant.NOTICE_MENTION_SCOPE_ID,
-                ConfigConstant.NOTICE_MENTION_AT_ALL, ConfigConstant.NOTICE_MENTION_AT_MOBILES);
-        List<Field> noticeMentionRuleFields = builder.getFields();
+                ConfigConstant.NOTICE_RULE_SCOPE_TYPE, ConfigConstant.NOTICE_RULE_SCOPE_ID,
+                ConfigConstant.NOTICE_RULE_AT_ALL, ConfigConstant.NOTICE_RULE_AT_PHONES, ConfigConstant.NOTICE_RULE_EMAILS);
+        List<Field> noticeRuleFields = builder.getFields();
 
         // 告警策略
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.NOTICE_STRATEGY_ENABLED, ConfigConstant.NOTICE_STRATEGY_FREQUENCY,
-                ConfigConstant.NOTICE_STRATEGY_CRON, ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES);
+                ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, ConfigConstant.NOTICE_STRATEGY_ENABLED,
+                ConfigConstant.NOTICE_STRATEGY_FREQUENCY, ConfigConstant.NOTICE_STRATEGY_CRON,
+                ConfigConstant.NOTICE_STRATEGY_REMARK);
         List<Field> noticeStrategyFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
@@ -774,7 +774,7 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.ROLE_PERMISSION.getType(), k -> new Executor(k, rolePermissionFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER_ROLE.getType(), k -> new Executor(k, userRoleFields, true, true));
         tables.computeIfAbsent(StorageEnum.RESOURCE_ACL.getType(), k -> new Executor(k, resourceAclFields, true, true));
-        tables.computeIfAbsent(StorageEnum.NOTICE_MENTION_RULE.getType(), k -> new Executor(k, noticeMentionRuleFields, true, true));
+        tables.computeIfAbsent(StorageEnum.NOTICE_RULE.getType(), k -> new Executor(k, noticeRuleFields, true, true));
         tables.computeIfAbsent(StorageEnum.NOTICE_STRATEGY.getType(), k -> new Executor(k, noticeStrategyFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
@@ -1097,8 +1097,6 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_PASSWORD, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_NICKNAME, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_EMAIL, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_LOGIN_FAIL_COUNT, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.USER_LOCK_UNTIL, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_NODE_ID, "VARCHAR", Types.VARCHAR),
@@ -1122,25 +1120,24 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.ROLE_CODE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.ROLE_BUILTIN, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.ROLE_REMARK, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PERMISSION_CODE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.PERMISSION_MODULE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.PERMISSION_KIND, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.ROLE_PERMISSION_ROLE_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.ROLE_PERMISSION_PERMISSION_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_ROLE_USER_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.RESOURCE_ACL_ACTIONS, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.NOTICE_MENTION_SCOPE_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.NOTICE_MENTION_AT_ALL, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.NOTICE_MENTION_AT_MOBILES, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.RESOURCE_ACL_PERMISSION, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_RULE_SCOPE_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_RULE_SCOPE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_RULE_AT_ALL, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_RULE_AT_PHONES, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_RULE_EMAILS, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.NOTICE_STRATEGY_ENABLED, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.NOTICE_STRATEGY_CRON, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_REMARK, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

@@ -7,7 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.NoticeMentionRule;
+import org.dbsyncer.parser.model.NoticeRule;
 import org.dbsyncer.parser.model.NoticeStrategyConfig;
 import org.dbsyncer.parser.model.Permission;
 import org.dbsyncer.parser.model.ResourceAcl;
@@ -60,8 +60,8 @@ public abstract class ConfigModelUtil {
         if (model instanceof ResourceAcl) {
             return convertResourceAclToMap((ResourceAcl) model);
         }
-        if (model instanceof NoticeMentionRule) {
-            return convertNoticeMentionRuleToMap((NoticeMentionRule) model);
+        if (model instanceof NoticeRule) {
+            return convertNoticeRuleToMap((NoticeRule) model);
         }
         if (model instanceof NoticeStrategyConfig) {
             return convertNoticeStrategyConfigToMap((NoticeStrategyConfig) model);
@@ -113,8 +113,6 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.USER_PASSWORD, user.getPassword());
         params.put(ConfigConstant.USER_NICKNAME, user.getNickname());
         params.put(ConfigConstant.USER_ROLE, user.getRoleCode());
-        params.put(ConfigConstant.USER_EMAIL, StringUtil.getIfBlank(user.getEmail(), StringUtil.EMPTY));
-        params.put(ConfigConstant.USER_PHONE, StringUtil.getIfBlank(user.getPhone(), StringUtil.EMPTY));
         params.put(ConfigConstant.USER_LOGIN_FAIL_COUNT, user.getLoginFailCount());
         params.put(ConfigConstant.USER_LOCK_UNTIL, user.getLockUntil());
         return params;
@@ -171,10 +169,10 @@ public abstract class ConfigModelUtil {
             }
             return (T) acl;
         }
-        if (NoticeMentionRule.class.equals(clazz)) {
-            NoticeMentionRule rule = JsonUtil.mapToObj(row, NoticeMentionRule.class);
+        if (NoticeRule.class.equals(clazz)) {
+            NoticeRule rule = JsonUtil.mapToObj(row, NoticeRule.class);
             if (rule != null) {
-                rule.setType(ConfigConstant.NOTICE_MENTION_RULE);
+                rule.setType(ConfigConstant.NOTICE_RULE);
             }
             return (T) rule;
         }
@@ -218,10 +216,7 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_ID, role.getId());
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, role.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, role.getUpdateTime());
-        params.put(ConfigConstant.ROLE_CODE, StringUtil.getIfBlank(role.getCode(), StringUtil.EMPTY));
         params.put(ConfigConstant.CONFIG_MODEL_NAME, StringUtil.getIfBlank(role.getName(), StringUtil.EMPTY));
-        params.put(ConfigConstant.ROLE_BUILTIN, role.getBuiltin());
-        params.put(ConfigConstant.ROLE_REMARK, StringUtil.getIfBlank(role.getRemark(), StringUtil.EMPTY));
         return params;
     }
 
@@ -233,8 +228,6 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.PERMISSION_CODE, StringUtil.getIfBlank(permission.getCode(), StringUtil.EMPTY));
         params.put(ConfigConstant.CONFIG_MODEL_NAME, StringUtil.getIfBlank(permission.getName(), StringUtil.EMPTY));
         params.put(ConfigConstant.PERMISSION_MODULE, StringUtil.getIfBlank(permission.getModule(), StringUtil.EMPTY));
-        params.put(ConfigConstant.PERMISSION_KIND, StringUtil.getIfBlank(permission.getKind(), StringUtil.EMPTY));
-        params.put(ConfigConstant.PERMISSION_REMARK, StringUtil.getIfBlank(permission.getRemark(), StringUtil.EMPTY));
         return params;
     }
 
@@ -263,23 +256,24 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_ID, acl.getId());
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, acl.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, acl.getUpdateTime());
-        params.put(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, StringUtil.getIfBlank(acl.getSubjectType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, acl.getSubjectType());
         params.put(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, StringUtil.getIfBlank(acl.getSubjectId(), StringUtil.EMPTY));
         params.put(ConfigConstant.GROUP_REL_RESOURCE_TYPE, StringUtil.getIfBlank(acl.getResourceType(), StringUtil.EMPTY));
         params.put(ConfigConstant.GROUP_REL_RESOURCE_ID, StringUtil.getIfBlank(acl.getResourceId(), StringUtil.EMPTY));
-        params.put(ConfigConstant.RESOURCE_ACL_ACTIONS, StringUtil.getIfBlank(acl.getActions(), StringUtil.EMPTY));
+        params.put(ConfigConstant.RESOURCE_ACL_PERMISSION, acl.getPermission());
         return params;
     }
 
-    private static Map<String, Object> convertNoticeMentionRuleToMap(NoticeMentionRule rule) {
+    private static Map<String, Object> convertNoticeRuleToMap(NoticeRule rule) {
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, rule.getId());
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, rule.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, rule.getUpdateTime());
-        params.put(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, StringUtil.getIfBlank(rule.getScopeType(), StringUtil.EMPTY));
-        params.put(ConfigConstant.NOTICE_MENTION_SCOPE_ID, StringUtil.getIfBlank(rule.getScopeId(), StringUtil.EMPTY));
-        params.put(ConfigConstant.NOTICE_MENTION_AT_ALL, rule.getAtAll());
-        params.put(ConfigConstant.NOTICE_MENTION_AT_MOBILES, StringUtil.getIfBlank(rule.getAtMobiles(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_RULE_SCOPE_TYPE, StringUtil.getIfBlank(rule.getScopeType(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_RULE_SCOPE_ID, StringUtil.getIfBlank(rule.getScopeId(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_RULE_AT_ALL, rule.getAtAll());
+        params.put(ConfigConstant.NOTICE_RULE_AT_PHONES, StringUtil.getIfBlank(rule.getAtPhones(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_RULE_EMAILS, StringUtil.getIfBlank(rule.getEmails(), StringUtil.EMPTY));
         return params;
     }
 
@@ -289,10 +283,11 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_NAME, StringUtil.getIfBlank(config.getName(), StringUtil.EMPTY));
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, config.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, config.getUpdateTime());
+        params.put(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, config.getNoticeTypes());
         params.put(ConfigConstant.NOTICE_STRATEGY_ENABLED, config.getEnabled());
-        params.put(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, StringUtil.getIfBlank(config.getFrequency(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, config.getFrequency());
         params.put(ConfigConstant.NOTICE_STRATEGY_CRON, StringUtil.getIfBlank(config.getCron(), StringUtil.EMPTY));
-        params.put(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, StringUtil.getIfBlank(config.getNoticeTypes(), StringUtil.EMPTY));
+        params.put(ConfigConstant.NOTICE_STRATEGY_REMARK, StringUtil.getIfBlank(config.getRemark(), StringUtil.EMPTY));
         return params;
     }
 
@@ -390,8 +385,8 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.USER_ROLE;
             case ConfigConstant.RESOURCE_ACL:
                 return StorageEnum.RESOURCE_ACL;
-            case ConfigConstant.NOTICE_MENTION_RULE:
-                return StorageEnum.NOTICE_MENTION_RULE;
+            case ConfigConstant.NOTICE_RULE:
+                return StorageEnum.NOTICE_RULE;
             case ConfigConstant.NOTICE_STRATEGY:
                 return StorageEnum.NOTICE_STRATEGY;
             default:

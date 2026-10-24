@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.web.controller.cluster.ClusterInternalAuthFilter;
+import org.dbsyncer.web.security.LoginResult;
 import org.dbsyncer.web.security.LoginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,7 +163,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         password = SHA1Util.b64_sha1(password);
 
         if (loginService.isLocked(username)) {
-            throw new LockedException("账号已锁定，请 15 分钟后再试或联系管理员解锁");
+            throw new LockedException(loginService.lockedResult(username).lockedMessage());
         }
 
         UserInfo userInfo = userConfigService.getUserInfo(username);
@@ -175,10 +176,11 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
             }
         }
         if (null == userInfo || !StringUtil.equals(userInfo.getPassword(), password)) {
-            if (loginService.onFailure(username)) {
-                throw new LockedException("账号已锁定，请 15 分钟后再试或联系管理员解锁");
+            LoginResult loginResult = loginService.onFailure(username);
+            if (loginResult.isLocked()) {
+                throw new LockedException(loginResult.lockedMessage());
             }
-            throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
+            throw new BadCredentialsException(loginResult.badCredentialsMessage());
         }
         loginService.onSuccess(username);
         String authorityString = permissionService.buildAuthorityString(username);

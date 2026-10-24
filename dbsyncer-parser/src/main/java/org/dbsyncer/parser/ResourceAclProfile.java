@@ -20,9 +20,9 @@ public interface ResourceAclProfile {
 
     List<ResourceAcl> listAll();
 
-    List<ResourceAcl> listBySubject(String subjectType, String subjectId);
+    List<ResourceAcl> listBySubject(int subjectType, String subjectId);
 
-    ResourceAcl getByUnique(String subjectType, String subjectId, String resourceType, String resourceId);
+    ResourceAcl getByUnique(int subjectType, String subjectId, String resourceType, String resourceId);
 
     String add(ResourceAcl acl);
 
@@ -38,5 +38,5 @@ public interface ResourceAclProfile {
     /**
      * 按主体类型 + 主体 ID 批量删除（用户/角色被删除时收尾）。
      */
-    void removeBySubject(String subjectType, String subjectId);
+    void removeBySubject(int subjectType, String subjectId);
 }

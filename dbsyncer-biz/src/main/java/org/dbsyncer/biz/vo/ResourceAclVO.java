@@ -15,7 +15,9 @@ import org.dbsyncer.parser.model.ResourceAcl;
 public class ResourceAclVO extends ResourceAcl {
 
     private String subjectName;
+    private String subjectTypeName;
     private String resourceName;
+    private String permissionName;
 
     public String getSubjectName() {
         return subjectName;
@@ -25,11 +27,27 @@ public class ResourceAclVO extends ResourceAcl {
         this.subjectName = subjectName;
     }
 
+    public String getSubjectTypeName() {
+        return subjectTypeName;
+    }
+
+    public void setSubjectTypeName(String subjectTypeName) {
+        this.subjectTypeName = subjectTypeName;
+    }
+
     public String getResourceName() {
         return resourceName;
     }
 
     public void setResourceName(String resourceName) {
         this.resourceName = resourceName;
+    }
+
+    public String getPermissionName() {
+        return permissionName;
+    }
+
+    public void setPermissionName(String permissionName) {
+        this.permissionName = permissionName;
     }
 }

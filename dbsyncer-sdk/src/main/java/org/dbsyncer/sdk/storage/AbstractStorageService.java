@@ -32,34 +32,43 @@ import java.util.Map;
 public abstract class AbstractStorageService implements StorageService, DisposableBean {
 
     /**
-     * 告警策略表首次创建时灌入默认策略。
+     * 告警策略表首次创建时灌入默认策略（每种通知类型一行）。
      */
     protected void initNoticeStrategy() {
         long now = System.currentTimeMillis();
-        List<Map> list = new ArrayList<>(3);
-        list.add(noticeStrategyRow("interval_10m", "10分钟一次", NoticeFrequencyEnum.INTERVAL.name(),
-                "0 */10 * * * ?", now, NoticeTypeEnum.LICENSE_EXCEPTION.name()));
-        list.add(noticeStrategyRow("immediate", "立即发送", NoticeFrequencyEnum.IMMEDIATE.name(),
-                StringUtil.EMPTY, now,
-                NoticeTypeEnum.VALIDATE_SYNC_FAIL.name(), NoticeTypeEnum.MAPPING_STOP.name(),
-                NoticeTypeEnum.MAPPING_ERROR.name(), NoticeTypeEnum.CONNECTOR_OFFLINE.name()));
-        list.add(noticeStrategyRow("interval_1d", "每天一次", NoticeFrequencyEnum.INTERVAL.name(),
-                "0 0 9 * * ?", now,
-                NoticeTypeEnum.LICENSE_EXPIRE_REMIND.name(), NoticeTypeEnum.LICENSE_EXPIRED.name()));
+        List<Map> list = new ArrayList<>(8);
+        list.add(noticeStrategyRow(NoticeTypeEnum.TEST_MESSAGE, "测试消息", NoticeFrequencyEnum.IMMEDIATE,
+                StringUtil.EMPTY, "立即通知", now));
+        list.add(noticeStrategyRow(NoticeTypeEnum.CONNECTOR_OFFLINE, "连接离线", NoticeFrequencyEnum.IMMEDIATE,
+                StringUtil.EMPTY, "5秒通知一次", now));
+        list.add(noticeStrategyRow(NoticeTypeEnum.MAPPING_ERROR, "同步任务失败", NoticeFrequencyEnum.IMMEDIATE,
+                StringUtil.EMPTY, "10分钟检测有失败数据,通知一次", now));
+        list.add(noticeStrategyRow(NoticeTypeEnum.MAPPING_STOP, "手动停止同步任务", NoticeFrequencyEnum.IMMEDIATE,
+                StringUtil.EMPTY, "立即通知", now));
+        list.add(noticeStrategyRow(NoticeTypeEnum.VALIDATE_SYNC_FAIL, "订正校验失败", NoticeFrequencyEnum.IMMEDIATE,
+                StringUtil.EMPTY, "任务执行完成,通知一次", now));
+        list.add(noticeStrategyRow(NoticeTypeEnum.LICENSE_EXCEPTION, "授权异常", NoticeFrequencyEnum.INTERVAL,
+                "0 */10 * * * ?", "十分钟通知一次", now));
+        list.add(noticeStrategyRow(NoticeTypeEnum.LICENSE_EXPIRE_REMIND, "授权到期提醒", NoticeFrequencyEnum.INTERVAL,
+                "0 0 9 * * ?", "每天通知一次", now));
+        list.add(noticeStrategyRow(NoticeTypeEnum.LICENSE_EXPIRED, "授权已过期", NoticeFrequencyEnum.INTERVAL,
+                "0 0 9 * * ?", "每天通知一次", now));
         batchInsert(StorageEnum.NOTICE_STRATEGY, getSharding(StorageEnum.NOTICE_STRATEGY, null), list);
     }
 
-    private static Map<String, Object> noticeStrategyRow(String id, String name, String frequency, String cron,
-                                                         long now, String... noticeTypes) {
+    private static Map<String, Object> noticeStrategyRow(NoticeTypeEnum type, String name,
+                                                         NoticeFrequencyEnum frequency, String cron,
+                                                         String remark, long now) {
         Map<String, Object> row = new HashMap<>();
-        row.put(ConfigConstant.CONFIG_MODEL_ID, id);
+        row.put(ConfigConstant.CONFIG_MODEL_ID, type.name());
         row.put(ConfigConstant.CONFIG_MODEL_NAME, name);
         row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
         row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, now);
         row.put(ConfigConstant.NOTICE_STRATEGY_ENABLED, 1);
-        row.put(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, frequency);
+        row.put(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, frequency.getCode());
         row.put(ConfigConstant.NOTICE_STRATEGY_CRON, cron);
-        row.put(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, String.join(StringUtil.COMMA, noticeTypes));
+        row.put(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, type.getCode());
+        row.put(ConfigConstant.NOTICE_STRATEGY_REMARK, StringUtil.getIfBlank(remark, StringUtil.EMPTY));
         return row;
     }
 

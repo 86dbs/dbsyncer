@@ -10,7 +10,6 @@ import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.user.UserConfigChecker;
 import org.dbsyncer.biz.enums.ResourceAclSubjectEnum;
-import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.biz.vo.UserInfoVO;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
@@ -40,15 +39,16 @@ import java.util.stream.Collectors;
 @Service
 public class UserConfigServiceImpl implements UserConfigService {
 
-    private static final String DEFAULT_USERNAME = "admin";
+    /**
+     * 默认超管账号（与 {@link PermissionService#isAdmin} 一致）。
+     */
+    public static final String DEFAULT_USERNAME = "admin";
 
     private static final String DEFAULT_PASSWORD = "0DPiKuNIrrVmD8IUCuw1hQxNqZc=";
 
     private static final String PERM_USER_VIEW = "user:view";
 
     private static final String PERM_USER_EDIT = "user:edit";
-
-    private static final String ROLE_ADMIN = "admin";
 
     @Resource
     private UserProfile userProfile;
@@ -79,8 +79,6 @@ public class UserConfigServiceImpl implements UserConfigService {
         Assert.hasText(nickname, "The nickname is null.");
         String password = params.get("password");
         Assert.hasText(password, "The password is null.");
-        String email = params.get("email");
-        String phone = params.get("phone");
 
         String currentUserName = params.get(UserConfigService.CURRENT_USER_NAME);
         permissionChecker.requirePermission(currentUserName, PERM_USER_EDIT);
@@ -90,17 +88,17 @@ public class UserConfigServiceImpl implements UserConfigService {
         Assert.notNull(currentUser, "无法获取登录用户.");
         Assert.isNull(userConfig.getUserInfo(username), "用户已存在，请换个账号");
 
-        Assert.hasText(params.get("roleCode"), "请选择角色");
-        String roleCode = resolveAssignableRoleCode(params.get("roleCode"), null);
+        Assert.hasText(params.get("roleId"), "请选择角色");
+        String roleId = resolveAssignableRoleId(params.get("roleId"), null);
 
         userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password),
-                roleCode, email, phone));
+                StringUtil.EMPTY));
 
         logService.log(LogType.UserLog.INSERT, String.format("[%s]添加[%s]账号成功", currentUser.getUsername(), username));
         String result = userProfile.saveUserConfig(userConfig);
         UserInfo created = getUserConfig().getUserInfo(username);
         if (created != null && StringUtil.isNotBlank(created.getId())) {
-            permissionService.replaceUserRole(created.getId(), roleCode);
+            permissionService.replaceUserRole(created.getId(), roleId);
         }
         return result;
     }
@@ -112,8 +110,6 @@ public class UserConfigServiceImpl implements UserConfigService {
         String nickname = params.get("nickname");
         Assert.hasText(nickname, "The nickname is null.");
         String newPwd = params.get("newPwd");
-        String email = params.get("email");
-        String phone = params.get("phone");
 
         String currentUserName = params.get(UserConfigService.CURRENT_USER_NAME);
         UserConfig userConfig = getUserConfig();
@@ -127,8 +123,6 @@ public class UserConfigServiceImpl implements UserConfigService {
         Assert.notNull(updateUser, "用户不存在");
 
         updateUser.setNickname(nickname);
-        updateUser.setEmail(email);
-        updateUser.setPhone(phone);
         if (StringUtil.isNotBlank(newPwd)) {
             if (self) {
                 String oldPwd = params.get("oldPwd");
@@ -144,17 +138,20 @@ public class UserConfigServiceImpl implements UserConfigService {
             logService.log(LogType.UserLog.UPDATE, String.format("[%s]修改[%s]账号密码成功", currentUser.getUsername(), username));
         }
 
-        if (canEditOthers && params.containsKey("roleCode")) {
-            String roleCode = resolveAssignableRoleCode(params.get("roleCode"), updateUser.getRoleCode());
-            String oldRoleCode = permissionService.resolvePrimaryRoleCode(updateUser.getId(), updateUser.getRoleCode());
-            if (!StringUtil.equals(oldRoleCode, roleCode)) {
-                assertNotDemoteLastAdmin(oldRoleCode, roleCode);
-                updateUser.setRoleCode(roleCode);
+        if (canEditOthers && params.containsKey("roleId")) {
+            String roleId = resolveAssignableRoleId(params.get("roleId"),
+                    permissionService.resolvePrimaryRoleId(updateUser.getId()));
+            String oldRoleId = permissionService.resolvePrimaryRoleId(updateUser.getId());
+            if (!StringUtil.equals(oldRoleId, roleId)) {
+                String oldName = permissionService.resolvePrimaryRoleName(updateUser.getId());
+                Role newRole = rbacProfile.getRoleById(roleId);
+                String newName = newRole == null ? roleId : newRole.getName();
                 if (StringUtil.isNotBlank(updateUser.getId())) {
-                    permissionService.replaceUserRole(updateUser.getId(), roleCode);
+                    permissionService.replaceUserRole(updateUser.getId(), roleId);
                 }
                 logService.log(LogType.UserLog.UPDATE,
-                        String.format("[%s]将[%s]角色由[%s]改为[%s]", currentUser.getUsername(), username, oldRoleCode, roleCode));
+                        String.format("[%s]将[%s]角色由[%s]改为[%s]", currentUser.getUsername(), username,
+                                StringUtil.isNotBlank(oldName) ? oldName : oldRoleId, newName));
             }
         }
 
@@ -173,6 +170,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
         Assert.notNull(currentUser, "无法获取登录用户.");
         Assert.isTrue(!StringUtil.equals(currentUser.getUsername(), username), "不能删除自己.");
+        Assert.isTrue(!StringUtil.equals(DEFAULT_USERNAME, username), "不能删除默认管理员账号.");
 
         UserInfo deleteUser = userConfig.getUserInfo(username);
         Assert.notNull(deleteUser, "用户已删除.");
@@ -232,10 +230,6 @@ public class UserConfigServiceImpl implements UserConfigService {
                 config = (UserConfig) userConfigChecker.checkAddConfigModel(new HashMap<>());
                 config.getUserInfoList().add(getDefaultUser());
                 userProfile.saveUserConfig(config);
-                UserInfo admin = getUserConfig().getUserInfo(DEFAULT_USERNAME);
-                if (admin != null && StringUtil.isNotBlank(admin.getId())) {
-                    permissionService.bindUserRole(admin.getId(), UserRoleEnum.ADMIN.getCode());
-                }
             }
             return config;
         }
@@ -243,7 +237,7 @@ public class UserConfigServiceImpl implements UserConfigService {
 
     @Override
     public UserInfo getDefaultUser() {
-        return new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, UserRoleEnum.ADMIN.getCode(), StringUtil.EMPTY, StringUtil.EMPTY);
+        return new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, StringUtil.EMPTY);
     }
 
     private UserInfoVO convertUserInfo2Vo(UserInfo userInfo) {
@@ -251,29 +245,23 @@ public class UserConfigServiceImpl implements UserConfigService {
         if (null != userInfo) {
             BeanUtils.copyProperties(userInfo, userInfoVo);
             userInfoVo.setPassword("***");
-            String roleCode = permissionService.resolvePrimaryRoleCode(userInfo.getId(), userInfo.getRoleCode());
-            String roleName = permissionService.resolvePrimaryRoleName(userInfo.getId(), userInfo.getRoleCode());
-            if (StringUtil.isNotBlank(roleCode)) {
-                userInfoVo.setRoleCode(roleCode);
+            String roleId = permissionService.resolvePrimaryRoleId(userInfo.getId());
+            String roleName = permissionService.resolvePrimaryRoleName(userInfo.getId());
+            if (StringUtil.isNotBlank(roleId)) {
+                userInfoVo.setRoleId(roleId);
             }
-            userInfoVo.setRoleName(StringUtil.isNotBlank(roleName) ? roleName : UserRoleEnum.getNameByCode(userInfo.getRoleCode()));
+            userInfoVo.setRoleName(StringUtil.isNotBlank(roleName) ? roleName : StringUtil.EMPTY);
+            userInfoVo.setAdmin(permissionService.isAdmin(userInfo.getUsername()));
         }
         return userInfoVo;
     }
 
-    private String resolveAssignableRoleCode(String roleCode, String defaultCode) {
-        String code = StringUtil.isBlank(roleCode) ? defaultCode : roleCode.trim();
-        Assert.hasText(code, "请选择角色");
-        Role role = rbacProfile.getRoleByCode(code);
-        Assert.notNull(role, "角色不存在: " + code);
-        return role.getCode();
-    }
-
-    private void assertNotDemoteLastAdmin(String oldRoleCode, String newRoleCode) {
-        if (!StringUtil.equals(ROLE_ADMIN, oldRoleCode) || StringUtil.equals(ROLE_ADMIN, newRoleCode)) {
-            return;
-        }
-        Assert.isTrue(permissionService.countUsersByRoleCode(ROLE_ADMIN) > 1, "不能取消最后一个管理员的角色");
+    private String resolveAssignableRoleId(String roleId, String defaultId) {
+        String id = StringUtil.isBlank(roleId) ? defaultId : roleId.trim();
+        Assert.hasText(id, "请选择角色");
+        Role role = rbacProfile.getRoleById(id);
+        Assert.notNull(role, "角色不存在");
+        return role.getId();
     }
 
 }

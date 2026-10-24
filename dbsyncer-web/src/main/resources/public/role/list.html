@@ -12,52 +12,31 @@
                 <i class="fa fa-plus"></i> 添加
             </button>
         </div>
-        <p class="text-sm text-tertiary mb-4">可自建角色并分配权限；内置角色仅可查看，不可编辑或删除。</p>
+        <p class="text-sm text-tertiary mb-4">可自建角色并分配功能权限。</p>
         <table class="table">
             <thead>
             <tr>
-                <th>编码</th>
                 <th>名称</th>
-                <th>类型</th>
                 <th>权限数</th>
-                <th>备注</th>
                 <th>操作</th>
             </tr>
             </thead>
             <tbody id="roleList">
             <tr th:if="${roles == null or roles.isEmpty()}">
-                <td colspan="6" class="text-center text-tertiary py-8">暂无角色数据</td>
+                <td colspan="3" class="text-center text-tertiary py-8">暂无角色数据</td>
             </tr>
             <tr th:each="r : ${roles}">
-                <td>
-                    <span class="font-medium text-primary" th:text="${r?.code}"></span>
-                </td>
                 <td th:text="${r?.name}"></td>
-                <td>
-                    <span class="badge"
-                          th:classappend="${r?.builtin == 1} ? 'badge-success' : ''"
-                          th:text="${r?.builtin == 1} ? '内置' : '自定义'"></span>
-                </td>
                 <td th:text="${r?.permissionCount}"></td>
                 <td>
-                    <span class="text-sm text-secondary" th:text="${r?.remark ?: ''}"></span>
-                </td>
-                <td>
                     <div class="flex items-center">
-                        <button class="table-action-btn view editRoleBtn" title="查看权限"
-                                th:if="${r?.builtin == 1}"
-                                th:data-id="${r?.id}">
-                            <i class="fa fa-eye"></i>
-                        </button>
                         <button class="table-action-btn view editRoleBtn" title="配置权限"
-                                th:if="${r?.builtin != 1}"
                                 th:data-id="${r?.id}">
                             <i class="fa fa-edit"></i>
                         </button>
                         <button class="table-action-btn delete removeRoleBtn" title="删除"
-                                th:if="${r?.builtin != 1}"
                                 th:data-id="${r?.id}"
-                                th:data-code="${r?.code}"
+                                th:data-name="${r?.name}"
                                 data-permission="user:edit">
                             <i class="fa fa-trash"></i>
                         </button>
@@ -81,10 +60,10 @@
 
         $('.removeRoleBtn').on('click', function () {
             const roleId = $(this).data('id');
-            const code = $(this).data('code');
+            const name = $(this).data('name');
             const $btn = $(this);
             showConfirm({
-                title: '确定删除角色「' + code + '」？',
+                title: '确定删除角色「' + name + '」？',
                 icon: 'warning',
                 size: 'large',
                 confirmType: 'danger',

@@ -15,35 +15,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
  */
 public class Role extends ConfigModel {
 
-    private String code;
-    private int builtin;
-    private String remark = "";
-
     public Role() {
         super.setType(ConfigConstant.ROLE);
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public int getBuiltin() {
-        return builtin;
-    }
-
-    public void setBuiltin(int builtin) {
-        this.builtin = builtin;
-    }
-
-    public String getRemark() {
-        return remark;
-    }
-
-    public void setRemark(String remark) {
-        this.remark = remark;
     }
 }

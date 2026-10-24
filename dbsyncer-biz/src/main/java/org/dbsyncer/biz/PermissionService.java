@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -16,12 +15,12 @@ import java.util.Set;
 public interface PermissionService {
 
     /**
-     * 拥有 admin 角色时写入 Authority 的标记。
+     * 超管时写入 Authority 的标记。
      */
     String AUTHORITY_ROLE_ADMIN = "role_admin";
 
     /**
-     * 用户是否具备管理员角色（role.code=admin）。
+     * 是否超管（仅 username 为默认账号 admin）。
      */
     boolean isAdmin(String username);
 
@@ -41,14 +40,14 @@ public interface PermissionService {
     String buildAuthorityString(String username);
 
     /**
-     * 为用户绑定角色（按角色编码，幂等）。
+     * 为用户绑定角色（按角色 ID，幂等）。
      */
-    void bindUserRole(String userId, String roleCode);
+    void bindUserRole(String userId, String roleId);
 
     /**
      * 覆盖用户角色绑定（先清空再绑一个）。
      */
-    void replaceUserRole(String userId, String roleCode);
+    void replaceUserRole(String userId, String roleId);
 
     /**
      * 删除用户全部角色绑定。
@@ -56,17 +55,12 @@ public interface PermissionService {
     void unbindAllUserRoles(String userId);
 
     /**
-     * 用户主角色编码（取第一条 user_role；无则回退用户表 ROLE）。
+     * 用户主角色 ID（取第一条 user_role）。
      */
-    String resolvePrimaryRoleCode(String userId, String fallbackRoleCode);
+    String resolvePrimaryRoleId(String userId);
 
     /**
      * 用户主角色名称。
      */
-    String resolvePrimaryRoleName(String userId, String fallbackRoleCode);
-
-    /**
-     * 绑定了指定角色编码的用户数。
-     */
-    int countUsersByRoleCode(String roleCode);
+    String resolvePrimaryRoleName(String userId);
 }

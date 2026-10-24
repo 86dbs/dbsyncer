@@ -45,13 +45,14 @@ public class NoticeDecisionEngineImpl implements NoticeDecisionEngine {
         if (registry == null) {
             return;
         }
-        List<NoticeStrategy> strategies = registry.match(noticeContent.getNoticeType());
-        for (NoticeStrategy strategy : strategies) {
-            if (strategy.isImmediate()) {
-                noticeDeliveryHandler.deliver(noticeContent);
-            } else {
-                strategyBucketManager.offer(strategy, noticeContent);
-            }
+        NoticeStrategy strategy = registry.match(noticeContent.getNoticeType());
+        if (strategy == null) {
+            return;
+        }
+        if (strategy.isImmediate()) {
+            noticeDeliveryHandler.deliver(noticeContent);
+        } else {
+            strategyBucketManager.offer(strategy, noticeContent);
         }
     }
 

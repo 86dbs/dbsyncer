@@ -12,11 +12,7 @@ import org.dbsyncer.sdk.model.NoticeStrategy;
 import org.dbsyncer.sdk.model.NoticeStrategyDef;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 告警策略：表模型 / DTO / 运行时互转。
@@ -25,6 +21,9 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  */
 public final class NoticeStrategyConverter {
+
+    private NoticeStrategyConverter() {
+    }
 
     public static List<NoticeStrategy> toRuntime(List<NoticeStrategyDef> defs) {
         List<NoticeStrategy> list = new ArrayList<>();
@@ -44,30 +43,13 @@ public final class NoticeStrategyConverter {
         if (def == null || !def.isEnabled() || StringUtil.isBlank(def.getId())) {
             return null;
         }
-        NoticeFrequencyEnum frequency;
-        try {
-            frequency = NoticeFrequencyEnum.valueOf(def.getFrequency());
-        } catch (Exception e) {
-            return null;
-        }
-        Set<NoticeTypeEnum> types = EnumSet.noneOf(NoticeTypeEnum.class);
-        if (!CollectionUtils.isEmpty(def.getNoticeTypes())) {
-            for (String name : def.getNoticeTypes()) {
-                if (StringUtil.isBlank(name)) {
-                    continue;
-                }
-                try {
-                    types.add(NoticeTypeEnum.valueOf(name.trim()));
-                } catch (IllegalArgumentException ignore) {
-                    // skip unknown
-                }
-            }
-        }
-        if (types.isEmpty()) {
+        NoticeFrequencyEnum frequency = NoticeFrequencyEnum.getByCode(def.getFrequency());
+        NoticeTypeEnum noticeType = NoticeTypeEnum.getByCode(def.getNoticeTypes());
+        if (frequency == null || noticeType == null) {
             return null;
         }
         String cron = frequency == NoticeFrequencyEnum.INTERVAL ? def.getCron() : null;
-        return new NoticeStrategy(def.getId(), def.getName(), frequency, cron, types);
+        return new NoticeStrategy(def.getId(), def.getName(), frequency, cron, noticeType);
     }
 
     public static List<NoticeStrategyDef> toDefs(List<NoticeStrategyConfig> configs) {
@@ -76,8 +58,7 @@ public final class NoticeStrategyConverter {
             return list;
         }
         for (NoticeStrategyConfig config : configs) {
-            NoticeStrategyDef def = toDef(config);
-            list.add(def);
+            list.add(toDef(config));
         }
         return list;
     }
@@ -89,11 +70,8 @@ public final class NoticeStrategyConverter {
         def.setEnabled(config.isEnabled());
         def.setFrequency(config.getFrequency());
         def.setCron(config.getCron());
-        List<String> noticeTypes = config.getNoticeTypes() != null ? Arrays.stream(config.getNoticeTypes().split(StringUtil.COMMA))
-                .map(String::trim)
-                .filter(StringUtil::isNotBlank)
-                .collect(Collectors.toList()) : new ArrayList<>();
-        def.setNoticeTypes(noticeTypes);
+        def.setNoticeTypes(config.getNoticeTypes());
+        def.setRemark(config.getRemark());
         return def;
     }
 
@@ -107,11 +85,8 @@ public final class NoticeStrategyConverter {
         config.setEnabled(def.isEnabled() ? 1 : 0);
         config.setFrequency(def.getFrequency());
         config.setCron(def.getCron());
-        String noticeTypes = def.getNoticeTypes().stream()
-                .filter(StringUtil::isNotBlank)
-                .map(String::trim)
-                .collect(Collectors.joining(StringUtil.COMMA));
-        config.setNoticeTypes(noticeTypes);
+        config.setNoticeTypes(def.getNoticeTypes());
+        config.setRemark(StringUtil.getIfBlank(def.getRemark(), StringUtil.EMPTY));
         long now = System.currentTimeMillis();
         config.setCreateTime(now);
         config.setUpdateTime(now);

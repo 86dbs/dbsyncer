@@ -39,11 +39,11 @@
                 <div class="form-item">
                     <label class="form-label">角色<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <select id="roleCode" class="form-control" name="roleCode" required>
+                        <select id="roleId" class="form-control" name="roleId" required>
                             <option value="">请选择角色</option>
                             <option th:each="r : ${roles}"
-                                    th:value="${r.code}"
-                                    th:text="${r.name + ' (' + r.code + ')'}"></option>
+                                    th:value="${r.id}"
+                                    th:text="${r.name}"></option>
                         </select>
                     </div>
                 </div>
@@ -56,26 +56,6 @@
                                placeholder="请输入密码"/>
                     </div>
                 </div>
-
-                <!-- 邮箱 -->
-                <div class="form-item">
-                    <label class="form-label">邮箱
-                        <i class="fa fa-question-circle text-tertiary"
-                           title="支持多个邮箱，用逗号分隔"></i>
-                    </label>
-                    <div class="form-control-area">
-                        <input type="text" class="form-control" name="email" data-role="tagsinput" placeholder="请输入邮箱地址"/>
-                    </div>
-                </div>
-
-                <!-- 手机 -->
-                <div class="form-item">
-                    <label class="form-label">手机</label>
-                    <div class="form-control-area">
-                        <input type="tel" class="form-control" maxlength="13" name="phone"
-                               placeholder="请输入手机号码"/>
-                    </div>
-                </div>
             </div>
         </form>
         <!-- 为角色 dbSelect 下拉预留高度，避免被 form-container 裁切 -->
@@ -84,10 +64,7 @@
 </div>
 
 <script type="text/javascript">
-    // 绑定多值输入框事件
-    initMultipleInputTags();
-
-    $('#roleCode').dbSelect({type: 'single'});
+    $('#roleId').dbSelect({type: 'single'});
 
     //保存
     $("#userSubmitBtn").on('click', function () {

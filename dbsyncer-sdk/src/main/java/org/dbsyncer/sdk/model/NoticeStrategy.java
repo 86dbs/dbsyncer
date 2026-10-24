@@ -6,12 +6,8 @@ package org.dbsyncer.sdk.model;
 import org.dbsyncer.sdk.enums.NoticeFrequencyEnum;
 import org.dbsyncer.sdk.enums.NoticeTypeEnum;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
-
 /**
- * 告警通知策略（本版内置，后续可扩展为用户自定义）
+ * 告警通知策略（运行时，每种通知类型对应一条）。
  *
  * @author wuji
  * @version 1.0.0
@@ -23,15 +19,15 @@ public final class NoticeStrategy {
     private final String name;
     private final NoticeFrequencyEnum frequency;
     private final String cron;
-    private final Set<NoticeTypeEnum> noticeTypes;
+    private final NoticeTypeEnum noticeType;
 
     public NoticeStrategy(String id, String name, NoticeFrequencyEnum frequency, String cron,
-                          Set<NoticeTypeEnum> noticeTypes) {
+                          NoticeTypeEnum noticeType) {
         this.id = id;
         this.name = name;
         this.frequency = frequency;
         this.cron = cron;
-        this.noticeTypes = Collections.unmodifiableSet(EnumSet.copyOf(noticeTypes));
+        this.noticeType = noticeType;
     }
 
     public String getId() {
@@ -50,12 +46,12 @@ public final class NoticeStrategy {
         return cron;
     }
 
-    public Set<NoticeTypeEnum> getNoticeTypes() {
-        return noticeTypes;
+    public NoticeTypeEnum getNoticeType() {
+        return noticeType;
     }
 
-    public boolean supports(NoticeTypeEnum noticeType) {
-        return noticeType != null && noticeTypes.contains(noticeType);
+    public boolean supports(NoticeTypeEnum type) {
+        return type != null && this.noticeType == type;
     }
 
     public boolean isImmediate() {

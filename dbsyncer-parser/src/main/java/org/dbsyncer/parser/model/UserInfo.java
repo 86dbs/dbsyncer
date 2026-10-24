@@ -43,16 +43,6 @@ public class UserInfo {
     private String roleCode;
 
     /**
-     * 邮箱(多个邮箱使用逗号拼接)
-     */
-    private String email;
-
-    /**
-     * 手机
-     */
-    private String phone;
-
-    /**
      * 连续登录失败次数
      */
     private int loginFailCount;
@@ -65,13 +55,11 @@ public class UserInfo {
     public UserInfo() {
     }
 
-    public UserInfo(String username, String nickname, String password, String roleCode, String email, String phone) {
+    public UserInfo(String username, String nickname, String password, String roleCode) {
         this.username = username;
         this.nickname = nickname;
         this.password = password;
         this.roleCode = roleCode;
-        this.email = email;
-        this.phone = phone;
     }
 
     public String getId() {
@@ -128,22 +116,6 @@ public class UserInfo {
 
     public void setRoleCode(String roleCode) {
         this.roleCode = roleCode;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
     }
 
     public int getLoginFailCount() {

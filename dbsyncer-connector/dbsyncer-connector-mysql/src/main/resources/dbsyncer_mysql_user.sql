@@ -6,8 +6,6 @@ CREATE TABLE `dbsyncer_user` (
   `PASSWORD` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '密码',
   `NICKNAME` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '昵称',
   `ROLE` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '角色',
-  `EMAIL` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '邮箱（多个使用逗号拼接）',
-  `PHONE` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '手机号',
   `LOGIN_FAIL_COUNT` int NOT NULL DEFAULT 0 COMMENT '连续登录失败次数',
   `LOCK_UNTIL` bigint NOT NULL DEFAULT 0 COMMENT '锁定截止时间（毫秒，0未锁定）',
   PRIMARY KEY (`ID`) USING BTREE,

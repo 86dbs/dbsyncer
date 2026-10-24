@@ -4,7 +4,6 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.PermissionService;
-import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.RbacProfile;
@@ -34,8 +33,6 @@ import java.util.stream.Collectors;
 @Service
 public class PermissionServiceImpl implements PermissionService {
 
-    private static final String ROLE_ADMIN = "admin";
-
     @Resource
     private RbacProfile rbacProfile;
 
@@ -44,24 +41,8 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public boolean isAdmin(String username) {
-        if (StringUtil.isBlank(username)) {
-            return false;
-        }
-        UserInfo user = userProfile.getByUsername(username);
-        if (user == null) {
-            return false;
-        }
-        List<UserRole> userRoles = rbacProfile.listUserRolesByUserId(user.getId());
-        if (CollectionUtils.isEmpty(userRoles)) {
-            return false;
-        }
-        for (UserRole ur : userRoles) {
-            Role role = rbacProfile.getRoleById(ur.getRoleId());
-            if (role != null && ROLE_ADMIN.equals(role.getCode())) {
-                return true;
-            }
-        }
-        return false;
+        return StringUtil.isNotBlank(username)
+                && StringUtil.equals(UserConfigServiceImpl.DEFAULT_USERNAME, username);
     }
 
     @Override
@@ -81,21 +62,39 @@ public class PermissionServiceImpl implements PermissionService {
         if (user == null) {
             return Collections.emptySet();
         }
-        Set<String> codes = new LinkedHashSet<>();
         List<UserRole> userRoles = rbacProfile.listUserRolesByUserId(user.getId());
         if (CollectionUtils.isEmpty(userRoles)) {
-            return codes;
+            return Collections.emptySet();
         }
-        for (UserRole ur : userRoles) {
-            List<RolePermission> rolePermissions = rbacProfile.listRolePermissionsByRoleId(ur.getRoleId());
-            if (CollectionUtils.isEmpty(rolePermissions)) {
-                continue;
-            }
-            for (RolePermission rp : rolePermissions) {
-                Permission permission = rbacProfile.getPermissionById(rp.getPermissionId());
-                if (permission != null && StringUtil.isNotBlank(permission.getCode())) {
-                    codes.add(permission.getCode());
-                }
+        //获取用户角色
+        List<String> roleIds = userRoles.stream()
+                .filter(ur -> ur != null && StringUtil.isNotBlank(ur.getRoleId()))
+                .map(UserRole::getRoleId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (CollectionUtils.isEmpty(roleIds)) {
+            return Collections.emptySet();
+        }
+        //获取角色code语句
+        List<RolePermission> rolePermissions = rbacProfile.listRolePermissionsByRoleIds(roleIds);
+        if (CollectionUtils.isEmpty(rolePermissions)) {
+            return Collections.emptySet();
+        }
+        List<String> permissionIds = rolePermissions.stream()
+                .filter(rp -> rp != null && StringUtil.isNotBlank(rp.getPermissionId()))
+                .map(RolePermission::getPermissionId)
+                .distinct()
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(permissionIds)) {
+            return Collections.emptySet();
+        }
+        Set<String> codes = new LinkedHashSet<>();
+
+        //获取菜单code
+        for (Permission permission : rbacProfile.listPermissionsByIds(permissionIds)) {
+            if (permission != null && StringUtil.isNotBlank(permission.getCode())) {
+                codes.add(permission.getCode());
             }
         }
         return codes;
@@ -111,11 +110,11 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public void bindUserRole(String userId, String roleCode) {
-        if (StringUtil.isBlank(userId) || StringUtil.isBlank(roleCode)) {
+    public void bindUserRole(String userId, String roleId) {
+        if (StringUtil.isBlank(userId) || StringUtil.isBlank(roleId)) {
             return;
         }
-        Role role = rbacProfile.getRoleByCode(roleCode);
+        Role role = rbacProfile.getRoleById(roleId);
         if (role == null) {
             return;
         }
@@ -133,12 +132,12 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public void replaceUserRole(String userId, String roleCode) {
-        if (StringUtil.isBlank(userId) || StringUtil.isBlank(roleCode)) {
+    public void replaceUserRole(String userId, String roleId) {
+        if (StringUtil.isBlank(userId) || StringUtil.isBlank(roleId)) {
             return;
         }
         unbindAllUserRoles(userId);
-        bindUserRole(userId, roleCode);
+        bindUserRole(userId, roleId);
     }
 
     @Override
@@ -147,35 +146,15 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public String resolvePrimaryRoleCode(String userId, String fallbackRoleCode) {
+    public String resolvePrimaryRoleId(String userId) {
         Role role = resolvePrimaryRole(userId);
-        if (role != null && StringUtil.isNotBlank(role.getCode())) {
-            return role.getCode();
-        }
-        return fallbackRoleCode;
+        return role == null ? null : role.getId();
     }
 
     @Override
-    public String resolvePrimaryRoleName(String userId, String fallbackRoleCode) {
+    public String resolvePrimaryRoleName(String userId) {
         Role role = resolvePrimaryRole(userId);
-        if (role != null && StringUtil.isNotBlank(role.getName())) {
-            return role.getName();
-        }
-        String name = UserRoleEnum.getNameByCode(fallbackRoleCode);
-        return StringUtil.isNotBlank(name) ? name : fallbackRoleCode;
-    }
-
-    @Override
-    public int countUsersByRoleCode(String roleCode) {
-        if (StringUtil.isBlank(roleCode)) {
-            return 0;
-        }
-        Role role = rbacProfile.getRoleByCode(roleCode);
-        if (role == null || StringUtil.isBlank(role.getId())) {
-            return 0;
-        }
-        List<UserRole> userRoles = rbacProfile.listUserRolesByRoleId(role.getId());
-        return CollectionUtils.isEmpty(userRoles) ? 0 : userRoles.size();
+        return role == null ? null : role.getName();
     }
 
     private Role resolvePrimaryRole(String userId) {

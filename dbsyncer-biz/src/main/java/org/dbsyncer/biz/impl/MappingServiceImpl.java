@@ -7,7 +7,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.parser.NoticeMentionRuleProfile;
+import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
@@ -140,7 +140,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private ResourceAclService resourceAclService;
 
     @Resource
-    private NoticeMentionRuleProfile noticeMentionRuleProfile;
+    private NoticeRuleProfile noticeRuleProfile;
 
     @Override
     public String add(Map<String, String> params) {
@@ -251,7 +251,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             mappingProfile.delete(id);
             groupService.bind(null, ConfigConstant.MAPPING, id);
             resourceAclService.revokeAllForResource(ConfigConstant.MAPPING, id);
-            noticeMentionRuleProfile.removeByScopeId(ConfigConstant.MAPPING, id);
+            noticeRuleProfile.removeByScopeId(ConfigConstant.MAPPING, id);
             log(LogType.MappingLog.DELETE, mapping);
         }
         return "同步任务删除成功";

@@ -31,8 +31,8 @@ public interface ResourceAclService {
     String remove(Map<String, String> params);
 
     /**
-     * *授予用户成为该资源的所有者
-     * admin 或无效用户跳过；已存在则覆盖为完整动作。
+     * 授予用户成为该资源的所有者。
+     * admin 或无效用户跳过；已存在则覆盖为可读写。
      */
     void grantOwner(String username, String resourceType, String resourceId);
 
@@ -43,8 +43,10 @@ public interface ResourceAclService {
 
     /**
      * 用户/角色被删除时收尾：清除该主体的全部 ACL。
+     *
+     * @param subjectType 主体类型编码，见 {@link org.dbsyncer.biz.enums.ResourceAclSubjectEnum}
      */
-    void revokeAllForSubject(String subjectType, String subjectId);
+    void revokeAllForSubject(int subjectType, String subjectId);
 
     /**
      * 用户对资源是否具备动作（admin 跳过）。

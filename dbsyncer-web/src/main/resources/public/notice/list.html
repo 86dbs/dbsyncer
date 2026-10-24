@@ -26,151 +26,140 @@
                 </button>
             </div>
 
-            <h3 class="card-title">通知渠道</h3>
-            <p class="text-sm text-tertiary mb-4">配置全局 webhook；@ 请在下方「通知规则」中按任务/分组设置。</p>
-            <div class="grid grid-cols-2">
-                <div class="form-item">
-                    <label class="form-label">企业微信</label>
-                    <div class="form-control-area">
-                        <label class="form-switch">
-                            <input name="enableWechat" type="checkbox" th:checked="${config?.wechat?.enabled}"/>
-                            <span class="switch-track">
-                                <span class="switch-option switch-option-on">Yes</span>
-                                <span class="switch-option switch-option-off">No</span>
-                                <span class="switch-thumb"></span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-item"></div>
+            <div class="grid grid-cols-2 items-start">
+                <div>
+                    <h3 class="card-title">通知渠道</h3>
+                    <p class="text-sm text-tertiary mb-4">配置全局 webhook；@ 请在下方「通知规则」中按任务/分组设置。</p>
 
-                <div class="form-item wechat-config hidden">
-                    <label class="form-label">webhook<strong class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <textarea name="wechatWebhookUrl" required class="form-control" maxlength="200" rows="3"
-                                  placeholder="企业微信机器人webhook地址">[[${config?.wechat?.webhookUrl}]]</textarea>
-                    </div>
-                </div>
-                <div class="form-item wechat-config hidden"></div>
+                    <div class="grid grid-cols-1">
+                        <div class="form-item">
+                            <label class="form-label">企业微信</label>
+                            <div class="form-control-area">
+                                <label class="form-switch">
+                                    <input name="enableWechat" type="checkbox" th:checked="${config?.wechat?.enabled}"/>
+                                    <span class="switch-track">
+                                    <span class="switch-option switch-option-on">Yes</span>
+                                    <span class="switch-option switch-option-off">No</span>
+                                    <span class="switch-thumb"></span>
+                                </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-item wechat-config hidden">
+                            <label class="form-label">webhook<strong class="text-primary">*</strong></label>
+                            <div class="form-control-area">
+                            <textarea name="wechatWebhookUrl" required class="form-control" maxlength="200" rows="3"
+                                      placeholder="企业微信机器人webhook地址">[[${config?.wechat?.webhookUrl}]]</textarea>
+                            </div>
+                        </div>
 
-                <div class="form-item">
-                    <label class="form-label">钉钉</label>
-                    <div class="form-control-area">
-                        <label class="form-switch">
-                            <input name="enableDingTalk" type="checkbox" th:checked="${config?.dingTalk?.enabled}"/>
-                            <span class="switch-track">
-                                <span class="switch-option switch-option-on">Yes</span>
-                                <span class="switch-option switch-option-off">No</span>
-                                <span class="switch-thumb"></span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-item"></div>
+                        <div class="form-item">
+                            <label class="form-label">钉钉</label>
+                            <div class="form-control-area">
+                                <label class="form-switch">
+                                    <input name="enableDingTalk" type="checkbox"
+                                           th:checked="${config?.dingTalk?.enabled}"/>
+                                    <span class="switch-track">
+                                    <span class="switch-option switch-option-on">Yes</span>
+                                    <span class="switch-option switch-option-off">No</span>
+                                    <span class="switch-thumb"></span>
+                                </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-item dingtalk-config hidden">
+                            <label class="form-label">webhook<strong class="text-primary">*</strong></label>
+                            <div class="form-control-area">
+                            <textarea name="dingTalkWebhookUrl" required class="form-control" maxlength="200" rows="3"
+                                      placeholder="钉钉机器人webhook地址">[[${config?.dingTalk?.webhookUrl}]]</textarea>
+                            </div>
+                        </div>
 
-                <div class="form-item dingtalk-config hidden">
-                    <label class="form-label">webhook<strong class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <textarea name="dingTalkWebhookUrl" required class="form-control" maxlength="200" rows="3"
-                                  placeholder="钉钉机器人webhook地址">[[${config?.dingTalk?.webhookUrl}]]</textarea>
-                    </div>
-                </div>
-                <div class="form-item dingtalk-config hidden"></div>
+                        <div class="form-item">
+                            <label class="form-label">HTTP</label>
+                            <div class="form-control-area">
+                                <label class="form-switch">
+                                    <input name="enableHttp" type="checkbox" th:checked="${config?.http?.enabled}"/>
+                                    <span class="switch-track">
+                                    <span class="switch-option switch-option-on">Yes</span>
+                                    <span class="switch-option switch-option-off">No</span>
+                                    <span class="switch-thumb"></span>
+                                </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-item http-config hidden">
+                            <label class="form-label">url<strong class="text-primary">*</strong></label>
+                            <div class="form-control-area">
+                            <textarea name="httpUrl" required class="form-control" maxlength="200" rows="3"
+                                      placeholder="回调http地址">[[${config?.http?.url}]]</textarea>
+                            </div>
+                        </div>
 
-                <div class="form-item">
-                    <label class="form-label">HTTP</label>
-                    <div class="form-control-area">
-                        <label class="form-switch">
-                            <input name="enableHttp" type="checkbox" th:checked="${config?.http?.enabled}"/>
-                            <span class="switch-track">
-                                <span class="switch-option switch-option-on">Yes</span>
-                                <span class="switch-option switch-option-off">No</span>
-                                <span class="switch-thumb"></span>
-                            </span>
-                        </label>
+                        <div class="form-item">
+                            <label class="form-label">邮件</label>
+                            <div class="form-control-area">
+                                <label class="form-switch">
+                                    <input name="enableMail" type="checkbox" th:checked="${config?.mail?.enabled}"/>
+                                    <span class="switch-track">
+                                    <span class="switch-option switch-option-on">Yes</span>
+                                    <span class="switch-option switch-option-off">No</span>
+                                    <span class="switch-thumb"></span>
+                                </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-item mail-config hidden">
+                            <label class="form-label">账号<strong class="text-primary">*</strong></label>
+                            <div class="form-control-area">
+                                <input type="text" class="form-control" maxlength="100" name="mailAccount" required
+                                       th:value="${config?.mail?.account}"/>
+                            </div>
+                        </div>
+                        <div class="form-item mail-config hidden">
+                            <label class="form-label">Code<strong class="text-primary">*</strong><i
+                                    class="fa fa-question-circle"
+                                    title="发邮件的Code,不是邮箱密码，示例：wqoxxxxxxdflbbig"></i></label>
+                            <div class="form-control-area">
+                                <input type="text" class="form-control" maxlength="100" name="mailCode" required
+                                       th:value="${config?.mail?.code}"/>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="form-item"></div>
-                <div class="form-item http-config hidden">
-                    <label class="form-label">url<strong class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <textarea name="httpUrl" required class="form-control" maxlength="200" rows="3"
-                                  placeholder="回调http地址">[[${config?.http?.url}]]</textarea>
-                    </div>
-                </div>
-                <div class="form-item http-config hidden"></div>
 
-                <div class="form-item">
-                    <label class="form-label">邮件</label>
-                    <div class="form-control-area">
-                        <label class="form-switch">
-                            <input name="enableMail" type="checkbox" th:checked="${config?.mail?.enabled}"/>
-                            <span class="switch-track">
-                                <span class="switch-option switch-option-on">Yes</span>
-                                <span class="switch-option switch-option-off">No</span>
-                                <span class="switch-thumb"></span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-item"></div>
-
-                <div class="form-item mail-config hidden">
-                    <label class="form-label">账号<strong class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="100" name="mailAccount" required
-                               th:value="${config?.mail?.account}"/>
-                    </div>
-                </div>
-                <div class="form-item mail-config hidden">
-                    <label class="form-label">Code<strong class="text-primary">*</strong><i
-                            class="fa fa-question-circle"
-                            title="发邮件的Code,不是邮箱密码，示例：wqoxxxxxxdflbbig"></i></label>
-                    <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="100" name="mailCode" required
-                               th:value="${config?.mail?.code}"/>
-                    </div>
+                <div>
+                    <h3 class="card-title">告警策略</h3>
+                    <p class="text-sm text-tertiary mb-4">启用状态切换后即时生效。</p>
+                    <table class="table" id="strategyTable">
+                        <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>说明</th>
+                            <th>启用</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="blank-block-md"></div>
-            <h3 class="card-title">告警策略</h3>
-            <p class="text-sm text-tertiary mb-4">配置通知类型与发送频率；增删改即时生效，无需点上方保存。</p>
+            <div class="blank-block-min"></div>
+            <h3 class="card-title mt-6">通知规则</h3>
+            <p class="text-sm text-tertiary mb-4">按分组或同步任务覆盖 @手机号与邮件（支持多人）；任务规则优先于分组规则。增删改即时生效，无需点上方保存。</p>
             <div class="form-actions mb-2">
-                <button type="button" class="btn btn-default" id="addStrategyBtn" data-permission="notice:edit">
-                    <i class="fa fa-plus"></i> 添加策略
-                </button>
-            </div>
-            <table class="table" id="strategyTable">
-                <thead>
-                <tr>
-                    <th>名称</th>
-                    <th>频率</th>
-                    <th>Cron</th>
-                    <th>通知类型</th>
-                    <th>启用</th>
-                    <th>操作</th>
-                </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-
-            <div class="blank-block-md"></div>
-            <h3 class="card-title">通知规则</h3>
-            <p class="text-sm text-tertiary mb-4">按分组或同步任务覆盖 @
-                手机号（支持多人）；任务规则优先于分组规则。增删改即时生效，无需点上方保存。</p>
-            <div class="form-actions mb-2">
-                <button type="button" class="btn btn-default" id="addMentionBtn" data-permission="notice:edit">
+                <button type="button" class="btn btn-default" id="addRuleBtn" data-permission="notice:edit">
                     <i class="fa fa-plus"></i> 添加规则
                 </button>
             </div>
-            <table class="table" id="mentionTable">
+            <table class="table" id="ruleTable">
                 <thead>
                 <tr>
                     <th>作用域</th>
                     <th>目标</th>
                     <th>@所有人</th>
                     <th>@手机号</th>
+                    <th>邮件</th>
                     <th>操作</th>
                 </tr>
                 </thead>
@@ -184,15 +173,16 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     const initialStrategies = /*[[${strategies}]]*/ [];
-    const initialMentionRules = /*[[${mentionRules}]]*/ [];
-    const noticeTypeOptions = /*[[${noticeTypeOptions}]]*/ [];
+    const initialNoticeRules = /*[[${noticeRules}]]*/ [];
     const groupOptions = /*[[${groups}]]*/ [];
     const mappingOptions = /*[[${mappings}]]*/ [];
     /*]]>*/
 
     $(function () {
         let strategies = Array.isArray(initialStrategies) ? JSON.parse(JSON.stringify(initialStrategies)) : [];
-        let mentionRules = Array.isArray(initialMentionRules) ? JSON.parse(JSON.stringify(initialMentionRules)) : [];
+        let noticeRules = Array.isArray(initialNoticeRules) ? JSON.parse(JSON.stringify(initialNoticeRules)) : [];
+        const canEditStrategy = !window.DBSPermission || DBSPermission.has('notice:edit');
+        const FREQUENCY_INTERVAL = 1;
 
         function toggleConfigItems(checked, items) {
             if (checked) {
@@ -216,13 +206,6 @@
         initSwitchToggle('enableDingTalk', $('.dingtalk-config'));
         initMultipleInputTags();
 
-        function typeLabel(code) {
-            const hit = (noticeTypeOptions || []).find(function (o) {
-                return o.code === code;
-            });
-            return hit ? hit.label : code;
-        }
-
         function groupName(id) {
             const hit = (groupOptions || []).find(function (g) {
                 return g.id === id;
@@ -237,81 +220,91 @@
             return hit ? hit.name : id;
         }
 
-        function renderStrategies() {
-            const $tbody = $('#strategyTable tbody').empty();
-            if (!strategies.length) {
-                $tbody.append('<tr><td colspan="6" class="text-center text-tertiary py-8">暂无策略</td></tr>');
-                return;
-            }
-            strategies.forEach(function (s, index) {
-                const types = (s.noticeTypes || []).map(typeLabel).join('、');
-                const freq = s.frequency === 'INTERVAL' ? '周期' : '立即';
-                const enabled = s.enabled === false ? '否' : '是';
-                const cron = s.frequency === 'INTERVAL' ? (s.cron || '') : '-';
-                const $tr = $('<tr></tr>');
-                $tr.append($('<td></td>').text(s.name || ''));
-                $tr.append($('<td></td>').text(freq));
-                $tr.append($('<td></td>').text(cron));
-                $tr.append($('<td></td>').text(types));
-                $tr.append($('<td></td>').text(enabled));
-                const $ops = $('<td></td>');
-                $ops.append($('<button type="button" class="table-action-btn" title="编辑"><i class="fa fa-edit"></i></button>')
-                    .on('click', function () {
-                        editStrategy(index);
-                    }));
-                $ops.append($('<button type="button" class="table-action-btn delete" title="删除"><i class="fa fa-trash"></i></button>')
-                    .on('click', function () {
-                        if (!s.id) {
-                            strategies.splice(index, 1);
-                            renderStrategies();
-                            return;
-                        }
-                        doPoster('/notice/strategy/remove', {id: s.id}, function (response) {
-                            if (response.success === true) {
-                                bootGrowl('已删除', 'success');
-                                strategies.splice(index, 1);
-                                renderStrategies();
-                            } else {
-                                bootGrowl(response.message, 'danger');
-                            }
-                        });
-                    }));
-                $tr.append($ops);
-                $tbody.append($tr);
+        function switchEnabled(s, checked, $input) {
+            const prev = !checked;
+            doPoster('/notice/strategy/save', {
+                id: s.id || '',
+                name: s.name || '',
+                frequency: s.frequency,
+                cron: Number(s.frequency) === FREQUENCY_INTERVAL ? (s.cron || '') : '',
+                enabled: checked ? 'true' : 'false',
+                noticeTypes: s.noticeTypes,
+                remark: s.remark || ''
+            }, function (response) {
+                if (response.success === true) {
+                    s.enabled = checked;
+                    bootGrowl(checked ? '已启用' : '已停用', 'success');
+                } else {
+                    $input.prop('checked', prev);
+                    $input.attr('aria-checked', prev);
+                    bootGrowl(response.message || '操作失败', 'danger');
+                }
             });
         }
 
-        function renderMentions() {
-            const $tbody = $('#mentionTable tbody').empty();
-            if (!mentionRules.length) {
-                $tbody.append('<tr><td colspan="5" class="text-center text-tertiary py-8">暂无提及规则</td></tr>');
+        function renderStrategies() {
+            const $tbody = $('#strategyTable tbody').empty();
+            if (!strategies.length) {
+                $tbody.append('<tr><td colspan="3" class="text-center text-tertiary py-8">暂无策略</td></tr>');
                 return;
             }
-            mentionRules.forEach(function (r, index) {
+            strategies.forEach(function (s) {
+                const checked = s.enabled !== false;
+                const $tr = $('<tr></tr>');
+                $tr.append($('<td></td>').text(s.name || ''));
+                $tr.append($('<td></td>').text(s.remark || ''));
+
+                const $input = $('<input type="checkbox" class="strategy-enabled-switch"/>')
+                    .prop('checked', checked)
+                    .prop('disabled', !canEditStrategy || !s.id);
+                const $switch = $('<label class="form-switch"></label>').append($input)
+                    .append($('<span class="switch-track"></span>')
+                        .append('<span class="switch-option switch-option-on">Yes</span>')
+                        .append('<span class="switch-option switch-option-off">No</span>')
+                        .append('<span class="switch-thumb"></span>'));
+                $tr.append($('<td></td>').append($switch));
+                $tbody.append($tr);
+
+                if (canEditStrategy && s.id) {
+                    initSwitch($input, function (checkedVal) {
+                        switchEnabled(s, checkedVal, $input);
+                    });
+                }
+            });
+        }
+
+        function renderRules() {
+            const $tbody = $('#ruleTable tbody').empty();
+            if (!noticeRules.length) {
+                $tbody.append('<tr><td colspan="6" class="text-center text-tertiary py-8">暂无通知规则</td></tr>');
+                return;
+            }
+            noticeRules.forEach(function (r, index) {
                 const scopeLabel = r.scopeType === 'group' ? '分组' : '同步任务';
                 const target = r.scopeType === 'group' ? groupName(r.scopeId) : mappingName(r.scopeId);
                 const $tr = $('<tr></tr>');
                 $tr.append($('<td></td>').text(scopeLabel));
                 $tr.append($('<td></td>').text(target || ''));
                 $tr.append($('<td></td>').text(r.atAll == 1 || r.atAll === true ? '是' : '否'));
-                $tr.append($('<td></td>').text(r.atMobiles || ''));
+                $tr.append($('<td></td>').text(r.atPhones || ''));
+                $tr.append($('<td></td>').text(r.emails || ''));
                 const $ops = $('<td></td>');
                 $ops.append($('<button type="button" class="table-action-btn" title="编辑"><i class="fa fa-edit"></i></button>')
                     .on('click', function () {
-                        editMention(index);
+                        editRule(index);
                     }));
                 $ops.append($('<button type="button" class="table-action-btn delete" title="删除"><i class="fa fa-trash"></i></button>')
                     .on('click', function () {
                         if (!r.id) {
-                            mentionRules.splice(index, 1);
-                            renderMentions();
+                            noticeRules.splice(index, 1);
+                            renderRules();
                             return;
                         }
-                        doPoster('/notice/mention/remove', {id: r.id}, function (response) {
+                        doPoster('/notice/rule/remove', {id: r.id}, function (response) {
                             if (response.success === true) {
                                 bootGrowl('已删除', 'success');
-                                mentionRules.splice(index, 1);
-                                renderMentions();
+                                noticeRules.splice(index, 1);
+                                renderRules();
                             } else {
                                 bootGrowl(response.message, 'danger');
                             }
@@ -326,131 +319,10 @@
             return String(text == null ? '' : text).replace(/"/g, '&quot;');
         }
 
-        function editStrategy(index) {
+        function editRule(index) {
             const isNew = index < 0;
-            const s = isNew ? {
-                id: '',
-                name: '',
-                enabled: true,
-                frequency: 'IMMEDIATE',
-                cron: '',
-                noticeTypes: []
-            } : JSON.parse(JSON.stringify(strategies[index]));
-            const selectedTypes = {};
-            (s.noticeTypes || []).forEach(function (code) {
-                selectedTypes[code] = true;
-            });
-            let typeChecksHtml = '';
-            (noticeTypeOptions || []).forEach(function (o, i) {
-                const checked = selectedTypes[o.code] ? ' checked' : '';
-                const id = 'sNoticeType_' + i;
-                typeChecksHtml += '<input type="checkbox" class="strategy-type-check" id="' + id + '" value="'
-                    + escapeAttr(o.code) + '"' + checked + '/>'
-                    + '<label for="' + id + '">' + escapeAttr(o.label) + '</label>';
-            });
-            const bodyHtml = '<div class="group-dialog-body">'
-                + '<div class="form-item"><label class="form-label">名称<strong class="text-primary">*</strong></label>'
-                + '<div class="form-control-area"><input class="form-control" id="sName" maxlength="64" placeholder="请输入策略名称" value="'
-                + escapeAttr(s.name) + '"/></div></div>'
-                + '<div class="form-item mt-4"><label class="form-label">频率<strong class="text-primary">*</strong></label>'
-                + '<div class="form-control-area"><select class="form-control" id="sFreq"></select></div></div>'
-                + '<div class="form-item mt-4" id="sCronWrap"><label class="form-label">Cron<strong class="text-primary">*</strong></label>'
-                + '<div class="form-control-area"><input class="form-control" id="sCron" maxlength="64" placeholder="0 */10 * * * ?" value="'
-                + escapeAttr(s.cron) + '"/></div></div>'
-                + '<div class="form-item mt-4"><label class="form-label">启用</label><div class="form-control-area">'
-                + '<label class="form-switch"><input id="sEnabled" type="checkbox"' + (s.enabled === false ? '' : ' checked') + '/>'
-                + '<span class="switch-track"><span class="switch-option switch-option-on">Yes</span>'
-                + '<span class="switch-option switch-option-off">No</span><span class="switch-thumb"></span></span></label></div></div>'
-                + '<div class="form-item mt-4"><label class="form-label">通知类型<strong class="text-primary">*</strong></label>'
-                + '<div class="form-control-area"><div id="sNoticeTypeGroup" class="checkbox-group checkbox-group-inline">'
-                + typeChecksHtml + '</div></div></div>'
-                + '<div class="blank-block-md"></div></div>';
-
-            let freqSelect = null;
-            const modal = showConfirm({
-                title: isNew ? '添加策略' : '编辑策略',
-                body: bodyHtml,
-                size: 'xlarge',
-                position: 'center',
-                closeOnConfirm: false,
-                onConfirm: function () {
-                    const $dialog = $(modal.getDialog());
-                    const name = $.trim($dialog.find('#sName').val());
-                    const frequency = (freqSelect && freqSelect.getValues()[0]) || 'IMMEDIATE';
-                    const cron = $.trim($dialog.find('#sCron').val());
-                    const enabled = $dialog.find('#sEnabled').is(':checked');
-                    const noticeTypes = [];
-                    $dialog.find('.strategy-type-check:checked').each(function () {
-                        noticeTypes.push($(this).val());
-                    });
-                    if (!name) {
-                        bootGrowl('请填写策略名称', 'danger');
-                        return;
-                    }
-                    if (frequency === 'INTERVAL' && !cron) {
-                        bootGrowl('周期策略须填写 Cron', 'danger');
-                        return;
-                    }
-                    if (!noticeTypes.length) {
-                        bootGrowl('请至少选择一种通知类型', 'danger');
-                        return;
-                    }
-                    doPoster('/notice/strategy/save', {
-                        id: s.id || '',
-                        name: name,
-                        frequency: frequency,
-                        cron: frequency === 'INTERVAL' ? cron : '',
-                        enabled: enabled ? 'true' : 'false',
-                        noticeTypes: noticeTypes.join(',')
-                    }, function (response) {
-                        if (response.success === true) {
-                            bootGrowl(isNew ? '添加成功' : '修改成功', 'success');
-                            modal.close();
-                            doLoader('/notice');
-                        } else {
-                            bootGrowl(response.message, 'danger');
-                        }
-                    });
-                }
-            });
-            setTimeout(function () {
-                const $dialog = $(modal.getDialog());
-                initSwitch($dialog.find('#sEnabled'), function () {
-                });
-                freqSelect = $dialog.find('#sFreq').dbSelect({
-                    type: 'single',
-                    data: [
-                        {label: '立即发送', value: 'IMMEDIATE'},
-                        {label: '周期发送', value: 'INTERVAL'}
-                    ],
-                    defaultValue: [s.frequency || 'IMMEDIATE'],
-                    onSelect: function (values) {
-                        const freq = (values && values[0]) || 'IMMEDIATE';
-                        if (freq === 'INTERVAL') {
-                            $dialog.find('#sCronWrap').show();
-                        } else {
-                            $dialog.find('#sCronWrap').hide();
-                        }
-                    }
-                });
-                $dialog.find('#sNoticeTypeGroup').checkboxGroup({
-                    theme: 'primary',
-                    size: 'md',
-                    layout: 'inline'
-                });
-                if ((s.frequency || 'IMMEDIATE') === 'INTERVAL') {
-                    $dialog.find('#sCronWrap').show();
-                } else {
-                    $dialog.find('#sCronWrap').hide();
-                }
-                $dialog.find('#sName').focus();
-            }, 0);
-        }
-
-        function editMention(index) {
-            const isNew = index < 0;
-            const r = isNew ? {id: '', scopeType: 'mapping', scopeId: '', atAll: 0, atMobiles: ''}
-                : JSON.parse(JSON.stringify(mentionRules[index]));
+            const r = isNew ? {id: '', scopeType: 'mapping', scopeId: '', atAll: 0, atPhones: '', emails: ''}
+                : JSON.parse(JSON.stringify(noticeRules[index]));
             const atAllChecked = r.atAll == 1 || r.atAll === true;
             const bodyHtml = '<div class="group-dialog-body">'
                 + '<div class="form-item"><label class="form-label">作用域<strong class="text-primary">*</strong></label>'
@@ -464,15 +336,18 @@
                 + '<span class="switch-track"><span class="switch-option switch-option-on">Yes</span>'
                 + '<span class="switch-option switch-option-off">No</span><span class="switch-thumb"></span></span></label></div></div>'
                 + '<div class="form-item mt-4"><label class="form-label">@手机号</label><div class="form-control-area">'
-                + '<input class="form-control" id="mAtMobiles" maxlength="512" data-role="tagsinput" placeholder="多个手机号"'
-                + ' value="' + escapeAttr(r.atMobiles) + '"/></div></div>'
+                + '<input class="form-control" id="mAtPhones" maxlength="512" data-role="tagsinput" placeholder="多个手机号"'
+                + ' value="' + escapeAttr(r.atPhones) + '"/></div></div>'
+                + '<div class="form-item mt-4"><label class="form-label">邮件</label><div class="form-control-area">'
+                + '<input class="form-control" id="mEmails" maxlength="512" data-role="tagsinput" placeholder="多个邮箱"'
+                + ' value="' + escapeAttr(r.emails) + '"/></div></div>'
                 + '<div class="blank-block-md"></div></div>';
 
             let scopeSelect = null;
             let mappingSelect = null;
             let groupSelect = null;
             const modal = showConfirm({
-                title: isNew ? '添加提及规则' : '编辑提及规则',
+                title: isNew ? '添加通知规则' : '编辑通知规则',
                 body: bodyHtml,
                 size: 'xlarge',
                 position: 'center',
@@ -484,28 +359,30 @@
                         ? ((groupSelect && groupSelect.getValues()[0]) || '')
                         : ((mappingSelect && mappingSelect.getValues()[0]) || '');
                     const atAll = $dialog.find('#mAtAll').is(':checked');
-                    const atMobiles = $dialog.find('#mAtMobiles').val() || '';
+                    const atPhones = $dialog.find('#mAtPhones').val() || '';
+                    const emails = $dialog.find('#mEmails').val() || '';
                     if (!scopeId) {
                         bootGrowl('请选择分组或同步任务', 'danger');
                         return;
                     }
-                    if (!atAll && !$.trim(atMobiles)) {
-                        bootGrowl('未开启@所有人时须填写手机号', 'danger');
+                    if (!atAll && !$.trim(atPhones) && !$.trim(emails)) {
+                        bootGrowl('未开启@所有人时须填写手机号或邮件', 'danger');
                         return;
                     }
-                    const dup = mentionRules.some(function (item, i) {
+                    const dup = noticeRules.some(function (item, i) {
                         return i !== index && item.scopeType === scopeType && item.scopeId === scopeId;
                     });
                     if (dup) {
                         bootGrowl('同一分组/任务只能配置一条规则', 'danger');
                         return;
                     }
-                    doPoster('/notice/mention/save', {
+                    doPoster('/notice/rule/save', {
                         id: r.id || '',
                         scopeType: scopeType,
                         scopeId: scopeId,
                         atAll: atAll ? 'true' : 'false',
-                        atMobiles: atMobiles
+                        atPhones: atPhones,
+                        emails: emails
                     }, function (response) {
                         if (response.success === true) {
                             bootGrowl(isNew ? '添加成功' : '修改成功', 'success');
@@ -567,15 +444,12 @@
             }, 0);
         }
 
-        $('#addStrategyBtn').on('click', function () {
-            editStrategy(-1);
-        });
-        $('#addMentionBtn').on('click', function () {
-            editMention(-1);
+        $('#addRuleBtn').on('click', function () {
+            editRule(-1);
         });
 
         renderStrategies();
-        renderMentions();
+        renderRules();
 
         $("#updateNoticeBtn").click(function () {
             const $form = $("#notice-form-edit");

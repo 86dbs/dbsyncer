@@ -8,6 +8,7 @@ import org.dbsyncer.parser.model.Role;
 import org.dbsyncer.parser.model.RolePermission;
 import org.dbsyncer.parser.model.UserRole;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -18,8 +19,6 @@ import java.util.List;
  * @date 2026-10-21
  */
 public interface RbacProfile {
-
-    Role getRoleByCode(String code);
 
     List<Role> listRoles();
 
@@ -41,6 +40,11 @@ public interface RbacProfile {
     RolePermission getRolePermission(String roleId, String permissionId);
 
     List<RolePermission> listRolePermissionsByRoleId(String roleId);
+
+    /**
+     * 按角色 ID 批量查角色-权限关系（IN）。
+     */
+    List<RolePermission> listRolePermissionsByRoleIds(Collection<String> roleIds);
 
     void addRolePermission(RolePermission rel);
 
@@ -68,4 +72,9 @@ public interface RbacProfile {
     Role getRoleById(String id);
 
     Permission getPermissionById(String id);
+
+    /**
+     * 按权限 ID 批量查权限点（IN）。
+     */
+    List<Permission> listPermissionsByIds(Collection<String> permissionIds);
 }

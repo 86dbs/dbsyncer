@@ -16,30 +16,34 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 public class ResourceAcl extends ConfigModel {
 
     /**
-     * USER / ROLE
+     * 主体类型：0-USER / 1-ROLE
      */
-    private String subjectType;
+    private int subjectType;
+
     private String subjectId;
+
     /**
      * group / connector / mapping / validateSync / databaseSync
      */
     private String resourceType;
+
     private String resourceId;
+
     /**
-     * 逗号分隔：read,write,operate
+     * 0-只读 / 1-可读写
      */
-    private String actions;
+    private int permission;
 
     public ResourceAcl() {
         super.setName("");
         super.setType(ConfigConstant.RESOURCE_ACL);
     }
 
-    public String getSubjectType() {
+    public int getSubjectType() {
         return subjectType;
     }
 
-    public void setSubjectType(String subjectType) {
+    public void setSubjectType(int subjectType) {
         this.subjectType = subjectType;
     }
 
@@ -67,11 +71,11 @@ public class ResourceAcl extends ConfigModel {
         this.resourceId = resourceId;
     }
 
-    public String getActions() {
-        return actions;
+    public int getPermission() {
+        return permission;
     }
 
-    public void setActions(String actions) {
-        this.actions = actions;
+    public void setPermission(int permission) {
+        this.permission = permission;
     }
 }

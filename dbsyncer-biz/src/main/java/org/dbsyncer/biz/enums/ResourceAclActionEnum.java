@@ -5,13 +5,10 @@ package org.dbsyncer.biz.enums;
 
 import org.dbsyncer.common.util.StringUtil;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Locale;
-import java.util.Set;
 
 /**
- * 资源 ACL 动作。
+ * 资源 ACL 动作（调用方使用；鉴权内部映射到权限档位）。
  *
  * @author wuji
  * @version 1.0.0
@@ -62,24 +59,6 @@ public enum ResourceAclActionEnum {
      */
     public static boolean isSupported(String code) {
         return get(code) != null;
-    }
-
-    /**
-     * 全部动作编码（有序）。
-     */
-    public static Set<String> allCodes() {
-        Set<String> codes = new LinkedHashSet<>();
-        for (ResourceAclActionEnum action : values()) {
-            codes.add(action.code);
-        }
-        return Collections.unmodifiableSet(codes);
-    }
-
-    /**
-     * 全部动作编码逗号拼接（如创建者授权）。
-     */
-    public static String joinAllCodes() {
-        return String.join(StringUtil.COMMA, allCodes());
     }
 
     public String getCode() {

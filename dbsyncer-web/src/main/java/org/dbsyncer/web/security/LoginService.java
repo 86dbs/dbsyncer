@@ -4,12 +4,15 @@
 package org.dbsyncer.web.security;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.UserProfile;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.UserInfo;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 登录失败次数与账号锁定。
@@ -27,13 +30,11 @@ public class LoginService {
      */
     public static final int MAX_ATTEMPTS = 3;
 
-    /**
-     * 锁定时长（毫秒）
-     */
-    public static final long LOCK_MILLIS = 15 * 60 * 1000L;
-
     @Resource
     private UserProfile userProfile;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     /**
      * 未知用户名的进程内失败计数（不落库）
@@ -41,42 +42,61 @@ public class LoginService {
     private final ConcurrentHashMap<String, LoginState> unknownAttempts = new ConcurrentHashMap<>();
 
     /**
+     * 当前配置的锁定时长（分钟），非法或未配置时回退系统配置默认值。
+     */
+    public int getLockMinutes() {
+        SystemConfig config = systemConfigProfile.getSystemConfig();
+        int minutes = config == null ? 0 : config.getLoginLockMinutes();
+        return minutes >= 1 && minutes <= 1440 ? minutes : new SystemConfig().getLoginLockMinutes();
+    }
+
+    /**
      * 账号是否处于锁定中（过期则清零并返回 false）。
      */
     public boolean isLocked(String username) {
-        if (StringUtil.isBlank(username)) {
-            return false;
-        }
-        UserInfo user = userProfile.getByUsername(username);
-        if (user == null) {
-            return isUnknownLocked(username);
-        }
-        long lockUntil = user.getLockUntil();
-        if (lockUntil <= 0) {
-            return false;
-        }
+        return resolveLockUntil(username) > System.currentTimeMillis();
+    }
+
+    /**
+     * 剩余锁定分钟数（向上取整，至少 1；未锁定返回 0）。
+     */
+    public long getRemainingLockMinutes(String username) {
+        long lockUntil = resolveLockUntil(username);
         long now = System.currentTimeMillis();
-        if (now < lockUntil) {
-            return true;
+        if (lockUntil <= now) {
+            return 0L;
         }
-        userProfile.updateLoginLock(username, 0, 0L);
-        return false;
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(lockUntil - now);
+        long rem = (lockUntil - now) % TimeUnit.MINUTES.toMillis(1);
+        return rem > 0 ? minutes + 1 : Math.max(1L, minutes);
     }
 
     /**
      * 记录一次登录失败；达到阈值则锁定。
-     *
-     * @return 调用后是否处于锁定状态
      */
-    public boolean onFailure(String username) {
+    public LoginResult onFailure(String username) {
+        int lockMinutes = getLockMinutes();
         if (StringUtil.isBlank(username)) {
-            return false;
+            return new LoginResult(0, MAX_ATTEMPTS, false, lockMinutes, 0L);
         }
-        Boolean locked = userProfile.recordLoginFailure(username, MAX_ATTEMPTS, LOCK_MILLIS);
+        Boolean locked = userProfile.recordLoginFailure(username, MAX_ATTEMPTS, getLockMillis(lockMinutes));
         if (locked == null) {
-            return onUnknownFailure(username);
+            return onUnknownFailure(username, lockMinutes);
         }
-        return locked;
+        UserInfo user = userProfile.getByUsername(username);
+        int failCount = user == null ? 0 : user.getLoginFailCount();
+        boolean isLocked = Boolean.TRUE.equals(locked);
+        int remaining = Math.max(0, MAX_ATTEMPTS - failCount);
+        long remainingLockMinutes = isLocked ? getRemainingLockMinutes(username) : 0L;
+        return new LoginResult(failCount, remaining, isLocked, lockMinutes, remainingLockMinutes);
+    }
+
+    /**
+     * 当前锁定提示（已在锁定期内访问登录）。
+     */
+    public LoginResult lockedResult(String username) {
+        long remaining = getRemainingLockMinutes(username);
+        return new LoginResult(MAX_ATTEMPTS, 0, true, getLockMinutes(), remaining);
     }
 
     /**
@@ -98,24 +118,45 @@ public class LoginService {
         }
     }
 
-    private boolean isUnknownLocked(String username) {
-        LoginState state = unknownAttempts.get(username);
-        if (state == null) {
-            return false;
+    private long getLockMillis(int lockMinutes) {
+        return lockMinutes * 60 * 1000L;
+    }
+
+    private long resolveLockUntil(String username) {
+        if (StringUtil.isBlank(username)) {
+            return 0L;
         }
-        long lockUntil = state.getLockUntilMillis();
+        UserInfo user = userProfile.getByUsername(username);
+        if (user == null) {
+            LoginState state = unknownAttempts.get(username);
+            if (state == null) {
+                return 0L;
+            }
+            long lockUntil = state.getLockUntilMillis();
+            if (lockUntil <= 0) {
+                return 0L;
+            }
+            long now = System.currentTimeMillis();
+            if (now < lockUntil) {
+                return lockUntil;
+            }
+            unknownAttempts.remove(username, state);
+            return 0L;
+        }
+        long lockUntil = user.getLockUntil();
         if (lockUntil <= 0) {
-            return false;
+            return 0L;
         }
         long now = System.currentTimeMillis();
         if (now < lockUntil) {
-            return true;
+            return lockUntil;
         }
-        unknownAttempts.remove(username, state);
-        return false;
+        userProfile.updateLoginLock(username, 0, 0L);
+        return 0L;
     }
 
-    private boolean onUnknownFailure(String username) {
+    private LoginResult onUnknownFailure(String username, int lockMinutes) {
+        long lockMillis = getLockMillis(lockMinutes);
         LoginState next = unknownAttempts.compute(username, (key, old) -> {
             long now = System.currentTimeMillis();
             if (old != null && old.getLockUntilMillis() > 0 && now < old.getLockUntilMillis()) {
@@ -127,9 +168,12 @@ public class LoginService {
             } else {
                 failCount = old.getFailCount() + 1;
             }
-            long lockUntil = failCount >= MAX_ATTEMPTS ? now + LOCK_MILLIS : 0L;
+            long lockUntil = failCount >= MAX_ATTEMPTS ? now + lockMillis : 0L;
             return new LoginState(failCount, lockUntil);
         });
-        return next.getLockUntilMillis() > System.currentTimeMillis();
+        boolean locked = next.getLockUntilMillis() > System.currentTimeMillis();
+        int remaining = Math.max(0, MAX_ATTEMPTS - next.getFailCount());
+        long remainingLockMinutes = locked ? getRemainingLockMinutes(username) : 0L;
+        return new LoginResult(next.getFailCount(), remaining, locked, lockMinutes, remainingLockMinutes);
     }
 }

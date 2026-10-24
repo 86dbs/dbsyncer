@@ -8,11 +8,12 @@ import org.dbsyncer.biz.PermissionChecker;
 import org.dbsyncer.biz.PermissionService;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.UserConfigService;
-import org.dbsyncer.biz.enums.ResourceAclActionEnum;
+import org.dbsyncer.biz.enums.ResourceAclPermissionEnum;
 import org.dbsyncer.biz.enums.ResourceAclSubjectEnum;
 import org.dbsyncer.biz.enums.ResourceTypeEnum;
 import org.dbsyncer.biz.vo.ResourceAclVO;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.DatabaseSyncProfile;
@@ -113,7 +114,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             }
         }
         result.sort(Comparator
-                .comparing(ResourceAclVO::getSubjectType, Comparator.nullsLast(String::compareTo))
+                .comparingInt(ResourceAclVO::getSubjectType)
                 .thenComparing(ResourceAclVO::getSubjectName, Comparator.nullsLast(String::compareTo))
                 .thenComparing(ResourceAclVO::getResourceName, Comparator.nullsLast(String::compareTo)));
         return result;
@@ -133,10 +134,9 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         String currentUserName = params.get(UserConfigService.CURRENT_USER_NAME);
         permissionChecker.requirePermission(currentUserName, PERM_ACL_EDIT);
 
-        String subjectType = normalizeSubjectType(params.get("subjectType"));
-        String subjectId = resolveSubjectId(subjectType, params.get("subjectId"), params.get("subjectCode"), params.get("username"));
-        String actions = normalizeActions(params.get("actions"));
-        Assert.hasText(actions, "请至少选择一个动作");
+        int subjectType = normalizeSubjectType(params.get("subjectType"));
+        String subjectId = resolveSubjectId(subjectType, params.get("subjectId"), params.get("username"));
+        int permission = normalizePermission(params.get("permission"));
 
         String id = params.get("id");
         // 编辑单条：带 id 时只更新该记录
@@ -155,12 +155,12 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             existing.setSubjectId(subjectId);
             existing.setResourceType(resourceType);
             existing.setResourceId(resourceId);
-            existing.setActions(actions);
+            existing.setPermission(permission);
             existing.setUpdateTime(System.currentTimeMillis());
             resourceAclProfile.update(existing);
             logService.log(LogType.UserLog.UPDATE,
                     String.format("[%s]更新资源授权 %s/%s -> %s/%s [%s]",
-                            currentUserName, subjectType, subjectId, resourceType, resourceId, actions));
+                            currentUserName, subjectType, subjectId, resourceType, resourceId, permission));
             return existing.getId();
         }
 
@@ -173,7 +173,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             String resourceType = binding[0];
             String resourceId = binding[1];
             assertResourceExists(resourceType, resourceId);
-            if (upsertAcl(subjectType, subjectId, resourceType, resourceId, actions)) {
+            if (upsertAcl(subjectType, subjectId, resourceType, resourceId, permission)) {
                 created++;
             } else {
                 updated++;
@@ -181,7 +181,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         }
         logService.log(LogType.UserLog.INSERT,
                 String.format("[%s]批量资源授权 %s/%s -> %d 项 (新增%d/覆盖%d) [%s]",
-                        currentUserName, subjectType, subjectId, bindings.size(), created, updated, actions));
+                        currentUserName, subjectType, subjectId, bindings.size(), created, updated, permission));
         return String.format("成功授权 %d 项（新增 %d，覆盖 %d）", bindings.size(), created, updated);
     }
 
@@ -201,19 +201,19 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             return;
         }
         upsertAcl(ResourceAclSubjectEnum.USER.getCode(), user.getId(), resourceType, resourceId,
-                ResourceAclActionEnum.joinAllCodes());
+                ResourceAclPermissionEnum.READ_WRITE.getCode());
     }
 
     /**
-     * 按唯一键新增或覆盖动作。
+     * 按唯一键新增或覆盖权限。
      *
      * @return true 新增，false 覆盖
      */
-    private boolean upsertAcl(String subjectType, String subjectId, String resourceType, String resourceId, String actions) {
+    private boolean upsertAcl(int subjectType, String subjectId, String resourceType, String resourceId, int permission) {
         long now = System.currentTimeMillis();
         ResourceAcl existing = resourceAclProfile.getByUnique(subjectType, subjectId, resourceType, resourceId);
         if (existing != null) {
-            existing.setActions(actions);
+            existing.setPermission(permission);
             existing.setUpdateTime(now);
             resourceAclProfile.update(existing);
             return false;
@@ -223,7 +223,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         acl.setSubjectId(subjectId);
         acl.setResourceType(resourceType);
         acl.setResourceId(resourceId);
-        acl.setActions(actions);
+        acl.setPermission(permission);
         acl.setCreateTime(now);
         acl.setUpdateTime(now);
         resourceAclProfile.add(acl);
@@ -297,8 +297,8 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     }
 
     @Override
-    public void revokeAllForSubject(String subjectType, String subjectId) {
-        if (StringUtil.isBlank(subjectType) || StringUtil.isBlank(subjectId)) {
+    public void revokeAllForSubject(int subjectType, String subjectId) {
+        if (StringUtil.isBlank(subjectId)) {
             return;
         }
         resourceAclProfile.removeBySubject(subjectType, subjectId);
@@ -356,12 +356,10 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             return Collections.emptySet();
         }
         Set<String> allowed = new LinkedHashSet<>();
-        //运行用户资源id
         collectAllowedIds(resourceAclProfile.listBySubject(ResourceAclSubjectEnum.USER.getCode(), user.getId()), resourceType, action, allowed);
         List<UserRole> userRoles = rbacProfile.listUserRolesByUserId(user.getId());
         if (!CollectionUtils.isEmpty(userRoles)) {
             for (UserRole ur : userRoles) {
-                //允许角色范围资源id
                 collectAllowedIds(resourceAclProfile.listBySubject(ResourceAclSubjectEnum.ROLE.getCode(), ur.getRoleId()),
                         resourceType, action, allowed);
             }
@@ -423,8 +421,9 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         if (CollectionUtils.isEmpty(resourceIds) || out == null) {
             return;
         }
+        String action = StringUtil.isBlank(need) ? StringUtil.EMPTY : need.trim().toLowerCase(Locale.ROOT);
         for (ResourceAcl resource : resourceIds) {
-            if (resource == null || !containsAction(resource.getActions(), need)) {
+            if (resource == null || !ResourceAclPermissionEnum.satisfies(resource.getPermission(), action)) {
                 continue;
             }
             if (StringUtil.equals(resourceType, resource.getResourceType())) {
@@ -445,7 +444,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             return false;
         }
         for (ResourceAcl acl : acls) {
-            if (acl == null || !containsAction(acl.getActions(), need)) {
+            if (acl == null || !ResourceAclPermissionEnum.satisfies(acl.getPermission(), need)) {
                 continue;
             }
             if (StringUtil.equals(resourceType, acl.getResourceType())
@@ -469,19 +468,23 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     private ResourceAclVO toResourceAclVO(ResourceAcl acl) {
         ResourceAclVO vo = new ResourceAclVO();
         BeanUtils.copyProperties(acl, vo);
+        ResourceAclSubjectEnum subject = ResourceAclSubjectEnum.get(acl.getSubjectType());
+        vo.setSubjectTypeName(subject == null ? String.valueOf(acl.getSubjectType()) : subject.getName());
         vo.setSubjectName(resolveSubjectName(acl.getSubjectType(), acl.getSubjectId()));
         vo.setResourceName(resolveResourceName(acl.getResourceType(), acl.getResourceId()));
+        ResourceAclPermissionEnum permission = ResourceAclPermissionEnum.get(acl.getPermission());
+        vo.setPermissionName(permission == null ? String.valueOf(acl.getPermission()) : permission.getName());
         return vo;
     }
 
-    private String resolveSubjectName(String subjectType, String subjectId) {
+    private String resolveSubjectName(int subjectType, String subjectId) {
         ResourceAclSubjectEnum subject = ResourceAclSubjectEnum.get(subjectType);
         if (subject == null) {
             return subjectId;
         }
         if (subject.isRole()) {
             Role role = rbacProfile.getRoleById(subjectId);
-            return role == null ? subjectId : role.getName() + " (" + role.getCode() + ")";
+            return role == null ? subjectId : role.getName();
         }
         List<UserInfo> users = userProfile.listUserInfos();
         if (!CollectionUtils.isEmpty(users)) {
@@ -550,9 +553,9 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         }
     }
 
-    private String resolveSubjectId(String subjectType, String subjectId, String subjectCode, String username) {
+    private String resolveSubjectId(int subjectType, String subjectId, String username) {
         ResourceAclSubjectEnum subject = ResourceAclSubjectEnum.get(subjectType);
-        Assert.notNull(subject, "主体类型仅支持 ROLE/USER");
+        Assert.notNull(subject, "主体类型仅支持用户/角色");
         if (StringUtil.isNotBlank(subjectId)) {
             if (subject.isRole()) {
                 Assert.notNull(rbacProfile.getRoleById(subjectId), "角色不存在");
@@ -562,10 +565,7 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             return subjectId;
         }
         if (subject.isRole()) {
-            Assert.hasText(subjectCode, "请选择角色");
-            Role role = rbacProfile.getRoleByCode(subjectCode.trim());
-            Assert.notNull(role, "角色不存在");
-            return role.getId();
+            throw new IllegalArgumentException("请选择角色");
         }
         Assert.hasText(username, "请选择用户");
         UserInfo user = userProfile.getByUsername(username.trim());
@@ -574,33 +574,19 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         return user.getId();
     }
 
-    private String normalizeSubjectType(String raw) {
+    private int normalizeSubjectType(String raw) {
         Assert.hasText(raw, "主体类型不能为空");
-        ResourceAclSubjectEnum subject = ResourceAclSubjectEnum.get(raw);
-        Assert.notNull(subject, "主体类型仅支持 ROLE/USER");
-        return subject.getCode();
+        Assert.isTrue(NumberUtil.isCreatable(raw.trim()), "主体类型无效");
+        int code = NumberUtil.toInt(raw.trim());
+        Assert.isTrue(ResourceAclSubjectEnum.isSupported(code), "主体类型仅支持用户/角色");
+        return code;
     }
 
-    private String normalizeActions(String raw) {
-        if (StringUtil.isBlank(raw)) {
-            return StringUtil.EMPTY;
-        }
-        Set<String> allowed = ResourceAclActionEnum.allCodes();
-        Set<String> selected = Arrays.stream(raw.split(StringUtil.COMMA))
-                .map(String::trim)
-                .filter(StringUtil::isNotBlank)
-                .map(s -> s.toLowerCase(Locale.ROOT))
-                .filter(allowed::contains)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        return String.join(StringUtil.COMMA, selected);
-    }
-
-    private boolean containsAction(String actions, String need) {
-        for (String part : actions.split(StringUtil.COMMA)) {
-            if (StringUtil.equalsIgnoreCase(need, part)) {
-                return true;
-            }
-        }
-        return false;
+    private int normalizePermission(String raw) {
+        Assert.hasText(raw, "请选择权限");
+        Assert.isTrue(NumberUtil.isCreatable(raw.trim()), "权限无效");
+        int code = NumberUtil.toInt(raw.trim());
+        Assert.isTrue(ResourceAclPermissionEnum.isSupported(code), "权限仅支持只读/可读写");
+        return code;
     }
 }

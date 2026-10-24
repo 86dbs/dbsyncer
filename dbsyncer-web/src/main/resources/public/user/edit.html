@@ -21,11 +21,11 @@
                 <div class="form-item">
                     <label class="form-label">角色</label>
                     <div class="form-control-area">
-                        <select id="roleCode" class="form-control" name="roleCode" th:if="${canAssignRole}" required>
+                        <select id="roleId" class="form-control" name="roleId" th:if="${canAssignRole}" required>
                             <option th:each="r : ${roles}"
-                                    th:value="${r.code}"
-                                    th:text="${r.name + ' (' + r.code + ')'}"
-                                    th:selected="${r.code == currentUser?.roleCode}"></option>
+                                    th:value="${r.id}"
+                                    th:text="${r.name}"
+                                    th:selected="${r.id == currentUser?.roleId}"></option>
                         </select>
                         <input class="form-control" type="text" readonly th:unless="${canAssignRole}"
                                th:value="${currentUser?.roleName}"/>
@@ -67,27 +67,6 @@
                                placeholder="请输入新密码"/>
                     </div>
                 </div>
-
-                <!-- 邮箱 -->
-                <div class="form-item">
-                    <label class="form-label">邮箱
-                        <i class="fa fa-question-circle text-tertiary"
-                           title="支持多个邮箱，用逗号分隔"></i>
-                    </label>
-                    <div class="form-control-area">
-                        <input type="text" class="form-control" name="email" data-role="tagsinput"
-                               th:value="${currentUser?.email}" placeholder="请输入邮箱地址，支持多个邮箱"/>
-                    </div>
-                </div>
-
-                <!-- 手机 -->
-                <div class="form-item">
-                    <label class="form-label">手机</label>
-                    <div class="form-control-area">
-                        <input type="tel" class="form-control" maxlength="13" name="phone"
-                               th:value="${currentUser?.phone}" placeholder="请输入手机号码"/>
-                    </div>
-                </div>
             </div>
         </form>
         <!-- 为角色 dbSelect 下拉预留高度，避免被 form-container 裁切 -->
@@ -98,11 +77,8 @@
 <script type="text/javascript" th:inline="javascript">
     const currentUserName = [[${currentUserName}]];
 
-    // 绑定多值输入框事件
-    initMultipleInputTags();
-
-    if ($('#roleCode').length) {
-        $('#roleCode').dbSelect({type: 'single'});
+    if ($('#roleId').length) {
+        $('#roleId').dbSelect({type: 'single'});
     }
 
     //保存

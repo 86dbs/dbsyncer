@@ -3,23 +3,23 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.parser.model.NoticeMentionRule;
+import org.dbsyncer.parser.model.NoticeRule;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * 告警 @ 覆盖规则。
+ * 告警通知规则。
  *
  * @author wuji
  * @version 1.0.0
  */
-public interface NoticeMentionRuleService {
+public interface NoticeRuleService {
 
     /**
      * 全部规则。
      */
-    List<NoticeMentionRule> listAll();
+    List<NoticeRule> listAll();
 
     /**
      * 新增或更新。

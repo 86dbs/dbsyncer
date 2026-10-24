@@ -5,7 +5,7 @@
 <div class="form-container">
     <div class="card-header">
         <h3 class="card-title text-center"
-            th:text="${acl != null} ? '资源授权 / 修改资源授权' : '资源授权 / 添加资源授权'">资源授权</h3>
+            th:text="${acl != null} ? '资源授权' : '资源授权'">资源授权</h3>
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">
@@ -27,11 +27,11 @@
                 <label class="form-label">类型<strong class="text-primary">*</strong></label>
                 <div class="form-control-area">
                     <div id="subjectTypeGroup" class="radio-group radio-group-control-height">
-                        <input type="radio" name="subjectType" value="USER"
-                               th:checked="${acl?.subjectType == 'USER'}"/>
+                        <input type="radio" name="subjectType" value="0"
+                               th:checked="${acl?.subjectType == 0}"/>
                         <label>用户</label>
-                        <input type="radio" name="subjectType" value="ROLE"
-                               th:checked="${acl == null or acl.subjectType == 'ROLE'}"/>
+                        <input type="radio" name="subjectType" value="1"
+                               th:checked="${acl == null or acl.subjectType == 1}"/>
                         <label>角色</label>
                     </div>
                 </div>
@@ -39,22 +39,22 @@
             <div class="form-item mb-5">
                 <label class="form-label" id="subjectPickLabel">选择角色<strong class="text-primary">*</strong></label>
                 <div class="form-control-area">
-                    <div id="roleSelectWrap">
+                    <div id="roleSelectWrap" class="w-320 max-w-full">
                         <select id="subjectRoleId" class="form-control" name="subjectId">
                             <option value="">请选择角色</option>
                             <option th:each="r : ${roles}"
                                     th:value="${r.id}"
-                                    th:text="${r.name + ' (' + r.code + ')'}"
-                                    th:selected="${acl?.subjectType == 'ROLE' and acl?.subjectId == r.id}"></option>
+                                    th:text="${r.name}"
+                                    th:selected="${acl?.subjectType == 1 and acl?.subjectId == r.id}"></option>
                         </select>
                     </div>
-                    <div id="userSelectWrap" class="hidden">
+                    <div id="userSelectWrap" class="hidden w-320 max-w-full">
                         <select id="subjectUsername" class="form-control" name="username">
                             <option value="">请选择用户</option>
                             <option th:each="u : ${users}"
                                     th:value="${u.username}"
                                     th:text="${u.nickname + ' (' + u.username + ')'}"
-                                    th:selected="${acl?.subjectType == 'USER' and acl?.subjectId == u.id}"></option>
+                                    th:selected="${acl?.subjectType == 0 and acl?.subjectId == u.id}"></option>
                         </select>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
             <!-- 资源范围 -->
             <h4 class="card-title mb-3">资源范围</h4>
             <p class="text-sm text-tertiary mb-4"
-               th:text="${acl != null} ? '修改当前授权对应的资源与动作。' : '可勾选多种资源类型，并在下方列表中多选具体资源；权限对全部选中资源统一生效。'">
+               th:text="${acl != null} ? '修改当前授权对应的资源与权限。' : '可勾选多种资源类型，并在下方列表中多选具体资源；权限对全部选中资源统一生效。'">
             </p>
             <div class="form-item mb-4">
                 <label class="form-label">资源类型<strong class="text-primary">*</strong></label>
@@ -99,79 +99,88 @@
                 <div id="groupResourceWrap" class="form-item mb-3">
                     <label class="form-label">业务分组<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <select id="resourceGroupId" class="form-control">
-                            <option th:each="g : ${groups}"
-                                    th:value="${g.id}"
-                                    th:text="${g.name}"
-                                    th:selected="${acl?.resourceType == 'group' and acl?.resourceId == g.id}"></option>
-                        </select>
+                        <div class="w-320 max-w-full">
+                            <select id="resourceGroupId" class="form-control">
+                                <option th:each="g : ${groups}"
+                                        th:value="${g.id}"
+                                        th:text="${g.name}"
+                                        th:selected="${acl?.resourceType == 'group' and acl?.resourceId == g.id}"></option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div id="connectorResourceWrap" class="form-item mb-3">
                     <label class="form-label">连接<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <select id="resourceConnectorId" class="form-control">
-                            <option th:each="c : ${connectors}"
-                                    th:value="${c.id}"
-                                    th:text="${c.name}"
-                                    th:selected="${acl?.resourceType == 'connector' and acl?.resourceId == c.id}"></option>
-                        </select>
+                        <div class="w-320 max-w-full">
+                            <select id="resourceConnectorId" class="form-control">
+                                <option th:each="c : ${connectors}"
+                                        th:value="${c.id}"
+                                        th:text="${c.name}"
+                                        th:selected="${acl?.resourceType == 'connector' and acl?.resourceId == c.id}"></option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div id="mappingResourceWrap" class="form-item mb-3">
                     <label class="form-label">同步任务<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <select id="resourceMappingId" class="form-control">
-                            <option th:each="m : ${mappings}"
-                                    th:value="${m.id}"
-                                    th:text="${m.name}"
-                                    th:selected="${acl?.resourceType == 'mapping' and acl?.resourceId == m.id}"></option>
-                        </select>
+                        <div class="w-320 max-w-full">
+                            <select id="resourceMappingId" class="form-control">
+                                <option th:each="m : ${mappings}"
+                                        th:value="${m.id}"
+                                        th:text="${m.name}"
+                                        th:selected="${acl?.resourceType == 'mapping' and acl?.resourceId == m.id}"></option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div id="validateSyncResourceWrap" class="form-item mb-3">
                     <label class="form-label">订正校验<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <select id="resourceValidateSyncId" class="form-control">
-                            <option th:each="t : ${validateSyncTasks}"
-                                    th:value="${t.id}"
-                                    th:text="${t.name}"
-                                    th:selected="${acl?.resourceType == 'validateSync' and acl?.resourceId == t.id}"></option>
-                        </select>
+                        <div class="w-320 max-w-full">
+                            <select id="resourceValidateSyncId" class="form-control">
+                                <option th:each="t : ${validateSyncTasks}"
+                                        th:value="${t.id}"
+                                        th:text="${t.name}"
+                                        th:selected="${acl?.resourceType == 'validateSync' and acl?.resourceId == t.id}"></option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div id="databaseSyncResourceWrap" class="form-item mb-3">
                     <label class="form-label">整库迁移<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <select id="resourceDatabaseSyncId" class="form-control">
-                            <option th:each="t : ${databaseSyncTasks}"
-                                    th:value="${t.id}"
-                                    th:text="${t.name}"
-                                    th:selected="${acl?.resourceType == 'databaseSync' and acl?.resourceId == t.id}"></option>
-                        </select>
+                        <div class="w-320 max-w-full">
+                            <select id="resourceDatabaseSyncId" class="form-control">
+                                <option th:each="t : ${databaseSyncTasks}"
+                                        th:value="${t.id}"
+                                        th:text="${t.name}"
+                                        th:selected="${acl?.resourceType == 'databaseSync' and acl?.resourceId == t.id}"></option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="border-t mb-5"></div>
 
-            <!-- 动作权限 -->
-            <h4 class="card-title mb-3">动作权限</h4>
-            <p class="text-sm text-tertiary mb-4">作用于上面全部选中资源；至少选择一项。</p>
+            <!-- 权限档位：开=可读写，关=只读 -->
+            <h4 class="card-title mb-3">权限</h4>
+            <p class="text-sm text-tertiary mb-4">
+                作用于上面全部选中资源；关闭为只读（可查看），开启为可读写（含编辑与启停）。</p>
             <div class="form-item mb-4">
-                <label class="form-label">权限<strong class="text-primary">*</strong></label>
+                <label class="form-label">可读写</label>
                 <div class="form-control-area">
-                    <div id="aclActionGroup" class="checkbox-group checkbox-group-inline">
-                        <input type="checkbox" id="act_read" name="actionItem" value="read"
-                               th:checked="${acl == null or #strings.contains(acl?.actions, 'read')}"/>
-                        <label for="act_read" title="查看资源、列表、详情，不可修改启停">read 查看</label>
-                        <input type="checkbox" id="act_write" name="actionItem" value="write"
-                               th:checked="${acl != null and #strings.contains(acl?.actions, 'write')}"/>
-                        <label for="act_write" title="新增、修改、删除资源配置">write 编辑</label>
-                        <input type="checkbox" id="act_operate" name="actionItem" value="operate"
-                               th:checked="${acl != null and #strings.contains(acl?.actions, 'operate')}"/>
-                        <label for="act_operate" title="启停、执行、重试等运行时操作">operate 操作</label>
-                    </div>
+                    <label class="form-switch" title="开启：可读写；关闭：只读">
+                        <input id="aclPermissionSwitch" name="permission" type="checkbox"
+                               th:checked="${acl == null or acl.permission == 1}"/>
+                        <span class="switch-track">
+                            <span class="switch-option switch-option-on">Yes</span>
+                            <span class="switch-option switch-option-off">No</span>
+                            <span class="switch-thumb"></span>
+                        </span>
+                    </label>
                 </div>
             </div>
         </form>
@@ -181,10 +190,16 @@
 
 <script type="text/javascript" th:inline="javascript">
     $(function () {
-        const editMode = [[${acl != null}]];
-        const editingUser = [[${acl != null and acl.subjectType == 'USER'}]];
+        const editMode = [[${acl != null
+    }]]
+        ;
+        const editingUser = [[${acl != null and acl.subjectType == 0
+    }]]
+        ;
         const initResourceType = /*[[${acl != null and acl.resourceType != null ? acl.resourceType : 'group'}]]*/ 'group';
         const resourceSelectType = editMode ? 'single' : 'multiple';
+        const SUBJECT_USER = '0';
+        const SUBJECT_ROLE = '1';
 
         const RESOURCE_META = {
             group: {wrap: '#groupResourceWrap', select: '#resourceGroupId', label: '业务分组'},
@@ -212,11 +227,11 @@
                 syncResourceTypePanel(values);
             }
         });
-        $('#aclActionGroup').checkboxGroup({theme: 'primary', size: 'md', layout: 'inline'});
+        initSwitch($('#aclPermissionSwitch'));
 
         function syncSubjectType(type) {
-            const current = (type || 'ROLE').toUpperCase();
-            if (current === 'USER') {
+            const current = String(type == null ? SUBJECT_ROLE : type);
+            if (current === SUBJECT_USER) {
                 $('#roleSelectWrap').hide();
                 $('#userSelectWrap').show();
                 $('#subjectPickLabel').html('选择用户<strong class="text-primary">*</strong>');
@@ -268,7 +283,7 @@
                 syncSubjectType(value);
             }
         });
-        syncSubjectType(editingUser ? 'USER' : 'ROLE');
+        syncSubjectType(editingUser ? SUBJECT_USER : SUBJECT_ROLE);
 
         if (editMode) {
             $('#resourceTypeGroup input[name="resourceTypeItem"]').each(function () {
@@ -285,12 +300,12 @@
         syncResourceTypePanel();
 
         $('#aclSubmitBtn').on('click', function () {
-            const subjectType = ($('#subjectTypeGroup input[name="subjectType"]:checked').val() || 'ROLE').toUpperCase();
-            if (subjectType === 'ROLE' && !$('#subjectRoleId').val()) {
+            const subjectType = String($('#subjectTypeGroup input[name="subjectType"]:checked').val() || SUBJECT_ROLE);
+            if (subjectType === SUBJECT_ROLE && !$('#subjectRoleId').val()) {
                 bootGrowl('请选择角色', 'warning');
                 return;
             }
-            if (subjectType === 'USER' && !$('#subjectUsername').val()) {
+            if (subjectType === SUBJECT_USER && !$('#subjectUsername').val()) {
                 bootGrowl('请选择用户', 'warning');
                 return;
             }
@@ -313,21 +328,12 @@
                 bootGrowl('请选择资源', 'warning');
                 return;
             }
-            const actions = [];
-            $('#acl-form-edit').find('input[name="actionItem"]:checked').each(function () {
-                actions.push($(this).val());
-            });
-            if (!actions.length) {
-                bootGrowl('请至少选择一个动作', 'warning');
-                return;
-            }
-
             const data = {
                 id: $('#acl-form-edit').find('input[name="id"]').val(),
                 subjectType: subjectType,
-                subjectId: subjectType === 'ROLE' ? $('#subjectRoleId').val() : '',
-                username: subjectType === 'USER' ? $('#subjectUsername').val() : '',
-                actions: actions.join(',')
+                subjectId: subjectType === SUBJECT_ROLE ? $('#subjectRoleId').val() : '',
+                username: subjectType === SUBJECT_USER ? $('#subjectUsername').val() : '',
+                permission: $('#aclPermissionSwitch').is(':checked') ? '1' : '0'
             };
             if (editMode) {
                 data.resourceType = types[0];

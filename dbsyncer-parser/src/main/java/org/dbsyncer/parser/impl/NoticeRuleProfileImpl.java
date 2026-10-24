@@ -6,9 +6,9 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.NoticeMentionRuleProfile;
+import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.parser.model.NoticeMentionRule;
+import org.dbsyncer.parser.model.NoticeRule;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -22,13 +22,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@link NoticeMentionRuleProfile} 实现。
+ * {@link NoticeRuleProfile} 实现。
  *
  * @author wuji
  * @version 1.0.0
  */
 @Component
-public class NoticeMentionRuleProfileImpl implements NoticeMentionRuleProfile {
+public class NoticeRuleProfileImpl implements NoticeRuleProfile {
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -37,27 +37,27 @@ public class NoticeMentionRuleProfileImpl implements NoticeMentionRuleProfile {
     private StorageService storageService;
 
     @Override
-    public List<NoticeMentionRule> listAll() {
-        return operationTemplate.queryList(StorageEnum.NOTICE_MENTION_RULE, new Query(), NoticeMentionRule.class);
+    public List<NoticeRule> listAll() {
+        return operationTemplate.queryList(StorageEnum.NOTICE_RULE, new Query(), NoticeRule.class);
     }
 
     @Override
-    public NoticeMentionRule get(String id) {
+    public NoticeRule get(String id) {
         if (StringUtil.isBlank(id)) {
             return null;
         }
-        return operationTemplate.queryObject(NoticeMentionRule.class, id);
+        return operationTemplate.queryObject(NoticeRule.class, id);
     }
 
     @Override
-    public NoticeMentionRule getByScope(String scopeType, String scopeId) {
+    public NoticeRule getByScope(String scopeType, String scopeId) {
         if (StringUtil.isBlank(scopeType) || StringUtil.isBlank(scopeId)) {
             return null;
         }
         Query query = new Query(1, 1);
-        query.setType(StorageEnum.NOTICE_MENTION_RULE);
-        query.addFilter(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, scopeType);
-        query.addFilter(ConfigConstant.NOTICE_MENTION_SCOPE_ID, scopeId);
+        query.setType(StorageEnum.NOTICE_RULE);
+        query.addFilter(ConfigConstant.NOTICE_RULE_SCOPE_TYPE, scopeType);
+        query.addFilter(ConfigConstant.NOTICE_RULE_SCOPE_ID, scopeId);
         Paging paging = storageService.query(query);
         if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
             return null;
@@ -66,26 +66,26 @@ public class NoticeMentionRuleProfileImpl implements NoticeMentionRuleProfile {
         if (!(first instanceof Map)) {
             return null;
         }
-        return ConfigModelUtil.parseFromRow((Map) first, NoticeMentionRule.class);
+        return ConfigModelUtil.parseFromRow((Map) first, NoticeRule.class);
     }
 
     @Override
-    public List<NoticeMentionRule> listByScopeType(String scopeType) {
+    public List<NoticeRule> listByScopeType(String scopeType) {
         if (StringUtil.isBlank(scopeType)) {
             return Collections.emptyList();
         }
         Query condition = new Query();
-        condition.addFilter(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, scopeType);
-        return operationTemplate.queryList(StorageEnum.NOTICE_MENTION_RULE, condition, NoticeMentionRule.class);
+        condition.addFilter(ConfigConstant.NOTICE_RULE_SCOPE_TYPE, scopeType);
+        return operationTemplate.queryList(StorageEnum.NOTICE_RULE, condition, NoticeRule.class);
     }
 
     @Override
-    public String add(NoticeMentionRule rule) {
+    public String add(NoticeRule rule) {
         return operationTemplate.execute(rule, CommandEnum.OPR_ADD);
     }
 
     @Override
-    public String update(NoticeMentionRule rule) {
+    public String update(NoticeRule rule) {
         return operationTemplate.execute(rule, CommandEnum.OPR_EDIT);
     }
 
@@ -94,7 +94,7 @@ public class NoticeMentionRuleProfileImpl implements NoticeMentionRuleProfile {
         if (StringUtil.isBlank(id)) {
             return;
         }
-        storageService.remove(StorageEnum.NOTICE_MENTION_RULE, id);
+        storageService.remove(StorageEnum.NOTICE_RULE, id);
     }
 
     @Override
@@ -103,9 +103,9 @@ public class NoticeMentionRuleProfileImpl implements NoticeMentionRuleProfile {
             return;
         }
         Query query = new Query();
-        query.setType(StorageEnum.NOTICE_MENTION_RULE);
-        query.addFilter(ConfigConstant.NOTICE_MENTION_SCOPE_TYPE, scopeType);
-        query.addFilter(ConfigConstant.NOTICE_MENTION_SCOPE_ID, scopeId);
+        query.setType(StorageEnum.NOTICE_RULE);
+        query.addFilter(ConfigConstant.NOTICE_RULE_SCOPE_TYPE, scopeType);
+        query.addFilter(ConfigConstant.NOTICE_RULE_SCOPE_ID, scopeId);
         storageService.delete(query);
     }
 }

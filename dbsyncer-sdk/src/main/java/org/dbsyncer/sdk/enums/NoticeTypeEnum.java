@@ -53,4 +53,16 @@ public enum NoticeTypeEnum {
     public int getCode() {
         return code;
     }
+
+    /**
+     * 按编码解析；未知返回 {@code null}。
+     */
+    public static NoticeTypeEnum getByCode(int code) {
+        for (NoticeTypeEnum type : values()) {
+            if (type.code == code) {
+                return type;
+            }
+        }
+        return null;
+    }
 }

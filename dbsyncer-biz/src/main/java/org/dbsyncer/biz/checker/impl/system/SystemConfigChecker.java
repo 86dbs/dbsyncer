@@ -79,6 +79,8 @@ public class SystemConfigChecker extends AbstractChecker {
         SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         SystemConfig newConfig = systemConfig.clone();
         BeanUtil.mapToBean(newParams, newConfig);
+        Assert.isTrue(newConfig.getLoginLockMinutes() >= 1 && newConfig.getLoginLockMinutes() <= 1440,
+                "登录锁定时长支持的范围[1-1440]分钟");
         // 修改 API 密钥配置
         saveApiKeyConfig(newConfig, params);
         // 修改RSA配置

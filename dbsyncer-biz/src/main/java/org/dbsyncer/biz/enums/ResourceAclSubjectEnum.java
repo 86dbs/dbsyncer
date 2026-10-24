@@ -3,12 +3,8 @@
  */
 package org.dbsyncer.biz.enums;
 
-import org.dbsyncer.common.util.StringUtil;
-
-import java.util.Locale;
-
 /**
- * 资源 ACL 授权主体类型。
+ * 资源 ACL 授权主体类型：0-USER / 1-ROLE。
  *
  * @author wuji
  * @version 1.0.0
@@ -16,33 +12,29 @@ import java.util.Locale;
 public enum ResourceAclSubjectEnum {
 
     /**
-     * 角色
-     */
-    ROLE("ROLE", "角色"),
-
-    /**
      * 用户
      */
-    USER("USER", "用户");
+    USER(0, "用户"),
 
-    private final String code;
+    /**
+     * 角色
+     */
+    ROLE(1, "角色");
+
+    private final int code;
     private final String name;
 
-    ResourceAclSubjectEnum(String code, String name) {
+    ResourceAclSubjectEnum(int code, String name) {
         this.code = code;
         this.name = name;
     }
 
     /**
-     * 按编码解析（大小写不敏感）；未知返回 {@code null}。
+     * 按编码解析；未知返回 {@code null}。
      */
-    public static ResourceAclSubjectEnum get(String code) {
-        if (StringUtil.isBlank(code)) {
-            return null;
-        }
-        String key = code.trim().toUpperCase(Locale.ROOT);
+    public static ResourceAclSubjectEnum get(int code) {
         for (ResourceAclSubjectEnum subject : values()) {
-            if (StringUtil.equals(subject.code, key)) {
+            if (subject.code == code) {
                 return subject;
             }
         }
@@ -52,11 +44,11 @@ public enum ResourceAclSubjectEnum {
     /**
      * 是否支持的主体类型编码。
      */
-    public static boolean isSupported(String code) {
+    public static boolean isSupported(int code) {
         return get(code) != null;
     }
 
-    public String getCode() {
+    public int getCode() {
         return code;
     }
 

@@ -73,7 +73,7 @@ public class RoleServiceImpl implements RoleService {
             }
             result.add(toRoleVO(role, false));
         }
-        result.sort(Comparator.comparing(RoleVO::getCode, Comparator.nullsLast(String::compareTo)));
+        result.sort(Comparator.comparing(RoleVO::getName, Comparator.nullsLast(String::compareTo)));
         return result;
     }
 
@@ -126,33 +126,23 @@ public class RoleServiceImpl implements RoleService {
         String currentUserName = params.get(UserConfigService.CURRENT_USER_NAME);
         permissionChecker.requirePermission(currentUserName, PERM_USER_EDIT);
 
-        String code = normalizeRoleCode(params.get("code"));
-        Assert.isNull(rbacProfile.getRoleByCode(code), "角色编码已存在");
-
         String name = requireName(params.get("name"));
-        String remark = normalizeRemark(params.get("remark"));
         List<Permission> selected = resolveSelectedPermissions(params.get("permissionCodes"));
 
         long now = System.currentTimeMillis();
         Role role = new Role();
-        role.setCode(code);
         role.setName(name);
-        role.setBuiltin(0);
-        role.setRemark(remark);
         role.setCreateTime(now);
         role.setUpdateTime(now);
         String roleId = rbacProfile.addRole(role);
         Assert.hasText(roleId, "创建角色失败");
         Role created = rbacProfile.getRoleById(roleId);
-        if (created == null) {
-            created = rbacProfile.getRoleByCode(code);
-        }
         Assert.notNull(created, "创建角色失败");
         roleId = created.getId();
 
         bindPermissions(roleId, selected, now);
         logService.log(LogType.UserLog.INSERT,
-                String.format("[%s]新增角色[%s]，权限%d项", currentUserName, code, selected.size()));
+                String.format("[%s]新增角色[%s](%s)，权限%d项", currentUserName, name, roleId, selected.size()));
         return roleId;
     }
 
@@ -166,21 +156,18 @@ public class RoleServiceImpl implements RoleService {
         Assert.hasText(roleId, "角色ID不能为空");
         Role role = rbacProfile.getRoleById(roleId);
         Assert.notNull(role, "角色不存在");
-        Assert.isTrue(role.getBuiltin() != 1, "内置角色不可编辑");
 
         String name = requireName(params.get("name"));
-        String remark = normalizeRemark(params.get("remark"));
         List<Permission> selected = resolveSelectedPermissions(params.get("permissionCodes"));
 
         long now = System.currentTimeMillis();
         role.setName(name);
-        role.setRemark(remark);
         role.setUpdateTime(now);
         rbacProfile.updateRole(role);
         bindPermissions(roleId, selected, now);
 
         logService.log(LogType.UserLog.UPDATE,
-                String.format("[%s]更新角色[%s]权限，共%d项", currentUserName, role.getCode(), selected.size()));
+                String.format("[%s]更新角色[%s](%s)权限，共%d项", currentUserName, role.getName(), roleId, selected.size()));
         return roleId;
     }
 
@@ -194,7 +181,6 @@ public class RoleServiceImpl implements RoleService {
         Assert.hasText(roleId, "角色ID不能为空");
         Role role = rbacProfile.getRoleById(roleId);
         Assert.notNull(role, "角色不存在");
-        Assert.isTrue(role.getBuiltin() != 1, "内置角色不可删除");
 
         List<?> bound = rbacProfile.listUserRolesByRoleId(roleId);
         Assert.isTrue(CollectionUtils.isEmpty(bound), "角色仍有用户绑定，无法删除");
@@ -203,7 +189,7 @@ public class RoleServiceImpl implements RoleService {
         rbacProfile.removeRole(roleId);
         resourceAclService.revokeAllForSubject(ResourceAclSubjectEnum.ROLE.getCode(), roleId);
         logService.log(LogType.UserLog.DELETE,
-                String.format("[%s]删除角色[%s]", currentUserName, role.getCode()));
+                String.format("[%s]删除角色[%s](%s)", currentUserName, role.getName(), roleId));
         return "删除角色成功";
     }
 
@@ -242,24 +228,11 @@ public class RoleServiceImpl implements RoleService {
         return selected;
     }
 
-    private String normalizeRoleCode(String raw) {
-        Assert.hasText(raw, "角色编码不能为空");
-        String code = raw.trim().toLowerCase();
-        Assert.isTrue(code.matches("^[a-z][a-z0-9_]{1,31}$"), "角色编码须为小写字母开头，仅含字母数字下划线，长度2~32");
-        return code;
-    }
-
     private String requireName(String raw) {
         Assert.hasText(raw, "角色名称不能为空");
         String name = raw.trim();
         Assert.isTrue(name.length() <= 64, "角色名称过长");
         return name;
-    }
-
-    private String normalizeRemark(String raw) {
-        String remark = raw == null ? "" : raw.trim();
-        Assert.isTrue(remark.length() <= 200, "备注过长");
-        return remark;
     }
 
     private RoleVO toRoleVO(Role role, boolean withCodes) {
@@ -301,4 +274,3 @@ public class RoleServiceImpl implements RoleService {
     }
 
 }
-

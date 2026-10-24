@@ -13,12 +13,17 @@ import java.util.List;
 public class UserInfoVO extends UserInfo {
 
     /**
+     * 主角色 ID（dbsyncer_user_role）
+     */
+    private String roleId;
+
+    /**
      * 角色名称
      */
     private String roleName;
 
     /**
-     * 是否管理员角色
+     * 是否超管（username=admin）
      */
     private boolean admin;
 
@@ -31,6 +36,14 @@ public class UserInfoVO extends UserInfo {
      * 是否因登录失败被临时锁定（进程内状态，不持久化）
      */
     private boolean locked;
+
+    public String getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(String roleId) {
+        this.roleId = roleId;
+    }
 
     public String getRoleName() {
         return roleName;

@@ -3,15 +3,15 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.NoticeMentionRuleService;
+import org.dbsyncer.biz.NoticeRuleService;
 import org.dbsyncer.common.util.BooleanUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.GroupProfile;
 import org.dbsyncer.parser.MappingProfile;
-import org.dbsyncer.parser.NoticeMentionRuleProfile;
+import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.NoticeMentionRule;
+import org.dbsyncer.parser.model.NoticeRule;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -21,16 +21,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@link NoticeMentionRuleService} 实现。
+ * {@link NoticeRuleService} 实现。
  *
  * @author wuji
  * @version 1.0.0
  */
 @Service
-public class NoticeMentionRuleServiceImpl implements NoticeMentionRuleService {
+public class NoticeRuleServiceImpl implements NoticeRuleService {
 
     @Resource
-    private NoticeMentionRuleProfile noticeMentionRuleProfile;
+    private NoticeRuleProfile noticeRuleProfile;
 
     @Resource
     private GroupProfile groupProfile;
@@ -39,8 +39,8 @@ public class NoticeMentionRuleServiceImpl implements NoticeMentionRuleService {
     private MappingProfile mappingProfile;
 
     @Override
-    public List<NoticeMentionRule> listAll() {
-        return noticeMentionRuleProfile.listAll();
+    public List<NoticeRule> listAll() {
+        return noticeRuleProfile.listAll();
     }
 
     @Override
@@ -56,36 +56,40 @@ public class NoticeMentionRuleServiceImpl implements NoticeMentionRuleService {
         assertScopeExists(scopeType, scopeId);
 
         boolean atAll = BooleanUtil.toBoolean(params.get("atAll"));
-        String atMobiles = StringUtil.trim(params.get("atMobiles"));
+        String atPhones = StringUtil.trim(params.get("atPhones"));
+        String emails = StringUtil.trim(params.get("emails"));
         if (!atAll) {
-            Assert.hasText(atMobiles, "未开启@所有人时须填写至少一个手机号");
+            Assert.isTrue(StringUtil.isNotBlank(atPhones) || StringUtil.isNotBlank(emails),
+                    "未开启@所有人时须填写手机号或邮件");
         }
 
         String id = StringUtil.trim(params.get("id"));
-        NoticeMentionRule conflict = noticeMentionRuleProfile.getByScope(scopeType, scopeId);
+        NoticeRule conflict = noticeRuleProfile.getByScope(scopeType, scopeId);
         if (StringUtil.isNotBlank(id)) {
-            NoticeMentionRule existing = noticeMentionRuleProfile.get(id);
-            Assert.notNull(existing, "提及规则不存在");
+            NoticeRule existing = noticeRuleProfile.get(id);
+            Assert.notNull(existing, "通知规则不存在");
             Assert.isTrue(conflict == null || StringUtil.equals(conflict.getId(), id),
-                    "同一分组/任务只能配置一条 @ 规则");
+                    "同一分组/任务只能配置一条通知规则");
             existing.setScopeType(scopeType);
             existing.setScopeId(scopeId);
             existing.setAtAll(atAll ? 1 : 0);
-            existing.setAtMobiles(atMobiles);
+            existing.setAtPhones(atPhones);
+            existing.setEmails(emails);
             existing.setUpdateTime(System.currentTimeMillis());
-            return noticeMentionRuleProfile.update(existing);
+            return noticeRuleProfile.update(existing);
         }
 
-        Assert.isTrue(conflict == null, "同一分组/任务只能配置一条 @ 规则");
+        Assert.isTrue(conflict == null, "同一分组/任务只能配置一条通知规则");
         long now = System.currentTimeMillis();
-        NoticeMentionRule rule = new NoticeMentionRule();
+        NoticeRule rule = new NoticeRule();
         rule.setScopeType(scopeType);
         rule.setScopeId(scopeId);
         rule.setAtAll(atAll ? 1 : 0);
-        rule.setAtMobiles(atMobiles);
+        rule.setAtPhones(atPhones);
+        rule.setEmails(emails);
         rule.setCreateTime(now);
         rule.setUpdateTime(now);
-        return noticeMentionRuleProfile.add(rule);
+        return noticeRuleProfile.add(rule);
     }
 
     @Override
@@ -93,9 +97,9 @@ public class NoticeMentionRuleServiceImpl implements NoticeMentionRuleService {
         Assert.notNull(params, "参数不能为空");
         String id = StringUtil.trim(params.get("id"));
         Assert.hasText(id, "规则ID不能为空");
-        NoticeMentionRule existing = noticeMentionRuleProfile.get(id);
-        Assert.notNull(existing, "提及规则不存在");
-        noticeMentionRuleProfile.remove(id);
+        NoticeRule existing = noticeRuleProfile.get(id);
+        Assert.notNull(existing, "通知规则不存在");
+        noticeRuleProfile.remove(id);
         return id;
     }
 

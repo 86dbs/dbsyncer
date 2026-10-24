@@ -7,9 +7,8 @@
         <h3 class="card-title text-center">用户管理</h3>
     </div>
     <div class="card-body">
-        <!-- 具备 user:edit 或管理员可添加 -->
-        <div class="form-actions mb-4" th:if="${currentUser?.admin or currentUser?.roleCode eq 'admin'}">
-            <button class="btn btn-primary" onclick="doLoader('/user/page/add')" data-permission="user:edit">
+        <div class="form-actions mb-4" data-permission="user:edit">
+            <button class="btn btn-primary" onclick="doLoader('/user/page/add')">
                 <i class="fa fa-plus"></i> 添加
             </button>
         </div>
@@ -18,20 +17,18 @@
             <tr>
                 <th>用户</th>
                 <th>角色</th>
-                <th>邮箱</th>
-                <th>手机</th>
                 <th>状态</th>
                 <th>操作</th>
             </tr>
             </thead>
             <tbody id="userList">
             <tr th:if="${users == null or users.isEmpty()}">
-                <td colspan="6" class="text-center text-tertiary py-8">暂无用户数据</td>
+                <td colspan="4" class="text-center text-tertiary py-8">暂无用户数据</td>
             </tr>
             <tr th:each="u : ${users}">
                 <td>
                     <div class="flex items-center">
-                        <div class="user-avatar badge-primary" th:if="${u?.roleCode eq 'admin'}" >
+                        <div class="user-avatar badge-primary" th:if="${u?.admin}" >
                             <i class="fa fa-user-circle"></i>
                         </div>
                         <div class="ml-2">
@@ -42,18 +39,8 @@
                 </td>
                 <td>
                     <span class="badge"
-                          th:classappend="${u?.roleCode eq 'admin'} ? 'badge-success ' : ''"
+                          th:classappend="${u?.admin} ? 'badge-success ' : ''"
                           th:text="${u?.roleName}"></span>
-                </td>
-                <td>
-                    <div class="flex flex-wrap">
-                        <span class="badge"
-                              th:each="m : ${#strings.listSplit(u?.email, ',')}"
-                              th:text="${m}"></span>
-                    </div>
-                </td>
-                <td>
-                    <span class="text-sm text-secondary" th:text="${u?.phone ?: ''}"></span>
                 </td>
                 <td>
                     <span class="badge badge-error" th:if="${u?.locked}">已锁定</span>
@@ -61,17 +48,17 @@
                 </td>
                 <td>
                     <div class="flex items-center">
-                        <!-- 管理员或本人可以修改 -->
-                        <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}" th:if="${currentUser?.admin or currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}">
+                        <!-- 本人可改；或具备 user:edit -->
+                        <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}"
+                                th:if="${currentUser?.username eq u?.username or currentUser?.admin or (currentUser?.permissions != null and #lists.contains(currentUser.permissions, 'user:edit'))}">
                             <i class="fa fa-edit"></i>
                         </button>
-                        <!-- 具备 user:edit 可提前解锁 -->
                         <button class="table-action-btn unlockUserBtn" title="解锁" th:data-username="${u?.username}"
                                 th:if="${u?.locked}" data-permission="user:edit">
                             <i class="fa fa-unlock"></i>
                         </button>
-                        <!-- 仅管理员可以删除其他用户 -->
-                        <button class="table-action-btn delete removeUserBtn" title="删除" th:data-username="${u?.username}" th:if="${(currentUser?.admin or currentUser?.roleCode eq 'admin') and currentUser?.username != u?.username}">
+                        <button class="table-action-btn delete removeUserBtn" title="删除" th:data-username="${u?.username}"
+                                th:if="${currentUser?.username != u?.username}" data-permission="user:edit">
                             <i class="fa fa-trash"></i>
                         </button>
                     </div>

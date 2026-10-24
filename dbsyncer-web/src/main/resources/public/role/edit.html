@@ -5,12 +5,11 @@
 <div class="form-container">
     <div class="card-header">
         <h3 class="card-title text-center"
-            th:text="${createMode} ? '添加角色' : (${readonly} ? '查看角色权限' : '配置角色权限')">配置角色权限</h3>
+            th:text="${createMode} ? '添加角色' : '配置角色权限'">配置角色权限</h3>
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">
-            <button id="roleSubmitBtn" class="btn btn-primary" type="button" data-permission="user:edit"
-                    th:unless="${readonly}">
+            <button id="roleSubmitBtn" class="btn btn-primary" type="button" data-permission="user:edit">
                 <i class="fa fa-save"></i> 保存
             </button>
             <button class="btn btn-outline" type="button" onclick="backIndexPage()">
@@ -19,68 +18,42 @@
         </div>
         <form id="role-form-edit" method="post">
             <input type="hidden" name="roleId" th:value="${role?.id}"/>
-            <div class="grid grid-cols-2 mb-4">
+            <div class="mb-4">
                 <div class="form-item">
-                    <label class="form-label">编码<strong class="text-primary" th:if="${createMode}">*</strong></label>
+                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="code" type="text" maxlength="32"
-                               th:readonly="${!createMode or readonly}"
-                               th:required="${createMode}"
-                               th:value="${role?.code}"
-                               placeholder="小写字母开头，如 operator"/>
-                        <div class="form-help" th:if="${createMode}">仅小写字母、数字、下划线，长度 2~32</div>
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">类型</label>
-                    <div class="form-control-area">
-                        <input class="form-control" type="text" readonly
-                               th:value="${createMode == true or role?.builtin != 1} ? '自定义' : '内置'"/>
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">名称<strong class="text-primary" th:unless="${readonly}">*</strong></label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="name" type="text" maxlength="64"
-                               th:required="${!readonly}"
-                               th:readonly="${readonly}"
-                               placeholder="请输入角色名称" th:value="${role?.name}"/>
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">备注</label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="remark" type="text" maxlength="200"
-                               th:readonly="${readonly}"
-                               placeholder="可选备注" th:value="${role?.remark}"/>
+                        <div class="w-320 max-w-full">
+                            <input class="form-control" name="name" type="text" maxlength="64"
+                                   required
+                                   placeholder="请输入角色名称" th:value="${role?.name}"/>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between mb-3">
-                <h4 class="card-title mb-0">功能权限</h4>
-                <div class="checkbox-group checkbox-group-inline"
-                     th:if="${!readonly and permissionGroups != null and !permissionGroups.isEmpty()}">
-                    <input type="checkbox" id="rolePermSelectAll" class="rolePermSelectAll"/>
-                    <label for="rolePermSelectAll">全选</label>
-                </div>
-            </div>
-            <p class="text-sm text-tertiary mb-4"
-               th:text="${readonly} ? '内置角色仅可查看，不可修改。' : '勾选后保存即按权限码生效；菜单显隐刷新页面后更新。'">
-            </p>
+            <h4 class="card-title mb-3">功能权限</h4>
+            <p class="text-sm text-tertiary mb-4">勾选后保存即生效；菜单显隐刷新页面后更新。</p>
 
             <table class="table" id="rolePermissionTable">
                 <thead>
                 <tr>
                     <th>模块</th>
                     <th>权限名称</th>
-                    <th>权限码</th>
-                    <th>授权</th>
+                    <th>
+                        <div class="flex items-center"
+                             th:if="${permissionGroups != null and !permissionGroups.isEmpty()}">
+                            <div class="checkbox-group checkbox-group-inline">
+                                <input type="checkbox" id="rolePermSelectAll" class="rolePermSelectAll"/>
+                                <label for="rolePermSelectAll">全选</label>
+                            </div>
+                        </div>
+                        <span th:if="${permissionGroups == null or permissionGroups.isEmpty()}">授权</span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:if="${permissionGroups == null or permissionGroups.isEmpty()}">
-                    <td colspan="4" class="text-center text-tertiary py-8">暂无权限点</td>
+                    <td colspan="3" class="text-center text-tertiary py-8">暂无权限点</td>
                 </tr>
                 <th:block th:each="entry : ${permissionGroups}">
                     <tr th:each="p, stat : ${entry.value}">
@@ -88,15 +61,11 @@
                             class="font-medium text-primary" th:text="${entry.key}"></td>
                         <td th:text="${p.name}"></td>
                         <td>
-                            <span class="text-sm text-secondary" th:text="${p.code}"></span>
-                        </td>
-                        <td>
                             <div class="checkbox-group">
                                 <input type="checkbox" name="permissionCode" class="rolePermissionCheckbox"
                                        th:id="'perm_' + ${p.code}"
                                        th:value="${p.code}"
                                        th:checked="${p.granted}"
-                                       th:disabled="${readonly}"
                                        th:title="${p.name}"/>
                             </div>
                         </td>
@@ -111,20 +80,17 @@
 <script type="text/javascript" th:inline="javascript">
     $(function () {
         const createMode = [[${createMode == true}]];
-        const readonly = [[${readonly == true}]];
 
         window.backIndexPage = function () {
             doLoader('/role');
         };
 
-        const canEdit = !readonly && (!window.DBSPermission || DBSPermission.has('user:edit'));
+        const canEdit = !window.DBSPermission || DBSPermission.has('user:edit');
         const $checks = $('.rolePermissionCheckbox');
         $checks.prop('disabled', !canEdit);
-        $('input[name="name"], input[name="remark"]').prop('readonly', !canEdit);
-        if (createMode) {
-            $('input[name="code"]').prop('readonly', !canEdit);
-        }
+        $('input[name="name"]').prop('readonly', !canEdit);
         $('#rolePermSelectAll').prop('disabled', !canEdit);
+        $('#roleSubmitBtn').toggle(canEdit);
 
         $checks.checkboxGroup({
             theme: 'primary',
@@ -170,10 +136,6 @@
         });
 
         $('#roleSubmitBtn').on('click', function () {
-            if (readonly) {
-                bootGrowl('内置角色不可编辑', 'warning');
-                return;
-            }
             if (!canEdit) {
                 bootGrowl('无权限', 'danger');
                 return;
@@ -188,9 +150,7 @@
             });
             const data = {
                 roleId: $form.find('input[name="roleId"]').val(),
-                code: $form.find('input[name="code"]').val(),
                 name: $form.find('input[name="name"]').val(),
-                remark: $form.find('input[name="remark"]').val(),
                 permissionCodes: codes.join(',')
             };
             const url = createMode ? '/role/add' : '/role/edit';

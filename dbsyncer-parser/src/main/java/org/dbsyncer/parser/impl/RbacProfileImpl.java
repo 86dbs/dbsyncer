@@ -14,15 +14,20 @@ import org.dbsyncer.parser.model.RolePermission;
 import org.dbsyncer.parser.model.UserRole;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * {@link RbacProfile} 实现。
@@ -39,17 +44,6 @@ public class RbacProfileImpl implements RbacProfile {
 
     @Resource
     private StorageService storageService;
-
-    @Override
-    public Role getRoleByCode(String code) {
-        if (StringUtil.isBlank(code)) {
-            return null;
-        }
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.ROLE);
-        query.addFilter(ConfigConstant.ROLE_CODE, code);
-        return first(query, Role.class);
-    }
 
     @Override
     public List<Role> listRoles() {
@@ -114,6 +108,17 @@ public class RbacProfileImpl implements RbacProfile {
         }
         Query condition = new Query();
         condition.addFilter(ConfigConstant.ROLE_PERMISSION_ROLE_ID, roleId);
+        return operationTemplate.queryList(StorageEnum.ROLE_PERMISSION, condition, RolePermission.class);
+    }
+
+    @Override
+    public List<RolePermission> listRolePermissionsByRoleIds(Collection<String> roleIds) {
+        Set<String> ids = distinctIds(roleIds);
+        if (ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.ROLE_PERMISSION_ROLE_ID, FilterEnum.IN, StringUtil.join(ids, StringUtil.COMMA));
         return operationTemplate.queryList(StorageEnum.ROLE_PERMISSION, condition, RolePermission.class);
     }
 
@@ -189,6 +194,26 @@ public class RbacProfileImpl implements RbacProfile {
     @Override
     public Permission getPermissionById(String id) {
         return operationTemplate.queryObject(Permission.class, id);
+    }
+
+    @Override
+    public List<Permission> listPermissionsByIds(Collection<String> permissionIds) {
+        Set<String> ids = distinctIds(permissionIds);
+        if (ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.CONFIG_MODEL_ID, FilterEnum.IN, StringUtil.join(ids, StringUtil.COMMA));
+        return operationTemplate.queryList(StorageEnum.PERMISSION, condition, Permission.class);
+    }
+
+    private static Set<String> distinctIds(Collection<String> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return Collections.emptySet();
+        }
+        return ids.stream()
+                .filter(StringUtil::isNotBlank)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private <T> T first(Query query, Class<T> clazz) {

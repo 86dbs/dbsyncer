@@ -52,11 +52,8 @@ public class RoleController extends BaseController {
     @GetMapping("/page/add")
     public String pageAdd(ModelMap model) {
         requirePermission("user:edit");
-        RoleVO role = new RoleVO();
-        role.setBuiltin(0);
-        model.put("role", role);
+        model.put("role", new RoleVO());
         model.put("createMode", true);
-        model.put("readonly", false);
         model.put("permissionGroups", groupPermissions(roleService.listPermissions(null)));
         return "role/edit";
     }
@@ -67,7 +64,6 @@ public class RoleController extends BaseController {
         RoleVO role = roleService.getRole(id);
         model.put("role", role);
         model.put("createMode", false);
-        model.put("readonly", role != null && role.getBuiltin() == 1);
         model.put("permissionGroups", groupPermissions(roleService.listPermissions(id)));
         return "role/edit";
     }

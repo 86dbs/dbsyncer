@@ -44,9 +44,9 @@ public class ConfigConstant {
      */
     public static final String RESOURCE_ACL = "resourceAcl";
     /**
-     * 告警 @ 覆盖规则
+     * 告警通知规则
      */
-    public static final String NOTICE_MENTION_RULE = "noticeMentionRule";
+    public static final String NOTICE_RULE = "noticeRule";
     /**
      * 告警策略
      */
@@ -76,19 +76,10 @@ public class ConfigConstant {
     public static final String GROUP_REL_RESOURCE_ID = "resourceId";
 
     /**
-     * 角色表(dbsyncer_role)拆分列
-     */
-    public static final String ROLE_CODE = "code";
-    public static final String ROLE_BUILTIN = "builtin";
-    public static final String ROLE_REMARK = "remark";
-
-    /**
-     * 权限点表(dbsyncer_permission)拆分列；KIND=MENU/API/ACTION（避免与配置路由 type 混淆）
+     * 菜单权限表(dbsyncer_permission)拆分列
      */
     public static final String PERMISSION_CODE = "code";
     public static final String PERMISSION_MODULE = "module";
-    public static final String PERMISSION_KIND = "kind";
-    public static final String PERMISSION_REMARK = "remark";
 
     /**
      * 角色权限关系表(dbsyncer_role_permission)拆分列
@@ -107,15 +98,16 @@ public class ConfigConstant {
      */
     public static final String RESOURCE_ACL_SUBJECT_TYPE = "subjectType";
     public static final String RESOURCE_ACL_SUBJECT_ID = "subjectId";
-    public static final String RESOURCE_ACL_ACTIONS = "actions";
+    public static final String RESOURCE_ACL_PERMISSION = "permission";
 
     /**
-     * 告警 @ 规则表(dbsyncer_notice_mention_rule)拆分列
+     * 告警通知规则表(dbsyncer_notice_rule)拆分列
      */
-    public static final String NOTICE_MENTION_SCOPE_TYPE = "scopeType";
-    public static final String NOTICE_MENTION_SCOPE_ID = "scopeId";
-    public static final String NOTICE_MENTION_AT_ALL = "atAll";
-    public static final String NOTICE_MENTION_AT_MOBILES = "atMobiles";
+    public static final String NOTICE_RULE_SCOPE_TYPE = "scopeType";
+    public static final String NOTICE_RULE_SCOPE_ID = "scopeId";
+    public static final String NOTICE_RULE_AT_ALL = "atAll";
+    public static final String NOTICE_RULE_AT_PHONES = "atPhones";
+    public static final String NOTICE_RULE_EMAILS = "emails";
 
     /**
      * 告警策略表(dbsyncer_notice_strategy)拆分列
@@ -124,6 +116,7 @@ public class ConfigConstant {
     public static final String NOTICE_STRATEGY_FREQUENCY = "frequency";
     public static final String NOTICE_STRATEGY_CRON = "cron";
     public static final String NOTICE_STRATEGY_NOTICE_TYPES = "noticeTypes";
+    public static final String NOTICE_STRATEGY_REMARK = "remark";
 
     /**
      * 用户表(dbsyncer_user)拆分列
@@ -135,8 +128,6 @@ public class ConfigConstant {
      * 列名 ROLE，模型字段 roleCode
      */
     public static final String USER_ROLE = "role";
-    public static final String USER_EMAIL = "email";
-    public static final String USER_PHONE = "phone";
     /**
      * 连续登录失败次数
      */

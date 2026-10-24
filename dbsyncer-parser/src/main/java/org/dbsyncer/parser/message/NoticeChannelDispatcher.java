@@ -8,13 +8,11 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.GroupRelProfile;
-import org.dbsyncer.parser.NoticeMentionRuleProfile;
+import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.SystemConfigProfile;
-import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.model.GroupRel;
-import org.dbsyncer.parser.model.NoticeMentionRule;
-import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.parser.model.NoticeRule;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
@@ -36,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 将通知投递到全局已启用渠道；按分组/同步任务覆盖微信/钉钉 @。
+ * 将通知投递到全局已启用渠道；按分组/同步任务覆盖企微/钉钉 @ 与邮件收件人。
  *
  * @author wuji
  * @version 1.0.0
@@ -53,13 +51,10 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
     private SystemConfigProfile systemConfigProfile;
 
     @Resource
-    private UserProfile userProfile;
-
-    @Resource
     private GroupRelProfile groupRelProfile;
 
     @Resource
-    private NoticeMentionRuleProfile noticeMentionRuleProfile;
+    private NoticeRuleProfile noticeRuleProfile;
 
     public void registerNotifyService(NoticeChannelEnum noticeChannelEnum, NoticeService notificationService) {
         notifyServiceMap.put(noticeChannelEnum, notificationService);
@@ -75,13 +70,14 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
         if (noticeConfig == null || noticeContent == null || notifyServiceMap.isEmpty()) {
             return;
         }
-        NoticeConfig deliveryConfig = copyWithMentionOverride(noticeConfig, noticeContent);
+        NoticeRule rule = resolveNoticeRule(noticeContent);
+        NoticeConfig deliveryConfig = copyWithAtOverride(noticeConfig, rule);
         NoticeMessage message = new NoticeMessage();
         message.setNoticeConfig(deliveryConfig);
         message.setNoticeContent(noticeContent);
         notifyServiceMap.forEach((channel, service) -> {
             try {
-                setMessageReceiversIfMail(channel, message);
+                setMessageReceiversIfMail(channel, message, rule);
                 service.notify(message);
             } catch (Exception e) {
                 logger.error("Send message error, channel: {}", channel, e);
@@ -91,23 +87,22 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
     }
 
     /**
-     * 解析 @：MAPPING 规则优先，否则合并所属 GROUP 规则；无规则则不 @。
+     * 解析规则：MAPPING 优先，否则合并所属 GROUP；无规则返回 {@code null}。
      */
-    private NoticeConfig copyWithMentionOverride(NoticeConfig source, NoticeContent content) {
-        NoticeMentionRule override = resolveMentionRule(content);
-        if (override == null) {
+    private NoticeConfig copyWithAtOverride(NoticeConfig source, NoticeRule rule) {
+        if (rule == null) {
             return source;
         }
         NoticeConfig copy = JsonUtil.jsonToObj(JsonUtil.objToJson(source), NoticeConfig.class);
         if (copy == null) {
             return source;
         }
-        applyAt(copy.getWechat(), override);
-        applyAt(copy.getDingTalk(), override);
+        applyAt(copy.getWechat(), rule);
+        applyAt(copy.getDingTalk(), rule);
         return copy;
     }
 
-    private NoticeMentionRule resolveMentionRule(NoticeContent content) {
+    private NoticeRule resolveNoticeRule(NoticeContent content) {
         if (content == null) {
             return null;
         }
@@ -116,7 +111,7 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
             return null;
         }
         String mappingId = content.getResourceId();
-        NoticeMentionRule mappingRule = noticeMentionRuleProfile.getByScope(ConfigConstant.MAPPING, mappingId);
+        NoticeRule mappingRule = noticeRuleProfile.getByScope(ConfigConstant.MAPPING, mappingId);
         if (mappingRule != null) {
             return mappingRule;
         }
@@ -135,15 +130,16 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
             return null;
         }
 
-        List<NoticeMentionRule> groupRules = noticeMentionRuleProfile.listByScopeType(ConfigConstant.GROUP);
+        List<NoticeRule> groupRules = noticeRuleProfile.listByScopeType(ConfigConstant.GROUP);
         if (CollectionUtils.isEmpty(groupRules)) {
             return null;
         }
 
         boolean atAll = false;
-        LinkedHashSet<String> mobiles = new LinkedHashSet<>();
+        LinkedHashSet<String> phones = new LinkedHashSet<>();
+        LinkedHashSet<String> emails = new LinkedHashSet<>();
         boolean matched = false;
-        for (NoticeMentionRule rule : groupRules) {
+        for (NoticeRule rule : groupRules) {
             if (rule == null || !groupIds.contains(rule.getScopeId())) {
                 continue;
             }
@@ -151,42 +147,40 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
             if (rule.isAtAll()) {
                 atAll = true;
             }
-            if (StringUtil.isNotBlank(rule.getAtMobiles())) {
-                mobiles.addAll(Arrays.asList(StringUtil.split(rule.getAtMobiles(), StringUtil.COMMA)));
+            if (StringUtil.isNotBlank(rule.getAtPhones())) {
+                phones.addAll(Arrays.asList(StringUtil.split(rule.getAtPhones(), StringUtil.COMMA)));
+            }
+            if (StringUtil.isNotBlank(rule.getEmails())) {
+                emails.addAll(Arrays.asList(StringUtil.split(rule.getEmails(), StringUtil.COMMA)));
             }
         }
         if (!matched) {
             return null;
         }
-        NoticeMentionRule merged = new NoticeMentionRule();
+        NoticeRule merged = new NoticeRule();
         merged.setScopeType(ConfigConstant.GROUP);
         merged.setAtAll(atAll ? 1 : 0);
-        merged.setAtMobiles(StringUtil.join(mobiles, StringUtil.COMMA));
+        merged.setAtPhones(StringUtil.join(phones, StringUtil.COMMA));
+        merged.setEmails(StringUtil.join(emails, StringUtil.COMMA));
         return merged;
     }
 
-    private void applyAt(RobotNoticeChannel channel, NoticeMentionRule rule) {
+    private void applyAt(RobotNoticeChannel channel, NoticeRule rule) {
         if (channel == null || rule == null) {
             return;
         }
         channel.setAtAll(rule.isAtAll());
-        channel.setAtMobiles(rule.getAtMobiles());
+        // Robot API 字段仍为 atMobiles，取值来自规则 atPhones
+        channel.setAtMobiles(rule.getAtPhones());
     }
 
-    private void setMessageReceiversIfMail(NoticeChannelEnum channel, NoticeMessage message) {
+    private void setMessageReceiversIfMail(NoticeChannelEnum channel, NoticeMessage message, NoticeRule rule) {
         if (channel != NoticeChannelEnum.EMAIL) {
             return;
         }
-        UserConfig userConfig = userProfile.getUserConfig();
-        if (userConfig == null || CollectionUtils.isEmpty(userConfig.getUserInfoList())) {
+        if (rule == null || StringUtil.isBlank(rule.getEmails())) {
             return;
         }
-        List<String> receivers = new ArrayList<>();
-        userConfig.getUserInfoList().forEach(user -> {
-            if (user != null && StringUtil.isNotBlank(user.getEmail())) {
-                receivers.add(user.getEmail());
-            }
-        });
-        message.setReceivers(receivers);
+        message.setReceivers(new ArrayList<>(Arrays.asList(StringUtil.split(rule.getEmails(), StringUtil.COMMA))));
     }
 }

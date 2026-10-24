@@ -7,12 +7,12 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
- * 告警 @ 覆盖规则：按分组或同步任务指定手机号（多人逗号分隔）。
+ * 告警通知规则：按分组或同步任务指定 @手机号与邮件。
  *
  * @author wuji
  * @version 1.0.0
  */
-public class NoticeMentionRule extends ConfigModel {
+public class NoticeRule extends ConfigModel {
 
     /**
      * 作用域：{@code group} / {@code mapping}
@@ -32,11 +32,16 @@ public class NoticeMentionRule extends ConfigModel {
     /**
      * @用户手机号，多个用逗号分隔
      */
-    private String atMobiles;
+    private String atPhones;
 
-    public NoticeMentionRule() {
+    /**
+     * 邮件地址，多个用逗号分隔
+     */
+    private String emails;
+
+    public NoticeRule() {
         super.setName("");
-        super.setType(ConfigConstant.NOTICE_MENTION_RULE);
+        super.setType(ConfigConstant.NOTICE_RULE);
     }
 
     public String getScopeType() {
@@ -67,11 +72,19 @@ public class NoticeMentionRule extends ConfigModel {
         return atAll == 1;
     }
 
-    public String getAtMobiles() {
-        return atMobiles;
+    public String getAtPhones() {
+        return atPhones;
     }
 
-    public void setAtMobiles(String atMobiles) {
-        this.atMobiles = atMobiles;
+    public void setAtPhones(String atPhones) {
+        this.atPhones = atPhones;
+    }
+
+    public String getEmails() {
+        return emails;
+    }
+
+    public void setEmails(String emails) {
+        this.emails = emails;
     }
 }

@@ -3,9 +3,6 @@
  */
 package org.dbsyncer.sdk.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * 可持久化的告警策略定义（DTO，对应表 dbsyncer_notice_strategy）。
  *
@@ -24,9 +21,9 @@ public class NoticeStrategyDef {
     private boolean enabled = true;
 
     /**
-     * {@link org.dbsyncer.sdk.enums.NoticeFrequencyEnum} 名称
+     * {@link org.dbsyncer.sdk.enums.NoticeFrequencyEnum#getCode()}
      */
-    private String frequency;
+    private int frequency;
 
     /**
      * 周期 Cron（INTERVAL 时必填）
@@ -34,9 +31,14 @@ public class NoticeStrategyDef {
     private String cron;
 
     /**
-     * 通知类型码列表（{@link org.dbsyncer.sdk.enums.NoticeTypeEnum#name()}）
+     * {@link org.dbsyncer.sdk.enums.NoticeTypeEnum#getCode()}
      */
-    private List<String> noticeTypes = new ArrayList<>();
+    private int noticeTypes;
+
+    /**
+     * 备注说明
+     */
+    private String remark;
 
     public String getId() {
         return id;
@@ -62,11 +64,11 @@ public class NoticeStrategyDef {
         this.enabled = enabled;
     }
 
-    public String getFrequency() {
+    public int getFrequency() {
         return frequency;
     }
 
-    public void setFrequency(String frequency) {
+    public void setFrequency(int frequency) {
         this.frequency = frequency;
     }
 
@@ -78,11 +80,19 @@ public class NoticeStrategyDef {
         this.cron = cron;
     }
 
-    public List<String> getNoticeTypes() {
+    public int getNoticeTypes() {
         return noticeTypes;
     }
 
-    public void setNoticeTypes(List<String> noticeTypes) {
+    public void setNoticeTypes(int noticeTypes) {
         this.noticeTypes = noticeTypes;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
     }
 }

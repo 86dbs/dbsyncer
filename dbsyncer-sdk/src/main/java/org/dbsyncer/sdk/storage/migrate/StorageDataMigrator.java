@@ -242,8 +242,6 @@ public abstract class StorageDataMigrator {
             p.put(ConfigConstant.USER_PASSWORD, val(user, "password"));
             p.put(ConfigConstant.USER_NICKNAME, first(val(user, "nickname"), username));
             p.put(ConfigConstant.USER_ROLE, first(val(user, "roleCode"), val(user, "role"), "admin"));
-            p.put(ConfigConstant.USER_EMAIL, StringUtil.getIfBlank(val(user, "email"), StringUtil.EMPTY));
-            p.put(ConfigConstant.USER_PHONE, StringUtil.getIfBlank(val(user, "phone"), StringUtil.EMPTY));
             p.put(ConfigConstant.USER_LOGIN_FAIL_COUNT, 0);
             p.put(ConfigConstant.USER_LOCK_UNTIL, 0L);
             storage.add(StorageEnum.USER, p);

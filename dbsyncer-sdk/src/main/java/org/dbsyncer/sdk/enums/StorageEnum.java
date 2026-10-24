@@ -83,9 +83,9 @@ public enum StorageEnum {
      */
     RESOURCE_ACL("resource_acl"),
     /**
-     * 告警 @ 覆盖规则
+     * 告警通知规则
      */
-    NOTICE_MENTION_RULE("notice_mention_rule"),
+    NOTICE_RULE("notice_rule"),
     /**
      * 告警策略
      */
