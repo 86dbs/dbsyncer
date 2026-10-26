@@ -60,7 +60,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
                                                          NoticeFrequencyEnum frequency, String cron,
                                                          String remark, long now) {
         Map<String, Object> row = new HashMap<>();
-        row.put(ConfigConstant.CONFIG_MODEL_ID, type.name());
+        row.put(ConfigConstant.CONFIG_MODEL_ID, type.getCode());
         row.put(ConfigConstant.CONFIG_MODEL_NAME, name);
         row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
         row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, now);

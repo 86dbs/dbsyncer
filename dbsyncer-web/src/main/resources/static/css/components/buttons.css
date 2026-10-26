@@ -22,6 +22,11 @@
   min-height: 32px;
 }
 
+/* 双类优先级高于 .btn，避免权限加 hidden 后仍被 display:inline-flex 盖住 */
+.btn.hidden {
+  display: none;
+}
+
 /* 按钮内图标间距 - 兼容旧版本浏览器 */
 .btn > i,
 .btn > .fa,

@@ -85,6 +85,11 @@ select.form-control.is-invalid,
   column-gap: 16px;
 }
 
+/* 双类优先级高于 .form-item，配合权限 / 开关显隐 */
+.form-item.hidden {
+  display: none;
+}
+
 .form-label {
   color: var(--text-secondary);
   font-weight: 500;
