@@ -11,9 +11,6 @@ package org.dbsyncer.web.log;
  */
 public final class OperLogType {
 
-    private OperLogType() {
-    }
-
     /**
      * 系统-正常
      */

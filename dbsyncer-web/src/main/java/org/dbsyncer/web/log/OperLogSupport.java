@@ -41,9 +41,6 @@ public abstract class OperLogSupport {
             "password", "oldpwd", "newpwd"
     ));
 
-    private OperLogSupport() {
-    }
-
     public static Map<String, Object> collectRequestParams(HttpServletRequest request) {
         Map<String, Object> params = new LinkedHashMap<>();
         Map<String, String[]> parameterMap = request.getParameterMap();
