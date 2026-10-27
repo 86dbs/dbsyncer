@@ -15,6 +15,7 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
+import org.dbsyncer.parser.message.NoticeMappingCompletedPublisher;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -68,6 +69,9 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     @Resource
     private LogService logService;
 
+    @Resource
+    private NoticeMappingCompletedPublisher noticeMappingCompletedPublisher;
+
     private final Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
@@ -93,10 +97,15 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     public void runSync(Mapping mapping, boolean publishClosed) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "映射关系不能为空");
         final String taskId = mapping.getId();
+        boolean completed = false;
         try {
             Task task = map.computeIfAbsent(taskId, k -> new Task(taskId));
             logger.info("开始全量同步：{}, {}", taskId, mapping.getName());
-            doTask(task, mapping);
+            completed = doTask(task, mapping);
+            // 仅纯全量自然完成发通知（全量+增量 publishClosed=false，手动停止走 MappingStop）
+            if (publishClosed && completed) {
+                noticeMappingCompletedPublisher.publish(mapping);
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
@@ -127,7 +136,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         flush(event.getTask());
     }
 
-    private void doTask(Task task, Mapping mapping) {
+    private boolean doTask(Task task, Mapping mapping) {
         flush(task);
 
         int pageSize = ConfigConstant.PAGE_SIZE;
@@ -153,9 +162,10 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         task.setCursors(null);
         if (task.isRunning()) {
             clearFullProgress(task, mapping.getId());
-        } else {
-            flush(task);
+            return true;
         }
+        flush(task);
+        return false;
     }
 
     private void syncOneTable(Task parent, Mapping mapping, TableGroup tableGroup) {

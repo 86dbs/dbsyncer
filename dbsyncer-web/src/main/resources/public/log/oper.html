@@ -21,6 +21,15 @@
                 </div>
             </div>
             <div class="form-item form-item-sm">
+                <label class="form-label" for="filterModule">模块</label>
+                <div class="form-control-area">
+                    <select id="filterModule" class="form-control">
+                        <option value="" selected>全部</option>
+                        <option th:each="m : ${logModules}" th:value="${m}" th:text="${m}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-item form-item-sm">
                 <label class="form-label" for="filterStatus">状态</label>
                 <div class="form-control-area">
                     <select id="filterStatus" class="form-control">

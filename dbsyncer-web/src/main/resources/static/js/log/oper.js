@@ -50,10 +50,17 @@
         return v === '-1' || v === '' ? '' : v;
     }
 
+    function getModuleFilter() {
+        const vals = moduleSelect && typeof moduleSelect.getValues === 'function'
+            ? moduleSelect.getValues() : [];
+        return vals.length ? (vals[0] || '') : ($('#filterModule').val() || '');
+    }
+
     function collectParams() {
         return {
             username: $('#filterUsername').val() || '',
             ip: $('#filterIp').val() || '',
+            module: getModuleFilter(),
             status: getStatusFilter(),
             beginTime: toBeginMillis($('#filterBeginTime').val()),
             endTime: toEndMillis($('#filterEndTime').val())
@@ -98,6 +105,9 @@
         requestUrl: '/log/oper/query',
         tableBodySelector: '#operLogList',
         pageSize: 10,
+        customPageSize: true,
+        customPageSizeItems: [5, 10, 20, 50, 100],
+        storageKey: 'log.oper',
         showBoundaryButtons: true,
         renderRow: function (row) {
             return '<tr>'
@@ -122,6 +132,9 @@
         pagination.doSearch(collectParams());
     }
 
+    const moduleSelect = $('#filterModule').dbSelect({
+        type: 'single'
+    });
     const statusSelect = $('#filterStatus').dbSelect({
         type: 'single'
     });
@@ -130,6 +143,11 @@
     $('#resetBtn').on('click', function () {
         $('#filterUsername').val('');
         $('#filterIp').val('');
+        if (moduleSelect && typeof moduleSelect.setValues === 'function') {
+            moduleSelect.setValues([''], true);
+        } else {
+            $('#filterModule').val('');
+        }
         if (statusSelect && typeof statusSelect.setValues === 'function') {
             statusSelect.setValues(['-1'], true);
         } else {

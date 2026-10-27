@@ -16,19 +16,20 @@
             </a>
         </p>
         <form id="notice-form-edit">
-            <div class="form-actions mb-4 flex justify-end">
-                <button id="testNoticeBtn" type="button" class="btn btn-default mr-2" data-permission="notice:edit"
-                        th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.dingTalk?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
-                    <span class="fa fa-flash"></span> 测试
-                </button>
-                <button id="updateNoticeBtn" type="button" class="btn btn-primary" data-permission="notice:edit">
-                    <span class="fa fa-save"></span> 保存
-                </button>
-            </div>
-
             <div class="grid grid-cols-2 items-start">
                 <div>
-                    <h3 class="card-title">通知渠道</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="card-title mb-0">通知渠道</h3>
+                        <div class="form-actions mb-0 flex">
+                            <button id="testNoticeBtn" type="button" class="btn btn-default mr-2" data-permission="notice:edit"
+                                    th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.dingTalk?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
+                                <span class="fa fa-flash"></span> 测试
+                            </button>
+                            <button id="updateNoticeBtn" type="button" class="btn btn-primary" data-permission="notice:edit">
+                                <span class="fa fa-save"></span> 保存
+                            </button>
+                        </div>
+                    </div>
                     <p class="text-sm text-tertiary mb-4">配置全局 webhook；@ 请在下方「通知规则」中按任务/分组设置。</p>
 
                     <div class="grid grid-cols-1">
@@ -146,7 +147,7 @@
 
             <div class="blank-block-min"></div>
             <h3 class="card-title mt-6">通知规则</h3>
-            <p class="text-sm text-tertiary mb-4">按分组或同步任务覆盖 @手机号与邮件（支持多人）；任务规则优先于分组规则。增删改即时生效，无需点上方保存。</p>
+            <p class="text-sm text-tertiary mb-4">按分组或同步任务覆盖 @手机号与邮件（支持多人）；任务规则优先于分组规则。增删改即时生效，无需点「通知渠道」保存。</p>
             <div class="form-actions mb-2">
                 <button type="button" class="btn btn-default" id="addRuleBtn" data-permission="notice:edit">
                     <i class="fa fa-plus"></i> 添加规则

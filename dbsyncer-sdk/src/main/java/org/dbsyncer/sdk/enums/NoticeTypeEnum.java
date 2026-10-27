@@ -42,7 +42,11 @@ public enum NoticeTypeEnum {
     /**
      * 授权已过期
      */
-    LICENSE_EXPIRED(7);
+    LICENSE_EXPIRED(7),
+    /**
+     * 全量同步完成
+     */
+    MAPPING_FULL_COMPLETE(8);
 
     private final int code;
 

@@ -5,6 +5,7 @@ package org.dbsyncer.web.controller.log;
 
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.log.OperLog;
 import org.dbsyncer.web.log.OperLogType;
@@ -46,6 +47,7 @@ public class LogController extends BaseController {
     @GetMapping("/oper")
     public String operPage(ModelMap model) {
         requirePermission("system:view");
+        model.put("logModules", LogType.listOperModuleNames());
         return "log/oper";
     }
 

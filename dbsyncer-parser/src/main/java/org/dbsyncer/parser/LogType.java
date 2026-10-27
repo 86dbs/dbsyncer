@@ -1,5 +1,9 @@
 package org.dbsyncer.parser;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * 日志类型枚举
  *
@@ -76,6 +80,34 @@ public interface LogType {
             }
         }
         return null;
+    }
+
+    /**
+     * 操作日志可选模块名（排除登录），按 {@link #ALL} 顺序去重。
+     * <p>同组共享 {@link #getName()}，取组首项即可。
+     */
+    static List<String> listOperModuleNames() {
+        return Arrays.stream(ALL)
+                .filter(group -> group.length > 0 && !(group[0] instanceof LoginLog))
+                .map(group -> group[0].getName())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 按模块名汇总类型码（逗号拼接），供 IN 查询；未匹配返回 {@code null}。
+     */
+    static String joinTypesByModuleName(String moduleName) {
+        if (moduleName == null || moduleName.isEmpty()) {
+            return null;
+        }
+        String codes = Arrays.stream(ALL)
+                .filter(group -> group.length > 0 && !(group[0] instanceof LoginLog)
+                        && moduleName.equals(group[0].getName()))
+                .flatMap(Arrays::stream)
+                .map(LogType::getType)
+                .collect(Collectors.joining(","));
+        return codes.isEmpty() ? null : codes;
     }
 
     /**
@@ -292,7 +324,7 @@ public interface LogType {
 
         @Override
         public String getName() {
-            return "插件";
+            return "配置";
         }
 
         @Override

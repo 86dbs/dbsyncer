@@ -235,12 +235,18 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public Paging queryOperLog(Map<String, String> params) {
         Query query = buildLogQuery(params);
-        String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
-        if (StringUtil.isNotBlank(type)) {
-            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, type);
+        String module = params.get("module");
+        String moduleTypes = LogType.joinTypesByModuleName(module);
+        if (StringUtil.isNotBlank(moduleTypes)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.IN, moduleTypes);
         } else {
-            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.NOT_EQUAL, LogType.LoginLog.SUCCESS.getType());
-            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.NOT_EQUAL, LogType.LoginLog.FAIL.getType());
+            String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+            if (StringUtil.isNotBlank(type)) {
+                query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, type);
+            } else {
+                query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.NOT_EQUAL, LogType.LoginLog.SUCCESS.getType());
+                query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.NOT_EQUAL, LogType.LoginLog.FAIL.getType());
+            }
         }
         return queryAndConvertLog(query);
     }

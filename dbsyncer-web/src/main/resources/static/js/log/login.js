@@ -47,6 +47,9 @@
         requestUrl: '/log/login/query',
         tableBodySelector: '#loginLogList',
         pageSize: 10,
+        customPageSize: true,
+        customPageSizeItems: [5, 10, 20, 50, 100],
+        storageKey: 'log.login',
         showBoundaryButtons: true,
         renderRow: function (row) {
             return '<tr>'

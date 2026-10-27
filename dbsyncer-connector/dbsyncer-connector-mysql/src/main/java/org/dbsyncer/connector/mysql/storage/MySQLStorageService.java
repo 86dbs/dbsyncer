@@ -783,8 +783,8 @@ public class MySQLStorageService extends AbstractStorageService {
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
-                boolean created = createTableIfNotExist(tableName, e);
-                if (created && StringUtil.equalsIgnoreCase(tableName, StorageEnum.NOTICE_STRATEGY.getType())) {
+                createTableIfNotExist(tableName, e);
+                if (StringUtil.equalsIgnoreCase(tableName, StorageEnum.NOTICE_STRATEGY.getType())) {
                     initNoticeStrategy();
                 }
             }
