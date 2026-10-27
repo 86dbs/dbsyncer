@@ -58,7 +58,7 @@ public abstract class OperLogSupport {
         }
         if (request instanceof ContentCachingRequestWrapper && params.isEmpty()) {
             ContentCachingRequestWrapper wrapper = (ContentCachingRequestWrapper) request;
-            String body = readBody(wrapper.getContentAsByteArray(), wrapper.getCharacterEncoding());
+            String body = readBody(wrapper.getContentAsByteArray(), resolveBodyCharset(wrapper.getCharacterEncoding()));
             if (StringUtil.isNotBlank(body)) {
                 Object parsed = tryParseJson(body);
                 if (parsed instanceof Map) {
@@ -75,7 +75,7 @@ public abstract class OperLogSupport {
         if (response == null) {
             return Collections.emptyMap();
         }
-        return sanitizeResponse(readBody(response.getContentAsByteArray(), response.getCharacterEncoding()));
+        return sanitizeResponse(readBody(response.getContentAsByteArray(), resolveBodyCharset(response.getCharacterEncoding())));
     }
 
     public static int resolveStatus(Object responseParam, int httpStatus) {
@@ -153,10 +153,19 @@ public abstract class OperLogSupport {
             try {
                 charset = Charset.forName(encoding);
             } catch (Exception ignore) {
-
                 // keep utf-8
             }
         }
         return new String(bytes, charset);
+    }
+
+    /**
+     * Servlet 默认编码为 ISO-8859-1，与本系统 UTF-8 JSON 不一致时回退 UTF-8，避免中文乱码。
+     */
+    private static String resolveBodyCharset(String encoding) {
+        if (StringUtil.isBlank(encoding) || "ISO-8859-1".equalsIgnoreCase(encoding)) {
+            return StandardCharsets.UTF_8.name();
+        }
+        return encoding;
     }
 }

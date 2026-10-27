@@ -7,7 +7,6 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
@@ -31,6 +30,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
@@ -367,7 +367,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(taskId);
             Assert.isTrue(!dispatchTaskService.isRunning(taskId), "同步任务表映射正在匹配或统计中，请稍候再启动");
             // 如果已经完成了，重置状态
-            clearMetaIfFinished(taskId);
+            clearMetaIfFinished(mapping);
             // 标记运行中
             preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
 
@@ -639,11 +639,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "映射关系不能为空");
     }
 
-    private void clearMetaIfFinished(String taskId) {
+    private void clearMetaIfFinished(Mapping mapping) {
+        if (ModelEnum.isIncrement(mapping.getModel())) {
+            return;
+        }
+        String taskId = mapping.getId();
         Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态，便于再次全量
-        if (!CommonTaskStatusEnum.isRunning(meta.getState()) && meta.getSuccess().addAndGet(meta.getFail().get()) == meta.getTotal().get()) {
+        long total = meta.getTotal().get();
+        long processed = meta.getSuccess().get() + meta.getFail().get();
+        // 完成任务则重置状态，便于再次全量（要求 total>0，避免 0==0 误判）
+        if (!CommonTaskStatusEnum.isRunning(meta.getState()) && total > 0 && processed >= total) {
             taskMetaProfile.resetMeta(taskId);
             taskDetailMetaProfile.clearData(taskId);
             taskProfile.deleteRunData(taskId);
