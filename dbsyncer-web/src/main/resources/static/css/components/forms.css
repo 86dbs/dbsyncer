@@ -11,8 +11,9 @@
   overflow: hidden;
 }
 
-/* 列表顶栏含分组下拉时放开裁切，避免 absolute 菜单被挡住 */
-.form-container:has(.group-filter-wrap) {
+/* 列表顶栏含分组/筛选下拉时放开裁切，避免 absolute 菜单被挡住 */
+.form-container:has(.group-filter-wrap),
+.form-container:has(.form-filter) {
   overflow: visible;
 }
 
@@ -74,6 +75,97 @@ select.form-control.is-invalid,
   }
   75% {
     transform: translateX(5px);
+  }
+}
+
+/* 列表筛选条：标签紧贴控件，横向自适应换行 */
+.form-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.form-filter .form-item {
+  display: flex;
+  align-items: center;
+  grid-template-columns: none;
+  column-gap: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.form-filter .form-label {
+  text-align: left;
+  white-space: nowrap;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.form-filter .form-item,
+.form-filter .form-control-area {
+  overflow: visible;
+}
+
+.form-filter .form-control-area {
+  width: 160px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.form-filter .form-item-sm .form-control-area {
+  width: 140px;
+}
+
+.form-filter .form-item-time .form-control-area {
+  width: 160px;
+}
+
+/* 筛选条内下拉不受触发器窄宽限制，避免搜索框/选项被裁切 */
+.form-filter .dbsyncer-select {
+  overflow: visible;
+}
+
+.form-filter .dbsyncer-select.open {
+  z-index: 20;
+}
+
+.form-filter .dbsyncer-select-dropdown {
+  left: 0;
+  right: auto;
+  min-width: 160px;
+  width: max-content;
+  max-width: 280px;
+  z-index: 30;
+}
+
+.form-filter .form-actions {
+  margin-left: auto;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .form-filter .form-item {
+    width: 100%;
+  }
+
+  .form-filter .form-control-area,
+  .form-filter .form-item-sm .form-control-area,
+  .form-filter .form-item-time .form-control-area {
+    width: 100%;
+    flex: 1;
+  }
+
+  .form-filter .dbsyncer-select-dropdown {
+    width: 100%;
+    max-width: none;
+  }
+
+  .form-filter .form-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 

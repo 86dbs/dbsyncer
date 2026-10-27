@@ -651,7 +651,9 @@ public class H2StorageService extends AbstractStorageService {
         List<Field> taskDetailFields = builder.getFields();
 
         // 日志
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.LOG_USERNAME, ConfigConstant.LOG_IP, ConfigConstant.LOG_STATUS,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> logFields = builder.getFields();
 
         // 任务配置表(同步/校验/迁移统一)：ID/NAME/TYPE/JSON/时间
@@ -903,6 +905,16 @@ public class H2StorageService extends AbstractStorageService {
             // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
             createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
             createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.LOG.getType().equals(type)) {
+            addColumnIfNotExist(table, "USERNAME", "VARCHAR(50) NOT NULL DEFAULT ''");
+            addColumnIfNotExist(table, "IP", "VARCHAR(64) NOT NULL DEFAULT ''");
+            addColumnIfNotExist(table, "STATUS", "INT NOT NULL DEFAULT 1");
+            createIndexIfNotExist(table, "IDX_TYPE_TIME", "`TYPE`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_USERNAME_TIME", "`USERNAME`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_IP_TIME", "`IP`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_STATUS_TIME", "`STATUS`,`CREATE_TIME`");
         }
     }
 
@@ -1103,6 +1115,7 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_LOGIN_FAIL_COUNT, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.USER_LOCK_UNTIL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_IP, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR),

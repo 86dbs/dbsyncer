@@ -15,6 +15,8 @@ import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -69,6 +71,7 @@ public class NoticeController extends BaseController {
         return "notice/list";
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "修改告警通知")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -82,6 +85,7 @@ public class NoticeController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "保存告警策略")
     @PostMapping("/strategy/save")
     @ResponseBody
     public RestResult saveStrategy(HttpServletRequest request) {
@@ -95,6 +99,7 @@ public class NoticeController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "删除告警策略")
     @PostMapping("/strategy/remove")
     @ResponseBody
     public RestResult removeStrategy(HttpServletRequest request) {
@@ -108,6 +113,7 @@ public class NoticeController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "保存告警规则")
     @PostMapping("/rule/save")
     @ResponseBody
     public RestResult saveRule(HttpServletRequest request) {
@@ -121,6 +127,7 @@ public class NoticeController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "删除告警规则")
     @PostMapping("/rule/remove")
     @ResponseBody
     public RestResult removeRule(HttpServletRequest request) {

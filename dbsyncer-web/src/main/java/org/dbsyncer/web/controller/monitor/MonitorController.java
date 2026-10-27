@@ -22,6 +22,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.MemoryValueFormatter;
@@ -170,6 +172,7 @@ public class MonitorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_CLEAR_DATA)
     @PostMapping("/clearData")
     @ResponseBody
     public RestResult clearData(HttpServletRequest request) {
@@ -204,6 +207,7 @@ public class MonitorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "清空日志")
     @PostMapping("/clearLog")
     @ResponseBody
     public RestResult clearLog() {

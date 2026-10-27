@@ -119,6 +119,13 @@ public class ConfigConstant {
     public static final String NOTICE_STRATEGY_REMARK = "remark";
 
     /**
+     * 日志表(dbsyncer_log)筛选列
+     */
+    public static final String LOG_USERNAME = "username";
+    public static final String LOG_IP = "ip";
+    public static final String LOG_STATUS = "status";
+
+    /**
      * 用户表(dbsyncer_user)拆分列
      */
     public static final String USER_USERNAME = "username";

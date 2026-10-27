@@ -674,7 +674,9 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> taskDetailFields = builder.getFields();
 
         // 日志
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.LOG_USERNAME, ConfigConstant.LOG_IP, ConfigConstant.LOG_STATUS,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> logFields = builder.getFields();
 
         // 任务配置表(同步/校验/迁移统一)：ID/NAME/TYPE/JSON/时间
@@ -949,6 +951,16 @@ public class MySQLStorageService extends AbstractStorageService {
             // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
             createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
             createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.LOG.getType().equals(type)) {
+            addColumnIfNotExist(table, "USERNAME", "varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '操作人/登录账号'");
+            addColumnIfNotExist(table, "IP", "varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '登录/操作客户端IP'");
+            addColumnIfNotExist(table, "STATUS", "tinyint NOT NULL DEFAULT 1 COMMENT '状态：0失败 1成功'");
+            createIndexIfNotExist(table, "IDX_TYPE_TIME", "`TYPE`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_USERNAME_TIME", "`USERNAME`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_IP_TIME", "`IP`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_STATUS_TIME", "`STATUS`,`CREATE_TIME`");
         }
     }
 

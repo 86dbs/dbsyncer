@@ -18,6 +18,8 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -93,6 +95,7 @@ public class ResourceAclController extends BaseController {
         return "acl/edit";
     }
 
+    @OperLog(type = OperLogType.USER_UPDATE, message = "保存资源授权")
     @PostMapping("/save")
     @ResponseBody
     public RestResult save(HttpServletRequest request) {
@@ -107,6 +110,7 @@ public class ResourceAclController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_DELETE, message = "删除资源授权")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request) {

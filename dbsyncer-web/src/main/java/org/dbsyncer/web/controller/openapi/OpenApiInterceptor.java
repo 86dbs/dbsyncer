@@ -11,6 +11,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiResponse;
+import org.dbsyncer.web.util.RequestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -70,7 +71,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
 
             // 2. 验证IP白名单（优先验证，避免无效请求消耗资源）
             // 所有OpenAPI接口都需要验证IP白名单，包括登录接口
-            String clientIp = getClientIp(request);
+            String clientIp = RequestUtil.getClientIp(request);
             // 获取请求路径，避免用户请求/.;之类的字符绕过权限判断，导致绕过权限检查风险。
             String requestPath = urlPathHelper.getLookupPathForRequest(request);
             if (!ipWhitelistManager.isAllowed(systemConfig.getIpWhitelistConfig(), clientIp)) {
@@ -104,54 +105,6 @@ public class OpenApiInterceptor implements HandlerInterceptor {
      */
     private boolean isAuthEndpoint(String path) {
         return path.endsWith("/openapi/auth/login") || path.endsWith("/openapi/auth/refresh");
-    }
-
-    /**
-     * 获取客户端真实IP地址
-     * 考虑代理和负载均衡的情况
-     * 
-     * @param request HTTP请求
-     * @return 客户端IP地址
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (StringUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            // 多次反向代理后会有多个IP值，第一个IP才是真实IP
-            int index = ip.indexOf(',');
-            if (index != -1) {
-                return ip.substring(0, index).trim();
-            } else {
-                return ip.trim();
-            }
-        }
-
-        ip = request.getHeader("X-Real-IP");
-        if (StringUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            return ip.trim();
-        }
-
-        ip = request.getHeader("Proxy-Client-IP");
-        if (StringUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            return ip.trim();
-        }
-
-        ip = request.getHeader("WL-Proxy-Client-IP");
-        if (StringUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            return ip.trim();
-        }
-
-        ip = request.getHeader("HTTP_CLIENT_IP");
-        if (StringUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            return ip.trim();
-        }
-
-        ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        if (StringUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            return ip.trim();
-        }
-
-        // 如果以上都获取不到，使用request.getRemoteAddr()
-        return request.getRemoteAddr();
     }
 
     /**

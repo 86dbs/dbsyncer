@@ -14,8 +14,6 @@ import org.dbsyncer.biz.vo.PermissionVO;
 import org.dbsyncer.biz.vo.RoleVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.RbacProfile;
 import org.dbsyncer.parser.model.Permission;
 import org.dbsyncer.parser.model.Role;
@@ -53,9 +51,6 @@ public class RoleServiceImpl implements RoleService {
 
     @Resource
     private PermissionChecker permissionChecker;
-
-    @Resource
-    private LogService logService;
 
     @Resource
     private ResourceAclService resourceAclService;
@@ -141,8 +136,6 @@ public class RoleServiceImpl implements RoleService {
         roleId = created.getId();
 
         bindPermissions(roleId, selected, now);
-        logService.log(LogType.UserLog.INSERT,
-                String.format("[%s]新增角色[%s](%s)，权限%d项", currentUserName, name, roleId, selected.size()));
         return roleId;
     }
 
@@ -165,9 +158,6 @@ public class RoleServiceImpl implements RoleService {
         role.setUpdateTime(now);
         rbacProfile.updateRole(role);
         bindPermissions(roleId, selected, now);
-
-        logService.log(LogType.UserLog.UPDATE,
-                String.format("[%s]更新角色[%s](%s)权限，共%d项", currentUserName, role.getName(), roleId, selected.size()));
         return roleId;
     }
 
@@ -188,8 +178,6 @@ public class RoleServiceImpl implements RoleService {
         rbacProfile.removeRolePermissionsByRoleId(roleId);
         rbacProfile.removeRole(roleId);
         resourceAclService.revokeAllForSubject(ResourceAclSubjectEnum.ROLE.getCode(), roleId);
-        logService.log(LogType.UserLog.DELETE,
-                String.format("[%s]删除角色[%s](%s)", currentUserName, role.getName(), roleId));
         return "删除角色成功";
     }
 

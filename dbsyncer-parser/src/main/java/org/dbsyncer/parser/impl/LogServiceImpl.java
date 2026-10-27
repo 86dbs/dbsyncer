@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.enums.StatusEnum;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
@@ -47,25 +50,47 @@ public class LogServiceImpl implements LogService {
 
     @Override
     public void log(LogType logType) {
-        asyncWrite(logType.getType(), String.format("%s%s", logType.getName(), logType.getMessage()));
+        asyncWrite(logType.getType(), StringUtil.EMPTY, StringUtil.EMPTY, StatusEnum.SUCCESS.getCode(),
+                String.format("%s%s", logType.getName(), logType.getMessage()));
     }
 
     @Override
     public void log(LogType logType, String msg) {
-        asyncWrite(logType.getType(), null == msg ? logType.getMessage() : msg);
+        asyncWrite(logType.getType(), StringUtil.EMPTY, StringUtil.EMPTY, StatusEnum.SUCCESS.getCode(),
+                null == msg ? logType.getMessage() : msg);
     }
 
     @Override
     public void log(LogType logType, String format, Object... args) {
-        asyncWrite(logType.getType(), String.format(format, args));
+        asyncWrite(logType.getType(), StringUtil.EMPTY, StringUtil.EMPTY, StatusEnum.SUCCESS.getCode(),
+                String.format(format, args));
     }
 
-    private void asyncWrite(String type, String error) {
+    @Override
+    public void log(LogType logType, String username, String ip, int status, String msg) {
+        asyncWrite(logType.getType(), username, ip, status, null == msg ? logType.getMessage() : msg);
+    }
+
+    @Override
+    public void log(LogType logType, String username, String ip, int status, Map<String, Object> detail) {
+        String json;
+        if (CollectionUtils.isEmpty(detail)) {
+            json = logType.getMessage();
+        } else {
+            json = JsonUtil.objToJsonSafe(detail);
+        }
+        asyncWrite(logType.getType(), username, ip, status, json);
+    }
+
+    private void asyncWrite(String type, String username, String ip, int status, String content) {
         storageExecutor.execute(() -> {
             Map<String, Object> params = new HashMap<>();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
-            params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(error, 0, resolveMaxStorageErrorLength()));
+            params.put(ConfigConstant.LOG_USERNAME, StringUtil.getIfBlank(username, StringUtil.EMPTY));
+            params.put(ConfigConstant.LOG_IP, StringUtil.getIfBlank(ip, StringUtil.EMPTY));
+            params.put(ConfigConstant.LOG_STATUS, status);
+            params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(content, 0, resolveMaxStorageErrorLength()));
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
             storageService.add(StorageEnum.LOG, params);
         });

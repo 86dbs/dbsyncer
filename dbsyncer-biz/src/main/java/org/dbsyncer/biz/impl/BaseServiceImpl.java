@@ -4,15 +4,8 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
-import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
-import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.NoticeContent;
 import org.dbsyncer.sdk.notice.MessageService;
 import org.springframework.util.Assert;
@@ -22,13 +15,7 @@ import javax.annotation.Resource;
 public class BaseServiceImpl {
 
     @Resource
-    private MappingProfile mappingProfile;
-
-    @Resource
     private TaskMetaProfile taskMetaProfile;
-
-    @Resource
-    private LogService logService;
 
     @Resource
     private MessageService messageService;
@@ -50,35 +37,6 @@ public class BaseServiceImpl {
     protected void assertRunning(String taskId) {
         synchronized (LOCK) {
             Assert.isTrue(!isRunning(taskId), "任务正在运行, 请先停止.");
-        }
-    }
-
-    protected void log(LogType log, ConfigModel model) {
-        if (null != model) {
-            // 新增连接器:知识库
-            logService.log(log, "%s%s:%s", log.getMessage(), log.getName(), model.getName());
-        }
-    }
-
-    protected void log(LogType log, Mapping mapping) {
-        if (null != mapping) {
-            // 新增同步任务:知识库(全量)
-            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-            logService.log(log, "%s%s:%s(%s)", log.getMessage(), log.getName(), mapping.getName(), model);
-        }
-    }
-
-    protected void log(LogType log, TableGroup tableGroup) {
-        if (null != tableGroup) {
-            Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
-            if (null != mapping) {
-                // 新增同步任务知识库(全量)映射关系:[My_User] >> [My_User_Target]
-                String name = mapping.getName();
-                String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-                String s = tableGroup.getSourceTable().getName();
-                String t = tableGroup.getTargetTable().getName();
-                logService.log(log, "%s同步任务%s(%s)%s:[%s] >> [%s]", log.getMessage(), name, model, log.getName(), s, t);
-            }
         }
     }
 

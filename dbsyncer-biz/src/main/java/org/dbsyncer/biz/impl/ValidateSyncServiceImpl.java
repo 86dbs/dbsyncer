@@ -30,8 +30,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
@@ -125,9 +123,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
     @Resource
     private ConnectorFactory connectorFactory;
-
-    @Resource
-    private LogService logService;
 
     @Resource
     private PreloadTemplate preloadTemplate;
@@ -311,7 +306,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
                     }
                     TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
                     validateSyncTableGroupChecker.mergeConfig(validateSyncTask, model);
-                    log(LogType.TableGroupLog.INSERT, validateSyncTask, model);
                     model.setIndex(baseIndex + models.size() + 1);
                     models.add(model);
                 } catch (RepeatedTableGroupException e) {
@@ -720,7 +714,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
             try {
                 TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
                 validateSyncTableGroupChecker.mergeConfig(task, model);
-                log(LogType.TableGroupLog.INSERT, task, model);
                 model.setIndex(baseIndex + models.size() + 1);
                 models.add(model);
             } catch (RepeatedTableGroupException e) {
@@ -745,7 +738,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
         TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkEditConfigModel(params);
         validateSyncTableGroupChecker.mergeConfig(task, model);
-        log(LogType.TableGroupLog.UPDATE, task, tableGroup);
         tableGroupProfile.editTableGroup(model);
         return tableGroupId;
     }
@@ -758,8 +750,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         assertRunning(taskId);
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
-            TableGroup model = tableGroupProfile.getTableGroup(id);
-            log(LogType.TableGroupLog.DELETE, task, model);
             tableGroupProfile.removeTableGroup(id);
         });
         // 合并任务公共字段
@@ -867,17 +857,6 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
         task.setReadNum(NumberUtil.toInt(params.get("readNum"), task.getReadNum()));
         task.setBatchNum(NumberUtil.toInt(params.get("batchNum"), task.getBatchNum()));
         task.setThreadNum(NumberUtil.toInt(params.get("threadNum"), task.getThreadNum()));
-    }
-
-    private void log(LogType log, ValidateSyncTask task, TableGroup tableGroup) {
-        if (null != task) {
-            // 新增订正校验任务知识库(执行一次)映射关系:[My_User] >> [My_User_Target]
-            String name = task.getName();
-            CommonTaskTriggerEnum type = CommonTaskTriggerEnum.getType(task.getTrigger());
-            String s = tableGroup.getSourceTable().getName();
-            String t = tableGroup.getTargetTable().getName();
-            logService.log(log, "%s订正校验任务%s(%s)%s:[%s] >> [%s]", log.getMessage(), name, type.getMessage(), log.getName(), s, t);
-        }
     }
 
     private void mergeTaskColumn(ValidateSyncTask task) {

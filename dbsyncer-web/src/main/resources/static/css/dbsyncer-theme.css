@@ -506,6 +506,20 @@ select[readonly] {
     overflow-x: auto;
 }
 
+/* 操作日志详情：请求/返回参数（浅灰底 + 可滚动） */
+.code-block.log-json-block {
+    max-height: 320px;
+    overflow: auto;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.code-block.log-json-block code {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* 代码块复制按钮 */
 .code-copy-btn {
     position: absolute;

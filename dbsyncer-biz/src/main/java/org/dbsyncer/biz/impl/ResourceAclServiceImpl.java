@@ -19,8 +19,6 @@ import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.GroupProfile;
 import org.dbsyncer.parser.GroupRelProfile;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.RbacProfile;
 import org.dbsyncer.parser.ResourceAclProfile;
@@ -98,9 +96,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     @Resource
     private PermissionChecker permissionChecker;
 
-    @Resource
-    private LogService logService;
-
     @Override
     public List<ResourceAclVO> listAll() {
         List<ResourceAcl> list = resourceAclProfile.listAll();
@@ -158,9 +153,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             existing.setPermission(permission);
             existing.setUpdateTime(System.currentTimeMillis());
             resourceAclProfile.update(existing);
-            logService.log(LogType.UserLog.UPDATE,
-                    String.format("[%s]更新资源授权 %s/%s -> %s/%s [%s]",
-                            currentUserName, subjectType, subjectId, resourceType, resourceId, permission));
             return existing.getId();
         }
 
@@ -179,9 +171,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
                 updated++;
             }
         }
-        logService.log(LogType.UserLog.INSERT,
-                String.format("[%s]批量资源授权 %s/%s -> %d 项 (新增%d/覆盖%d) [%s]",
-                        currentUserName, subjectType, subjectId, bindings.size(), created, updated, permission));
         return String.format("成功授权 %d 项（新增 %d，覆盖 %d）", bindings.size(), created, updated);
     }
 
@@ -282,9 +271,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         ResourceAcl acl = resourceAclProfile.get(id);
         Assert.notNull(acl, "授权不存在");
         resourceAclProfile.remove(id);
-        logService.log(LogType.UserLog.DELETE,
-                String.format("[%s]删除资源授权 %s/%s -> %s/%s",
-                        currentUserName, acl.getSubjectType(), acl.getSubjectId(), acl.getResourceType(), acl.getResourceId()));
         return "删除成功";
     }
 

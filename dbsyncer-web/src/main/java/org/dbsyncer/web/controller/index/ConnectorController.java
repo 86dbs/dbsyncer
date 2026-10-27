@@ -5,6 +5,8 @@ import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +68,7 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_COPY)
     @PostMapping("/copy")
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
@@ -79,6 +82,7 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_INSERT)
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -92,6 +96,7 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_UPDATE)
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -118,6 +123,7 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_DELETE)
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request, @RequestParam(value = "id") String id) {

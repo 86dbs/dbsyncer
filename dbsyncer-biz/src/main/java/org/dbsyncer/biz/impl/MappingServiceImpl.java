@@ -30,7 +30,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
@@ -145,7 +144,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String add(Map<String, String> params) {
         Mapping model = mappingChecker.checkAddConfigModel(params);
-        log(LogType.MappingLog.INSERT, model);
 
         String id = mappingProfile.add(model);
         // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
@@ -183,7 +181,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         mappingProfile.add(newMapping);
         preloadTemplate.reConnect(newMapping);
-        log(LogType.MappingLog.COPY, newMapping);
 
         // 复制映射表关系
         tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupList -> {
@@ -199,7 +196,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
                 newTableGroup.setTaskId(newMapping.getId());
                 tableGroupProfile.addTableGroup(newTableGroup);
-                log(LogType.TableGroupLog.COPY, newTableGroup);
             }
         });
         resourceAclService.grantOwner(username, ConfigConstant.MAPPING, newMapping.getId());
@@ -216,7 +212,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             mappingProfile.clearRunData(id);
-            log(LogType.MappingLog.UPDATE, model);
             mappingProfile.update(model);
             // 异步查源库 COUNT 并汇总 Meta.total
             submitMappingCountTask(mapping, metaSnapshot);
@@ -232,7 +227,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(taskId);
             // 条件删除 table_group + 明细 Meta，并物理 DROP 明细分表（不重建空表）
             mappingProfile.dropTaskDetailTable(id);
-            log(LogType.MetaLog.CLEAR, mapping);
             tableGroupProfile.removeTableGroupsByTaskId(taskId);
 
             // 删除任务级 meta
@@ -252,7 +246,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             groupService.bind(null, ConfigConstant.MAPPING, id);
             resourceAclService.revokeAllForResource(ConfigConstant.MAPPING, id);
             noticeRuleProfile.removeByScopeId(ConfigConstant.MAPPING, id);
-            log(LogType.MappingLog.DELETE, mapping);
         }
         return "同步任务删除成功";
     }
@@ -386,7 +379,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 throw new BizException(e.getMessage());
             }
 
-            log(LogType.MappingLog.RUNNING, mapping);
         }
         return "同步任务启动成功";
     }
@@ -400,7 +392,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
             preloadTemplate.changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
             clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
-            log(LogType.MappingLog.STOP, mapping);
             // 发送关闭通知消息
             MappingStopContent content = new MappingStopContent();
             content.setTitle("手动停止同步任务");
@@ -520,7 +511,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(mapping.getId());
             saveCustomTable(mapping, params);
             mappingProfile.update(mapping);
-            log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
     }
@@ -533,7 +523,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(mapping.getId());
             removeCustomTable(mapping, params);
             mappingProfile.update(mapping);
-            log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
     }

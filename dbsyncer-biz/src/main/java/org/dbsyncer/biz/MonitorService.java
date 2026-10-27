@@ -6,6 +6,7 @@ package org.dbsyncer.biz;
 import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
+import org.dbsyncer.biz.vo.LogVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.common.model.Paging;
 
@@ -38,9 +39,24 @@ public interface MonitorService {
     String clearData(String id, String tableGroupId);
 
     /**
-     * 查询操作日志
+     * 查询操作日志（监控页，关键字搜 JSON）
      */
     Paging queryLog(Map<String, String> params);
+
+    /**
+     * 查询登录日志（TYPE 90/91）
+     */
+    Paging queryLoginLog(Map<String, String> params);
+
+    /**
+     * 查询操作日志（排除登录 TYPE）
+     */
+    Paging queryOperLog(Map<String, String> params);
+
+    /**
+     * 按 ID 查询日志详情（含解析后的请求/返回参数）
+     */
+    LogVO getLogDetail(String id);
 
     /**
      * 清空操作日志

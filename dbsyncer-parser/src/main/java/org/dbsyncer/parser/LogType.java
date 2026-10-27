@@ -31,6 +31,54 @@ public interface LogType {
     String getMessage();
 
     /**
+     * 全部日志模块枚举；新增模块时在此追加即可。
+     */
+    LogType[][] ALL = {
+            SystemLog.values(),
+            ConnectorLog.values(),
+            MappingLog.values(),
+            TableGroupLog.values(),
+            MetaLog.values(),
+            PluginLog.values(),
+            CacheLog.values(),
+            UserLog.values(),
+            LoginLog.values()
+    };
+
+    /**
+     * 按 type 码解析模块名；未匹配时返回原 type。
+     */
+    static String getNameByType(String type) {
+        LogType matched = findByType(type);
+        return matched == null ? type : matched.getName();
+    }
+
+    /**
+     * 按 type 码查找枚举；未匹配返回 null。
+     */
+    static LogType findByType(String type) {
+        if (type == null) {
+            return null;
+        }
+        for (LogType[] group : ALL) {
+            LogType matched = match(group, type);
+            if (matched != null) {
+                return matched;
+            }
+        }
+        return null;
+    }
+
+    static LogType match(LogType[] values, String type) {
+        for (LogType value : values) {
+            if (type.equals(value.getType())) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    /**
      * 系统日志1
      */
     enum SystemLog implements LogType {
@@ -277,6 +325,37 @@ public interface LogType {
         @Override
         public String getName() {
             return "用户日志";
+        }
+
+        @Override
+        public String getType() {
+            return type;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
+        }
+    }
+
+    /**
+     * 登录日志9
+     */
+    enum LoginLog implements LogType {
+
+        SUCCESS("90", "登录成功"), FAIL("91", "登录失败");
+
+        private String type;
+        private String message;
+
+        LoginLog(String type, String message) {
+            this.type = type;
+            this.message = message;
+        }
+
+        @Override
+        public String getName() {
+            return "登录日志";
         }
 
         @Override

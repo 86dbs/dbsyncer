@@ -10,6 +10,8 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -93,6 +95,7 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_INSERT, message = "新增整库迁移")
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -105,6 +108,7 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE, message = "修改整库迁移")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -119,6 +123,7 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_DELETE, message = "删除整库迁移")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam("id") String id) {
@@ -132,6 +137,7 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_RUNNING, message = "启动整库迁移")
     @PostMapping("/start")
     @ResponseBody
     public RestResult start(@RequestParam("id") String id) {
@@ -145,6 +151,7 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_STOP, message = "停止整库迁移")
     @PostMapping("/stop")
     @ResponseBody
     public RestResult stop(@RequestParam("id") String id) {

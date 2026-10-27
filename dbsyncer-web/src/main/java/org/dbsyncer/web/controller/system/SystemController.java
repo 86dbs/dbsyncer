@@ -7,6 +7,8 @@ import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -39,6 +41,7 @@ public class SystemController extends BaseController {
         return "system/list";
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "修改系统配置")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -52,6 +55,7 @@ public class SystemController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "生成RSA密钥")
     @PostMapping("/generateRSA")
     @ResponseBody
     public RestResult generateRSA(HttpServletRequest request, @RequestParam(value = "keyLength") int keyLength) {
@@ -67,6 +71,7 @@ public class SystemController extends BaseController {
     /**
      * 生成 API 密钥（OpenAPI 登录凭证）
      */
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "生成API密钥")
     @PostMapping("/generateApiSecret")
     @ResponseBody
     public RestResult generateApiSecret(HttpServletRequest request) {

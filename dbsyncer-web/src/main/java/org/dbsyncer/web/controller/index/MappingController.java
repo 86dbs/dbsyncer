@@ -14,6 +14,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -152,6 +154,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_COPY)
     @PostMapping("/copy")
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
@@ -165,6 +168,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_INSERT)
     @PostMapping(value = "/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -178,6 +182,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE)
     @PostMapping(value = "/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -192,6 +197,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_DELETE)
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam(value = "id") String id) {
@@ -205,6 +211,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_RUNNING)
     @PostMapping("/start")
     @ResponseBody
     public RestResult start(@RequestParam(value = "id") String id) {
@@ -218,6 +225,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_STOP)
     @PostMapping("/stop")
     @ResponseBody
     public RestResult stop(@RequestParam(value = "id") String id) {
@@ -270,6 +278,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE, message = "保存自定义表")
     @PostMapping(value = "/saveCustomTable")
     @ResponseBody
     public RestResult saveCustomTable(HttpServletRequest request) {
@@ -284,6 +293,7 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE, message = "删除自定义表")
     @PostMapping(value = "/removeCustomTable")
     @ResponseBody
     public RestResult removeCustomTable(HttpServletRequest request) {
