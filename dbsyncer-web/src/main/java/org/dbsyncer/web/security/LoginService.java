@@ -77,7 +77,7 @@ public class LoginService {
     public LoginResult onFailure(String username) {
         int lockMinutes = getLockMinutes();
         if (StringUtil.isBlank(username)) {
-            return new LoginResult(0, MAX_ATTEMPTS, false, lockMinutes, 0L);
+            return new LoginResult(MAX_ATTEMPTS, false, lockMinutes, 0L);
         }
         Boolean locked = userProfile.recordLoginFailure(username, MAX_ATTEMPTS, getLockMillis(lockMinutes));
         if (locked == null) {
@@ -88,7 +88,7 @@ public class LoginService {
         boolean isLocked = Boolean.TRUE.equals(locked);
         int remaining = Math.max(0, MAX_ATTEMPTS - failCount);
         long remainingLockMinutes = isLocked ? getRemainingLockMinutes(username) : 0L;
-        return new LoginResult(failCount, remaining, isLocked, lockMinutes, remainingLockMinutes);
+        return new LoginResult(remaining, isLocked, lockMinutes, remainingLockMinutes);
     }
 
     /**
@@ -96,7 +96,7 @@ public class LoginService {
      */
     public LoginResult lockedResult(String username) {
         long remaining = getRemainingLockMinutes(username);
-        return new LoginResult(MAX_ATTEMPTS, 0, true, getLockMinutes(), remaining);
+        return new LoginResult(0, true, getLockMinutes(), remaining);
     }
 
     /**
@@ -174,6 +174,6 @@ public class LoginService {
         boolean locked = next.getLockUntilMillis() > System.currentTimeMillis();
         int remaining = Math.max(0, MAX_ATTEMPTS - next.getFailCount());
         long remainingLockMinutes = locked ? getRemainingLockMinutes(username) : 0L;
-        return new LoginResult(next.getFailCount(), remaining, locked, lockMinutes, remainingLockMinutes);
+        return new LoginResult(remaining, locked, lockMinutes, remainingLockMinutes);
     }
 }

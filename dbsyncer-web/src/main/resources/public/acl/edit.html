@@ -251,6 +251,13 @@
         }
 
         function readSelectValues($el) {
+            // dbSelect 多选状态在组件内，原生 select 无 multiple 时 .val() 只能拿到一项
+            const api = $el.data('dbSelect');
+            if (api && typeof api.getValues === 'function') {
+                return (api.getValues() || []).filter(function (v) {
+                    return !!v;
+                });
+            }
             const val = $el.val();
             if (val == null || val === '') {
                 return [];

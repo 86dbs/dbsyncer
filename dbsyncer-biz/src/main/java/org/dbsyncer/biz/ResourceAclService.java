@@ -4,6 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.ResourceAclVO;
+import org.dbsyncer.common.model.Paging;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,12 @@ import java.util.function.Function;
 public interface ResourceAclService {
 
     List<ResourceAclVO> listAll();
+
+    /**
+     * 分页查询资源授权。
+     * <p>可选参数：{@code subjectType}（0 用户 / 1 角色）、{@code subjectId}、{@code pageNum}、{@code pageSize}。
+     */
+    Paging<ResourceAclVO> query(Map<String, String> params);
 
     ResourceAclVO get(String id);
 

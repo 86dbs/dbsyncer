@@ -3,7 +3,9 @@
  */
 package org.dbsyncer.parser;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.ResourceAcl;
+import org.dbsyncer.sdk.filter.Query;
 
 import java.util.List;
 
@@ -19,6 +21,11 @@ public interface ResourceAclProfile {
     ResourceAcl get(String id);
 
     List<ResourceAcl> listAll();
+
+    /**
+     * 分页查询资源授权（条件由 {@link Query} 携带）。
+     */
+    Paging query(Query query);
 
     List<ResourceAcl> listBySubject(int subjectType, String subjectId);
 

@@ -17,6 +17,7 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,33 @@ public class ResourceAclProfileImpl implements ResourceAclProfile {
     @Override
     public List<ResourceAcl> listAll() {
         return operationTemplate.queryList(StorageEnum.RESOURCE_ACL, new Query(), ResourceAcl.class);
+    }
+
+    @Override
+    public Paging query(Query query) {
+        if (query == null) {
+            query = new Query();
+        }
+        query.setType(StorageEnum.RESOURCE_ACL);
+        Paging paging = storageService.query(query);
+        if (paging == null) {
+            return new Paging(query.getPageNum(), query.getPageSize());
+        }
+        List<Map> rows = (List<Map>) paging.getData();
+        if (CollectionUtils.isEmpty(rows)) {
+            paging.setData(Collections.emptyList());
+            return paging;
+        }
+        List<ResourceAcl> list = new ArrayList<>(rows.size());
+        for (Map row : rows) {
+            ResourceAcl model = ConfigModelUtil.parseFromRow(row, ResourceAcl.class);
+            if (model != null) {
+                model.setType(ConfigConstant.RESOURCE_ACL);
+                list.add(model);
+            }
+        }
+        paging.setData(list);
+        return paging;
     }
 
     @Override

@@ -76,8 +76,21 @@ public class ResourceAclController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         requirePermission("acl:view");
-        model.put("acls", resourceAclService.listAll());
+        model.put("users", userConfigService.getUserInfoAll(currentUsername()));
+        model.put("roles", roleService.listRoles());
         return "acl/list";
+    }
+
+    @PostMapping("/query")
+    @ResponseBody
+    public RestResult query(HttpServletRequest request) {
+        try {
+            requirePermission("acl:view");
+            return RestResult.restSuccess(resourceAclService.query(getParams(request)));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     @GetMapping("/page/add")

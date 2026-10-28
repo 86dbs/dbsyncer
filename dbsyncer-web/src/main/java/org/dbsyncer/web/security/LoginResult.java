@@ -11,23 +11,17 @@ package org.dbsyncer.web.security;
  */
 public final class LoginResult {
 
-    private final int failCount;
     private final int remainingAttempts;
     private final boolean locked;
     private final int lockMinutes;
     private final long remainingLockMinutes;
 
-    public LoginResult(int failCount, int remainingAttempts, boolean locked,
+    public LoginResult(int remainingAttempts, boolean locked,
                        int lockMinutes, long remainingLockMinutes) {
-        this.failCount = failCount;
         this.remainingAttempts = remainingAttempts;
         this.locked = locked;
         this.lockMinutes = lockMinutes;
         this.remainingLockMinutes = remainingLockMinutes;
-    }
-
-    public int getFailCount() {
-        return failCount;
     }
 
     public int getRemainingAttempts() {
@@ -50,8 +44,7 @@ public final class LoginResult {
      * 密码错误且尚未锁定。
      */
     public String badCredentialsMessage() {
-        return String.format("账号或密码错误，已失败%d次，还剩%d次机会；连续失败%d次将锁定%d分钟",
-                failCount, remainingAttempts, LoginService.MAX_ATTEMPTS, lockMinutes);
+        return String.format("账号或密码错误，还剩%d次机会；连续失败%d次将锁定%d分钟", remainingAttempts, LoginService.MAX_ATTEMPTS, lockMinutes);
     }
 
     /**
@@ -59,6 +52,6 @@ public final class LoginResult {
      */
     public String lockedMessage() {
         long minutes = Math.max(1L, remainingLockMinutes);
-        return String.format("账号已锁定，约剩余%d分钟，请稍后再试或联系管理员解锁", minutes);
+        return String.format("账号已锁定，剩余%d分钟，请稍后再试或联系管理员解锁", minutes);
     }
 }

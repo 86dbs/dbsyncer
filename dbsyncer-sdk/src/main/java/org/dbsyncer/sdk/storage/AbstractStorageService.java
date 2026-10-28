@@ -55,7 +55,7 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.LICENSE_EXPIRED, "授权已过期",
                 NoticeFrequencyEnum.INTERVAL, "0 0 9 * * ?", "每天通知一次", now);
         offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.MAPPING_FULL_COMPLETE, "全量同步完成",
-                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "全量任务完成后通立即通知一次", now);
+                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "立即通知", now);
         if (!CollectionUtils.isEmpty(missing)) {
             batchInsert(StorageEnum.NOTICE_STRATEGY, sharding, missing);
         }

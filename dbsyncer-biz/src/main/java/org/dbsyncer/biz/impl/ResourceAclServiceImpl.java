@@ -12,6 +12,7 @@ import org.dbsyncer.biz.enums.ResourceAclPermissionEnum;
 import org.dbsyncer.biz.enums.ResourceAclSubjectEnum;
 import org.dbsyncer.biz.enums.ResourceTypeEnum;
 import org.dbsyncer.biz.vo.ResourceAclVO;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -32,6 +33,9 @@ import org.dbsyncer.parser.model.ResourceAcl;
 import org.dbsyncer.parser.model.Role;
 import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.parser.model.UserRole;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.SortEnum;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.springframework.beans.BeanUtils;
@@ -112,6 +116,43 @@ public class ResourceAclServiceImpl implements ResourceAclService {
                 .comparingInt(ResourceAclVO::getSubjectType)
                 .thenComparing(ResourceAclVO::getSubjectName, Comparator.nullsLast(String::compareTo))
                 .thenComparing(ResourceAclVO::getResourceName, Comparator.nullsLast(String::compareTo)));
+        return result;
+    }
+
+    @Override
+    public Paging<ResourceAclVO> query(Map<String, String> params) {
+        int pageNum = NumberUtil.toInt(params == null ? null : params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params == null ? null : params.get("pageSize"), 10);
+   
+        Query query = new Query(pageNum, pageSize);
+        String subjectTypeRaw = params == null ? null : params.get(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE);
+        if (StringUtil.isNotBlank(subjectTypeRaw) && NumberUtil.isCreatable(subjectTypeRaw.trim())) {
+            int subjectType = NumberUtil.toInt(subjectTypeRaw.trim());
+            if (ResourceAclSubjectEnum.isSupported(subjectType)) {
+                query.addFilter(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, subjectType);
+            }
+        }
+        String subjectId = params == null ? null : params.get(ConfigConstant.RESOURCE_ACL_SUBJECT_ID);
+        if (StringUtil.isNotBlank(subjectId)) {
+            query.addFilter(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, subjectId.trim());
+        }
+        query.addOrderBy(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, SortEnum.ASC);
+        query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
+
+        Paging paging = resourceAclProfile.query(query);
+        Paging<ResourceAclVO> result = new Paging<>(pageNum, pageSize);
+        result.setTotal(paging == null ? 0 : paging.getTotal());
+        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+            result.setData(Collections.emptyList());
+            return result;
+        }
+        List<ResourceAclVO> rows = new ArrayList<>(paging.getData().size());
+        for (Object item : paging.getData()) {
+            if (item instanceof ResourceAcl) {
+                rows.add(toResourceAclVO((ResourceAcl) item));
+            }
+        }
+        result.setData(rows);
         return result;
     }
 
