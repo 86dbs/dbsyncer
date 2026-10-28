@@ -200,7 +200,7 @@ public interface LogType {
 
         @Override
         public String getName() {
-            return "驱动";
+            return "同步任务";
         }
 
         @Override

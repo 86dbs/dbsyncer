@@ -1,5 +1,7 @@
 package org.dbsyncer.biz.enums;
 
+import org.dbsyncer.common.util.StringUtil;
+
 /**
  * 安全信息枚举
  *
@@ -54,5 +56,20 @@ public enum SafeInfoEnum {
 
     public String getCode() {
         return code;
+    }
+
+    /**
+     * 是否安全敏感字段（忽略大小写）。
+     */
+    public static boolean contains(String key) {
+        if (StringUtil.isBlank(key)) {
+            return false;
+        }
+        for (SafeInfoEnum e : values()) {
+            if (StringUtil.equalsIgnoreCase(e.code, key)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

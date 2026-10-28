@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.web.log;
 
+import org.dbsyncer.biz.enums.SafeInfoEnum;
 import org.dbsyncer.common.enums.StatusEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -13,14 +14,10 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 操作日志参数采集与脱敏。
@@ -33,13 +30,6 @@ public abstract class OperLogSupport {
     public static final String ATTR_CACHED_REQUEST = "dbsyncer.operLog.cachedRequest";
     public static final String ATTR_CACHED_RESPONSE = "dbsyncer.operLog.cachedResponse";
     public static final String ATTR_START_MS = "dbsyncer.operLog.startMs";
-
-    /**
-     * 与表单/接口参数名一致（比对前会 toLowerCase）
-     */
-    private static final Set<String> SENSITIVE_KEYS = new HashSet<>(Arrays.asList(
-            "password", "oldpwd", "newpwd"
-    ));
 
     public static Map<String, Object> collectRequestParams(HttpServletRequest request) {
         Map<String, Object> params = new LinkedHashMap<>();
@@ -107,7 +97,7 @@ public abstract class OperLogSupport {
         Map<String, Object> target = new HashMap<>(source.size());
         for (Map.Entry<String, Object> entry : source.entrySet()) {
             String key = entry.getKey();
-            if (key != null && SENSITIVE_KEYS.contains(key.toLowerCase(Locale.ROOT))) {
+            if (SafeInfoEnum.contains(key)) {
                 target.put(key, "***");
             } else if (entry.getValue() instanceof Map) {
                 target.put(key, sanitize((Map<String, Object>) entry.getValue()));

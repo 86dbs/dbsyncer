@@ -53,24 +53,28 @@
         showBoundaryButtons: true,
         renderRow: function (row) {
             return '<tr>'
-                + '<td>' + escapeHtml(row.username || '') + '</td>'
-                + '<td>' + escapeHtml(row.ip || '') + '</td>'
+                + '<td>' + (row.username || '') + '</td>'
+                + '<td>' + (row.ip || '') + '</td>'
                 + '<td>' + statusBadge(row.status) + '</td>'
-                + '<td class="white-space-none">' + escapeHtml(row.message || row.json || '') + '</td>'
+                + '<td class="white-space-none">' + (row.message || row.json || '') + '</td>'
                 + '<td>' + formatDate(row.createTime || '') + '</td>'
                 + '</tr>';
         }
     });
 
     function search() {
-        pagination.doSearch(collectParams());
+        pagination.doSearch(collectParams(), 1);
     }
 
     const statusSelect = $('#filterStatus').dbSelect({
-        type: 'single'
+        type: 'single',
+        onSelect: function () {
+            search();
+        }
     });
 
-    $('#searchBtn').on('click', search);
+    $('#filterUsername, #filterIp').on('blur', search);
+    $('#filterBeginTime, #filterEndTime').on('change', search);
     $('#resetBtn').on('click', function () {
         $('#filterUsername').val('');
         $('#filterIp').val('');
@@ -83,6 +87,4 @@
         $('#filterEndTime').val('');
         search();
     });
-
-    search();
 })();

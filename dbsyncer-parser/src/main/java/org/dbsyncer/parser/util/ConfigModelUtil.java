@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.GroupRel;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.MetaAgg;
 import org.dbsyncer.parser.model.NoticeRule;
 import org.dbsyncer.parser.model.NoticeStrategyConfig;
 import org.dbsyncer.parser.model.Permission;
@@ -65,6 +66,9 @@ public abstract class ConfigModelUtil {
         }
         if (model instanceof NoticeStrategyConfig) {
             return convertNoticeStrategyConfigToMap((NoticeStrategyConfig) model);
+        }
+        if (model instanceof MetaAgg) {
+            return convertMetaDailyToMap((MetaAgg) model);
         }
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());
@@ -183,6 +187,13 @@ public abstract class ConfigModelUtil {
             }
             return (T) strategy;
         }
+        if (MetaAgg.class.equals(clazz)) {
+            MetaAgg metaAgg = JsonUtil.mapToObj(row, MetaAgg.class);
+            if (metaAgg != null) {
+                metaAgg.setType(ConfigConstant.META_DAILY);
+            }
+            return (T) metaAgg;
+        }
         Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
         if (json == null) {
             return null;
@@ -291,6 +302,18 @@ public abstract class ConfigModelUtil {
         return params;
     }
 
+    private static Map<String, Object> convertMetaDailyToMap(MetaAgg daily) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(ConfigConstant.CONFIG_MODEL_ID, daily.getId());
+        params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, daily.getCreateTime());
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, daily.getUpdateTime());
+        params.put(ConfigConstant.META_DAILY_STAT_DATE, StringUtil.getIfBlank(daily.getStatDate(), StringUtil.EMPTY));
+        params.put(ConfigConstant.META_TOTAL, daily.getTotal());
+        params.put(ConfigConstant.META_SUCCESS, daily.getSuccess());
+        params.put(ConfigConstant.META_FAIL, daily.getFail());
+        return params;
+    }
+
     private static Meta parseMeta(Map row) {
         Map<String, Object> data = new HashMap<>(row);
         Object snapshot = data.get(ConfigConstant.META_SNAPSHOT);
@@ -389,6 +412,8 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.NOTICE_RULE;
             case ConfigConstant.NOTICE_STRATEGY:
                 return StorageEnum.NOTICE_STRATEGY;
+            case ConfigConstant.META_DAILY:
+                return StorageEnum.META_DAILY;
             default:
                 // 后续新增的 CommonTaskTypeEnum 仍走 task 表
                 return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;

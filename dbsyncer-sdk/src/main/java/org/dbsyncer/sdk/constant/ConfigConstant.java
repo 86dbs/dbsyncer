@@ -51,6 +51,10 @@ public class ConfigConstant {
      * 告警策略
      */
     public static final String NOTICE_STRATEGY = "noticeStrategy";
+    /**
+     * 同步任务 Meta 日汇总
+     */
+    public static final String META_DAILY = "metaDaily";
 
     /**
      * 连接器配置字段
@@ -117,6 +121,11 @@ public class ConfigConstant {
     public static final String NOTICE_STRATEGY_CRON = "cron";
     public static final String NOTICE_STRATEGY_NOTICE_TYPES = "noticeTypes";
     public static final String NOTICE_STRATEGY_REMARK = "remark";
+
+    /**
+     * Meta 日汇总表(dbsyncer_meta_agg)拆分列
+     */
+    public static final String META_DAILY_STAT_DATE = "statDate";
 
     /**
      * 日志表(dbsyncer_log)筛选列

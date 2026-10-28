@@ -113,9 +113,9 @@
         renderRow: function (row) {
             return '<tr>'
                 + '<td>' + escapeHtml(row.typeName || row.type || '') + '</td>'
-                + '<td class="white-space-none">' + escapeHtml(row.message || row.json || '') + '</td>'
-                + '<td>' + escapeHtml(row.username || '') + '</td>'
-                + '<td>' + escapeHtml(row.ip || '') + '</td>'
+                + '<td class="white-space-none">' + (row.message || row.json || '') + '</td>'
+                + '<td>' + (row.username || '') + '</td>'
+                + '<td>' + (row.ip || '') + '</td>'
                 + '<td>' + statusBadge(row.status) + '</td>'
                 + '<td>' + formatDate(row.createTime || '') + '</td>'
                 + '<td><button type="button" class="table-action-btn view log-detail-btn" data-id="'
@@ -130,17 +130,24 @@
     });
 
     function search() {
-        pagination.doSearch(collectParams());
+        pagination.doSearch(collectParams(), 1);
     }
 
     const moduleSelect = $('#filterModule').dbSelect({
-        type: 'single'
+        type: 'single',
+        onSelect: function () {
+            search();
+        }
     });
     const statusSelect = $('#filterStatus').dbSelect({
-        type: 'single'
+        type: 'single',
+        onSelect: function () {
+            search();
+        }
     });
 
-    $('#searchBtn').on('click', search);
+    $('#filterKeyword, #filterUsername, #filterIp').on('blur', search);
+    $('#filterBeginTime, #filterEndTime').on('change', search);
     $('#resetBtn').on('click', function () {
         $('#filterKeyword').val('');
         $('#filterUsername').val('');
@@ -177,6 +184,4 @@
             }
         });
     });
-
-    search();
 })();

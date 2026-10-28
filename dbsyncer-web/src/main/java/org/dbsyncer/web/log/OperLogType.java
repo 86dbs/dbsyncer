@@ -38,31 +38,31 @@ public final class OperLogType {
     public static final String CONNECTOR_COPY = "25";
 
     /**
-     * 驱动-新增
+     * 同步任务-新增
      */
     public static final String MAPPING_INSERT = "30";
     /**
-     * 驱动-修改
+     * 同步任务-修改
      */
     public static final String MAPPING_UPDATE = "31";
     /**
-     * 驱动-删除
+     * 同步任务-删除
      */
     public static final String MAPPING_DELETE = "32";
     /**
-     * 驱动-启动
+     * 同步任务-启动
      */
     public static final String MAPPING_RUNNING = "33";
     /**
-     * 驱动-停止
+     * 同步任务-停止
      */
     public static final String MAPPING_STOP = "34";
     /**
-     * 驱动-清空同步数据
+     * 同步任务-清空同步数据
      */
     public static final String MAPPING_CLEAR_DATA = "35";
     /**
-     * 驱动-复制
+     * 同步任务-复制
      */
     public static final String MAPPING_COPY = "36";
 

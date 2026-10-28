@@ -25,9 +25,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-                <button type="button" id="searchBtn" class="btn btn-primary">
-                    <i class="fa fa-search"></i> 查询
-                </button>
                 <button type="button" id="resetBtn" class="btn btn-outline">重置</button>
                 <button class="btn btn-primary" type="button" data-permission="acl:edit"
                         onclick="doLoader('/acl/page/add')">
@@ -179,6 +176,15 @@
             pagination.doSearch(collectParams(), 1);
         }
 
+        function bindSubjectIdSelect() {
+            return $('#filterSubjectId').dbSelect({
+                type: 'single',
+                onSelect: function () {
+                    search();
+                }
+            });
+        }
+
         buildSubjectOptions('');
         const subjectTypeSelect = $('#filterSubjectType').dbSelect({
             type: 'single',
@@ -188,19 +194,19 @@
                 if (subjectIdSelect && typeof subjectIdSelect.destroy === 'function') {
                     subjectIdSelect.destroy();
                 }
-                subjectIdSelect = $('#filterSubjectId').dbSelect({type: 'single'});
+                subjectIdSelect = bindSubjectIdSelect();
+                search();
             }
         });
-        let subjectIdSelect = $('#filterSubjectId').dbSelect({type: 'single'});
+        let subjectIdSelect = bindSubjectIdSelect();
 
-        $('#searchBtn').on('click', search);
         $('#resetBtn').on('click', function () {
             setSelectValue(subjectTypeSelect, $('#filterSubjectType'), '');
             buildSubjectOptions('');
             if (subjectIdSelect && typeof subjectIdSelect.destroy === 'function') {
                 subjectIdSelect.destroy();
             }
-            subjectIdSelect = $('#filterSubjectId').dbSelect({type: 'single'});
+            subjectIdSelect = bindSubjectIdSelect();
             setSelectValue(subjectIdSelect, $('#filterSubjectId'), '');
             search();
         });

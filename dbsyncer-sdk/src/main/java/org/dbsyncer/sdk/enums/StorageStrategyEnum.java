@@ -5,26 +5,27 @@ package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.Strategy;
+import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
+import org.dbsyncer.sdk.storage.strategy.ClusterTaskStrategy;
 import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
 import org.dbsyncer.sdk.storage.strategy.ConnectorStrategy;
-import org.dbsyncer.sdk.storage.strategy.LogStrategy;
-import org.dbsyncer.sdk.storage.strategy.MetaStrategy;
-import org.dbsyncer.sdk.storage.strategy.TableGroupStrategy;
-import org.dbsyncer.sdk.storage.strategy.TaskDetailStrategy;
-import org.dbsyncer.sdk.storage.strategy.ClusterTaskStrategy;
-import org.dbsyncer.sdk.storage.strategy.TaskPlanStrategy;
-import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
-import org.dbsyncer.sdk.storage.strategy.UserStrategy;
-import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
-import org.dbsyncer.sdk.storage.strategy.GroupStrategy;
 import org.dbsyncer.sdk.storage.strategy.GroupRelStrategy;
-import org.dbsyncer.sdk.storage.strategy.RoleStrategy;
-import org.dbsyncer.sdk.storage.strategy.PermissionStrategy;
-import org.dbsyncer.sdk.storage.strategy.RolePermissionStrategy;
-import org.dbsyncer.sdk.storage.strategy.UserRoleStrategy;
-import org.dbsyncer.sdk.storage.strategy.ResourceAclStrategy;
+import org.dbsyncer.sdk.storage.strategy.GroupStrategy;
+import org.dbsyncer.sdk.storage.strategy.LogStrategy;
+import org.dbsyncer.sdk.storage.strategy.MetaAggStrategy;
+import org.dbsyncer.sdk.storage.strategy.MetaStrategy;
 import org.dbsyncer.sdk.storage.strategy.NoticeRuleStrategy;
 import org.dbsyncer.sdk.storage.strategy.NoticeStrategyStorageStrategy;
+import org.dbsyncer.sdk.storage.strategy.PermissionStrategy;
+import org.dbsyncer.sdk.storage.strategy.ResourceAclStrategy;
+import org.dbsyncer.sdk.storage.strategy.RolePermissionStrategy;
+import org.dbsyncer.sdk.storage.strategy.RoleStrategy;
+import org.dbsyncer.sdk.storage.strategy.TableGroupStrategy;
+import org.dbsyncer.sdk.storage.strategy.TaskDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.TaskPlanStrategy;
+import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
+import org.dbsyncer.sdk.storage.strategy.UserRoleStrategy;
+import org.dbsyncer.sdk.storage.strategy.UserStrategy;
 
 /**
  * 存储策略枚举
@@ -133,7 +134,12 @@ public enum StorageStrategyEnum {
     /**
      * 告警策略
      */
-    NOTICE_STRATEGY(StorageEnum.NOTICE_STRATEGY, new NoticeStrategyStorageStrategy());
+    NOTICE_STRATEGY(StorageEnum.NOTICE_STRATEGY, new NoticeStrategyStorageStrategy()),
+
+    /**
+     * 同步任务 Meta 日汇总
+     */
+    META_DAILY(StorageEnum.META_DAILY, new MetaAggStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;
