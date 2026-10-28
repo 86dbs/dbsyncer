@@ -58,6 +58,7 @@
 
     function collectParams() {
         return {
+            json: $('#filterKeyword').val() || '',
             username: $('#filterUsername').val() || '',
             ip: $('#filterIp').val() || '',
             module: getModuleFilter(),
@@ -141,6 +142,7 @@
 
     $('#searchBtn').on('click', search);
     $('#resetBtn').on('click', function () {
+        $('#filterKeyword').val('');
         $('#filterUsername').val('');
         $('#filterIp').val('');
         if (moduleSelect && typeof moduleSelect.setValues === 'function') {

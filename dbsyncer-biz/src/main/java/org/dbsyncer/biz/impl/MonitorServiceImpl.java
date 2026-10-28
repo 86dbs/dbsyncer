@@ -281,6 +281,11 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (StringUtil.isNotBlank(ip)) {
             query.addFilter(ConfigConstant.LOG_IP, ip, true);
         }
+        // 关键字：模糊匹配日志内容（与性能监控日志查询一致）
+        String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
+        if (StringUtil.isNotBlank(json)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_JSON, json, true);
+        }
         String status = params.get(ConfigConstant.LOG_STATUS);
         if (StringUtil.isNotBlank(status) && NumberUtil.isCreatable(status)) {
             query.addFilter(ConfigConstant.LOG_STATUS, NumberUtil.toInt(status));

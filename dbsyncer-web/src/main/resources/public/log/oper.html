@@ -9,6 +9,12 @@
     <div class="card-body">
         <div class="form-filter">
             <div class="form-item">
+                <label class="form-label" for="filterKeyword">关键字</label>
+                <div class="form-control-area">
+                    <input id="filterKeyword" type="text" class="form-control" maxlength="100" placeholder="操作信息"/>
+                </div>
+            </div>
+            <div class="form-item">
                 <label class="form-label" for="filterUsername">账号</label>
                 <div class="form-control-area">
                     <input id="filterUsername" type="text" class="form-control" maxlength="50" placeholder="操作人"/>
@@ -20,16 +26,16 @@
                     <input id="filterIp" type="text" class="form-control" maxlength="64" placeholder="操作地址"/>
                 </div>
             </div>
-            <div class="form-item form-item-sm">
+            <div class="form-item">
                 <label class="form-label" for="filterModule">模块</label>
-                <div class="form-control-area">
+                <div class="form-control-area min-w-300">
                     <select id="filterModule" class="form-control">
                         <option value="" selected>全部</option>
                         <option th:each="m : ${logModules}" th:value="${m}" th:text="${m}"></option>
                     </select>
                 </div>
             </div>
-            <div class="form-item form-item-sm">
+            <div class="form-item">
                 <label class="form-label" for="filterStatus">状态</label>
                 <div class="form-control-area">
                     <select id="filterStatus" class="form-control">
