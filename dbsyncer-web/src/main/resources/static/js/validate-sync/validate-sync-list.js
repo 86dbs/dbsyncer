@@ -226,17 +226,21 @@
     }
 
     function renderConnectorCell(task) {
-        var sourceType = escapeHtml(task.sourceConnector.config.connectorType || '');
-        var targetType = escapeHtml(task.targetConnector.config.connectorType || '');
+        var source = task.sourceConnector || {};
+        var target = task.targetConnector || {};
+        var sourceType = escapeHtml((source.config && source.config.connectorType) || '');
+        var targetType = escapeHtml((target.config && target.config.connectorType) || '');
+        var sourceName = source.name || '连接器已删除';
+        var targetName = target.name || '连接器已删除';
         return ''
             + '<div class="flex items-center">'
             + '<img draggable="false" class="connector-logo mr-3" src="' + $basePath + '/img/' + sourceType + '.png" alt="">'
-            + '<span>' + escapeHtml(task.sourceConnector.name || '') + '</span>'
+            + '<span>' + escapeHtml(sourceName) + '</span>'
             + '</div>'
             + '<i class="fa fa-angle-double-down ml-3"></i>'
             + '<div class="flex items-center">'
             + '<img draggable="false" class="connector-logo mr-3" src="' + $basePath + '/img/' + targetType + '.png" alt="">'
-            + '<span>' + escapeHtml(task.targetConnector.name || '') + '</span>'
+            + '<span>' + escapeHtml(targetName) + '</span>'
             + '</div>';
     }
 
@@ -269,7 +273,8 @@
                     + '<a href="javascript:void(0)" class="text-primary hover:underline cursor-pointer" title="点击查看详情" '
                     + 'onclick="doLoader(\'/validate-sync/page/detail?id=' + taskId + '\')">' + escapeHtml(task.name) + '</a>'
                     + '</td>'
-                    + '<td title="' + escapeHtml(task.sourceConnector.name || '') + ' > ' + escapeHtml(task.targetConnector.name || '') + '">'
+                    + '<td title="' + escapeHtml((task.sourceConnector && task.sourceConnector.name) || '连接器已删除')
+                    + ' > ' + escapeHtml((task.targetConnector && task.targetConnector.name) || '连接器已删除') + '">'
                     + renderConnectorCell(task)
                     + '</td>'
                     + '<td>' + renderTaskTriggerText(task.trigger) + '</td>'

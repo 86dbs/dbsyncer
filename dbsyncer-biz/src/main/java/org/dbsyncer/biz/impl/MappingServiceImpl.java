@@ -15,6 +15,10 @@ import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.task.MappingMatchTableTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
+import org.dbsyncer.biz.vo.MappingListConnectorConfigVO;
+import org.dbsyncer.biz.vo.MappingListConnectorVO;
+import org.dbsyncer.biz.vo.MappingListMetaVO;
+import org.dbsyncer.biz.vo.MappingListVO;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
@@ -36,6 +40,7 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -67,6 +72,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -297,7 +303,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public Paging<MappingVO> search(Map<String, String> params) {
+    public Paging<MappingListVO> search(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
@@ -305,7 +311,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Set<String> allowedIds = resourceAclService.resolveAllowedIds(
                 params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.MAPPING, ResourceAclActionEnum.READ.getCode());
         groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
-        Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
+        Paging<MappingListVO> result = new Paging<>(pageNum, pageSize);
         if (groupFilter.isEmptyResult()) {
             return result;
         }
@@ -317,7 +323,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (CollectionUtils.isEmpty(paging.getData())) {
             return result;
         }
-        List<MappingVO> rows = new ArrayList<>(paging.getData().size());
+        List<MappingListVO> rows = new ArrayList<>(paging.getData().size());
 
         List<String> taskIds = paging.getData().stream()
                 .filter(Objects::nonNull)
@@ -332,7 +338,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 continue;
             }
             try {
-                rows.add(convertMapping2Vo(mapping, taskMetaMap.get(mapping.getId())));
+                rows.add(convertMapping2ListVo(mapping, taskMetaMap.get(mapping.getId())));
             } catch (Exception e) {
                 logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, taskId:{}, error:{}",
                         mapping.getId(), mapping.getName(), mapping.getId(), e.getMessage());
@@ -582,15 +588,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private MappingVO convertMapping2Vo(Mapping mapping) {
-        return convertMapping2Vo(mapping, resolveMappingMeta(mapping));
-    }
-
-    /**
-     * @param meta 列表批量查库结果；为 null 时回退 {@link #resolveMappingMeta}
-     */
-    private MappingVO convertMapping2Vo(Mapping mapping, Meta meta) {
         Assert.notNull(mapping, "Mapping can not be null.");
-        Meta resolved = meta != null ? meta : resolveMappingMeta(mapping);
+        Meta resolved = resolveMappingMeta(mapping);
         Assert.notNull(resolved, String.format("Meta can not be null. mappingId:%s, taskId:%s",
                 mapping.getId(), mapping.getId()));
 
@@ -607,6 +606,74 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         vo.setSourceTable(null);
         vo.setTargetTable(null);
         return vo;
+    }
+
+    /**
+     * 列表行：只组装展示所需字段。
+     */
+    private MappingListVO convertMapping2ListVo(Mapping mapping, Meta meta) {
+        Assert.notNull(mapping, "Mapping can not be null.");
+        Meta resolved = meta != null ? meta : resolveMappingMeta(mapping);
+        Assert.notNull(resolved, String.format("Meta can not be null. mappingId:%s, taskId:%s",
+                mapping.getId(), mapping.getId()));
+
+        MappingListVO vo = new MappingListVO();
+        vo.setId(mapping.getId());
+        vo.setName(mapping.getName());
+        vo.setModel(mapping.getModel());
+        vo.setSourceConnector(toListConnector(connectorProfile.getConnector(mapping.getSourceConnectorId())));
+        vo.setTargetConnector(toListConnector(connectorProfile.getConnector(mapping.getTargetConnectorId())));
+        vo.setMeta(toListMeta(resolved, mapping.getId()));
+        return vo;
+    }
+
+    private MappingListConnectorVO toListConnector(Connector connector) {
+        MappingListConnectorVO vo = new MappingListConnectorVO();
+        if (connector == null) {
+            return vo;
+        }
+        vo.setName(connector.getName());
+        ConnectorConfig config = connector.getConfig();
+        if (config != null && StringUtil.isNotBlank(config.getConnectorType())) {
+            vo.setConfig(new MappingListConnectorConfigVO(config.getConnectorType()));
+        }
+        return vo;
+    }
+
+    private MappingListMetaVO toListMeta(Meta meta, String mappingId) {
+        MappingListMetaVO vo = new MappingListMetaVO();
+        vo.setState(meta.getState());
+        vo.setUpdateTime(meta.getUpdateTime());
+        vo.setStartTime(meta.getStartTime());
+        vo.setTotal(meta.getTotal().get());
+        vo.setSuccess(meta.getSuccess().get());
+        vo.setFail(meta.getFail().get());
+        vo.setCounting(dispatchTaskService.isRunning(mappingId));
+        vo.setSnapshot(slimListSnapshot(meta.getSnapshot()));
+        return vo;
+    }
+
+    /**
+     * 列表阶段展示所需 snapshot 键；其余位点信息不回传。
+     */
+    private Map<String, String> slimListSnapshot(Map<String, String> snapshot) {
+        if (CollectionUtils.isEmpty(snapshot)) {
+            return Collections.emptyMap();
+        }
+        ParserEnum[] keys = {
+                ParserEnum.FULL_INCREMENT_PHASE,
+                ParserEnum.TABLE_GROUP_INDEX,
+                ParserEnum.PAGE_INDEX,
+                ParserEnum.CURSOR
+        };
+        Map<String, String> slim = new HashMap<>(keys.length);
+        for (ParserEnum key : keys) {
+            String value = snapshot.get(key.getCode());
+            if (StringUtil.isNotBlank(value)) {
+                slim.put(key.getCode(), value);
+            }
+        }
+        return slim;
     }
 
     /**

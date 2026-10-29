@@ -4,6 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
+import org.dbsyncer.biz.vo.MappingListVO;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.Table;
@@ -65,12 +66,12 @@ public interface MappingService {
     MappingCustomTableVO getMappingCustomTable(String id, String type);
 
     /**
-     * 分页搜索
+     * 分页搜索（列表轻量字段，不含完整配置/连接器敏感信息）
      *
      * @param params
      * @return
      */
-    Paging<MappingVO> search(Map<String, String> params);
+    Paging<MappingListVO> search(Map<String, String> params);
 
     /**
      * 同步任务详情：按表映射汇总成功/失败数。
