@@ -46,7 +46,15 @@ public enum SafeInfoEnum {
     /**
      * 钉钉Webhook地址
      */
-    DINGTALK_WebhookUrl("dingTalkWebhookUrl");
+    DINGTALK_WebhookUrl("dingTalkWebhookUrl"),
+    /**
+     * 旧密码
+     */
+    OLD_PWD("oldpwd"),
+    /**
+     * 新密码
+     */
+    NEW_PWD("newpwd");
 
     private final String code;
 
