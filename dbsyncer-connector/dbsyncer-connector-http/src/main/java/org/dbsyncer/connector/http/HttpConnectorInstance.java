@@ -82,8 +82,6 @@ public final class HttpConnectorInstance implements ConnectorInstance<HttpConfig
      */
     private void initHttpClient() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         if (httpClient == null) {
-            logger.info("Initializing HttpClient ...");
-
             // 创建连接池管理器
             // 1. 创建 SSL 上下文和 Socket 工厂
             SSLContextBuilder builder = new SSLContextBuilder();
@@ -114,7 +112,6 @@ public final class HttpConnectorInstance implements ConnectorInstance<HttpConfig
                     .setDefaultRequestConfig(requestConfigBuilder.build());
 
             httpClient = httpClientBuilder.build();
-            logger.info("HttpClient initialized successfully");
         }
     }
 
