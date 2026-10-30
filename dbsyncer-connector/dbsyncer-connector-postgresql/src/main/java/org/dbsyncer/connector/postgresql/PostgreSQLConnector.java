@@ -151,22 +151,45 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
         return "\"";
     }
 
+    /**
+     * schema 非 public 时生成 CREATE SCHEMA；否则创建数据库。
+     * 整库迁移会分两步调用：先建库（schema 为空），再连目标库建 schema。
+     */
     @Override
     public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        if (StringUtil.isNotBlank(schemaName) && !isDefaultSchema(schemaName)) {
+            return "CREATE SCHEMA IF NOT EXISTS " + buildWithQuotation(schemaName);
+        }
         if (StringUtil.isBlank(databaseName)) {
             return StringUtil.EMPTY;
         }
         return "CREATE DATABASE " + buildWithQuotation(databaseName);
     }
 
+    /**
+     * 仅校验库：schema 为空或 public 时只查 pg_database；
+     * 校验 schema：调用方须已连接到目标库，再查当前库的 pg_namespace。
+     */
     @Override
     public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
-        if (StringUtil.isBlank(databaseName)) {
-            return false;
+        if (StringUtil.isBlank(schemaName) || isDefaultSchema(schemaName)) {
+            if (StringUtil.isBlank(databaseName)) {
+                return true;
+            }
+            Integer count = connectorInstance.execute(databaseTemplate ->
+                    databaseTemplate.queryForObject("SELECT COUNT(1) FROM pg_database WHERE datname = ?", Integer.class, databaseName));
+            return count != null && count > 0;
         }
         Integer count = connectorInstance.execute(databaseTemplate ->
-                databaseTemplate.queryForObject("SELECT COUNT(1) FROM pg_database WHERE datname = ?", Integer.class, databaseName));
+                databaseTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM pg_namespace WHERE nspname = ?",
+                        Integer.class,
+                        schemaName));
         return count != null && count > 0;
+    }
+
+    private static boolean isDefaultSchema(String schemaName) {
+        return StringUtil.equalsIgnoreCase("public", schemaName);
     }
 
     @Override
