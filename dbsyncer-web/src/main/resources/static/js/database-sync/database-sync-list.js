@@ -30,15 +30,20 @@
     }
 
     function databaseSyncRemove(taskId) {
-        if (!confirm('确定删除该任务？')) {
-            return;
-        }
-        doPoster('/database-sync/remove', {id: taskId}, function (response) {
-            if (response.success) {
-                bootGrowl(response.data || '删除成功', 'success');
-                refreshIndexList();
-            } else {
-                bootGrowl(response.message || '删除失败', 'danger');
+        showConfirm({
+            title: '确定要删除该任务？',
+            icon: 'warning',
+            size: 'large',
+            confirmType: 'danger',
+            onConfirm: function () {
+                doPoster('/database-sync/remove', {id: taskId}, function (response) {
+                    if (response.success) {
+                        bootGrowl(response.data || '删除成功', 'success');
+                        refreshIndexList();
+                    } else {
+                        bootGrowl(response.message || '删除失败', 'danger');
+                    }
+                });
             }
         });
     }

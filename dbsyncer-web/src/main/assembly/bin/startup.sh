@@ -5,12 +5,6 @@ SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 DBS_HOME=$(cd "$SCRIPT_DIR/.."; pwd)
 echo "DBS_HOME=$DBS_HOME"
 
-# 自动检测同目录下的 jre8
-if [[ -z "${JRE_HOME:-}" && -d "$DBS_HOME/jre8" ]]; then
-  export JRE_HOME="$DBS_HOME/jre8"
-  echo "Using embedded JRE8: $JRE_HOME"
-fi
-
 # 确保 conf 目录存在
 if [ ! -d "$DBS_HOME/conf" ]; then
   mkdir -p "$DBS_HOME/conf"
@@ -37,40 +31,100 @@ if [[ -n "$PROCESS" ]]; then
 fi
 
 ###########################################################################
-# JRE 扩展目录：须包含 sunjce_provider，否则 TLS 报 SunTls12RsaPremasterSecret KeyGenerator not available
-resolve_jre_ext_dir() {
-  # 优先使用 JRE_HOME
-  if [[ -n "${JRE_HOME:-}" ]]; then
-    if [[ -d "$JRE_HOME/lib/ext" ]]; then
-      echo "$JRE_HOME/lib/ext"
+# 解析 Java：内置 jre8 > JRE_HOME > JAVA_HOME > sudo 原用户 > PATH
+# 用户通常只配置 JAVA_HOME；sudo 默认会清掉环境变量
+###########################################################################
+
+# sudo 清环境时，尝试从调用用户登录环境恢复 JAVA_HOME
+if [[ -z "${JAVA_HOME:-}" && -z "${JRE_HOME:-}" && -n "${SUDO_USER:-}" ]]; then
+  _recovered=$(su - "$SUDO_USER" -c 'printf %s "$JAVA_HOME"' 2>/dev/null | tr -d '\r')
+  if [[ -n "$_recovered" && -d "$_recovered" ]]; then
+    export JAVA_HOME="$_recovered"
+    echo "Recovered JAVA_HOME from user $SUDO_USER: $JAVA_HOME"
+  fi
+  unset _recovered
+fi
+
+# 自动检测同目录下的 jre8
+if [[ -z "${JRE_HOME:-}" && -d "$DBS_HOME/jre8" ]]; then
+  export JRE_HOME="$DBS_HOME/jre8"
+  echo "Using embedded JRE8: $JRE_HOME"
+fi
+
+# 统一 Java 根目录（JRE_HOME 优先于 JAVA_HOME）
+JAVA_ROOT="${JRE_HOME:-${JAVA_HOME:-}}"
+if [[ -n "${JAVA_HOME:-}" && -z "${JRE_HOME:-}" ]]; then
+  echo "Using JAVA_HOME: $JAVA_HOME"
+fi
+
+resolve_java_bin() {
+  local root="$1"
+  if [[ -n "$root" ]]; then
+    if [[ -x "$root/bin/java" ]]; then
+      echo "$root/bin/java"
       return
     fi
-    if [[ -d "$JRE_HOME/jre/lib/ext" ]]; then
-      echo "$JRE_HOME/jre/lib/ext"
+    if [[ -x "$root/jre/bin/java" ]]; then
+      echo "$root/jre/bin/java"
+      return
+    fi
+  fi
+  if command -v java >/dev/null 2>&1; then
+    command -v java
+    return
+  fi
+  echo ""
+}
+
+# JRE 扩展目录：须包含 sunjce_provider，否则 TLS 报 SunTls12RsaPremasterSecret KeyGenerator not available
+resolve_jre_ext_dir() {
+  local root="$1"
+  local java_bin="$2"
+
+  if [[ -n "$root" ]]; then
+    if [[ -d "$root/lib/ext" ]]; then
+      echo "$root/lib/ext"
+      return
+    fi
+    if [[ -d "$root/jre/lib/ext" ]]; then
+      echo "$root/jre/lib/ext"
       return
     fi
   fi
 
-  # 回退：查找系统 Java
-  local java_home_prop
-  if ! command -v java >/dev/null 2>&1; then
-    echo ""
-    return
-  fi
-  java_home_prop=$(java -XshowSettings:properties -version 2>&1 | tr -d '\r' | sed -n 's/^ *java\.home = //p' | head -1)
-  if [[ -n "$java_home_prop" && -d "$java_home_prop/lib/ext" ]]; then
-    echo "$java_home_prop/lib/ext"
-    return
+  # 回退：从实际 java 的 java.home 属性推断
+  if [[ -n "$java_bin" ]]; then
+    local java_home_prop
+    java_home_prop=$("$java_bin" -XshowSettings:properties -version 2>&1 | tr -d '\r' | sed -n 's/^ *java\.home = //p' | head -1)
+    if [[ -n "$java_home_prop" ]]; then
+      if [[ -d "$java_home_prop/lib/ext" ]]; then
+        echo "$java_home_prop/lib/ext"
+        return
+      fi
+      if [[ -d "$java_home_prop/jre/lib/ext" ]]; then
+        echo "$java_home_prop/jre/lib/ext"
+        return
+      fi
+    fi
   fi
 
   echo ""
 }
 
-JAVA_EXT_DIR=$(resolve_jre_ext_dir)
-if [[ -z "$JAVA_EXT_DIR" ]]; then
-  echo "ERROR: Cannot find JRE lib/ext (JCE required for SSL). Set JAVA_HOME or fix PATH to java." >&2
+JAVA_BIN=$(resolve_java_bin "$JAVA_ROOT")
+JAVA_EXT_DIR=$(resolve_jre_ext_dir "$JAVA_ROOT" "$JAVA_BIN")
+
+if [[ -z "$JAVA_BIN" ]]; then
+  echo "ERROR: Cannot find java. Set JAVA_HOME (JDK/JRE 8) or ensure java is on PATH." >&2
+  echo "Note: sudo clears env vars; prefer 'sudo -E ./startup.sh' or export JAVA_HOME before sudo." >&2
   exit 1
 fi
+if [[ -z "$JAVA_EXT_DIR" ]]; then
+  echo "ERROR: Cannot find JRE lib/ext (JCE required for SSL). JAVA_HOME should point to JDK/JRE 8." >&2
+  echo "JAVA_HOME=${JAVA_HOME:-} JRE_HOME=${JRE_HOME:-} java=$JAVA_BIN" >&2
+  exit 1
+fi
+echo "JAVA_BIN=$JAVA_BIN"
 echo "JAVA_EXT_DIR=$JAVA_EXT_DIR"
 
 ###########################################################################
@@ -126,19 +180,6 @@ JAVA_OPTS+=("-Duser.dir=$DBS_HOME")
 
 # 5. 主类
 APP="org.dbsyncer.web.Application"
-
-# 确定 java 路径：优先 jre8，否则使用系统 java
-if [[ -n "${JRE_HOME:-}" ]]; then
-  if [[ -x "$JRE_HOME/bin/java" ]]; then
-    JAVA_BIN="$JRE_HOME/bin/java"
-  elif [[ -x "$JRE_HOME/jre/bin/java" ]]; then
-    JAVA_BIN="$JRE_HOME/jre/bin/java"
-  else
-    JAVA_BIN="java"
-  fi
-else
-  JAVA_BIN="java"
-fi
 
 # execute command
 echo "Starting DBSyncer Application..."
