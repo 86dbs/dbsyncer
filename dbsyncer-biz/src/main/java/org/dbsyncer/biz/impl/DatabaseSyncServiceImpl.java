@@ -26,6 +26,7 @@ import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
 import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 import org.dbsyncer.parser.model.Connector;
@@ -89,6 +90,9 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Resource
     private TaskDetailProfile taskDetailProfile;
@@ -226,6 +230,14 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         }
         if (tableGroupProfile.getTableGroupCount(id) <= 0) {
             throw new BizException("任务未配置库表映射，无法启动");
+        }
+        Meta meta = taskMetaProfile.getMeta(id);
+        if (meta != null && CommonTaskStatusEnum.isDone(meta.getState())) {
+            //重置任务meta 和表级别meta
+            taskMetaProfile.resetMeta(id);
+            taskProfile.resetTableDetailMetas(id);
+            //重置明细分表
+            databaseSyncProfile.syncTaskTableMetaDetails(id);
         }
         clusterService.start(task, false);
         return "启动成功";
