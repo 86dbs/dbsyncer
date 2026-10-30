@@ -23,6 +23,8 @@ import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.Version;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -95,6 +97,7 @@ public class LicenseController extends BaseController {
         return "license/list";
     }
 
+    @OperLog(type = OperLogType.USER_UPLOAD_LICENSE)
     @PostMapping(value = "/upload")
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {
@@ -117,6 +120,7 @@ public class LicenseController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_ACTIVATE_LICENSE)
     @PostMapping(value = "/activate")
     @ResponseBody
     public RestResult activate(HttpServletRequest request) {
@@ -139,6 +143,7 @@ public class LicenseController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_DELETE_LICENSE)
     @PostMapping(value = "/remove")
     @ResponseBody
     public RestResult remove() {

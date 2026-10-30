@@ -63,7 +63,6 @@ public class PluginServiceImpl implements PluginService {
     @Override
     public void loadPlugins() {
         pluginFactory.loadPlugins();
-        logService.log(LogType.PluginLog.UPDATE);
     }
 
     @Override

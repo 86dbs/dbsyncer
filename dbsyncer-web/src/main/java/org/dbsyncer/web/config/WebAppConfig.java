@@ -3,13 +3,17 @@ package org.dbsyncer.web.config;
 import org.dbsyncer.biz.PermissionService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.enums.StatusEnum;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.web.controller.cluster.ClusterInternalAuthFilter;
 import org.dbsyncer.web.security.LoginResult;
 import org.dbsyncer.web.security.LoginService;
+import org.dbsyncer.web.util.RequestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -77,6 +81,9 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     @Resource
     private LoginService loginService;
 
+    @Resource
+    private LogService logService;
+
     /**
      * 是否重置管理员密码
      */
@@ -87,7 +94,12 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
      */
     @Bean
     public AuthenticationFailureHandler loginFailHandler() {
-        return (request, response, e) -> write(response, RestResult.restFail(e.getMessage(), 401));
+        return (request, response, e) -> {
+            String username = request.getParameter("username");
+            logService.log(LogType.LoginLog.FAIL, username, RequestUtil.getClientIp(request),
+                    StatusEnum.FAIL.getCode(), e.getMessage());
+            write(response, RestResult.restFail(e.getMessage(), 401));
+        };
     }
 
     /**
@@ -99,7 +111,10 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                String msg = String.format("%s 登录成功!", authentication.getPrincipal());
+                String username = String.valueOf(authentication.getPrincipal());
+                String msg = String.format("%s 登录成功!", username);
+                logService.log(LogType.LoginLog.SUCCESS, username, RequestUtil.getClientIp(request),
+                        StatusEnum.SUCCESS.getCode(), LogType.LoginLog.SUCCESS.getMessage());
                 write(response, RestResult.restSuccess(msg));
                 logger.info(msg);
             }

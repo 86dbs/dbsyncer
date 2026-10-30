@@ -110,6 +110,19 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- dbsyncer-connector-gaussdb -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-gaussdb</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-gaussdb-mysql -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-gaussdb-mysql</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.ghi</groupId>

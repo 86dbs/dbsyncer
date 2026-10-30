@@ -24,22 +24,19 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.MetaAggProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.MetaAgg;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.filter.impl.IntFilter;
-import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.model.BufferActuatorMetric;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -49,6 +46,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -76,6 +74,9 @@ public class MetricReporter implements ScheduledTaskJob {
 
     @Resource
     private MappingProfile mappingProfile;
+
+    @Resource
+    private MetaAggProfile metaAggProfile;
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
@@ -200,6 +201,8 @@ public class MetricReporter implements ScheduledTaskJob {
             // 分页扫描任务级 Meta，按页累计，避免一次性装入内存
             AtomicLong successTotal = new AtomicLong();
             AtomicLong failTotal = new AtomicLong();
+            AtomicLong mappingSuccessTotal = new AtomicLong();
+            AtomicLong mappingFailTotal = new AtomicLong();
             AtomicLong insertTotal = new AtomicLong();
             AtomicLong updateTotal = new AtomicLong();
             AtomicLong deleteTotal = new AtomicLong();
@@ -210,26 +213,6 @@ public class MetricReporter implements ScheduledTaskJob {
             AtomicLong lastWeekMeta = new AtomicLong();
             long lastWeekTime = Timestamp.valueOf(LocalDateTime.now().minusWeeks(1)).getTime();
 
-            SyncTrendStackVO trend = dashboardMetric.getTrend();
-            boolean needTrendHistory = CollectionUtils.isEmpty(trend.getLabels());
-            LocalDateTime now = LocalDateTime.now();
-            long[] dayCutoff = null;
-            long[] histSuccess = null;
-            long[] histFail = null;
-            if (needTrendHistory) {
-                int histDays = SHOW_REPORT_DAYS - 1;
-                dayCutoff = new long[histDays];
-                histSuccess = new long[histDays];
-                histFail = new long[histDays];
-                int idx = 0;
-                for (int i = SHOW_REPORT_DAYS - 1; i > 0; i--) {
-                    dayCutoff[idx++] = Timestamp.valueOf(now.minusDays(i)).getTime();
-                }
-            }
-
-            final long[] dayCutoffRef = dayCutoff;
-            final long[] histSuccessRef = histSuccess;
-            final long[] histFailRef = histFail;
             taskMetaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
                 if (CollectionUtils.isEmpty(page)) {
                     return;
@@ -254,11 +237,13 @@ public class MetricReporter implements ScheduledTaskJob {
                     if (meta.getFail() != null && meta.getFail().get() > 0) {
                         failMeta.incrementAndGet();
                     }
-                }
-                if (needTrendHistory && dayCutoffRef != null) {
-                    for (int d = 0; d < dayCutoffRef.length; d++) {
-                        histSuccessRef[d] += getMappingDataCount(page, dayCutoffRef[d], StorageDataStatusEnum.SUCCESS);
-                        histFailRef[d] += getMappingDataCount(page, dayCutoffRef[d], StorageDataStatusEnum.FAIL);
+                    if (StringUtil.isNotBlank(meta.getTaskId()) && mappingProfile.get(meta.getTaskId()) != null) {
+                        if (meta.getSuccess() != null) {
+                            mappingSuccessTotal.addAndGet(meta.getSuccess().get());
+                        }
+                        if (meta.getFail() != null) {
+                            mappingFailTotal.addAndGet(meta.getFail().get());
+                        }
                     }
                 }
             });
@@ -277,7 +262,7 @@ public class MetricReporter implements ScheduledTaskJob {
             dashboardMetric.setLastWeekMeta(lastWeekMeta.get());
             dashboardMetric.setRunningMeta(runningMeta.get());
             dashboardMetric.setFailMeta(failMeta.get());
-            updateSyncTrendData(dashboardMetric, histSuccess, histFail);
+            updateSyncTrendFromDaily(mappingSuccessTotal.get(), mappingFailTotal.get());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
@@ -286,42 +271,38 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     /**
-     * 更新同步趋势；历史日数据在分页扫描时按页累计传入，避免再持有全量 Meta。
+     * 同步趋势：历史日读 {@code dbsyncer_meta_agg}，今日点用实时同步任务合计刷新。
      */
-    private void updateSyncTrendData(DashboardMetric dashboardMetric, long[] historySuccess, long[] historyFail) {
+    private void updateSyncTrendFromDaily(long todaySuccess, long todayFail) {
         SyncTrendStackVO stack = dashboardMetric.getTrend();
-        LocalDateTime now = LocalDateTime.now();
-        Timestamp timestamp = Timestamp.valueOf(now);
-        String today = DateFormatUtil.timestampToString(timestamp, DateFormatUtil.MM_DD);
-        List<String> labels = stack.getLabels();
-        if (CollectionUtils.isEmpty(labels)) {
-            for (int i = SHOW_REPORT_DAYS - 1; i > 0; i--) {
-                Timestamp time = Timestamp.valueOf(now.minusDays(i));
-                labels.add(DateFormatUtil.timestampToString(time, DateFormatUtil.MM_DD));
-                int idx = SHOW_REPORT_DAYS - 1 - i;
-                long success = historySuccess != null && idx < historySuccess.length ? historySuccess[idx] : 0L;
-                long fail = historyFail != null && idx < historyFail.length ? historyFail[idx] : 0L;
-                stack.getSuccess().add(success);
-                stack.getFail().add(fail);
+        stack.getLabels().clear();
+        stack.getSuccess().clear();
+        stack.getFail().clear();
+
+        String today = LocalDate.now().format(DateFormatUtil.YYYY_MM_DD);
+        List<MetaAgg> rows = metaAggProfile.listRecent(SHOW_REPORT_DAYS);
+        boolean hasToday = false;
+        if (!CollectionUtils.isEmpty(rows)) {
+            for (MetaAgg row : rows) {
+                if (row == null || StringUtil.isBlank(row.getStatDate())) {
+                    continue;
+                }
+                stack.getLabels().add(row.getStatDate());
+                if (StringUtil.equals(today, row.getStatDate())) {
+                    stack.getSuccess().add(todaySuccess);
+                    stack.getFail().add(todayFail);
+                    hasToday = true;
+                } else {
+                    stack.getSuccess().add(row.getSuccess());
+                    stack.getFail().add(row.getFail());
+                }
             }
-            labels.add(today);
-            stack.getSuccess().add(dashboardMetric.getSuccess());
-            stack.getFail().add(dashboardMetric.getFail());
-            return;
         }
-
-        if (!StringUtil.equals(today, labels.get(labels.size() - 1))) {
-            List<String> newLabels = labels.stream().skip(1).collect(Collectors.toList());
-            labels.clear();
-            labels.addAll(newLabels);
-            labels.add(today);
-            stack.getSuccess().add(dashboardMetric.getSuccess());
-            stack.getFail().add(dashboardMetric.getFail());
-            return;
+        if (!hasToday) {
+            stack.getLabels().add(today);
+            stack.getSuccess().add(todaySuccess);
+            stack.getFail().add(todayFail);
         }
-
-        stack.getSuccess().set(stack.getSuccess().size() - 1, dashboardMetric.getSuccess());
-        stack.getFail().set(stack.getFail().size() - 1, dashboardMetric.getFail());
     }
 
     /**
@@ -381,17 +362,6 @@ public class MetricReporter implements ScheduledTaskJob {
             }
         }
         return total;
-    }
-
-    /**
-     * 当页任务明细表按时间/状态统计条数。
-     */
-    private long getMappingDataCount(List<Meta> page, long time, StorageDataStatusEnum status) {
-        return queryMappingMetricCount(page, (query) -> {
-            LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, time);
-            IntFilter success = new IntFilter(ConfigConstant.DETAIL_IS_SUCCESS, status.getValue());
-            query.setBooleanFilter(new BooleanFilter().add(filter).add(success));
-        });
     }
 
     private long getMappingInsert(List<Meta> page) {

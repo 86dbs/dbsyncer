@@ -1,5 +1,9 @@
 package org.dbsyncer.parser;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * 日志类型枚举
  *
@@ -29,6 +33,82 @@ public interface LogType {
      * @return
      */
     String getMessage();
+
+    /**
+     * 全部日志模块枚举；新增模块时在此追加即可。
+     */
+    LogType[][] ALL = {
+            SystemLog.values(),
+            ConnectorLog.values(),
+            MappingLog.values(),
+            TableGroupLog.values(),
+            MetaLog.values(),
+            PluginLog.values(),
+            CacheLog.values(),
+            UserLog.values(),
+            LoginLog.values()
+    };
+
+    /**
+     * 按 type 码解析模块名；未匹配时返回原 type。
+     */
+    static String getNameByType(String type) {
+        LogType matched = findByType(type);
+        return matched == null ? type : matched.getName();
+    }
+
+    /**
+     * 按 type 码查找枚举；未匹配返回 null。
+     */
+    static LogType findByType(String type) {
+        if (type == null) {
+            return null;
+        }
+        for (LogType[] group : ALL) {
+            LogType matched = match(group, type);
+            if (matched != null) {
+                return matched;
+            }
+        }
+        return null;
+    }
+
+    static LogType match(LogType[] values, String type) {
+        for (LogType value : values) {
+            if (type.equals(value.getType())) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 操作日志可选模块名（排除登录），按 {@link #ALL} 顺序去重。
+     * <p>同组共享 {@link #getName()}，取组首项即可。
+     */
+    static List<String> listOperModuleNames() {
+        return Arrays.stream(ALL)
+                .filter(group -> group.length > 0 && !(group[0] instanceof LoginLog))
+                .map(group -> group[0].getName())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 按模块名汇总类型码（逗号拼接），供 IN 查询；未匹配返回 {@code null}。
+     */
+    static String joinTypesByModuleName(String moduleName) {
+        if (moduleName == null || moduleName.isEmpty()) {
+            return null;
+        }
+        String codes = Arrays.stream(ALL)
+                .filter(group -> group.length > 0 && !(group[0] instanceof LoginLog)
+                        && moduleName.equals(group[0].getName()))
+                .flatMap(Arrays::stream)
+                .map(LogType::getType)
+                .collect(Collectors.joining(","));
+        return codes.isEmpty() ? null : codes;
+    }
 
     /**
      * 系统日志1
@@ -120,7 +200,7 @@ public interface LogType {
 
         @Override
         public String getName() {
-            return "驱动";
+            return "同步任务";
         }
 
         @Override
@@ -244,7 +324,7 @@ public interface LogType {
 
         @Override
         public String getName() {
-            return "插件";
+            return "配置";
         }
 
         @Override
@@ -277,6 +357,37 @@ public interface LogType {
         @Override
         public String getName() {
             return "用户日志";
+        }
+
+        @Override
+        public String getType() {
+            return type;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
+        }
+    }
+
+    /**
+     * 登录日志9
+     */
+    enum LoginLog implements LogType {
+
+        SUCCESS("90", "登录成功"), FAIL("91", "登录失败");
+
+        private String type;
+        private String message;
+
+        LoginLog(String type, String message) {
+            this.type = type;
+            this.message = message;
+        }
+
+        @Override
+        public String getName() {
+            return "登录日志";
         }
 
         @Override

@@ -17,6 +17,7 @@ import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -204,7 +205,18 @@ public final class TaskMetaProfileImpl extends AbstractConfigModelProfile<Meta> 
         if (deltas.isEmpty()) {
             return;
         }
-        storageService.increment(StorageEnum.META, increment.getTaskId(), deltas);
+        String taskId = increment.getTaskId();
+        synchronized (MetaLockUtil.lock(taskId)) {
+            storageService.increment(StorageEnum.META, taskId, deltas);
+            Meta cached = cacheService.get(buildCacheKey(taskId), Meta.class);
+            if (cached != null) {
+                cached.getTotal().addAndGet(increment.getTotalDelta());
+                cached.getSuccess().addAndGet(increment.getSuccessDelta());
+                cached.getFail().addAndGet(increment.getFailDelta());
+                cached.getDiff().addAndGet(increment.getDiffDelta());
+                cached.getFixed().addAndGet(increment.getFixedDelta());
+            }
+        }
     }
 
     @Override

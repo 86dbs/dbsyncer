@@ -94,7 +94,6 @@ public class UserConfigServiceImpl implements UserConfigService {
         userConfig.getUserInfoList().add(new UserInfo(username, nickname, SHA1Util.b64_sha1(password),
                 StringUtil.EMPTY));
 
-        logService.log(LogType.UserLog.INSERT, String.format("[%s]添加[%s]账号成功", currentUser.getUsername(), username));
         String result = userProfile.saveUserConfig(userConfig);
         UserInfo created = getUserConfig().getUserInfo(username);
         if (created != null && StringUtil.isNotBlank(created.getId())) {
@@ -135,7 +134,6 @@ public class UserConfigServiceImpl implements UserConfigService {
             newPwd = SHA1Util.b64_sha1(newPwd);
             Assert.isTrue(!StringUtil.equals(newPwd, updateUser.getPassword()), "新旧密码不能完全一样.");
             updateUser.setPassword(newPwd);
-            logService.log(LogType.UserLog.UPDATE, String.format("[%s]修改[%s]账号密码成功", currentUser.getUsername(), username));
         }
 
         if (canEditOthers && params.containsKey("roleId")) {
@@ -143,15 +141,9 @@ public class UserConfigServiceImpl implements UserConfigService {
                     permissionService.resolvePrimaryRoleId(updateUser.getId()));
             String oldRoleId = permissionService.resolvePrimaryRoleId(updateUser.getId());
             if (!StringUtil.equals(oldRoleId, roleId)) {
-                String oldName = permissionService.resolvePrimaryRoleName(updateUser.getId());
-                Role newRole = rbacProfile.getRoleById(roleId);
-                String newName = newRole == null ? roleId : newRole.getName();
                 if (StringUtil.isNotBlank(updateUser.getId())) {
                     permissionService.replaceUserRole(updateUser.getId(), roleId);
                 }
-                logService.log(LogType.UserLog.UPDATE,
-                        String.format("[%s]将[%s]角色由[%s]改为[%s]", currentUser.getUsername(), username,
-                                StringUtil.isNotBlank(oldName) ? oldName : oldRoleId, newName));
             }
         }
 
@@ -180,7 +172,6 @@ public class UserConfigServiceImpl implements UserConfigService {
         }
         userConfig.removeUserInfo(username);
         userProfile.saveUserConfig(userConfig);
-        logService.log(LogType.UserLog.DELETE, String.format("[%s]删除[%s]账号成功", currentUser.getUsername(), username));
         return "删除用户成功!";
     }
 

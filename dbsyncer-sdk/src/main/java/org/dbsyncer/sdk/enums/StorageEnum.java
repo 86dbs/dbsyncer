@@ -89,7 +89,11 @@ public enum StorageEnum {
     /**
      * 告警策略
      */
-    NOTICE_STRATEGY("notice_strategy");
+    NOTICE_STRATEGY("notice_strategy"),
+    /**
+     * 同步任务 Meta 汇总
+     */
+    META_DAILY("meta_agg");
 
     private final String type;
 

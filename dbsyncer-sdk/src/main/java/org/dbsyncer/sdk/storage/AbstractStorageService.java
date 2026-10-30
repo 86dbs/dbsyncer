@@ -32,35 +32,58 @@ import java.util.Map;
 public abstract class AbstractStorageService implements StorageService, DisposableBean {
 
     /**
-     * 告警策略表首次创建时灌入默认策略（每种通知类型一行）。
+     * 灌入/补齐默认告警策略（按通知类型 ID 幂等，已存在则跳过）。
      */
     protected void initNoticeStrategy() {
         long now = System.currentTimeMillis();
-        List<Map> list = new ArrayList<>(8);
-        list.add(noticeStrategyRow(NoticeTypeEnum.TEST_MESSAGE, "测试消息", NoticeFrequencyEnum.IMMEDIATE,
-                StringUtil.EMPTY, "立即通知", now));
-        list.add(noticeStrategyRow(NoticeTypeEnum.CONNECTOR_OFFLINE, "连接离线", NoticeFrequencyEnum.IMMEDIATE,
-                StringUtil.EMPTY, "5秒通知一次", now));
-        list.add(noticeStrategyRow(NoticeTypeEnum.MAPPING_ERROR, "同步任务失败", NoticeFrequencyEnum.IMMEDIATE,
-                StringUtil.EMPTY, "10分钟检测有失败数据,通知一次", now));
-        list.add(noticeStrategyRow(NoticeTypeEnum.MAPPING_STOP, "手动停止同步任务", NoticeFrequencyEnum.IMMEDIATE,
-                StringUtil.EMPTY, "立即通知", now));
-        list.add(noticeStrategyRow(NoticeTypeEnum.VALIDATE_SYNC_FAIL, "订正校验失败", NoticeFrequencyEnum.IMMEDIATE,
-                StringUtil.EMPTY, "任务执行完成,通知一次", now));
-        list.add(noticeStrategyRow(NoticeTypeEnum.LICENSE_EXCEPTION, "授权异常", NoticeFrequencyEnum.INTERVAL,
-                "0 */10 * * * ?", "十分钟通知一次", now));
-        list.add(noticeStrategyRow(NoticeTypeEnum.LICENSE_EXPIRE_REMIND, "授权到期提醒", NoticeFrequencyEnum.INTERVAL,
-                "0 0 9 * * ?", "每天通知一次", now));
-        list.add(noticeStrategyRow(NoticeTypeEnum.LICENSE_EXPIRED, "授权已过期", NoticeFrequencyEnum.INTERVAL,
-                "0 0 9 * * ?", "每天通知一次", now));
-        batchInsert(StorageEnum.NOTICE_STRATEGY, getSharding(StorageEnum.NOTICE_STRATEGY, null), list);
+        String sharding = getSharding(StorageEnum.NOTICE_STRATEGY, null);
+        List<Map> missing = new ArrayList<>(9);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.TEST_MESSAGE, "测试消息",
+                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "立即通知", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.CONNECTOR_OFFLINE, "连接离线",
+                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "5秒通知一次", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.MAPPING_ERROR, "同步任务失败",
+                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "10分钟检测有失败数据,通知一次", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.MAPPING_STOP, "手动停止同步任务",
+                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "立即通知", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.VALIDATE_SYNC_FAIL, "订正校验失败",
+                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "任务执行完成,通知一次", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.LICENSE_EXCEPTION, "授权异常",
+                NoticeFrequencyEnum.INTERVAL, "0 */10 * * * ?", "十分钟通知一次", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.LICENSE_EXPIRE_REMIND, "授权到期提醒",
+                NoticeFrequencyEnum.INTERVAL, "0 0 9 * * ?", "每天通知一次", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.LICENSE_EXPIRED, "授权已过期",
+                NoticeFrequencyEnum.INTERVAL, "0 0 9 * * ?", "每天通知一次", now);
+        offerNoticeStrategyIfAbsent(missing, sharding, NoticeTypeEnum.MAPPING_FULL_COMPLETE, "全量同步完成",
+                NoticeFrequencyEnum.IMMEDIATE, StringUtil.EMPTY, "立即通知", now);
+        if (!CollectionUtils.isEmpty(missing)) {
+            batchInsert(StorageEnum.NOTICE_STRATEGY, sharding, missing);
+        }
+    }
+
+    private void offerNoticeStrategyIfAbsent(List<Map> missing, String sharding, NoticeTypeEnum type,
+                                             String name, NoticeFrequencyEnum frequency, String cron,
+                                             String remark, long now) {
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.NOTICE_STRATEGY);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(type.getCode()));
+        Map existing = null;
+        try {
+            existing = selectOne(sharding, query);
+        } catch (NullExecutorException e) {
+            // 表未就绪时跳过，下次启动再补
+        }
+        if (existing != null && !existing.isEmpty()) {
+            return;
+        }
+        missing.add(noticeStrategyRow(type, name, frequency, cron, remark, now));
     }
 
     private static Map<String, Object> noticeStrategyRow(NoticeTypeEnum type, String name,
                                                          NoticeFrequencyEnum frequency, String cron,
                                                          String remark, long now) {
         Map<String, Object> row = new HashMap<>();
-        row.put(ConfigConstant.CONFIG_MODEL_ID, type.name());
+        row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(type.getCode()));
         row.put(ConfigConstant.CONFIG_MODEL_NAME, name);
         row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
         row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, now);

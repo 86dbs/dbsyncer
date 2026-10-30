@@ -8,6 +8,8 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -53,6 +55,7 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "新增分组")
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -66,6 +69,7 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "修改分组")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -79,6 +83,7 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "删除分组")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request) {
@@ -107,6 +112,7 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "绑定分组资源")
     @PostMapping("/bind")
     @ResponseBody
     public RestResult bind(HttpServletRequest request) {
@@ -127,6 +133,7 @@ public class GroupController extends BaseController {
     /**
      * 批量挂组 / 移出。resourceIds 支持逗号分隔。
      */
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "批量绑定分组资源")
     @PostMapping("/bindBatch")
     @ResponseBody
     public RestResult bindBatch(HttpServletRequest request) {
@@ -146,6 +153,7 @@ public class GroupController extends BaseController {
     /**
      * 批量从指定分组移出（不影响其它组归属）。
      */
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "批量解绑分组资源")
     @PostMapping("/unbindBatch")
     @ResponseBody
     public RestResult unbindBatch(HttpServletRequest request) {

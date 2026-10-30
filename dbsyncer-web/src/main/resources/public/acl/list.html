@@ -7,11 +7,32 @@
         <h3 class="card-title text-center">资源授权</h3>
     </div>
     <div class="card-body">
-        <div class="form-actions mb-4" data-permission="acl:edit">
-            <button class="btn btn-primary" type="button" onclick="doLoader('/acl/page/add')">
-                <i class="fa fa-plus"></i> 添加
-            </button>
+        <div class="flex items-center justify-between gap-2 flex-wrap mb-4">
+            <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                <label class="form-label whitespace-nowrap" for="filterSubjectType">授权类型</label>
+                <div class="group-filter-wrap flex-shrink-0 w-320">
+                    <select id="filterSubjectType" class="form-control">
+                        <option value="" selected>全部</option>
+                        <option value="0">用户</option>
+                        <option value="1">角色</option>
+                    </select>
+                </div>
+                <label class="form-label whitespace-nowrap" for="filterSubjectId">用户/角色</label>
+                <div class="group-filter-wrap flex-shrink-0 w-320">
+                    <select id="filterSubjectId" class="form-control">
+                        <option value="" selected>全部</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button type="button" id="resetBtn" class="btn btn-outline">重置</button>
+                <button class="btn btn-primary" type="button" data-permission="acl:edit"
+                        onclick="doLoader('/acl/page/add')">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+            </div>
         </div>
+
         <table class="table">
             <thead>
             <tr>
@@ -23,80 +44,176 @@
                 <th>操作</th>
             </tr>
             </thead>
-            <tbody>
-            <tr th:if="${acls == null or acls.isEmpty()}">
-                <td colspan="6" class="text-center text-tertiary py-8">暂无资源授权</td>
-            </tr>
-            <tr th:each="a : ${acls}">
-                <td>
-                    <span class="badge" th:text="${a.subjectTypeName}"></span>
-                </td>
-                <td th:text="${a.subjectName}"></td>
-                <td>
-                    <span class="text-sm" th:switch="${a.resourceType}">
-                        <th:block th:case="'group'">业务分组</th:block>
-                        <th:block th:case="'connector'">连接</th:block>
-                        <th:block th:case="'mapping'">同步任务</th:block>
-                        <th:block th:case="'validateSync'">订正校验任务</th:block>
-                        <th:block th:case="'databaseSync'">整库迁移任务</th:block>
-                        <th:block th:case="*" th:text="${a.resourceType}"></th:block>
-                    </span>
-                </td>
-                <td th:text="${a.resourceName}"></td>
-                <td>
-                    <span class="text-sm text-secondary" th:text="${a.permissionName}"></span>
-                </td>
-                <td>
-                    <div class="flex items-center">
-                        <button class="table-action-btn view editAclBtn" title="修改"
-                                th:data-id="${a.id}" data-permission="acl:edit">
-                            <i class="fa fa-edit"></i>
-                        </button>
-                        <button class="table-action-btn delete removeAclBtn" title="删除"
-                                th:data-id="${a.id}" data-permission="acl:edit">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            </tbody>
+            <tbody id="aclList"></tbody>
         </table>
     </div>
 </div>
 
-<script>
-    $(function () {
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const aclUsers = /*[[${users}]]*/ [];
+    const aclRoles = /*[[${roles}]]*/ [];
+    /*]]>*/
+
+    (function () {
+        'use strict';
+
+        const RESOURCE_TYPE_NAMES = {
+            group: '业务分组',
+            connector: '连接',
+            mapping: '同步任务',
+            validateSync: '订正校验任务',
+            databaseSync: '整库迁移任务'
+        };
+
+        function resourceTypeName(type) {
+            return RESOURCE_TYPE_NAMES[type] || (type || '');
+        }
+
+        function getSelectValue(api, $el) {
+            if (api && typeof api.getValues === 'function') {
+                const vals = api.getValues();
+                return vals.length ? (vals[0] || '') : '';
+            }
+            return $el.val() || '';
+        }
+
+        function setSelectValue(api, $el, value) {
+            if (api && typeof api.setValues === 'function') {
+                api.setValues([value], true);
+            } else {
+                $el.val(value);
+            }
+        }
+
+        function buildSubjectOptions(subjectType) {
+            const $select = $('#filterSubjectId');
+            $select.empty().append('<option value="">全部</option>');
+            if (subjectType === '0') {
+                (aclUsers || []).forEach(function (u) {
+                    if (!u || !u.id) {
+                        return;
+                    }
+                    const label = (u.nickname || '') + (u.username ? ' (' + u.username + ')' : '');
+                    $select.append($('<option></option>').attr('value', u.id).text(label || u.id));
+                });
+            } else if (subjectType === '1') {
+                (aclRoles || []).forEach(function (r) {
+                    if (!r || !r.id) {
+                        return;
+                    }
+                    $select.append($('<option></option>').attr('value', r.id).text(r.name || r.id));
+                });
+            }
+        }
+
+        function collectParams() {
+            return {
+                subjectType: getSelectValue(subjectTypeSelect, $('#filterSubjectType')),
+                subjectId: getSelectValue(subjectIdSelect, $('#filterSubjectId'))
+            };
+        }
+
+        const pagination = new PaginationManager({
+            requestUrl: '/acl/query',
+            tableBodySelector: '#aclList',
+            pageSize: 10,
+            customPageSize: true,
+            customPageSizeItems: [5, 10, 20, 50, 100],
+            storageKey: 'acl.list',
+            showBoundaryButtons: true,
+            emptyHtml: '<td colspan="6" class="text-center text-tertiary py-8">暂无资源授权</td>',
+            renderRow: function (a) {
+                const id = escapeHtml(a.id || '');
+                return '<tr>'
+                    + '<td><span class="badge">' + escapeHtml(a.subjectTypeName || '') + '</span></td>'
+                    + '<td>' + escapeHtml(a.subjectName || '') + '</td>'
+                    + '<td><span class="text-sm">' + escapeHtml(resourceTypeName(a.resourceType)) + '</span></td>'
+                    + '<td>' + escapeHtml(a.resourceName || '') + '</td>'
+                    + '<td><span class="text-sm text-secondary">' + escapeHtml(a.permissionName || '') + '</span></td>'
+                    + '<td><div class="flex items-center">'
+                    + '<button type="button" class="table-action-btn view editAclBtn" title="修改" data-id="' + id
+                    + '" data-permission="acl:edit"><i class="fa fa-edit"></i></button>'
+                    + '<button type="button" class="table-action-btn delete removeAclBtn" title="删除" data-id="' + id
+                    + '" data-permission="acl:edit"><i class="fa fa-trash"></i></button>'
+                    + '</div></td>'
+                    + '</tr>';
+            },
+            refreshCompleted: function () {
+                if (window.DBSPermission && typeof DBSPermission.apply === 'function') {
+                    DBSPermission.apply($('#aclList'));
+                }
+                $('#aclList .editAclBtn').off('click').on('click', function () {
+                    doLoader('/acl/page/edit?id=' + $(this).data('id'));
+                });
+                $('#aclList .removeAclBtn').off('click').on('click', function () {
+                    const id = $(this).data('id');
+                    const $btn = $(this);
+                    showConfirm({
+                        title: '确定删除该资源授权？',
+                        icon: 'warning',
+                        size: 'large',
+                        confirmType: 'danger',
+                        onConfirm: function () {
+                            const originalText = $btn.html();
+                            $btn.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
+                            doPoster('/acl/remove', {id: id}, function (data) {
+                                $btn.html(originalText).prop('disabled', false);
+                                if (data.success === true) {
+                                    bootGrowl('删除成功！', 'success');
+                                    pagination.doSearch(collectParams());
+                                } else {
+                                    bootGrowl(data.message || '删除失败', 'danger');
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+        });
+
+        function search() {
+            pagination.doSearch(collectParams(), 1);
+        }
+
+        function bindSubjectIdSelect() {
+            return $('#filterSubjectId').dbSelect({
+                type: 'single',
+                onSelect: function () {
+                    search();
+                }
+            });
+        }
+
+        buildSubjectOptions('');
+        const subjectTypeSelect = $('#filterSubjectType').dbSelect({
+            type: 'single',
+            onSelect: function (values) {
+                const type = values && values.length ? (values[0] || '') : '';
+                buildSubjectOptions(type);
+                if (subjectIdSelect && typeof subjectIdSelect.destroy === 'function') {
+                    subjectIdSelect.destroy();
+                }
+                subjectIdSelect = bindSubjectIdSelect();
+                search();
+            }
+        });
+        let subjectIdSelect = bindSubjectIdSelect();
+
+        $('#resetBtn').on('click', function () {
+            setSelectValue(subjectTypeSelect, $('#filterSubjectType'), '');
+            buildSubjectOptions('');
+            if (subjectIdSelect && typeof subjectIdSelect.destroy === 'function') {
+                subjectIdSelect.destroy();
+            }
+            subjectIdSelect = bindSubjectIdSelect();
+            setSelectValue(subjectIdSelect, $('#filterSubjectId'), '');
+            search();
+        });
+
         window.backIndexPage = function () {
             doLoader('/acl');
         };
-
-        $('.editAclBtn').on('click', function () {
-            doLoader('/acl/page/edit?id=' + $(this).data('id'));
-        });
-
-        $('.removeAclBtn').on('click', function () {
-            const id = $(this).data('id');
-            const $btn = $(this);
-            showConfirm({
-                title: '确定删除该资源授权？',
-                icon: 'warning',
-                size: 'large',
-                confirmType: 'danger',
-                onConfirm: function () {
-                    const originalText = $btn.html();
-                    $btn.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
-                    doPoster('/acl/remove', {id: id}, function (data) {
-                        $btn.html(originalText).prop('disabled', false);
-                        if (data.success === true) {
-                            bootGrowl('删除成功！', 'success');
-                            doLoader('/acl?refresh=' + new Date().getTime());
-                        } else {
-                            bootGrowl(data.message || '删除失败', 'danger');
-                        }
-                    });
-                }
-            });
-        });
-    });
+    })();
 </script>
 </html>

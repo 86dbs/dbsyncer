@@ -674,7 +674,9 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> taskDetailFields = builder.getFields();
 
         // 日志
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.LOG_USERNAME, ConfigConstant.LOG_IP, ConfigConstant.LOG_STATUS,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> logFields = builder.getFields();
 
         // 任务配置表(同步/校验/迁移统一)：ID/NAME/TYPE/JSON/时间
@@ -756,6 +758,12 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.NOTICE_STRATEGY_REMARK);
         List<Field> noticeStrategyFields = builder.getFields();
 
+        // 同步任务 Meta 日汇总
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.META_DAILY_STAT_DATE,
+                ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> metaDailyFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -776,13 +784,14 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.RESOURCE_ACL.getType(), k -> new Executor(k, resourceAclFields, true, true));
         tables.computeIfAbsent(StorageEnum.NOTICE_RULE.getType(), k -> new Executor(k, noticeRuleFields, true, true));
         tables.computeIfAbsent(StorageEnum.NOTICE_STRATEGY.getType(), k -> new Executor(k, noticeStrategyFields, true, true));
+        tables.computeIfAbsent(StorageEnum.META_DAILY.getType(), k -> new Executor(k, metaDailyFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
-                boolean created = createTableIfNotExist(tableName, e);
-                if (created && StringUtil.equalsIgnoreCase(tableName, StorageEnum.NOTICE_STRATEGY.getType())) {
+                createTableIfNotExist(tableName, e);
+                if (StringUtil.equalsIgnoreCase(tableName, StorageEnum.NOTICE_STRATEGY.getType())) {
                     initNoticeStrategy();
                 }
             }
@@ -949,6 +958,16 @@ public class MySQLStorageService extends AbstractStorageService {
             // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
             createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
             createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.LOG.getType().equals(type)) {
+            addColumnIfNotExist(table, "USERNAME", "varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '操作人/登录账号'");
+            addColumnIfNotExist(table, "IP", "varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '登录/操作客户端IP'");
+            addColumnIfNotExist(table, "STATUS", "tinyint NOT NULL DEFAULT 1 COMMENT '状态：0失败 1成功'");
+            createIndexIfNotExist(table, "IDX_TYPE_TIME", "`TYPE`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_USERNAME_TIME", "`USERNAME`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_IP_TIME", "`IP`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_STATUS_TIME", "`STATUS`,`CREATE_TIME`");
         }
     }
 
@@ -1137,7 +1156,8 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.NOTICE_STRATEGY_CRON, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.NOTICE_STRATEGY_REMARK, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.NOTICE_STRATEGY_REMARK, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.META_DAILY_STAT_DATE, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

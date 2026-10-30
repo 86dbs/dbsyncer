@@ -1222,11 +1222,9 @@ function renderStateButton(state, mappingId) {
         if (!$item || !$item.length) {
             return;
         }
-        const $group = $item.closest('.sidebar-group');
-        if ($group.length) {
-            $group.addClass('open').addClass('has-active');
-            saveOpenGroups();
-        }
+        // 展开整条祖先链（支持系统管理 → 日志管理）
+        $item.parents('.sidebar-group').addClass('open').addClass('has-active');
+        saveOpenGroups();
     }
 
     function syncSidebarActive(url) {
@@ -1243,8 +1241,10 @@ function renderStateButton(state, mappingId) {
     }
 
     function syncSidebarGroupVisibility() {
-        $('.sidebar-group').each(function () {
-            const $group = $(this);
+        // 自内向外：先处理嵌套分组，再处理外层
+        const $groups = $('.sidebar-group').toArray().reverse();
+        $groups.forEach(function (el) {
+            const $group = $(el);
             const $visible = $group.find('.sidebar-item[url]').filter(function () {
                 return !$(this).hasClass('hidden');
             });

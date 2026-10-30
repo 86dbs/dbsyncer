@@ -7,7 +7,6 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
@@ -16,6 +15,10 @@ import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.task.MappingMatchTableTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
+import org.dbsyncer.biz.vo.MappingListConnectorConfigVO;
+import org.dbsyncer.biz.vo.MappingListConnectorVO;
+import org.dbsyncer.biz.vo.MappingListMetaVO;
+import org.dbsyncer.biz.vo.MappingListVO;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
@@ -30,13 +33,14 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ConnectorProfile;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
+import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -68,6 +72,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -145,7 +150,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String add(Map<String, String> params) {
         Mapping model = mappingChecker.checkAddConfigModel(params);
-        log(LogType.MappingLog.INSERT, model);
 
         String id = mappingProfile.add(model);
         // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
@@ -183,7 +187,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         mappingProfile.add(newMapping);
         preloadTemplate.reConnect(newMapping);
-        log(LogType.MappingLog.COPY, newMapping);
 
         // 复制映射表关系
         tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupList -> {
@@ -199,7 +202,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
                 newTableGroup.setTaskId(newMapping.getId());
                 tableGroupProfile.addTableGroup(newTableGroup);
-                log(LogType.TableGroupLog.COPY, newTableGroup);
             }
         });
         resourceAclService.grantOwner(username, ConfigConstant.MAPPING, newMapping.getId());
@@ -216,7 +218,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             Mapping model = mappingChecker.checkEditConfigModel(params);
             // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             mappingProfile.clearRunData(id);
-            log(LogType.MappingLog.UPDATE, model);
             mappingProfile.update(model);
             // 异步查源库 COUNT 并汇总 Meta.total
             submitMappingCountTask(mapping, metaSnapshot);
@@ -232,7 +233,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(taskId);
             // 条件删除 table_group + 明细 Meta，并物理 DROP 明细分表（不重建空表）
             mappingProfile.dropTaskDetailTable(id);
-            log(LogType.MetaLog.CLEAR, mapping);
             tableGroupProfile.removeTableGroupsByTaskId(taskId);
 
             // 删除任务级 meta
@@ -252,7 +252,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             groupService.bind(null, ConfigConstant.MAPPING, id);
             resourceAclService.revokeAllForResource(ConfigConstant.MAPPING, id);
             noticeRuleProfile.removeByScopeId(ConfigConstant.MAPPING, id);
-            log(LogType.MappingLog.DELETE, mapping);
         }
         return "同步任务删除成功";
     }
@@ -304,7 +303,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public Paging<MappingVO> search(Map<String, String> params) {
+    public Paging<MappingListVO> search(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
@@ -312,7 +311,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Set<String> allowedIds = resourceAclService.resolveAllowedIds(
                 params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.MAPPING, ResourceAclActionEnum.READ.getCode());
         groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
-        Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
+        Paging<MappingListVO> result = new Paging<>(pageNum, pageSize);
         if (groupFilter.isEmptyResult()) {
             return result;
         }
@@ -324,7 +323,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (CollectionUtils.isEmpty(paging.getData())) {
             return result;
         }
-        List<MappingVO> rows = new ArrayList<>(paging.getData().size());
+        List<MappingListVO> rows = new ArrayList<>(paging.getData().size());
 
         List<String> taskIds = paging.getData().stream()
                 .filter(Objects::nonNull)
@@ -339,7 +338,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 continue;
             }
             try {
-                rows.add(convertMapping2Vo(mapping, taskMetaMap.get(mapping.getId())));
+                rows.add(convertMapping2ListVo(mapping, taskMetaMap.get(mapping.getId())));
             } catch (Exception e) {
                 logger.error("转换同步任务列表行失败, 已跳过. mappingId:{}, name:{}, taskId:{}, error:{}",
                         mapping.getId(), mapping.getName(), mapping.getId(), e.getMessage());
@@ -374,7 +373,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(taskId);
             Assert.isTrue(!dispatchTaskService.isRunning(taskId), "同步任务表映射正在匹配或统计中，请稍候再启动");
             // 如果已经完成了，重置状态
-            clearMetaIfFinished(taskId);
+            clearMetaIfFinished(mapping);
             // 标记运行中
             preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.RUNNING);
 
@@ -386,7 +385,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 throw new BizException(e.getMessage());
             }
 
-            log(LogType.MappingLog.RUNNING, mapping);
         }
         return "同步任务启动成功";
     }
@@ -400,7 +398,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
             preloadTemplate.changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
             clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
-            log(LogType.MappingLog.STOP, mapping);
             // 发送关闭通知消息
             MappingStopContent content = new MappingStopContent();
             content.setTitle("手动停止同步任务");
@@ -520,7 +517,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(mapping.getId());
             saveCustomTable(mapping, params);
             mappingProfile.update(mapping);
-            log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
     }
@@ -533,7 +529,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             assertRunning(mapping.getId());
             removeCustomTable(mapping, params);
             mappingProfile.update(mapping);
-            log(LogType.MappingLog.UPDATE, mapping);
         }
         return id;
     }
@@ -593,15 +588,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private MappingVO convertMapping2Vo(Mapping mapping) {
-        return convertMapping2Vo(mapping, resolveMappingMeta(mapping));
-    }
-
-    /**
-     * @param meta 列表批量查库结果；为 null 时回退 {@link #resolveMappingMeta}
-     */
-    private MappingVO convertMapping2Vo(Mapping mapping, Meta meta) {
         Assert.notNull(mapping, "Mapping can not be null.");
-        Meta resolved = meta != null ? meta : resolveMappingMeta(mapping);
+        Meta resolved = resolveMappingMeta(mapping);
         Assert.notNull(resolved, String.format("Meta can not be null. mappingId:%s, taskId:%s",
                 mapping.getId(), mapping.getId()));
 
@@ -618,6 +606,74 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         vo.setSourceTable(null);
         vo.setTargetTable(null);
         return vo;
+    }
+
+    /**
+     * 列表行：只组装展示所需字段。
+     */
+    private MappingListVO convertMapping2ListVo(Mapping mapping, Meta meta) {
+        Assert.notNull(mapping, "Mapping can not be null.");
+        Meta resolved = meta != null ? meta : resolveMappingMeta(mapping);
+        Assert.notNull(resolved, String.format("Meta can not be null. mappingId:%s, taskId:%s",
+                mapping.getId(), mapping.getId()));
+
+        MappingListVO vo = new MappingListVO();
+        vo.setId(mapping.getId());
+        vo.setName(mapping.getName());
+        vo.setModel(mapping.getModel());
+        vo.setSourceConnector(toListConnector(connectorProfile.getConnector(mapping.getSourceConnectorId())));
+        vo.setTargetConnector(toListConnector(connectorProfile.getConnector(mapping.getTargetConnectorId())));
+        vo.setMeta(toListMeta(resolved, mapping.getId()));
+        return vo;
+    }
+
+    private MappingListConnectorVO toListConnector(Connector connector) {
+        MappingListConnectorVO vo = new MappingListConnectorVO();
+        if (connector == null) {
+            return vo;
+        }
+        vo.setName(connector.getName());
+        ConnectorConfig config = connector.getConfig();
+        if (config != null && StringUtil.isNotBlank(config.getConnectorType())) {
+            vo.setConfig(new MappingListConnectorConfigVO(config.getConnectorType()));
+        }
+        return vo;
+    }
+
+    private MappingListMetaVO toListMeta(Meta meta, String mappingId) {
+        MappingListMetaVO vo = new MappingListMetaVO();
+        vo.setState(meta.getState());
+        vo.setUpdateTime(meta.getUpdateTime());
+        vo.setStartTime(meta.getStartTime());
+        vo.setTotal(meta.getTotal().get());
+        vo.setSuccess(meta.getSuccess().get());
+        vo.setFail(meta.getFail().get());
+        vo.setCounting(dispatchTaskService.isRunning(mappingId));
+        vo.setSnapshot(slimListSnapshot(meta.getSnapshot()));
+        return vo;
+    }
+
+    /**
+     * 列表阶段展示所需 snapshot 键；其余位点信息不回传。
+     */
+    private Map<String, String> slimListSnapshot(Map<String, String> snapshot) {
+        if (CollectionUtils.isEmpty(snapshot)) {
+            return Collections.emptyMap();
+        }
+        ParserEnum[] keys = {
+                ParserEnum.FULL_INCREMENT_PHASE,
+                ParserEnum.TABLE_GROUP_INDEX,
+                ParserEnum.PAGE_INDEX,
+                ParserEnum.CURSOR
+        };
+        Map<String, String> slim = new HashMap<>(keys.length);
+        for (ParserEnum key : keys) {
+            String value = snapshot.get(key.getCode());
+            if (StringUtil.isNotBlank(value)) {
+                slim.put(key.getCode(), value);
+            }
+        }
+        return slim;
     }
 
     /**
@@ -650,11 +706,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "映射关系不能为空");
     }
 
-    private void clearMetaIfFinished(String taskId) {
+    private void clearMetaIfFinished(Mapping mapping) {
+        if (ModelEnum.isIncrement(mapping.getModel())) {
+            return;
+        }
+        String taskId = mapping.getId();
         Meta meta = taskMetaProfile.getMeta(taskId);
         Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态，便于再次全量
-        if (!CommonTaskStatusEnum.isRunning(meta.getState()) && meta.getSuccess().addAndGet(meta.getFail().get()) == meta.getTotal().get()) {
+        long total = meta.getTotal().get();
+        long processed = meta.getSuccess().get() + meta.getFail().get();
+        // 完成任务则重置状态，便于再次全量（要求 total>0，避免 0==0 误判）
+        if (!CommonTaskStatusEnum.isRunning(meta.getState()) && total > 0 && processed >= total) {
             taskMetaProfile.resetMeta(taskId);
             taskProfile.deleteRunData(taskId);
         }

@@ -10,6 +10,8 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.RoleVO;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -68,6 +70,7 @@ public class RoleController extends BaseController {
         return "role/edit";
     }
 
+    @OperLog(type = OperLogType.USER_INSERT, message = "新增角色")
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -82,6 +85,7 @@ public class RoleController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_UPDATE, message = "修改角色")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -96,6 +100,7 @@ public class RoleController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_DELETE, message = "删除角色")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request) {

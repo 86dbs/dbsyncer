@@ -12,6 +12,7 @@ import org.dbsyncer.biz.enums.ResourceAclPermissionEnum;
 import org.dbsyncer.biz.enums.ResourceAclSubjectEnum;
 import org.dbsyncer.biz.enums.ResourceTypeEnum;
 import org.dbsyncer.biz.vo.ResourceAclVO;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -19,8 +20,6 @@ import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.DatabaseSyncProfile;
 import org.dbsyncer.parser.GroupProfile;
 import org.dbsyncer.parser.GroupRelProfile;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.RbacProfile;
 import org.dbsyncer.parser.ResourceAclProfile;
@@ -34,6 +33,9 @@ import org.dbsyncer.parser.model.ResourceAcl;
 import org.dbsyncer.parser.model.Role;
 import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.parser.model.UserRole;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.SortEnum;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.springframework.beans.BeanUtils;
@@ -98,9 +100,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
     @Resource
     private PermissionChecker permissionChecker;
 
-    @Resource
-    private LogService logService;
-
     @Override
     public List<ResourceAclVO> listAll() {
         List<ResourceAcl> list = resourceAclProfile.listAll();
@@ -117,6 +116,43 @@ public class ResourceAclServiceImpl implements ResourceAclService {
                 .comparingInt(ResourceAclVO::getSubjectType)
                 .thenComparing(ResourceAclVO::getSubjectName, Comparator.nullsLast(String::compareTo))
                 .thenComparing(ResourceAclVO::getResourceName, Comparator.nullsLast(String::compareTo)));
+        return result;
+    }
+
+    @Override
+    public Paging<ResourceAclVO> query(Map<String, String> params) {
+        int pageNum = NumberUtil.toInt(params == null ? null : params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params == null ? null : params.get("pageSize"), 10);
+   
+        Query query = new Query(pageNum, pageSize);
+        String subjectTypeRaw = params == null ? null : params.get(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE);
+        if (StringUtil.isNotBlank(subjectTypeRaw) && NumberUtil.isCreatable(subjectTypeRaw.trim())) {
+            int subjectType = NumberUtil.toInt(subjectTypeRaw.trim());
+            if (ResourceAclSubjectEnum.isSupported(subjectType)) {
+                query.addFilter(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, subjectType);
+            }
+        }
+        String subjectId = params == null ? null : params.get(ConfigConstant.RESOURCE_ACL_SUBJECT_ID);
+        if (StringUtil.isNotBlank(subjectId)) {
+            query.addFilter(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, subjectId.trim());
+        }
+        query.addOrderBy(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, SortEnum.ASC);
+        query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
+
+        Paging paging = resourceAclProfile.query(query);
+        Paging<ResourceAclVO> result = new Paging<>(pageNum, pageSize);
+        result.setTotal(paging == null ? 0 : paging.getTotal());
+        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+            result.setData(Collections.emptyList());
+            return result;
+        }
+        List<ResourceAclVO> rows = new ArrayList<>(paging.getData().size());
+        for (Object item : paging.getData()) {
+            if (item instanceof ResourceAcl) {
+                rows.add(toResourceAclVO((ResourceAcl) item));
+            }
+        }
+        result.setData(rows);
         return result;
     }
 
@@ -158,9 +194,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
             existing.setPermission(permission);
             existing.setUpdateTime(System.currentTimeMillis());
             resourceAclProfile.update(existing);
-            logService.log(LogType.UserLog.UPDATE,
-                    String.format("[%s]更新资源授权 %s/%s -> %s/%s [%s]",
-                            currentUserName, subjectType, subjectId, resourceType, resourceId, permission));
             return existing.getId();
         }
 
@@ -179,9 +212,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
                 updated++;
             }
         }
-        logService.log(LogType.UserLog.INSERT,
-                String.format("[%s]批量资源授权 %s/%s -> %d 项 (新增%d/覆盖%d) [%s]",
-                        currentUserName, subjectType, subjectId, bindings.size(), created, updated, permission));
         return String.format("成功授权 %d 项（新增 %d，覆盖 %d）", bindings.size(), created, updated);
     }
 
@@ -282,9 +312,6 @@ public class ResourceAclServiceImpl implements ResourceAclService {
         ResourceAcl acl = resourceAclProfile.get(id);
         Assert.notNull(acl, "授权不存在");
         resourceAclProfile.remove(id);
-        logService.log(LogType.UserLog.DELETE,
-                String.format("[%s]删除资源授权 %s/%s -> %s/%s",
-                        currentUserName, acl.getSubjectType(), acl.getSubjectId(), acl.getResourceType(), acl.getResourceId()));
         return "删除成功";
     }
 

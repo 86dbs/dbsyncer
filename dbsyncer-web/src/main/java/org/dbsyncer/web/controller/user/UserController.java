@@ -9,6 +9,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.dbsyncer.web.security.LoginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +97,8 @@ public class UserController extends BaseController {
         return RestResult.restSuccess(getUserInfoVo());
     }
 
-    @RequestMapping(value = "/add")
+    @OperLog(type = OperLogType.USER_INSERT)
+    @PostMapping(value = "/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
@@ -107,7 +110,8 @@ public class UserController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "/edit")
+    @OperLog(type = OperLogType.USER_UPDATE)
+    @PostMapping(value = "/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
@@ -119,6 +123,7 @@ public class UserController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_DELETE)
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request) {
@@ -134,6 +139,7 @@ public class UserController extends BaseController {
     /**
      * 提前解除登录失败锁定。
      */
+    @OperLog(type = OperLogType.USER_UPDATE, message = "解锁用户")
     @PostMapping("/unlock")
     @ResponseBody
     public RestResult unlock(HttpServletRequest request) {

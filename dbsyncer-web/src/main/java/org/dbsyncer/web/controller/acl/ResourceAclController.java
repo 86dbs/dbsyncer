@@ -18,6 +18,8 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -74,8 +76,21 @@ public class ResourceAclController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         requirePermission("acl:view");
-        model.put("acls", resourceAclService.listAll());
+        model.put("users", userConfigService.getUserInfoAll(currentUsername()));
+        model.put("roles", roleService.listRoles());
         return "acl/list";
+    }
+
+    @PostMapping("/query")
+    @ResponseBody
+    public RestResult query(HttpServletRequest request) {
+        try {
+            requirePermission("acl:view");
+            return RestResult.restSuccess(resourceAclService.query(getParams(request)));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     @GetMapping("/page/add")
@@ -93,6 +108,7 @@ public class ResourceAclController extends BaseController {
         return "acl/edit";
     }
 
+    @OperLog(type = OperLogType.USER_UPDATE, message = "保存资源授权")
     @PostMapping("/save")
     @ResponseBody
     public RestResult save(HttpServletRequest request) {
@@ -107,6 +123,7 @@ public class ResourceAclController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_DELETE, message = "删除资源授权")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request) {

@@ -82,6 +82,29 @@
   font-size: 13px;
 }
 
+/* 二级分组（嵌套在一级分组内） */
+.sidebar-group-nested {
+  margin-bottom: 0;
+}
+
+.sidebar-group-nested > .sidebar-group-title {
+  padding-left: 44px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.sidebar-group-nested > .sidebar-group-title span {
+  font-size: 13px;
+}
+
+.sidebar-item-sub2 {
+  padding-left: 60px;
+}
+
+.sidebar-item-sub2 span {
+  font-size: 13px;
+}
+
 /* 分组 */
 .sidebar-group {
   position: relative;
@@ -252,4 +275,39 @@ body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-item-su
 
 body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-item-sub.active {
   border-right: none;
+}
+
+/* 收缩态浮层内的嵌套分组 */
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-group-nested {
+  margin: 0;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-group-nested > .sidebar-group-title {
+  padding-left: 16px;
+  padding-right: 16px;
+  justify-content: flex-start;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-group-nested > .sidebar-group-title span,
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-group-nested > .sidebar-group-title .sidebar-group-arrow {
+  display: inline-block;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-group-nested > .sidebar-group-children {
+  display: block;
+  position: static;
+  min-width: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  grid-template-rows: none;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-item-sub2 {
+  padding-left: 28px;
+  padding-right: 16px;
+}
+
+body.sidebar-collapsed .sidebar-group > .sidebar-group-children .sidebar-group-nested .sidebar-group-flyout-title {
+  display: none;
 }

@@ -12,6 +12,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -91,6 +93,7 @@ public class ValidateSyncController extends BaseController {
     /**
      * 添加任务
      */
+    @OperLog(type = OperLogType.MAPPING_INSERT, message = "新增订正校验")
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -107,6 +110,7 @@ public class ValidateSyncController extends BaseController {
     /**
      * 修改任务
      */
+    @OperLog(type = OperLogType.MAPPING_UPDATE, message = "修改订正校验")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -121,6 +125,7 @@ public class ValidateSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_COPY, message = "复制订正校验")
     @PostMapping("/copy")
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
@@ -137,6 +142,7 @@ public class ValidateSyncController extends BaseController {
     /**
      * 删除任务
      */
+    @OperLog(type = OperLogType.MAPPING_DELETE, message = "删除订正校验")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam(value = "id") String id) {
@@ -153,6 +159,7 @@ public class ValidateSyncController extends BaseController {
     /**
      * 启动任务
      */
+    @OperLog(type = OperLogType.MAPPING_RUNNING, message = "启动订正校验")
     @PostMapping("/start")
     @ResponseBody
     public RestResult start(@RequestParam(value = "id") String id) {
@@ -169,6 +176,7 @@ public class ValidateSyncController extends BaseController {
     /**
      * 停止任务
      */
+    @OperLog(type = OperLogType.MAPPING_STOP, message = "停止订正校验")
     @PostMapping("/stop")
     @ResponseBody
     public RestResult stop(@RequestParam(value = "id") String id) {
@@ -249,6 +257,7 @@ public class ValidateSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.TABLE_GROUP_INSERT)
     @PostMapping("/addTableGroup")
     @ResponseBody
     public RestResult addTableGroup(HttpServletRequest request) {
@@ -263,6 +272,7 @@ public class ValidateSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.TABLE_GROUP_UPDATE)
     @PostMapping("/editTableGroup")
     @ResponseBody
     public RestResult editTableGroup(HttpServletRequest request) {
@@ -278,6 +288,7 @@ public class ValidateSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.TABLE_GROUP_DELETE)
     @PostMapping("/removeTableGroup")
     @ResponseBody
     public RestResult removeTableGroup(

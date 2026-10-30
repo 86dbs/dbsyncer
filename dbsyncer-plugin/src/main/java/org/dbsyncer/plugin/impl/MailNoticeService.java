@@ -5,9 +5,10 @@ import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.model.MailNoticeChannel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
-import org.dbsyncer.plugin.model.MappingErrorContent;
-import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.plugin.model.GeneralNoticeContent;
+import org.dbsyncer.plugin.model.MappingErrorContent;
+import org.dbsyncer.plugin.model.MappingFullCompleteContent;
+import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.plugin.model.TestNoticeContent;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.NoticeContent;
@@ -128,6 +129,13 @@ public final class MailNoticeService extends AbstractNoticeService {
         if (noticeContent instanceof MappingStopContent) {
             MappingStopContent meta = (MappingStopContent) noticeContent;
             return String.format("驱动：%s(%s)", meta.getName(), meta.getModel().getName());
+        }
+
+        // 全量同步完成
+        if (noticeContent instanceof MappingFullCompleteContent) {
+            MappingFullCompleteContent meta = (MappingFullCompleteContent) noticeContent;
+            return String.format("驱动：%s(%s)，成功:%s，失败:%s，总数:%s",
+                    meta.getName(), meta.getModel().getName(), meta.getSuccess(), meta.getFail(), meta.getTotal());
         }
 
         // 连接离线

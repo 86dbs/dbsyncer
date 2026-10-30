@@ -93,7 +93,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     @Override
     public String add(Map<String, String> params) {
         Connector connector = connectorChecker.checkAddConfigModel(params);
-        log(LogType.ConnectorLog.INSERT, connector);
         String id = connectorProfile.addConnector(connector);
         resourceAclService.grantOwner(params.get(UserConfigService.CURRENT_USER_NAME),
                 ConfigConstant.CONNECTOR, id);
@@ -127,7 +126,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, "1");
         }
         Connector model = connectorChecker.checkAddConfigModel(params);
-        log(LogType.ConnectorLog.COPY, model);
 
         String newId = connectorProfile.addConnector(model);
         //授权资源
@@ -138,7 +136,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     @Override
     public String edit(Map<String, String> params) {
         Connector model = connectorChecker.checkEditConfigModel(params);
-        log(LogType.ConnectorLog.UPDATE, model);
         return connectorProfile.updateConnector(model);
     }
 
@@ -149,7 +146,6 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         Connector connector = connectorProfile.getConnector(id);
         if (connector != null) {
             connectorFactory.disconnect(connector.getId());
-            log(LogType.ConnectorLog.DELETE, connector);
             connectorProfile.removeConnector(id);
             groupService.bind(null, ConfigConstant.CONNECTOR, id);
             resourceAclService.revokeAllForResource(ConfigConstant.CONNECTOR, id);
