@@ -271,7 +271,7 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     /**
-     * 同步趋势：历史日读 {@code dbsyncer_meta_agg}，今日点用实时同步任务合计刷新。
+     * 同步趋势：按固定日历窗口补齐日期点（缺日为 0）；历史日读 {@code dbsyncer_meta_agg}，今日用实时合计。
      */
     private void updateSyncTrendFromDaily(long todaySuccess, long todayFail) {
         SyncTrendStackVO stack = dashboardMetric.getTrend();
@@ -279,29 +279,32 @@ public class MetricReporter implements ScheduledTaskJob {
         stack.getSuccess().clear();
         stack.getFail().clear();
 
-        String today = LocalDate.now().format(DateFormatUtil.YYYY_MM_DD);
+        LocalDate end = LocalDate.now();
+        LocalDate start = end.minusDays(SHOW_REPORT_DAYS - 1L);
+        String today = end.format(DateFormatUtil.YYYY_MM_DD);
+
+        Map<String, MetaAgg> byDate = new HashMap<>();
         List<MetaAgg> rows = metaAggProfile.listRecent(SHOW_REPORT_DAYS);
-        boolean hasToday = false;
         if (!CollectionUtils.isEmpty(rows)) {
             for (MetaAgg row : rows) {
                 if (row == null || StringUtil.isBlank(row.getStatDate())) {
                     continue;
                 }
-                stack.getLabels().add(row.getStatDate());
-                if (StringUtil.equals(today, row.getStatDate())) {
-                    stack.getSuccess().add(todaySuccess);
-                    stack.getFail().add(todayFail);
-                    hasToday = true;
-                } else {
-                    stack.getSuccess().add(row.getSuccess());
-                    stack.getFail().add(row.getFail());
-                }
+                byDate.put(row.getStatDate(), row);
             }
         }
-        if (!hasToday) {
-            stack.getLabels().add(today);
-            stack.getSuccess().add(todaySuccess);
-            stack.getFail().add(todayFail);
+
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            String label = day.format(DateFormatUtil.YYYY_MM_DD);
+            stack.getLabels().add(label);
+            if (StringUtil.equals(today, label)) {
+                stack.getSuccess().add(todaySuccess);
+                stack.getFail().add(todayFail);
+                continue;
+            }
+            MetaAgg row = byDate.get(label);
+            stack.getSuccess().add(row == null ? 0L : row.getSuccess());
+            stack.getFail().add(row == null ? 0L : row.getFail());
         }
     }
 
