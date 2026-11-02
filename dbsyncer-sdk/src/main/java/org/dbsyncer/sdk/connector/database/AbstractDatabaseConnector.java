@@ -596,7 +596,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = buildSchemaWithQuotation(commandConfig.getSchema());
+        String schema = buildSchemaWithQuotation(resolveSchemaOrCatalog(commandConfig));
         // 同步字段
         List<Field> columns = filterColumn(table.getColumn());
         // 获取过滤SQL
@@ -660,7 +660,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = buildSchemaWithQuotation(commandConfig.getSchema());
+        String schema = buildSchemaWithQuotation(resolveSchemaOrCatalog(commandConfig));
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, "");
@@ -718,6 +718,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             s.append(buildWithQuotation(schema)).append(".");
         }
         return s.toString();
+    }
+
+    /**
+     * 拼表名前缀：优先 schema（Oracle/PG）；schema 空时回退 catalog（MySQL 库名）。
+     */
+    protected String resolveSchemaOrCatalog(CommandConfig commandConfig) {
+        if (commandConfig == null) {
+            return StringUtil.EMPTY;
+        }
+        if (StringUtil.isNotBlank(commandConfig.getSchema())) {
+            return commandConfig.getSchema();
+        }
+        return StringUtil.getIfBlank(commandConfig.getCatalog(), StringUtil.EMPTY);
     }
 
     /**

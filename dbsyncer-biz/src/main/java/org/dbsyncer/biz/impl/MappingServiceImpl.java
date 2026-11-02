@@ -579,7 +579,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         });
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
         Connector connector = connectorProfile.getConnector(context.getConnectorId());
-        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId, connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId, connector.getConfig(),
+                context.getCatalog(), context.getSchema());
         tables = connectorFactory.getTables(connectorInstance, context);
         tables.addAll(customTables);
         // 按升序展示表

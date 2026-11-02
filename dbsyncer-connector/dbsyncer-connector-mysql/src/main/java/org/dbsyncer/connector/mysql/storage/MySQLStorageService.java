@@ -702,7 +702,7 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID,
                 ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.PLAN_START_CURSOR, ConfigConstant.PLAN_END_CURSOR,
                 ConfigConstant.PLAN_LAST_CURSOR, ConfigConstant.PLAN_SUCCESS, ConfigConstant.PLAN_FAIL,
-                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED,
+                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.TASK_CONTENT,
                 ConfigConstant.PLAN_STATUS, ConfigConstant.PLAN_LAST_PAGE,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskPlanFields = builder.getFields();
@@ -949,6 +949,11 @@ public class MySQLStorageService extends AbstractStorageService {
             createIndexIfNotExist(table, "IDX_TG_UPDATE", "`TABLE_GROUP_ID`,`UPDATE_TIME`");
             return;
         }
+        if (StorageEnum.TASK_PLAN.getType().equals(type)) {
+            addColumnIfNotExist(table, "CONTENT",
+                    "mediumblob NULL COMMENT '分片错误/差异样本JSON，波次收齐后合并进TASK_DETAIL'");
+            return;
+        }
         if (StorageEnum.META.getType().equals(type)) {
             addColumnIfNotExist(table, "START_TIME", "bigint NOT NULL DEFAULT 0 COMMENT '任务启动时间'");
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
@@ -1134,6 +1139,7 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.PLAN_LAST_CURSOR, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.PLAN_SUCCESS, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.PLAN_FAIL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.TASK_CONTENT, "VARBINARY", Types.BLOB),
                             new Field(ConfigConstant.PLAN_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.PLAN_LAST_PAGE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
