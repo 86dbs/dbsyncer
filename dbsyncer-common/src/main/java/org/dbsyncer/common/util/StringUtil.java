@@ -133,9 +133,17 @@ public abstract class StringUtil {
         }
 
         int length = hexString.length();
+        if ((length & 1) != 0) {
+            throw new IllegalArgumentException("Hex string must have an even length");
+        }
         byte[] bytes = new byte[length / 2];
         for (int i = 0; i < length; i += 2) {
-            bytes[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4) + Character.digit(hexString.charAt(i + 1), 16));
+            int high = Character.digit(hexString.charAt(i), 16);
+            int low = Character.digit(hexString.charAt(i + 1), 16);
+            if (high < 0 || low < 0) {
+                throw new IllegalArgumentException("Invalid hex character at index " + (high < 0 ? i : i + 1));
+            }
+            bytes[i / 2] = (byte) ((high << 4) + low);
         }
         return bytes;
     }
