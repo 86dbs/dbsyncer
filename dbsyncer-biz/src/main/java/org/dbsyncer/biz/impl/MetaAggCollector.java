@@ -75,7 +75,6 @@ public class MetaAggCollector implements ScheduledScanService, ScheduledTaskJob,
         started = true;
         // 启动立即跑一轮，避免首页历史为空
         run();
-        logger.info("meta daily collector started");
     }
 
     @Override
@@ -85,7 +84,6 @@ public class MetaAggCollector implements ScheduledScanService, ScheduledTaskJob,
         }
         scheduledTaskService.stop(SCHEDULE_KEY);
         started = false;
-        logger.info("meta daily collector stopped");
     }
 
     @Override

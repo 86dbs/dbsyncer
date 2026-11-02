@@ -197,7 +197,7 @@
         }
 
         function buildFieldDiffTable(details) {
-            return buildCompareDiffTable(details, { firstHeader: '字段', firstKey: 'field' });
+            return buildCompareDiffTable(details, {firstHeader: '字段', firstKey: 'field'});
         }
 
         function parseSchemaDiffFromMsg(msg) {
@@ -206,16 +206,16 @@
             }
             var text = msg.trim();
             var patterns = [
-                { re: /^类型不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '类型' },
-                { re: /^长度不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '长度' },
-                { re: /^精度不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '精度' },
-                { re: /^主键标记不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '主键' }
+                {re: /^类型不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '类型'},
+                {re: /^长度不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '长度'},
+                {re: /^精度不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '精度'},
+                {re: /^主键标记不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '主键'}
             ];
             var i;
             for (i = 0; i < patterns.length; i++) {
                 var m = text.match(patterns[i].re);
                 if (m) {
-                    return { label: patterns[i].label, source: m[1], target: m[2] };
+                    return {label: patterns[i].label, source: m[1], target: m[2]};
                 }
             }
             return null;
@@ -240,7 +240,7 @@
             } else if (isSchemaDiffItem(item)) {
                 var schemaRow = parseSchemaDiffFromMsg(item.msg);
                 if (schemaRow) {
-                    html += buildCompareDiffTable([schemaRow], { firstHeader: '差异项', firstKey: 'label' });
+                    html += buildCompareDiffTable([schemaRow], {firstHeader: '差异项', firstKey: 'label'});
                 } else {
                     html += '<div class="text-secondary">' + escapeHtml(item.msg || '-') + '</div>';
                 }
@@ -286,6 +286,7 @@
                     + '<span class="badge ' + badgeClass + '">' + escapeHtml(String(value)) + '</span>'
                     + '</div>';
             }
+
             return '<div class="grid grid-cols-4 gap-2">'
                 + summaryItem('源表', 'badge-info', src)
                 + summaryItem('目标', 'badge-info', tgt)
@@ -362,7 +363,10 @@
                     if (confirmBtn) {
                         confirmBtn.disabled = true;
                     }
-                    doPoster('/validate-sync/manualRevise', { taskId: currentTaskId, id: currentDetailId }, function (res) {
+                    doPoster('/validate-sync/manualRevise', {
+                        taskId: currentTaskId,
+                        id: currentDetailId
+                    }, function (res) {
                         manualReviseSubmitting = false;
                         if (confirmBtn) {
                             confirmBtn.disabled = false;
@@ -428,7 +432,7 @@
             if (!detailId) {
                 return;
             }
-            doPoster('/validate-sync/getResultDetail', { taskId: currentTaskId, id: detailId }, function (res) {
+            doPoster('/validate-sync/getResultDetail', {taskId: currentTaskId, id: detailId}, function (res) {
                 if (!res.success) {
                     bootGrowl(res.message || '加载失败', 'danger');
                     return;
@@ -437,12 +441,13 @@
             });
         };
 
-        $(document).on('click', '.diff-detail-btn', function () {
-            var id = $(this).data('detail-id');
-            if (id) {
-                window.showDiffDetail(String(id));
-            }
-        });
+        $(document).off('click.validateSyncDiff', '.diff-detail-btn')
+            .on('click.validateSyncDiff', '.diff-detail-btn', function () {
+                var id = $(this).data('detail-id');
+                if (id) {
+                    window.showDiffDetail(String(id));
+                }
+            });
 
         var resultPagination = new PaginationManager({
             requestUrl: '/validate-sync/searchResult',
