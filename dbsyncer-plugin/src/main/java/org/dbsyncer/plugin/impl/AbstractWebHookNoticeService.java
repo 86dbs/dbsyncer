@@ -4,7 +4,12 @@
 package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.plugin.model.*;
+import org.dbsyncer.plugin.model.ConnectorOfflineContent;
+import org.dbsyncer.plugin.model.GeneralNoticeContent;
+import org.dbsyncer.plugin.model.MappingErrorContent;
+import org.dbsyncer.plugin.model.MappingFullCompleteContent;
+import org.dbsyncer.plugin.model.MappingStopContent;
+import org.dbsyncer.plugin.model.TestNoticeContent;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.NoticeContent;
 
