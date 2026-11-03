@@ -6,6 +6,8 @@ package org.dbsyncer.web.controller.config;
 import org.dbsyncer.biz.ConfigExportService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.parser.LogService;
@@ -61,6 +63,7 @@ public class ConfigController {
         return "config/list";
     }
 
+    @OperLog(type = OperLogType.CACHE_IMPORT)
     @PostMapping(value = "/upload")
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {

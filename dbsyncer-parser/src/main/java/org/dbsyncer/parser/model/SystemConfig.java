@@ -40,6 +40,11 @@ public class SystemConfig extends ConfigModel implements Cloneable {
     private int expireFileLogDays = 15;
 
     /**
+     * 登录失败锁定时长（分钟）
+     */
+    private int loginLockMinutes = 15;
+
+    /**
      * 是否记录同步成功数据（false-关闭; true-开启）
      */
     private boolean enableStorageWriteSuccess;
@@ -156,6 +161,14 @@ public class SystemConfig extends ConfigModel implements Cloneable {
 
     public void setExpireFileLogDays(int expireFileLogDays) {
         this.expireFileLogDays = expireFileLogDays;
+    }
+
+    public int getLoginLockMinutes() {
+        return loginLockMinutes;
+    }
+
+    public void setLoginLockMinutes(int loginLockMinutes) {
+        this.loginLockMinutes = loginLockMinutes;
     }
 
     public boolean isEnableStorageWriteSuccess() {

@@ -68,58 +68,6 @@ function showDataDetail(id) {
     }
 }
 
-// 查看日志
-function bindQueryLogEvent() {
-    // 初始化分页管理器
-    const pagination = new PaginationManager({
-        requestUrl: '/monitor/queryLog',
-        tableBodySelector: '#logList',
-        pageSize: 5,
-        showBoundaryButtons: true,
-        renderRow: function (row, index) {
-            return `
-                <tr>
-                    <td>${index}</td>
-                    <td><span class="hover-underline cursor-pointer log-detail">${row.json || ''}</span></td>
-                    <td>${formatRelativeTime(row.createTime || '')}</td>
-                </tr>
-            `;
-        },
-        refreshCompleted: function () {
-            showMessageDetail($('.log-detail'), 'info', '日志信息');
-        }
-    });
-    // 搜索框输入事件
-    const searchApi = initSearch('searchLog', function (searchKey) {
-        pagination.doSearch({'json': searchKey});
-    });
-
-    $("#clearLogBtn").unbind('click').bind('click', function () {
-        showConfirm({
-            title: '确认清空日志？',
-            icon: 'warning',
-            size: 'large',
-            confirmType: 'danger',
-            onConfirm: function() {
-                doPoster("/monitor/clearLog", {}, function (response) {
-                    if (response.success) {
-                        bootGrowl('清空日志成功!', 'success');
-                        pagination.doSearch({});
-                    } else {
-                        bootGrowl('清空数据失败: ' + response.message, 'danger');
-                    }
-                });
-            }
-        });
-    });
-
-    return {
-        search: function () {
-            pagination.doSearch({'json': searchApi.getValue()}, pagination.currentPage);
-        }
-    }
-}
-
 // 查看执行器
 function bindQueryActuatorEvent() {
     let pagination;
@@ -156,9 +104,10 @@ function bindQueryActuatorEvent() {
                     let converted = rows.map(function (row) {
                         const name = row.mappingName || '';
                         const model = row.model || '';
+                        // 执行器指标按 Mapping/taskId 关联，不能用 Meta 主键
                         return {
                             label: name + ' (' + model + ')',
-                            value: row.id || ''
+                            value: row.taskId || ''
                         };
                     });
                     if (Number(query.pageNum) === 1) {
@@ -225,73 +174,9 @@ $(function () {
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
     Chart.defaults.font.size = 12;
     Chart.defaults.color = '#8c8c8c';
-    
+
     /**
-     * 初始化仪表盘图表（堆积数据、持久化）
-     */
-    function initGaugeChart(canvasId, label, maxValue) {
-        const ctx = document.getElementById(canvasId);
-        if (!ctx) return null;
-        
-        return new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['已用', '剩余'],
-                datasets: [{
-                    data: [0, maxValue],
-                    backgroundColor: [
-                        'rgba(24, 144, 255, 0.8)',
-                        'rgba(240, 240, 240, 0.5)'
-                    ],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        enabled: true,
-                        callbacks: {
-                            label: function(context) {
-                                return context.label + ': ' + context.parsed.toLocaleString();
-                            }
-                        }
-                    }
-                }
-            },
-            plugins: [{
-                id: 'centerText',
-                beforeDraw: function(chart) {
-                    const width = chart.width;
-                    const height = chart.height;
-                    const ctx = chart.ctx;
-                    const data = chart.data.datasets[0].data;
-                    const total = data[0] + data[1];
-                    const value = data[0];
-                    
-                    ctx.restore();
-                    ctx.font = 'bold 24px sans-serif';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = '#262626';
-                    
-                    const text = value.toLocaleString();
-                    const textX = Math.round((width - ctx.measureText(text).width) / 2);
-                    const textY = height / 2;
-                    
-                    ctx.fillText(text, textX, textY);
-                    ctx.save();
-                }
-            }]
-        });
-    }
-    
-    /**
-     * 初始化折线图（TPS、CPU、内存）
+     * 初始化折线图（TPS、CPU、内存、堆积、持久化）
      */
     function initLineChart(canvasId, label, color, solidFill) {
         const ctx = document.getElementById(canvasId);
@@ -359,15 +244,6 @@ $(function () {
     }
     
     /**
-     * 更新仪表盘数据
-     */
-    function updateGaugeChart(chart, value, maxValue) {
-        if (!chart) return;
-        chart.data.datasets[0].data = [value, Math.max(0, maxValue - value)];
-        chart.update('none'); // 无动画更新
-    }
-    
-    /**
      * 更新折线图数据
      */
     function updateLineChart(chart, labels, data) {
@@ -376,19 +252,49 @@ $(function () {
         chart.data.datasets[0].data = data;
         chart.update('none');
     }
-    
+
+    // 堆积/持久化：按 TPS 同一套时间点采样，缺测点用上一个值补齐
+    const queueSamples = {};
+    const storageSamples = {};
+
+    function alignTrend(labels, samples, currentValue) {
+        if (!labels || !labels.length) {
+            return [];
+        }
+        const lastLabel = labels[labels.length - 1];
+        samples[lastLabel] = Number(currentValue) || 0;
+
+        const alive = {};
+        for (let i = 0; i < labels.length; i++) {
+            alive[labels[i]] = true;
+        }
+        Object.keys(samples).forEach(function (key) {
+            if (!alive[key]) {
+                delete samples[key];
+            }
+        });
+
+        let last = 0;
+        const values = [];
+        for (let i = 0; i < labels.length; i++) {
+            const key = labels[i];
+            if (samples[key] !== undefined) {
+                last = samples[key];
+            }
+            values.push(last);
+        }
+        return values;
+    }
+
     /**
      * 初始化所有图表
      */
     function initCharts() {
-        // 仪表盘图表
-        charts.queue = initGaugeChart('queueChart', '堆积数据', 320000);
-        charts.storage = initGaugeChart('storageChart', '持久化', 50000);
-        
-        // 折线图
         charts.tps = initLineChart('tpsChart', 'TPS', 'rgba(245, 108, 108, 1)', false);
         charts.cpu = initLineChart('cpuChart', 'CPU使用率', 'rgba(82, 196, 26, 1)', false);
         charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(24, 144, 255, 1)', true);
+        charts.queue = initLineChart('queueChart', '堆积', 'rgba(250, 173, 20, 1)', false);
+        charts.storage = initLineChart('storageChart', '持久化', 'rgba(114, 46, 209, 1)', false);
     }
 
     function updateMetricsTable(metrics){
@@ -483,9 +389,9 @@ $(function () {
                 $("#tps").text(r.tps.average > 0 ? '执行器TPS, 平均:'+ r.tps.average + '/秒' : '执行器TPS');
                 updateLineChart(charts.cpu, r.cpu.name, r.cpu.value);
                 updateLineChart(charts.memory, r.memory.name, r.memory.value);
-                // 更新仪表盘
-                updateGaugeChart(charts.queue, r.queueUp, r.queueCapacity);
-                updateGaugeChart(charts.storage, r.storageQueueUp, r.storageQueueCapacity);
+                const tpsLabels = (r.tps && r.tps.name) || [];
+                updateLineChart(charts.queue, tpsLabels, alignTrend(tpsLabels, queueSamples, r.queueUp));
+                updateLineChart(charts.storage, tpsLabels, alignTrend(tpsLabels, storageSamples, r.storageQueueUp));
                 updateMetricsTable(r.metrics);
                 updateCpuProcessBar(r.cpu);
                 updateMemoryProcessBar(r.memory);
@@ -505,13 +411,11 @@ $(function () {
     // 立即执行一次更新
     updateMonitorData();
 
-    const queryLog = bindQueryLogEvent();
     const queryActuator = bindQueryActuatorEvent();
 
     // 注册到全局定时刷新管理器
     PageRefreshManager.register(() => {
         updateMonitorData();
-        queryLog.search();
         queryActuator.search();
     });
 });

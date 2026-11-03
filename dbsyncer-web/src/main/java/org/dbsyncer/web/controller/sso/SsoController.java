@@ -4,6 +4,7 @@
 package org.dbsyncer.web.controller.sso;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.PermissionService;
 import org.dbsyncer.biz.SsoTicketService;
 import org.dbsyncer.biz.model.WebSsoTicket;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -48,6 +49,9 @@ public class SsoController {
 
     @Resource
     private SsoTicketService ssoTicketService;
+
+    @Resource
+    private PermissionService permissionService;
 
     /**
      * 已登录用户跳转到目标节点（携带短时票据）。
@@ -122,9 +126,13 @@ public class SsoController {
     }
 
     private void establishSession(HttpServletRequest request, WebSsoTicket ssoTicket) {
+        // 目标节点按本地 RBAC 重载权限，避免票据里旧 roleCode / 过期权限码
+        String authorityString = permissionService.buildAuthorityString(ssoTicket.getUsername());
+        if (StringUtil.isBlank(authorityString)) {
+            authorityString = StringUtil.getIfBlank(ssoTicket.getRoleCode(), StringUtil.EMPTY);
+        }
         Collection<? extends GrantedAuthority> authorities =
-                AuthorityUtils.commaSeparatedStringToAuthorityList(
-                        StringUtil.getIfBlank(ssoTicket.getRoleCode(), StringUtil.EMPTY));
+                AuthorityUtils.commaSeparatedStringToAuthorityList(authorityString);
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(ssoTicket.getUsername(), null, authorities);
         SecurityContext context = SecurityContextHolder.createEmptyContext();

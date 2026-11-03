@@ -28,6 +28,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.parser.message.NoticeStrategyRuntimeBridge;
 import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.sdk.service.ScheduledScanManager;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -79,6 +80,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private MessageService messageService;
 
     @Resource
+    private NoticeStrategyRuntimeBridge noticeStrategyRuntimeBridge;
+
+    @Resource
     private LogService logService;
 
     @Resource
@@ -112,6 +116,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             //初始化定时检测任务
             scheduledScanManager.start();
         }
+        // Load notice strategies into decision engine
+        loadNoticeStrategies();
+
         preloadCompleted = true;
     }
 
@@ -159,6 +166,17 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 从策略表装载告警决策运行态（Registry / 周期 flush）。
+     */
+    private void loadNoticeStrategies() {
+        try {
+            noticeStrategyRuntimeBridge.reloadFromStore();
+        } catch (Exception e) {
+            logger.error("预加载告警策略失败", e);
         }
     }
 

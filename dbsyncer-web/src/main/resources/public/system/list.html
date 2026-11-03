@@ -10,7 +10,7 @@
         <form id="config-form-edit">
             <!-- 管理员操作区域 -->
             <div class="form-actions mb-4">
-                <button id="updateSystemBtn" type="button" class="btn btn-primary">
+                <button id="updateSystemBtn" type="button" class="btn btn-primary" data-permission="system:edit">
                     <span class="fa fa-save"></span> 保存
                 </button>
             </div>
@@ -142,6 +142,15 @@
                     <div class="form-control-area">
                         <input type="number" class="form-control" min="1" max="180" required name="expireFileLogDays"
                                th:value="${config?.expireFileLogDays}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">登录锁定时长(分钟)<i class="fa fa-question-circle"
+                                                                  title="连续登录失败达到上限后锁定账号的时长"></i><strong
+                            class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="1440" required name="loginLockMinutes"
+                               th:value="${config?.loginLockMinutes}"/>
                     </div>
                 </div>
             </div>

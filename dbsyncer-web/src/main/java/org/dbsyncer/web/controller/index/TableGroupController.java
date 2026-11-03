@@ -6,6 +6,8 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,7 @@ public class TableGroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.TABLE_GROUP_INSERT)
     @PostMapping(value = "/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
@@ -72,6 +75,7 @@ public class TableGroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.TABLE_GROUP_UPDATE)
     @PostMapping(value = "/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
@@ -95,6 +99,7 @@ public class TableGroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.TABLE_GROUP_DELETE)
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam(value = "mappingId") String mappingId, @RequestParam(value = "ids") String ids) {

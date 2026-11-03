@@ -3,6 +3,8 @@ package org.dbsyncer.web.controller.plugin;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.model.PluginFile;
@@ -55,6 +57,7 @@ public class PluginController {
         return "plugin/list";
     }
 
+    @OperLog(type = OperLogType.PLUGIN_UPDATE)
     @PostMapping(value = "/upload")
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {

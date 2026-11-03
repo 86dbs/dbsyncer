@@ -4,6 +4,7 @@
 package org.dbsyncer.web.config;
 
 import org.dbsyncer.web.controller.openapi.OpenApiInterceptor;
+import org.dbsyncer.web.log.OperLogInterceptor;
 
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Resource
     private OpenApiInterceptor openApiInterceptor;
 
+    @Resource
+    private OperLogInterceptor operLogInterceptor;
+
     @Bean
     public MultipartConfigElement multipartConfigElement() {
         MultipartConfigFactory factory = new MultipartConfigFactory();
@@ -43,5 +47,8 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 注册OpenAPI拦截器，拦截/openapi/**路径
         registry.addInterceptor(openApiInterceptor).addPathPatterns("/openapi/**");
+        // 操作日志：仅处理方法上带 @OperLog 的接口
+        registry.addInterceptor(operLogInterceptor).addPathPatterns("/**")
+                .excludePathPatterns("/css/**", "/js/**", "/img/**", "/plugins/**", "/openapi/**", "/login", "/login.html");
     }
 }

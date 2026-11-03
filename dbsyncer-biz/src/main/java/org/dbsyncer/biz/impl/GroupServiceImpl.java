@@ -6,6 +6,9 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
+import org.dbsyncer.parser.NoticeRuleProfile;
+import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.enums.ResourceTypeEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.GroupProfile;
@@ -17,11 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * {@link GroupService} 实现。
@@ -35,18 +35,17 @@ public class GroupServiceImpl implements GroupService {
 
     private static final int NAME_MAX_LEN = 50;
 
-    private static final Set<String> RESOURCE_TYPES = new HashSet<>(Arrays.asList(
-            ConfigConstant.CONNECTOR,
-            ConfigConstant.MAPPING,
-            ConfigConstant.VALIDATE_SYNC,
-            ConfigConstant.DATABASE_SYNC
-    ));
-
     @Resource
     private GroupProfile groupProfile;
 
     @Resource
     private GroupRelProfile groupRelProfile;
+
+    @Resource
+    private ResourceAclService resourceAclService;
+
+    @Resource
+    private NoticeRuleProfile noticeRuleProfile;
 
     @Override
     public String add(Map<String, String> params) {
@@ -81,6 +80,10 @@ public class GroupServiceImpl implements GroupService {
         // 铁律②：先清 rel 再删组
         groupRelProfile.removeByGroup(id);
         groupProfile.removeGroup(id);
+        //删除授权资源
+        resourceAclService.revokeAllForResource(ConfigConstant.GROUP, id);
+        //删除告警通知规则
+        noticeRuleProfile.removeByScopeId(ConfigConstant.GROUP, id);
         return id;
     }
 
@@ -104,7 +107,7 @@ public class GroupServiceImpl implements GroupService {
     public void bind(String groupId, String resourceType, String resourceId) {
         Assert.hasText(resourceType, "资源类型不能为空");
         Assert.hasText(resourceId, "资源ID不能为空");
-        if (!RESOURCE_TYPES.contains(resourceType)) {
+        if (!ResourceTypeEnum.isLeaf(resourceType)) {
             throw new BizException("不支持的资源类型: " + resourceType);
         }
         // 空 groupId = 清除该资源全部归属
@@ -145,7 +148,7 @@ public class GroupServiceImpl implements GroupService {
         Assert.hasText(groupId, "分组ID不能为空");
         Assert.hasText(resourceType, "资源类型不能为空");
         Assert.hasText(resourceId, "资源ID不能为空");
-        if (!RESOURCE_TYPES.contains(resourceType)) {
+        if (!ResourceTypeEnum.isLeaf(resourceType)) {
             throw new BizException("不支持的资源类型: " + resourceType);
         }
         groupRelProfile.removeByGroupAndResource(groupId, resourceType, resourceId);

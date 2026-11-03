@@ -6,14 +6,12 @@ package org.dbsyncer.parser.message;
 import org.dbsyncer.sdk.enums.NoticeTypeEnum;
 import org.dbsyncer.sdk.model.NoticeStrategy;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 事件类型与策略的映射注册表。
+ * 事件类型与策略一对一注册表。
  *
  * @author wuji
  * @version 1.0.0
@@ -21,21 +19,27 @@ import java.util.Map;
  */
 public final class NoticeStrategyRegistry {
 
-    private final Map<NoticeTypeEnum, List<NoticeStrategy>> strategyMap = new EnumMap<>(NoticeTypeEnum.class);
+    private final Map<NoticeTypeEnum, NoticeStrategy> strategyMap = new EnumMap<>(NoticeTypeEnum.class);
 
     public NoticeStrategyRegistry(List<NoticeStrategy> strategies) {
-        for (NoticeStrategy strategy : strategies) {
-            for (NoticeTypeEnum noticeType : strategy.getNoticeTypes()) {
-                strategyMap.computeIfAbsent(noticeType, key -> new ArrayList<>()).add(strategy);
-            }
+        if (strategies == null) {
+            return;
         }
-        strategyMap.replaceAll((type, list) -> Collections.unmodifiableList(list));
+        for (NoticeStrategy strategy : strategies) {
+            if (strategy == null || strategy.getNoticeType() == null) {
+                continue;
+            }
+            strategyMap.putIfAbsent(strategy.getNoticeType(), strategy);
+        }
     }
 
-    public List<NoticeStrategy> match(NoticeTypeEnum noticeType) {
+    /**
+     * 按通知类型匹配唯一策略；未配置返回 {@code null}。
+     */
+    public NoticeStrategy match(NoticeTypeEnum noticeType) {
         if (noticeType == null) {
-            return Collections.emptyList();
+            return null;
         }
-        return strategyMap.getOrDefault(noticeType, Collections.emptyList());
+        return strategyMap.get(noticeType);
     }
 }

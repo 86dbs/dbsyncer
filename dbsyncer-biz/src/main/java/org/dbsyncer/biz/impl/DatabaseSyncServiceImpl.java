@@ -7,6 +7,9 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
+import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.model.TableProgressBundle;
 import org.dbsyncer.biz.vo.DatabaseMappingVO;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
@@ -115,6 +118,9 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
     @Resource
     private GroupService groupService;
 
+    @Resource
+    private ResourceAclService resourceAclService;
+
     @Override
     public DatabaseSyncTaskVO get(String id) {
         DatabaseSyncTask task = databaseSyncProfile.get(id);
@@ -154,6 +160,8 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         }
         // 预建明细分表并对齐明细行，详情页 JOIN 查询不依赖任务是否已写出数据
         databaseSyncProfile.syncTaskTableMetaDetails(taskId);
+        resourceAclService.grantOwner(params.get(UserConfigService.CURRENT_USER_NAME),
+                ConfigConstant.DATABASE_SYNC, taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -217,6 +225,7 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         assertRunning(id);
         databaseSyncProfile.delete(id);
         groupService.bind(null, ConfigConstant.DATABASE_SYNC, id);
+        resourceAclService.revokeAllForResource(ConfigConstant.DATABASE_SYNC, id);
         return "删除成功";
     }
 
@@ -264,6 +273,9 @@ public class DatabaseSyncServiceImpl extends BaseServiceImpl implements Database
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String searchKey = params.get("searchKey");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.DATABASE_SYNC);
+        Set<String> allowedIds = resourceAclService.resolveAllowedIds(
+                params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.DATABASE_SYNC, ResourceAclActionEnum.READ.getCode());
+        groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);
         }

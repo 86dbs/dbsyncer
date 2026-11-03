@@ -230,9 +230,8 @@
 .confirm-body .group-dialog-body .dbsyncer-select {
   display: block;
   width: 100%;
-  /* 作为下拉定位上下文，并抬高层级盖住页脚 */
+  /* 仅作定位上下文；不设 z-index，与页面内 dbSelect 一致，避免多个下拉互相压制 */
   position: relative;
-  z-index: 2;
 }
 
 .confirm-body .group-dialog-body .dbsyncer-select-dropdown {
@@ -241,7 +240,6 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  z-index: 3;
 }
 
 /* confirm-body 默认 overflow-y:auto 会裁切 absolute 下拉，分组弹窗改为可见 */

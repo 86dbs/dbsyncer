@@ -297,6 +297,8 @@
 
         var resourceType = options.resourceType || '';
         var searchUrl = options.searchUrl || '';
+        var editPermission = options.editPermission
+            || (resourceType === 'connector' ? 'connector:edit' : 'mapping:edit');
         // 从缓存恢复，避免编辑/删除整页重载后筛选回到「全部」
         var currentGroupId = peekStoredGroupId(resourceType);
         var listTotal = 0;
@@ -310,8 +312,10 @@
             '<div class="group-filter-wrap hidden flex-shrink-0 w-320">' +
             '<select class="form-control group-filter-select"></select>' +
             '</div>' +
-            '<button type="button" class="btn btn-outline group-edit-btn hidden flex-shrink-0" title="编辑分组"><i class="fa fa-edit"></i></button>' +
-            '<button type="button" class="btn btn-outline group-remove-btn hidden flex-shrink-0" title="删除分组"><i class="fa fa-trash"></i></button>'
+            '<button type="button" class="btn btn-outline group-edit-btn hidden flex-shrink-0" title="编辑分组"' +
+            ' data-permission="' + editPermission + '"><i class="fa fa-edit"></i></button>' +
+            '<button type="button" class="btn btn-outline group-remove-btn hidden flex-shrink-0" title="删除分组"' +
+            ' data-permission="' + editPermission + '"><i class="fa fa-trash"></i></button>'
         );
         var $filterWrap = $container.find('.group-filter-wrap');
         var $select = $container.find('.group-filter-select');
@@ -323,11 +327,19 @@
         var $addBtn;
         if ($createHost.length) {
             $createHost.html(
-                '<button type="button" class="btn btn-outline group-add-btn hidden flex-shrink-0" title="新建分组">分组</button>'
+                '<button type="button" class="btn btn-outline group-add-btn hidden flex-shrink-0" title="新建分组"' +
+                ' data-permission="' + editPermission + '">分组</button>'
             );
             $addBtn = $createHost.find('.group-add-btn');
         } else {
             $addBtn = $();
+        }
+
+        function canManageGroups() {
+            if (window.DBSPermission && typeof DBSPermission.has === 'function') {
+                return DBSPermission.has(editPermission);
+            }
+            return false;
         }
 
         /**
@@ -343,10 +355,11 @@
         }
 
         function syncVisibility() {
+            var canEdit = canManageGroups();
             var showFilter = hasGroups;
-            // 「全部」value 为空，不可编辑/删除
-            var showEditRemove = hasGroups && isRealGroupId(currentGroupId);
-            var showAdd = listTotal > 0;
+            // 「全部」value 为空，不可编辑/删除；无编辑权也不展示
+            var showEditRemove = canEdit && hasGroups && isRealGroupId(currentGroupId);
+            var showAdd = canEdit && listTotal > 0;
             $filterWrap.toggleClass('hidden', !showFilter);
             setBtnVisible($editBtn, showEditRemove);
             setBtnVisible($removeBtn, showEditRemove);
@@ -354,6 +367,7 @@
             // 中间筛选区：无下拉且无编辑删除时隐藏
             $container.toggleClass('hidden', !showFilter && !showEditRemove);
             if ($createHost.length) {
+                // 无编辑权时保持隐藏，避免盖掉 data-permission 的隐藏结果
                 $createHost.toggleClass('hidden', !showAdd);
             }
         }
@@ -404,6 +418,10 @@
         }
 
         function openCreateDialog() {
+            if (!canManageGroups()) {
+                bootGrowl('无权限', 'danger');
+                return;
+            }
             if (!searchUrl || !resourceType) {
                 bootGrowl('未配置资源类型，无法新建分组', 'danger');
                 return;
@@ -429,7 +447,7 @@
                         return;
                     }
                     var selectedIds = resourceApi && resourceApi.getValues ? resourceApi.getValues().slice() : [];
-                    doPoster('/group/add', {name: name}, function (response) {
+                    doPoster('/group/add', {name: name, type: resourceType}, function (response) {
                         if (!response.success) {
                             bootGrowl(response.message || '新建失败', 'danger');
                             return;
@@ -461,6 +479,10 @@
         }
 
         function openEditDialog() {
+            if (!canManageGroups()) {
+                bootGrowl('无权限', 'danger');
+                return;
+            }
             if (!isRealGroupId(currentGroupId) || !searchUrl || !resourceType) {
                 return;
             }
@@ -493,7 +515,7 @@
                         }
                         var finalIds = resourceApi && resourceApi.getValues ? resourceApi.getValues().slice() : [];
                         var diff = diffIds(initialIds, finalIds);
-                        doPoster('/group/edit', {id: groupId, name: name}, function (editRes) {
+                        doPoster('/group/edit', {id: groupId, name: name, type: resourceType}, function (editRes) {
                             if (!editRes.success) {
                                 bootGrowl(editRes.message || '保存失败', 'danger');
                                 return;
@@ -533,6 +555,10 @@
         $editBtn.on('click', openEditDialog);
 
         $removeBtn.on('click', function () {
+            if (!canManageGroups()) {
+                bootGrowl('无权限', 'danger');
+                return;
+            }
             if (!isRealGroupId(currentGroupId)) {
                 return;
             }
@@ -551,7 +577,7 @@
                     confirmType: 'danger',
                     confirmText: '删除',
                     onConfirm: function () {
-                        doPoster('/group/remove', {id: currentGroupId}, function (response) {
+                        doPoster('/group/remove', {id: currentGroupId, type: resourceType}, function (response) {
                             if (!response.success) {
                                 bootGrowl(response.message || '删除失败', 'danger');
                                 return;

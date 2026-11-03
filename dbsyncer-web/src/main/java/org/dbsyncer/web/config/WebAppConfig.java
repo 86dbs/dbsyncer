@@ -1,13 +1,19 @@
 package org.dbsyncer.web.config;
 
+import org.dbsyncer.biz.PermissionService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.enums.StatusEnum;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.web.controller.cluster.ClusterInternalAuthFilter;
-
+import org.dbsyncer.web.security.LoginResult;
+import org.dbsyncer.web.security.LoginService;
+import org.dbsyncer.web.util.RequestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -16,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,7 +41,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
@@ -69,6 +75,15 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
     @Resource
     private UserConfigService userConfigService;
 
+    @Resource
+    private PermissionService permissionService;
+
+    @Resource
+    private LoginService loginService;
+
+    @Resource
+    private LogService logService;
+
     /**
      * 是否重置管理员密码
      */
@@ -79,7 +94,12 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
      */
     @Bean
     public AuthenticationFailureHandler loginFailHandler() {
-        return (request, response, e)->write(response, RestResult.restFail(e.getMessage(), 401));
+        return (request, response, e) -> {
+            String username = request.getParameter("username");
+            logService.log(LogType.LoginLog.FAIL, username, RequestUtil.getClientIp(request),
+                    StatusEnum.FAIL.getCode(), e.getMessage());
+            write(response, RestResult.restFail(e.getMessage(), 401));
+        };
     }
 
     /**
@@ -91,7 +111,10 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                String msg = String.format("%s 登录成功!", authentication.getPrincipal());
+                String username = String.valueOf(authentication.getPrincipal());
+                String msg = String.format("%s 登录成功!", username);
+                logService.log(LogType.LoginLog.SUCCESS, username, RequestUtil.getClientIp(request),
+                        StatusEnum.SUCCESS.getCode(), LogType.LoginLog.SUCCESS.getMessage());
                 write(response, RestResult.restSuccess(msg));
                 logger.info(msg);
             }
@@ -100,7 +123,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Bean
     public LogoutSuccessHandler logoutHandler() {
-        return (request, response, authentication)-> {
+        return (request, response, authentication) -> {
             try {
                 String msg = String.format("%s 注销成功!", authentication.getPrincipal());
                 write(response, RestResult.restSuccess(msg));
@@ -154,6 +177,10 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         String password = (String) authentication.getCredentials();
         password = SHA1Util.b64_sha1(password);
 
+        if (loginService.isLocked(username)) {
+            throw new LockedException(loginService.lockedResult(username).lockedMessage());
+        }
+
         UserInfo userInfo = userConfigService.getUserInfo(username);
         // 重置密码
         if (resetPwd && userInfo != null) {
@@ -164,9 +191,15 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
             }
         }
         if (null == userInfo || !StringUtil.equals(userInfo.getPassword(), password)) {
-            throw new BadCredentialsException("对不起,您输入的帐号或密码错误");
+            LoginResult loginResult = loginService.onFailure(username);
+            if (loginResult.isLocked()) {
+                throw new LockedException(loginResult.lockedMessage());
+            }
+            throw new BadCredentialsException(loginResult.badCredentialsMessage());
         }
-        List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(userInfo.getRoleCode());
+        loginService.onSuccess(username);
+        String authorityString = permissionService.buildAuthorityString(username);
+        List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(authorityString);
         return new UsernamePasswordAuthenticationToken(username, password, authorities);
     }
 

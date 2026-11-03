@@ -4,42 +4,17 @@
 
 <!-- 图表和任务列表 -->
 <div class="grid grid-cols-1 lg:grid-cols-3 mb-5">
-    <!-- 同步趋势图表 -->
+    <!-- 左侧：TPS / CPU / 内存 -->
     <div class="lg:col-span-2">
-        <!-- 顶部：图表区域 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 mb-6">
-            <!-- TPS图表 -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title text-center" id="tps">执行器TPS</h3>
-                </div>
-                <div class="card-body">
-                    <canvas id="tpsChart" height="200"></canvas>
-                </div>
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3 class="card-title text-center" id="tps">执行器TPS</h3>
             </div>
-
-            <!-- 堆积数据 & 持久化 -->
-            <div class="grid grid-cols-1 md:grid-cols-2">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title text-center">堆积数据</h3>
-                    </div>
-                    <div class="card-body flex items-center justify-center">
-                        <canvas id="queueChart" height="200"></canvas>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title text-center">持久化</h3>
-                    </div>
-                    <div class="card-body flex items-center justify-center">
-                        <canvas id="storageChart" height="200"></canvas>
-                    </div>
-                </div>
+            <div class="card-body">
+                <canvas id="tpsChart" height="200"></canvas>
             </div>
         </div>
 
-        <!-- 下部：CPU & 内存 -->
         <div class="grid grid-cols-1 md:grid-cols-2">
             <div class="card">
                 <div class="card-header">
@@ -84,7 +59,6 @@
     <!-- 查询执行器任务 -->
     <div class="form-container">
         <div class="card-header">
-            <!-- 表格工具栏 -->
             <div class="grid grid-cols-6 items-center">
                 <div class="lg:col-span-3">
                     <select id="searchActuatorMeta" class="form-control"></select>
@@ -114,37 +88,23 @@
         </div>
     </div>
 
-    <!-- 查询日志 -->
-    <div class="form-container">
-        <div class="card-header">
-            <!-- 表格工具栏 -->
-            <div class="grid grid-cols-6 items-center">
-                <div id="searchLog" class="lg:col-span-3 search-wrapper">
-                    <i class="fa fa-search search-icon"></i>
-                    <input class="search-input" type="text" maxlength="32" placeholder="搜索日志关键字" />
-                    <span class="search-clear" title="清除">
-                        <i class="fa fa-times"></i>
-                    </span>
-                </div>
-                <div class="lg:col-span-3 flex items-center justify-end">
-                    <button id="clearLogBtn" type="button" class="btn btn-outline">
-                        清空日志
-                    </button>
-                </div>
+    <!-- 堆积 / 持久化趋势 -->
+    <div class="grid grid-cols-1">
+        <div class="form-container">
+            <div class="card-header">
+                <h3 class="card-title text-center">堆积趋势图</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="queueChart" height="160"></canvas>
             </div>
         </div>
-        <div class="card-body">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th></th>
-                    <th>日志</th>
-                    <th>时间</th>
-                </tr>
-                </thead>
-                <tbody id="logList"></tbody>
-            </table>
-
+        <div class="form-container">
+            <div class="card-header">
+                <h3 class="card-title text-center">持久化趋势图</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="storageChart" height="160"></canvas>
+            </div>
         </div>
     </div>
 </div>

@@ -1,11 +1,17 @@
 package org.dbsyncer.web.controller;
 
 import org.dbsyncer.biz.ConditionService;
+import org.dbsyncer.biz.PermissionChecker;
 import org.dbsyncer.biz.PluginService;
+import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.sdk.spi.LicenseService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.ModelMap;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -31,13 +37,52 @@ public abstract class BaseController {
     @Resource
     private LicenseService licenseService;
 
+    @Resource
+    private PermissionChecker permissionChecker;
+
+    @Resource
+    private ResourceAclService resourceAclService;
+
     /**
-     * 获取请求参数
+     * 当前登录用户名。
+     */
+    protected String currentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Assert.notNull(authentication, "无法获取登录用户.");
+        String username = authentication.getName();
+        Assert.hasText(username, "无法获取登录用户.");
+        return username;
+    }
+
+    /**
+     * 断言当前用户具备权限码。
+     */
+    protected void requirePermission(String permissionCode) {
+        permissionChecker.requirePermission(currentUsername(), permissionCode);
+    }
+
+    /**
+     * 断言当前用户具备任一权限码。
+     */
+    protected void requireAnyPermission(String... permissionCodes) {
+        permissionChecker.requireAnyPermission(currentUsername(), permissionCodes);
+    }
+
+    /**
+     * 断言当前用户对资源具备动作权限。
+     */
+    protected void requireResource(String resourceType, String resourceId, String action) {
+        resourceAclService.require(currentUsername(), resourceType, resourceId, action);
+    }
+
+    /**
+     * 获取请求参数（附带当前登录用户名，供 Service 层 ACL 过滤）。
      */
     protected Map<String, String> getParams(HttpServletRequest request) {
         Map<String, String[]> map = request.getParameterMap();
         Map<String, String> res = new HashMap<>();
         map.forEach((k, v)->res.put(k, v[0]));
+        res.put(UserConfigService.CURRENT_USER_NAME, currentUsername());
         return res;
     }
 

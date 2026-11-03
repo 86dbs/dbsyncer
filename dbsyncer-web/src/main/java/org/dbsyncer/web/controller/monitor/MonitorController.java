@@ -25,6 +25,8 @@ import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.MemoryValueFormatter;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
@@ -63,7 +65,7 @@ public class MonitorController extends BaseController {
     private final CentralProcessor processor = systemInfo.getHardware().getProcessor();
     private final GlobalMemory globalMemory = systemInfo.getHardware().getMemory();
     private long[] prevTicks = processor.getSystemCpuLoadTicks();
-    private final static int COUNT = 60;
+    private static final int COUNT = 60;
     private final CpuVO cpu = new CpuVO();
     private final MemoryVO memory = new MemoryVO();
     private final DiskSpaceVO disk = new DiskSpaceVO();
@@ -170,6 +172,7 @@ public class MonitorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_CLEAR_DATA)
     @PostMapping("/clearData")
     @ResponseBody
     public RestResult clearData(HttpServletRequest request) {
@@ -204,6 +207,7 @@ public class MonitorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "清空日志")
     @PostMapping("/clearLog")
     @ResponseBody
     public RestResult clearLog() {

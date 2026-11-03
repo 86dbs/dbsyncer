@@ -5,13 +5,17 @@ package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.model.DataSyncRequest;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -64,6 +68,7 @@ public class MappingController extends BaseController {
                        @RequestParam(value = "detailStatus", required = false) String detailStatus,
                        @RequestParam(value = "tableGroupId", required = false) String tableGroupId,
                        @RequestParam(value = "status", required = false) String status) {
+        requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.READ.getCode());
         if (StringUtil.equals("detail", page)) {
             model.put("mappingId", id);
             model.put("mapping", mappingService.getMapping(id));
@@ -96,6 +101,7 @@ public class MappingController extends BaseController {
 
     @GetMapping("/pageCustomTable")
     public String page(ModelMap model, @RequestParam(value = "id") String id, @RequestParam(value = "type") String type) {
+        requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.READ.getCode());
         model.put("mapping", mappingService.getMappingCustomTable(id, type));
         model.put("type", type);
         List<DataTypeEnum> dataTypeEnums = Arrays.asList(DataTypeEnum.values());
@@ -108,6 +114,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult get(@RequestParam(value = "id") String id) {
         try {
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.getMapping(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -135,6 +142,11 @@ public class MappingController extends BaseController {
     public RestResult searchResult(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
+            String mappingId = params.get(ConfigConstant.CONFIG_MODEL_ID);
+            if (StringUtil.isBlank(mappingId)) {
+                mappingId = params.get("id");
+            }
+            requireResource(ConfigConstant.MAPPING, mappingId, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.searchTableGroupResult(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -142,21 +154,26 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_COPY)
     @PostMapping("/copy")
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
         try {
-            return RestResult.restSuccess(mappingService.copy(id));
+            requirePermission("mapping:edit");
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.WRITE.getCode());
+            return RestResult.restSuccess(mappingService.copy(id, currentUsername()));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_INSERT)
     @PostMapping(value = "/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(mappingService.add(params));
         } catch (Exception e) {
@@ -165,11 +182,14 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE)
     @PostMapping(value = "/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -177,10 +197,13 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_DELETE)
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam(value = "id") String id) {
         try {
+            requirePermission("mapping:edit");
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.remove(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -188,10 +211,13 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_RUNNING)
     @PostMapping("/start")
     @ResponseBody
     public RestResult start(@RequestParam(value = "id") String id) {
         try {
+            requirePermission("mapping:operate");
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(mappingService.start(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -199,10 +225,13 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_STOP)
     @PostMapping("/stop")
     @ResponseBody
     public RestResult stop(@RequestParam(value = "id") String id) {
         try {
+            requirePermission("mapping:operate");
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(mappingService.stop(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -214,6 +243,8 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
+            requirePermission("mapping:edit");
+            requireResource(ConfigConstant.MAPPING, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.refreshMappingTables(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -226,6 +257,7 @@ public class MappingController extends BaseController {
     public RestResult searchTables(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.searchTables(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -238,6 +270,7 @@ public class MappingController extends BaseController {
     public RestResult searchCustomTable(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(mappingService.searchCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -245,11 +278,14 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE, message = "保存自定义表")
     @PostMapping(value = "/saveCustomTable")
     @ResponseBody
     public RestResult saveCustomTable(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.saveCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -257,11 +293,14 @@ public class MappingController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE, message = "删除自定义表")
     @PostMapping(value = "/removeCustomTable")
     @ResponseBody
     public RestResult removeCustomTable(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.MAPPING, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(mappingService.removeCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

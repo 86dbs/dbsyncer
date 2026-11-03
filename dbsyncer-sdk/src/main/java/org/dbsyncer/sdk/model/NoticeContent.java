@@ -19,6 +19,16 @@ public abstract class NoticeContent {
 
     private String title;
 
+    /**
+     * 资源类型（如 mapping），用于解析 @ 覆盖规则
+     */
+    private String resourceType;
+
+    /**
+     * 资源 ID（如同步任务 ID）
+     */
+    private String resourceId;
+
     public NoticeTypeEnum getNoticeType() {
         return noticeType;
     }
@@ -33,5 +43,21 @@ public abstract class NoticeContent {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getResourceType() {
+        return resourceType;
+    }
+
+    public void setResourceType(String resourceType) {
+        this.resourceType = resourceType;
+    }
+
+    public String getResourceId() {
+        return resourceId;
+    }
+
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
     }
 }

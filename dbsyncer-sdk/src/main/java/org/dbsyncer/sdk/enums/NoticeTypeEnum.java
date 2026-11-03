@@ -42,7 +42,11 @@ public enum NoticeTypeEnum {
     /**
      * 授权已过期
      */
-    LICENSE_EXPIRED(7);
+    LICENSE_EXPIRED(7),
+    /**
+     * 全量同步完成
+     */
+    MAPPING_FULL_COMPLETE(8);
 
     private final int code;
 
@@ -52,5 +56,17 @@ public enum NoticeTypeEnum {
 
     public int getCode() {
         return code;
+    }
+
+    /**
+     * 按编码解析；未知返回 {@code null}。
+     */
+    public static NoticeTypeEnum getByCode(int code) {
+        for (NoticeTypeEnum type : values()) {
+            if (type.code == code) {
+                return type;
+            }
+        }
+        return null;
     }
 }

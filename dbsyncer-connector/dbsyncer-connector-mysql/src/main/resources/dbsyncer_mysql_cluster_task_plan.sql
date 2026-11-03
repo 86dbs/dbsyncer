@@ -10,6 +10,7 @@ CREATE TABLE `dbsyncer_cluster_task_plan` (
   `FAIL`            bigint NOT NULL DEFAULT 0 COMMENT '失败数',
   `DIFF`            bigint NOT NULL DEFAULT 0 COMMENT '差异数',
   `FIXED`           bigint NOT NULL DEFAULT 0 COMMENT '订正数',
+  `CONTENT`         mediumblob NULL COMMENT '分片错误/差异样本JSON，波次收齐后合并进TASK_DETAIL',
   `STATUS`          tinyint NOT NULL DEFAULT 0 COMMENT '0-未完成,1-运行中,2-完成',
   `LAST_PAGE`       tinyint NOT NULL DEFAULT 0 COMMENT '是否表尾最后一页：0-否,1-是',
   `CREATE_TIME`     bigint NOT NULL COMMENT '创建时间',

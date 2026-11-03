@@ -1,11 +1,17 @@
 package org.dbsyncer.web.controller.user;
 
+import org.dbsyncer.biz.PermissionService;
+import org.dbsyncer.biz.RoleService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.biz.vo.UserInfoVO;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.web.controller.BaseController;
-
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
+import org.dbsyncer.web.security.LoginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -20,7 +26,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,15 +46,37 @@ public class UserController extends BaseController {
     @Resource
     private UserConfigService userConfigService;
 
+    @Resource
+    private PermissionService permissionService;
+
+    @Resource
+    private RoleService roleService;
+
+    @Resource
+    private LoginService loginService;
+
+    @Resource
+    private LogService logService;
+
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("currentUser", getUserInfoVo());
-        model.put("users", userConfigService.getUserInfoAll(getUserName()));
+        List<UserInfoVO> users = userConfigService.getUserInfoAll(getUserName());
+        if (users != null) {
+            for (UserInfoVO u : users) {
+                if (u != null) {
+                    u.setLocked(loginService.isLocked(u.getUsername()));
+                }
+            }
+        }
+        model.put("users", users);
         return "user/list";
     }
 
     @GetMapping("/page/add")
     public String pageAdd(ModelMap model) {
+        requirePermission("user:edit");
+        model.put("roles", roleService.listRoles());
         return "user/add";
     }
 
@@ -57,6 +86,8 @@ public class UserController extends BaseController {
         username = StringUtil.isBlank(username) ? currentUserName : username;
         model.put(UserConfigService.CURRENT_USER_NAME, currentUserName);
         model.put("currentUser", userConfigService.getUserInfoVo(currentUserName, username));
+        model.put("roles", roleService.listRoles());
+        model.put("canAssignRole", permissionService.hasPermission(currentUserName, "user:edit"));
         return "user/edit";
     }
 
@@ -66,7 +97,8 @@ public class UserController extends BaseController {
         return RestResult.restSuccess(getUserInfoVo());
     }
 
-    @RequestMapping(value = "/add")
+    @OperLog(type = OperLogType.USER_INSERT)
+    @PostMapping(value = "/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
@@ -78,7 +110,8 @@ public class UserController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "/edit")
+    @OperLog(type = OperLogType.USER_UPDATE)
+    @PostMapping(value = "/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
@@ -90,12 +123,35 @@ public class UserController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_DELETE)
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request) {
         try {
             Map<String, String> params = getParamsWithUserName(request);
             return RestResult.restSuccess(userConfigService.remove(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 提前解除登录失败锁定。
+     */
+    @OperLog(type = OperLogType.USER_UPDATE, message = "解锁用户")
+    @PostMapping("/unlock")
+    @ResponseBody
+    public RestResult unlock(HttpServletRequest request) {
+        try {
+            requirePermission("user:edit");
+            Map<String, String> params = getParamsWithUserName(request);
+            String username = params.get("username");
+            Assert.hasText(username, "用户名不能为空");
+            loginService.unlock(username);
+            logService.log(LogType.UserLog.UPDATE,
+                    String.format("[%s]解锁账号[%s]", getUserName(), username));
+            return RestResult.restSuccess("解锁成功");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -109,13 +165,16 @@ public class UserController extends BaseController {
     }
 
     /**
-     * 获取登录用户信息
-     *
-     * @return
+     * 获取登录用户信息（含权限码，供前端显隐）。
      */
     private UserInfoVO getUserInfoVo() {
         String currentUserName = getUserName();
-        return userConfigService.getUserInfoVo(currentUserName, currentUserName);
+        UserInfoVO vo = userConfigService.getUserInfoVo(currentUserName, currentUserName);
+        if (vo != null) {
+            vo.setAdmin(permissionService.isAdmin(currentUserName));
+            vo.setPermissions(new ArrayList<>(permissionService.listPermissionCodes(currentUserName)));
+        }
+        return vo;
     }
 
     private String getUserName() {

@@ -57,8 +57,6 @@ public class NoticeConfigChecker extends AbstractChecker {
             String webhookUrl = StringUtil.trim(params.get("wechatWebhookUrl"));
             Assert.hasText(webhookUrl, "企业微信告警Webhook地址不能为空.");
             weChat.setWebhookUrl(webhookUrl);
-            weChat.setAtAll(StringUtil.isNotBlank(params.get("wechatAtAll")));
-            weChat.setAtMobiles(params.get("wechatAtMobiles"));
         }
 
         // 是否启用钉钉告警
@@ -69,10 +67,7 @@ public class NoticeConfigChecker extends AbstractChecker {
             String webhookUrl = StringUtil.trim(params.get("dingTalkWebhookUrl"));
             Assert.hasText(webhookUrl, "钉钉告警Webhook地址不能为空.");
             dingTalk.setWebhookUrl(webhookUrl);
-            dingTalk.setAtAll(StringUtil.isNotBlank(params.get("dingTalkAtAll")));
-            dingTalk.setAtMobiles(params.get("dingTalkAtMobiles"));
         }
-
         // 是否启用HTTP告警
         boolean enableHttp = StringUtil.isNotBlank(params.get("enableHttp"));
         HttpNoticeChannel http = noticeConfig.getHttp();
@@ -95,6 +90,7 @@ public class NoticeConfigChecker extends AbstractChecker {
             mail.setAccount(account);
             mail.setCode(code);
         }
+
         return systemConfig;
     }
 }

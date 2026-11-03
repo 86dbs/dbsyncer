@@ -43,25 +43,23 @@ public class UserInfo {
     private String roleCode;
 
     /**
-     * 邮箱(多个邮箱使用逗号拼接)
+     * 连续登录失败次数
      */
-    private String email;
+    private int loginFailCount;
 
     /**
-     * 手机
+     * 锁定截止时间（毫秒时间戳，0 表示未锁定）
      */
-    private String phone;
+    private long lockUntil;
 
     public UserInfo() {
     }
 
-    public UserInfo(String username, String nickname, String password, String roleCode, String email, String phone) {
+    public UserInfo(String username, String nickname, String password, String roleCode) {
         this.username = username;
         this.nickname = nickname;
         this.password = password;
         this.roleCode = roleCode;
-        this.email = email;
-        this.phone = phone;
     }
 
     public String getId() {
@@ -120,20 +118,20 @@ public class UserInfo {
         this.roleCode = roleCode;
     }
 
-    public String getEmail() {
-        return email;
+    public int getLoginFailCount() {
+        return loginFailCount;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setLoginFailCount(int loginFailCount) {
+        this.loginFailCount = loginFailCount;
     }
 
-    public String getPhone() {
-        return phone;
+    public long getLockUntil() {
+        return lockUntil;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setLockUntil(long lockUntil) {
+        this.lockUntil = lockUntil;
     }
 
     @Override

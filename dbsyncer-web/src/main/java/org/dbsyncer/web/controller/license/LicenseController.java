@@ -23,6 +23,8 @@ import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.Version;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -95,10 +97,12 @@ public class LicenseController extends BaseController {
         return "license/list";
     }
 
+    @OperLog(type = OperLogType.USER_UPLOAD_LICENSE)
     @PostMapping(value = "/upload")
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {
         try {
+            requirePermission("license:edit");
             if (files != null && files[0] != null) {
                 String filename = "license";
                 File dest = new File(licenseService.getLicensePath() + filename);
@@ -116,10 +120,12 @@ public class LicenseController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_ACTIVATE_LICENSE)
     @PostMapping(value = "/activate")
     @ResponseBody
     public RestResult activate(HttpServletRequest request) {
         try {
+            requirePermission("license:edit");
             String content = getLicenseContent(getParams(request));
             if (StringUtil.isNotBlank(content)) {
                 String filename = "license";
@@ -137,6 +143,7 @@ public class LicenseController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.USER_DELETE_LICENSE)
     @PostMapping(value = "/remove")
     @ResponseBody
     public RestResult remove() {
@@ -296,8 +303,6 @@ public class LicenseController extends BaseController {
         Assert.notNull(userInfo, "会话过期，请重新登录");
         info.setLicenseKey(licenseService.getKey());
         info.setOsName(System.getProperty("os.name"));
-        info.setPhone(StringUtil.isNotBlank(info.getPhone()) ? info.getPhone() : userInfo.getPhone());
-        info.setEmail(StringUtil.isNotBlank(info.getEmail()) ? info.getEmail() : userInfo.getEmail());
         info.setVersion(Version.CURRENT.getVersion());
         return invoke(info);
     }

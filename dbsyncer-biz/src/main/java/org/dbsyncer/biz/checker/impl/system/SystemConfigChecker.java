@@ -12,8 +12,6 @@ import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.BeanUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.springframework.stereotype.Component;
@@ -36,9 +34,6 @@ public class SystemConfigChecker extends AbstractChecker {
 
     @Resource
     private SystemConfigProfile systemConfigProfile;
-
-    @Resource
-    private LogService logService;
 
     @Resource
     private ApiKeyManager apiKeyManager;
@@ -79,13 +74,14 @@ public class SystemConfigChecker extends AbstractChecker {
         SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
         SystemConfig newConfig = systemConfig.clone();
         BeanUtil.mapToBean(newParams, newConfig);
+        Assert.isTrue(newConfig.getLoginLockMinutes() >= 1 && newConfig.getLoginLockMinutes() <= 1440,
+                "登录锁定时长支持的范围[1-1440]分钟");
         // 修改 API 密钥配置
         saveApiKeyConfig(newConfig, params);
         // 修改RSA配置
         saveRsaConfig(newConfig, params);
         // 修改 IP 白名单配置
         saveIpWhitelistConfig(newConfig, params);
-        logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置
         this.modifyConfigModel(newConfig, params);

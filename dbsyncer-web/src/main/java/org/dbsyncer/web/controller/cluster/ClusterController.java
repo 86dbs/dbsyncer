@@ -9,6 +9,8 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.PluginFile;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -86,6 +88,7 @@ public class ClusterController extends BaseController {
     /**
      * 修改节点名称
      */
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "修改集群配置")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(@RequestParam("id") String id, @RequestParam("name") String name) {
@@ -101,6 +104,7 @@ public class ClusterController extends BaseController {
     /**
      * 删除离线节点
      */
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "删除集群节点")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam("id") String id) {

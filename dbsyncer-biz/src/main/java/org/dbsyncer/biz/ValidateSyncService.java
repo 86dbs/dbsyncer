@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz;
 
+import org.dbsyncer.biz.vo.ValidateSyncListVO;
 import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.TableGroup;
@@ -29,8 +30,11 @@ public interface ValidateSyncService {
 
     /**
      * 复制任务
+     *
+     * @param id       源任务 ID
+     * @param username 操作者用户名（用于授予新资源 ACL）
      */
-    String copy(String id);
+    String copy(String id, String username);
 
     /**
      * 删除任务
@@ -48,9 +52,9 @@ public interface ValidateSyncService {
     String stop(String id);
 
     /**
-     * 搜索任务
+     * 搜索任务（列表轻量字段，不含完整配置/连接器敏感信息）
      */
-    Paging<ValidateSyncTaskVO> search(Map<String, String> params);
+    Paging<ValidateSyncListVO> search(Map<String, String> params);
 
     /**
      * 搜索表关系

@@ -32,6 +32,29 @@ public class ConfigConstant {
     public static final String TASK = "task";
     public static final String GROUP = "group";
     public static final String GROUP_REL = "groupRel";
+    public static final String ROLE = "role";
+    public static final String PERMISSION = "permission";
+    public static final String ROLE_PERMISSION = "rolePermission";
+    /**
+     * 用户-角色关系配置类型（勿与用户表列 {@link #USER_ROLE} 混淆）
+     */
+    public static final String USER_ROLE_REL = "userRole";
+    /**
+     * 资源访问控制
+     */
+    public static final String RESOURCE_ACL = "resourceAcl";
+    /**
+     * 告警通知规则
+     */
+    public static final String NOTICE_RULE = "noticeRule";
+    /**
+     * 告警策略
+     */
+    public static final String NOTICE_STRATEGY = "noticeStrategy";
+    /**
+     * 同步任务 Meta 日汇总
+     */
+    public static final String META_DAILY = "metaDaily";
 
     /**
      * 连接器配置字段
@@ -57,6 +80,61 @@ public class ConfigConstant {
     public static final String GROUP_REL_RESOURCE_ID = "resourceId";
 
     /**
+     * 菜单权限表(dbsyncer_permission)拆分列
+     */
+    public static final String PERMISSION_CODE = "code";
+    public static final String PERMISSION_MODULE = "module";
+
+    /**
+     * 角色权限关系表(dbsyncer_role_permission)拆分列
+     */
+    public static final String ROLE_PERMISSION_ROLE_ID = "roleId";
+    public static final String ROLE_PERMISSION_PERMISSION_ID = "permissionId";
+
+    /**
+     * 用户角色关系表(dbsyncer_user_role)拆分列
+     */
+    public static final String USER_ROLE_USER_ID = "userId";
+    public static final String USER_ROLE_ROLE_ID = "roleId";
+
+    /**
+     * 资源 ACL 表(dbsyncer_resource_acl)拆分列
+     */
+    public static final String RESOURCE_ACL_SUBJECT_TYPE = "subjectType";
+    public static final String RESOURCE_ACL_SUBJECT_ID = "subjectId";
+    public static final String RESOURCE_ACL_PERMISSION = "permission";
+
+    /**
+     * 告警通知规则表(dbsyncer_notice_rule)拆分列
+     */
+    public static final String NOTICE_RULE_SCOPE_TYPE = "scopeType";
+    public static final String NOTICE_RULE_SCOPE_ID = "scopeId";
+    public static final String NOTICE_RULE_AT_ALL = "atAll";
+    public static final String NOTICE_RULE_AT_PHONES = "atPhones";
+    public static final String NOTICE_RULE_EMAILS = "emails";
+
+    /**
+     * 告警策略表(dbsyncer_notice_strategy)拆分列
+     */
+    public static final String NOTICE_STRATEGY_ENABLED = "enabled";
+    public static final String NOTICE_STRATEGY_FREQUENCY = "frequency";
+    public static final String NOTICE_STRATEGY_CRON = "cron";
+    public static final String NOTICE_STRATEGY_NOTICE_TYPES = "noticeTypes";
+    public static final String NOTICE_STRATEGY_REMARK = "remark";
+
+    /**
+     * Meta 日汇总表(dbsyncer_meta_agg)拆分列
+     */
+    public static final String META_DAILY_STAT_DATE = "statDate";
+
+    /**
+     * 日志表(dbsyncer_log)筛选列
+     */
+    public static final String LOG_USERNAME = "username";
+    public static final String LOG_IP = "ip";
+    public static final String LOG_STATUS = "status";
+
+    /**
      * 用户表(dbsyncer_user)拆分列
      */
     public static final String USER_USERNAME = "username";
@@ -66,8 +144,14 @@ public class ConfigConstant {
      * 列名 ROLE，模型字段 roleCode
      */
     public static final String USER_ROLE = "role";
-    public static final String USER_EMAIL = "email";
-    public static final String USER_PHONE = "phone";
+    /**
+     * 连续登录失败次数
+     */
+    public static final String USER_LOGIN_FAIL_COUNT = "loginFailCount";
+    /**
+     * 锁定截止时间（毫秒时间戳，0 表示未锁定）
+     */
+    public static final String USER_LOCK_UNTIL = "lockUntil";
 
     /**
      * 表映射关系表(dbsyncer_table_group)拆分列

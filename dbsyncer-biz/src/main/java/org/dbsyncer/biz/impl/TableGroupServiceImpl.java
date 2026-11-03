@@ -13,7 +13,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
@@ -122,7 +121,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                 params.remove("skipRepeatedCheck");
                 try {
                     TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-                    log(LogType.TableGroupLog.INSERT, model);
                     model.setIndex(baseIndex + models.size() + 1);
                     models.add(model);
                 } catch (RepeatedTableGroupException e) {
@@ -162,7 +160,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             params.put("targetTable", targetTableArray[i]);
             try {
                 TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-                log(LogType.TableGroupLog.INSERT, model);
                 model.setIndex(baseIndex + models.size() + 1);
                 models.add(model);
             } catch (RepeatedTableGroupException e) {
@@ -187,7 +184,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         assertRunning(mapping.getId());
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
-        log(LogType.TableGroupLog.UPDATE, model);
         tableGroupProfile.editTableGroup(model);
         List<String> list = new ArrayList<>();
         list.add(model.getId());
@@ -213,8 +209,6 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
-            TableGroup model = tableGroupProfile.getTableGroup(id);
-            log(LogType.TableGroupLog.DELETE, model);
             tableGroupProfile.removeTableGroup(id);
         });
 

@@ -8,6 +8,8 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -34,6 +36,9 @@ import java.util.Map;
 @RequestMapping("/group")
 public class GroupController extends BaseController {
 
+    private static final String PERM_CONNECTOR_EDIT = "connector:edit";
+    private static final String PERM_MAPPING_EDIT = "mapping:edit";
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
@@ -50,11 +55,13 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "新增分组")
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
+            requireGroupManagePermission(params.get(ConfigConstant.CONFIG_MODEL_TYPE));
             return RestResult.restSuccess(groupService.add(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -62,11 +69,13 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "修改分组")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
+            requireGroupManagePermission(params.get(ConfigConstant.CONFIG_MODEL_TYPE));
             return RestResult.restSuccess(groupService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -74,10 +83,14 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "删除分组")
     @PostMapping("/remove")
     @ResponseBody
-    public RestResult remove(@RequestParam("id") String id) {
+    public RestResult remove(HttpServletRequest request) {
         try {
+            Map<String, String> params = getParams(request);
+            requireGroupManagePermission(params.get(ConfigConstant.CONFIG_MODEL_TYPE));
+            String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
             return RestResult.restSuccess(groupService.remove(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -99,6 +112,7 @@ public class GroupController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "绑定分组资源")
     @PostMapping("/bind")
     @ResponseBody
     public RestResult bind(HttpServletRequest request) {
@@ -107,6 +121,7 @@ public class GroupController extends BaseController {
             String groupId = params.get(ConfigConstant.GROUP_REL_GROUP_ID);
             String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
             String resourceId = params.get(ConfigConstant.GROUP_REL_RESOURCE_ID);
+            requireGroupManagePermission(type);
             groupService.bind(groupId, type, resourceId);
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
@@ -118,6 +133,7 @@ public class GroupController extends BaseController {
     /**
      * 批量挂组 / 移出。resourceIds 支持逗号分隔。
      */
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "批量绑定分组资源")
     @PostMapping("/bindBatch")
     @ResponseBody
     public RestResult bindBatch(HttpServletRequest request) {
@@ -125,6 +141,7 @@ public class GroupController extends BaseController {
             Map<String, String> params = getParams(request);
             String groupId = params.get(ConfigConstant.GROUP_REL_GROUP_ID);
             String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+            requireGroupManagePermission(type);
             groupService.bindBatch(groupId, type, parseResourceIds(params.get("resourceIds")));
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
@@ -136,6 +153,7 @@ public class GroupController extends BaseController {
     /**
      * 批量从指定分组移出（不影响其它组归属）。
      */
+    @OperLog(type = OperLogType.SYSTEM_INFO, message = "批量解绑分组资源")
     @PostMapping("/unbindBatch")
     @ResponseBody
     public RestResult unbindBatch(HttpServletRequest request) {
@@ -143,6 +161,7 @@ public class GroupController extends BaseController {
             Map<String, String> params = getParams(request);
             String groupId = params.get(ConfigConstant.GROUP_REL_GROUP_ID);
             String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+            requireGroupManagePermission(type);
             groupService.unbindBatch(groupId, type, parseResourceIds(params.get("resourceIds")));
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
@@ -192,5 +211,23 @@ public class GroupController extends BaseController {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
+    }
+
+    /**
+     * 按资源类型映射编辑权限：连接器用 connector:edit，任务类用 mapping:edit。
+     * 未传类型时任一编辑权即可（兼容旧调用）。
+     */
+    private void requireGroupManagePermission(String resourceType) {
+        if (StringUtil.equals(ConfigConstant.CONNECTOR, resourceType)) {
+            requirePermission(PERM_CONNECTOR_EDIT);
+            return;
+        }
+        if (StringUtil.equals(ConfigConstant.MAPPING, resourceType)
+                || StringUtil.equals(ConfigConstant.VALIDATE_SYNC, resourceType)
+                || StringUtil.equals(ConfigConstant.DATABASE_SYNC, resourceType)) {
+            requirePermission(PERM_MAPPING_EDIT);
+            return;
+        }
+        requireAnyPermission(PERM_CONNECTOR_EDIT, PERM_MAPPING_EDIT);
     }
 }

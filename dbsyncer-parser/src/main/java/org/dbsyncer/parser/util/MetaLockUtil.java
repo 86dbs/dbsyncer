@@ -14,9 +14,6 @@ import org.dbsyncer.common.util.StringUtil;
  */
 public abstract class MetaLockUtil {
 
-    private MetaLockUtil() {
-    }
-
     /**
      * 按 taskId 获取进程内互斥锁（{@link String#intern()}）。
      *

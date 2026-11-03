@@ -386,7 +386,8 @@ public class MySQLStorageService extends AbstractStorageService {
         }
         return tables.computeIfAbsent(sharding, table -> {
             Executor newExecutor = new Executor(template.getType(), template.getFields(), template.isSystemTable(), template.isOrderByUpdateTime());
-            return createTableIfNotExist(table, newExecutor);
+            createTableIfNotExist(table, newExecutor);
+            return newExecutor;
         });
     }
 
@@ -638,7 +639,8 @@ public class MySQLStorageService extends AbstractStorageService {
         // 用户配置：一行一用户，严格按 dbsyncer_user 拆分列
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.USER_USERNAME, ConfigConstant.USER_PASSWORD, ConfigConstant.USER_NICKNAME,
-                ConfigConstant.USER_ROLE, ConfigConstant.USER_EMAIL, ConfigConstant.USER_PHONE);
+                ConfigConstant.USER_ROLE,
+                ConfigConstant.USER_LOGIN_FAIL_COUNT, ConfigConstant.USER_LOCK_UNTIL);
         List<Field> userFields = builder.getFields();
 
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE,
@@ -672,7 +674,9 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> taskDetailFields = builder.getFields();
 
         // 日志
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.LOG_USERNAME, ConfigConstant.LOG_IP, ConfigConstant.LOG_STATUS,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> logFields = builder.getFields();
 
         // 任务配置表(同步/校验/迁移统一)：ID/NAME/TYPE/JSON/时间
@@ -698,7 +702,7 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID,
                 ConfigConstant.SCHEDULE_NODE_ID, ConfigConstant.PLAN_START_CURSOR, ConfigConstant.PLAN_END_CURSOR,
                 ConfigConstant.PLAN_LAST_CURSOR, ConfigConstant.PLAN_SUCCESS, ConfigConstant.PLAN_FAIL,
-                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED,
+                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.TASK_CONTENT,
                 ConfigConstant.PLAN_STATUS, ConfigConstant.PLAN_LAST_PAGE,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskPlanFields = builder.getFields();
@@ -714,6 +718,52 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.GROUP_REL_GROUP_ID, ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID);
         List<Field> groupRelFields = builder.getFields();
 
+        // 角色
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.CONFIG_MODEL_NAME);
+        List<Field> roleFields = builder.getFields();
+
+        // 菜单权限
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.PERMISSION_CODE, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.PERMISSION_MODULE);
+        List<Field> permissionFields = builder.getFields();
+
+        // 角色-权限
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.ROLE_PERMISSION_ROLE_ID, ConfigConstant.ROLE_PERMISSION_PERMISSION_ID);
+        List<Field> rolePermissionFields = builder.getFields();
+
+        // 用户-角色
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.USER_ROLE_USER_ID, ConfigConstant.USER_ROLE_ROLE_ID);
+        List<Field> userRoleFields = builder.getFields();
+
+        // 资源 ACL
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, ConfigConstant.RESOURCE_ACL_SUBJECT_ID,
+                ConfigConstant.GROUP_REL_RESOURCE_TYPE, ConfigConstant.GROUP_REL_RESOURCE_ID, ConfigConstant.RESOURCE_ACL_PERMISSION);
+        List<Field> resourceAclFields = builder.getFields();
+
+        // 告警通知规则
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.NOTICE_RULE_SCOPE_TYPE, ConfigConstant.NOTICE_RULE_SCOPE_ID,
+                ConfigConstant.NOTICE_RULE_AT_ALL, ConfigConstant.NOTICE_RULE_AT_PHONES, ConfigConstant.NOTICE_RULE_EMAILS);
+        List<Field> noticeRuleFields = builder.getFields();
+
+        // 告警策略
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, ConfigConstant.NOTICE_STRATEGY_ENABLED,
+                ConfigConstant.NOTICE_STRATEGY_FREQUENCY, ConfigConstant.NOTICE_STRATEGY_CRON,
+                ConfigConstant.NOTICE_STRATEGY_REMARK);
+        List<Field> noticeStrategyFields = builder.getFields();
+
+        // 同步任务 Meta 日汇总
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.META_DAILY_STAT_DATE,
+                ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> metaDailyFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -727,12 +777,23 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_PLAN.getType(), k -> new Executor(k, taskPlanFields, true, false));
         tables.computeIfAbsent(StorageEnum.GROUP.getType(), k -> new Executor(k, groupFields, true, true));
         tables.computeIfAbsent(StorageEnum.GROUP_REL.getType(), k -> new Executor(k, groupRelFields, true, true));
+        tables.computeIfAbsent(StorageEnum.ROLE.getType(), k -> new Executor(k, roleFields, true, true));
+        tables.computeIfAbsent(StorageEnum.PERMISSION.getType(), k -> new Executor(k, permissionFields, true, true));
+        tables.computeIfAbsent(StorageEnum.ROLE_PERMISSION.getType(), k -> new Executor(k, rolePermissionFields, true, true));
+        tables.computeIfAbsent(StorageEnum.USER_ROLE.getType(), k -> new Executor(k, userRoleFields, true, true));
+        tables.computeIfAbsent(StorageEnum.RESOURCE_ACL.getType(), k -> new Executor(k, resourceAclFields, true, true));
+        tables.computeIfAbsent(StorageEnum.NOTICE_RULE.getType(), k -> new Executor(k, noticeRuleFields, true, true));
+        tables.computeIfAbsent(StorageEnum.NOTICE_STRATEGY.getType(), k -> new Executor(k, noticeStrategyFields, true, true));
+        tables.computeIfAbsent(StorageEnum.META_DAILY.getType(), k -> new Executor(k, metaDailyFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
                 createTableIfNotExist(tableName, e);
+                if (StringUtil.equalsIgnoreCase(tableName, StorageEnum.NOTICE_STRATEGY.getType())) {
+                    initNoticeStrategy();
+                }
             }
         });
         // wait few seconds for execute sql
@@ -827,8 +888,12 @@ public class MySQLStorageService extends AbstractStorageService {
         }
     }
 
-    private Executor createTableIfNotExist(String table, Executor executor) {
+    /**
+     * 表不存在则创建；返回是否本次新建（复用已有 SHOW TABLES 判断）。
+     */
+    private boolean createTableIfNotExist(String table, Executor executor) {
         table = PREFIX_TABLE.concat(table);
+        boolean created = false;
         // show tables where Tables_in_dbsyncer = "dbsyncer_config"
         String sql = String.format(SHOW_TABLE, database, table);
         try {
@@ -837,6 +902,7 @@ public class MySQLStorageService extends AbstractStorageService {
             // 不存在表
             String ddl = readSql(executor.getType(), executor.isSystemTable(), table);
             executeSql(ddl);
+            created = true;
         }
 
         // 老版本升级：动态补齐新增字段
@@ -852,7 +918,7 @@ public class MySQLStorageService extends AbstractStorageService {
         String update = SqlBuilderEnum.UPDATE.getSqlBuilder().buildSql(config);
         String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
-        return executor;
+        return created;
     }
 
     /**
@@ -868,6 +934,11 @@ public class MySQLStorageService extends AbstractStorageService {
             addColumnIfNotExist(table, "STATUS", "tinyint NOT NULL DEFAULT 1 COMMENT '连接状态, 0-离线 1-在线'");
             return;
         }
+        if (StorageEnum.USER.getType().equals(type)) {
+            addColumnIfNotExist(table, "LOGIN_FAIL_COUNT", "int NOT NULL DEFAULT 0 COMMENT '连续登录失败次数'");
+            addColumnIfNotExist(table, "LOCK_UNTIL", "bigint NOT NULL DEFAULT 0 COMMENT '锁定截止时间（毫秒，0未锁定）'");
+            return;
+        }
         if (StorageEnum.TABLE_GROUP.getType().equals(type)) {
             createIndexIfNotExist(table, "IDX_TG_MAPPING",
                     "`TASK_ID`,`SOURCE_CONNECTOR_ID`,`TARGET_CONNECTOR_ID`,`SOURCE_DATABASE`,`TARGET_DATABASE`,`SOURCE_SCHEMA`,`TARGET_SCHEMA`,`SORT_INDEX`");
@@ -876,6 +947,11 @@ public class MySQLStorageService extends AbstractStorageService {
         if (StorageEnum.TASK_DETAIL.getType().equals(type)) {
             // 新表 DDL 已含该索引；仅对老表补齐，存在则跳过，避免 Duplicate key name 打 ERROR
             createIndexIfNotExist(table, "IDX_TG_UPDATE", "`TABLE_GROUP_ID`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.TASK_PLAN.getType().equals(type)) {
+            addColumnIfNotExist(table, "CONTENT",
+                    "mediumblob NULL COMMENT '分片错误/差异样本JSON，波次收齐后合并进TASK_DETAIL'");
             return;
         }
         if (StorageEnum.META.getType().equals(type)) {
@@ -887,6 +963,16 @@ public class MySQLStorageService extends AbstractStorageService {
             // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
             createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
             createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.LOG.getType().equals(type)) {
+            addColumnIfNotExist(table, "USERNAME", "varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '操作人/登录账号'");
+            addColumnIfNotExist(table, "IP", "varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '登录/操作客户端IP'");
+            addColumnIfNotExist(table, "STATUS", "tinyint NOT NULL DEFAULT 1 COMMENT '状态：0失败 1成功'");
+            createIndexIfNotExist(table, "IDX_TYPE_TIME", "`TYPE`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_USERNAME_TIME", "`USERNAME`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_IP_TIME", "`IP`,`CREATE_TIME`");
+            createIndexIfNotExist(table, "IDX_STATUS_TIME", "`STATUS`,`CREATE_TIME`");
         }
     }
 
@@ -1035,8 +1121,8 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.USER_PASSWORD, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_NICKNAME, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_EMAIL, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_LOGIN_FAIL_COUNT, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.USER_LOCK_UNTIL, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_NODE_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.CLUSTER_IP, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.CLUSTER_HTTP_PORT, "INTEGER", Types.INTEGER),
@@ -1053,11 +1139,31 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.PLAN_LAST_CURSOR, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.PLAN_SUCCESS, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.PLAN_FAIL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.TASK_CONTENT, "VARBINARY", Types.BLOB),
                             new Field(ConfigConstant.PLAN_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.PLAN_LAST_PAGE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.GROUP_REL_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.GROUP_REL_RESOURCE_TYPE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR))
+                            new Field(ConfigConstant.GROUP_REL_RESOURCE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PERMISSION_CODE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.PERMISSION_MODULE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.ROLE_PERMISSION_ROLE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.ROLE_PERMISSION_PERMISSION_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_ROLE_USER_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_TYPE, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.RESOURCE_ACL_SUBJECT_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.RESOURCE_ACL_PERMISSION, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_RULE_SCOPE_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_RULE_SCOPE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_RULE_AT_ALL, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_RULE_AT_PHONES, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_RULE_EMAILS, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_ENABLED, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_FREQUENCY, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_CRON, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.NOTICE_STRATEGY_REMARK, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.META_DAILY_STAT_DATE, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

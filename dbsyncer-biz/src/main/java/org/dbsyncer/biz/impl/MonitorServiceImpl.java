@@ -28,7 +28,6 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
@@ -90,9 +89,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private StorageService storageService;
-
-    @Resource
-    private LogService logService;
 
     @Resource
     private ConnectorConfigService connectorConfigService;
@@ -212,10 +208,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         query.setTaskId(id);
         query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
         storageService.delete(query);
-
-        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
-        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-        logService.log(log, "%s:%s(%s) tableGroup=%s", log.getMessage(), mapping.getName(), model, tableGroupId);
         return "清空当前表同步数据成功";
     }
 
@@ -229,16 +221,128 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             query.addFilter(ConfigConstant.CONFIG_MODEL_JSON, json, true);
         }
         query.setType(StorageEnum.LOG);
-        Paging paging = storageService.query(query);
-        List<Map> data = (List<Map>) paging.getData();
-        paging.setData(data.stream().map(m -> convert2Vo(m, LogVO.class)).collect(Collectors.toList()));
-        return paging;
+        return queryAndConvertLog(query);
+    }
+
+    @Override
+    public Paging queryLoginLog(Map<String, String> params) {
+        Query query = buildLogQuery(params);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.IN,
+                LogType.LoginLog.SUCCESS.getType() + StringUtil.COMMA + LogType.LoginLog.FAIL.getType());
+        return queryAndConvertLog(query);
+    }
+
+    @Override
+    public Paging queryOperLog(Map<String, String> params) {
+        Query query = buildLogQuery(params);
+        String module = params.get("module");
+        String moduleTypes = LogType.joinTypesByModuleName(module);
+        if (StringUtil.isNotBlank(moduleTypes)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.IN, moduleTypes);
+        } else {
+            String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+            if (StringUtil.isNotBlank(type)) {
+                query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, type);
+            } else {
+                query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.NOT_EQUAL, LogType.LoginLog.SUCCESS.getType());
+                query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, FilterEnum.NOT_EQUAL, LogType.LoginLog.FAIL.getType());
+            }
+        }
+        return queryAndConvertLog(query);
+    }
+
+    @Override
+    public LogVO getLogDetail(String id) {
+        Assert.hasText(id, "日志ID不能为空");
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.LOG);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        Map row = storageService.queryObject(query);
+        Assert.notNull(row, "日志不存在");
+        return enrichLogVo(convert2Vo(row, LogVO.class));
     }
 
     @Override
     public String clearLog() {
         storageService.clear(StorageEnum.LOG, null);
         return "清空日志成功";
+    }
+
+    private Query buildLogQuery(Map<String, String> params) {
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        Query query = new Query(pageNum, pageSize);
+        query.setType(StorageEnum.LOG);
+        String username = params.get(ConfigConstant.LOG_USERNAME);
+        if (StringUtil.isNotBlank(username)) {
+            query.addFilter(ConfigConstant.LOG_USERNAME, username, true);
+        }
+        String ip = params.get(ConfigConstant.LOG_IP);
+        if (StringUtil.isNotBlank(ip)) {
+            query.addFilter(ConfigConstant.LOG_IP, ip, true);
+        }
+        // 关键字：模糊匹配日志内容（与性能监控日志查询一致）
+        String json = params.get(ConfigConstant.CONFIG_MODEL_JSON);
+        if (StringUtil.isNotBlank(json)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_JSON, json, true);
+        }
+        String status = params.get(ConfigConstant.LOG_STATUS);
+        if (StringUtil.isNotBlank(status) && NumberUtil.isCreatable(status)) {
+            query.addFilter(ConfigConstant.LOG_STATUS, NumberUtil.toInt(status));
+        }
+        long beginTime = NumberUtil.toLong(params.get("beginTime"), 0L);
+        if (beginTime > 0) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, beginTime);
+        }
+        long endTime = NumberUtil.toLong(params.get("endTime"), 0L);
+        if (endTime > 0) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
+        }
+        return query;
+    }
+
+    private Paging queryAndConvertLog(Query query) {
+        Paging paging = storageService.query(query);
+        List<Map> data = (List<Map>) paging.getData();
+        paging.setData(data.stream().map(m -> enrichLogVo(convert2Vo(m, LogVO.class))).collect(Collectors.toList()));
+        return paging;
+    }
+
+    private LogVO enrichLogVo(LogVO vo) {
+        if (vo == null) {
+            return null;
+        }
+        vo.setTypeName(LogType.getNameByType(vo.getType()));
+        String json = vo.getJson();
+        if (StringUtil.isBlank(json)) {
+            vo.setMessage(StringUtil.EMPTY);
+            return vo;
+        }
+        String trimmed = json.trim();
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            try {
+                Map<String, Object> detail = JsonUtil.parseMap(trimmed);
+                if (detail != null) {
+                    Object message = detail.get("message");
+                    vo.setMessage(message == null ? json : String.valueOf(message));
+                    Object requestUri = detail.get("requestUri");
+                    if (requestUri != null) {
+                        vo.setRequestUri(String.valueOf(requestUri));
+                    }
+                    vo.setRequestParam(detail.get("requestParam"));
+                    vo.setResponseParam(detail.get("responseParam"));
+                    Object costMs = detail.get("costMs");
+                    if (costMs != null && NumberUtil.isCreatable(String.valueOf(costMs))) {
+                        vo.setCostMs(NumberUtil.toLong(String.valueOf(costMs)));
+                    }
+                    return vo;
+                }
+            } catch (Exception ignore) {
+                // 旧纯文本或非法 JSON，按原文展示
+            }
+        }
+        vo.setMessage(json);
+        return vo;
     }
 
     @Override
@@ -275,8 +379,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public void run() {
-        // 预警：仅任务级 Meta，分页扫描
-        MappingErrorContent content = new MappingErrorContent();
+        // 预警：仅任务级 Meta，分页扫描；每个同步任务单独发送，便于按任务覆盖 @
         long endTime = System.currentTimeMillis();
         // 下界回看，避免异步落库晚于水位推进导致漏通知
         long fromTime = Math.max(0L, LAST_EXECUTE_TIME.get() - FAIL_DETAIL_LOOK_BACK_MS);
@@ -298,18 +401,21 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                 query.setQueryTotal(true);
                 query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, 0);
                 Paging queryTemp = storageService.query(query);
-                if (queryTemp.getTotal() > 0) {
-                    writeMappingReport(meta, content);
+                if (queryTemp.getTotal() <= 0) {
+                    continue;
+                }
+                MappingErrorContent content = new MappingErrorContent();
+                content.setTitle("同步失败");
+                content.setResourceType(ConfigConstant.MAPPING);
+                content.setResourceId(mapping.getId());
+                writeMappingReport(meta, content);
+                if (!CollectionUtils.isEmpty(content.getErrorItems())) {
+                    sendNotifyMessage(content);
                 }
             }
         });
         //重置上一次的时间
         LAST_EXECUTE_TIME.set(endTime);
-
-        if (!CollectionUtils.isEmpty(content.getErrorItems())) {
-            content.setTitle("同步失败");
-            sendNotifyMessage(content);
-        }
         // 采集连接离线状态
         collectConnectorOffline();
     }

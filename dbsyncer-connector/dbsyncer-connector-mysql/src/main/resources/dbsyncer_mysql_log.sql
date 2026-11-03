@@ -1,8 +1,18 @@
 CREATE TABLE `dbsyncer_log` (
-  `ID` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '唯一ID',
-  `TYPE` varchar(24) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '连接器、映射配置、表映射、元信息、系统日志',
-  `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
-  `JSON` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '日志信息',
+  `ID`          varchar(64)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '唯一ID',
+  `TYPE`        varchar(24)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '日志类型（见 LogType）',
+  `USERNAME`    varchar(50)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '操作人/登录账号',
+  `IP`          varchar(64)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '登录/操作客户端IP',
+  `STATUS`      tinyint      NOT NULL DEFAULT 1 COMMENT '状态：0失败 1成功',
+  `CREATE_TIME` bigint       NOT NULL COMMENT '创建时间（毫秒）',
+  `JSON`        mediumtext   CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '日志内容（摘要或结构化JSON）',
   PRIMARY KEY (`ID`) USING BTREE,
-  KEY `IDX_CREATE_TIME` (`CREATE_TIME`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '操作日志表' ROW_FORMAT = Dynamic;
+  KEY `IDX_CREATE_TIME` (`CREATE_TIME`) USING BTREE,
+  KEY `IDX_TYPE_TIME` (`TYPE`, `CREATE_TIME`) USING BTREE,
+  KEY `IDX_USERNAME_TIME` (`USERNAME`, `CREATE_TIME`) USING BTREE,
+  KEY `IDX_IP_TIME` (`IP`, `CREATE_TIME`) USING BTREE,
+  KEY `IDX_STATUS_TIME` (`STATUS`, `CREATE_TIME`) USING BTREE
+) ENGINE=InnoDB
+  CHARACTER SET=utf8mb4 COLLATE=utf8mb4_bin
+  COMMENT='日志表'
+  ROW_FORMAT=Dynamic;

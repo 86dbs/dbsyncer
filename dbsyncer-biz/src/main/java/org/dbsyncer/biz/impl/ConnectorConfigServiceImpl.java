@@ -7,7 +7,10 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorConfigService;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
+import org.dbsyncer.biz.ResourceAclService;
+import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.connector.ConnectorChecker;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.common.enums.YesNoEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -84,16 +87,20 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
     @Resource
     private GroupService groupService;
 
+    @Resource
+    private ResourceAclService resourceAclService;
+
     @Override
     public String add(Map<String, String> params) {
         Connector connector = connectorChecker.checkAddConfigModel(params);
-        log(LogType.ConnectorLog.INSERT, connector);
-
-        return connectorProfile.addConnector(connector);
+        String id = connectorProfile.addConnector(connector);
+        resourceAclService.grantOwner(params.get(UserConfigService.CURRENT_USER_NAME),
+                ConfigConstant.CONNECTOR, id);
+        return id;
     }
 
     @Override
-    public String copy(String id) {
+    public String copy(String id, String username) {
         Connector connector = connectorProfile.getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
@@ -119,15 +126,16 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
             params.put(ConfigConstant.CONNECTOR_IS_TARGET, "1");
         }
         Connector model = connectorChecker.checkAddConfigModel(params);
-        log(LogType.ConnectorLog.COPY, model);
 
-        return connectorProfile.addConnector(model);
+        String newId = connectorProfile.addConnector(model);
+        //授权资源
+        resourceAclService.grantOwner(username, ConfigConstant.CONNECTOR, newId);
+        return newId;
     }
 
     @Override
     public String edit(Map<String, String> params) {
         Connector model = connectorChecker.checkEditConfigModel(params);
-        log(LogType.ConnectorLog.UPDATE, model);
         return connectorProfile.updateConnector(model);
     }
 
@@ -138,9 +146,9 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         Connector connector = connectorProfile.getConnector(id);
         if (connector != null) {
             connectorFactory.disconnect(connector.getId());
-            log(LogType.ConnectorLog.DELETE, connector);
             connectorProfile.removeConnector(id);
             groupService.bind(null, ConfigConstant.CONNECTOR, id);
+            resourceAclService.revokeAllForResource(ConfigConstant.CONNECTOR, id);
         }
         return "删除连接器成功!";
     }
@@ -243,6 +251,8 @@ public class ConnectorConfigServiceImpl extends BaseServiceImpl implements Conne
         // 过滤源库或目标库类型
         String role = params.get("role");
         GroupSearchFilter groupFilter = groupService.resolveSearchFilter(params.get(ConfigConstant.GROUP_REL_GROUP_ID), ConfigConstant.CONNECTOR);
+        Set<String> allowedIds = resourceAclService.resolveAllowedIds(params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.CONNECTOR, ResourceAclActionEnum.READ.getCode());
+        groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
         if (groupFilter.isEmptyResult()) {
             return new Paging<>(pageNum, pageSize);
         }

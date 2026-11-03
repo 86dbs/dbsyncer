@@ -27,14 +27,9 @@ public interface GroupRelProfile {
     List<GroupRel> listByResource(String resourceType, String resourceId);
 
     /**
-     * 按分组 + 资源类型列出关系。
+     * 按分组列出关系；{@code resourceType} 为空则不限类型。
      */
     List<GroupRel> listByGroup(String groupId, String resourceType);
-
-    /**
-     * 按分组列出全部关系（不限类型）。
-     */
-    List<GroupRel> listByGroup(String groupId);
 
     /**
      * 按分组 + 资源类型列出 RESOURCE_ID。

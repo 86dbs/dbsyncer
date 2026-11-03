@@ -83,13 +83,18 @@
     <input id="sortedTableGroupIds" name="sortedTableGroupIds" type="hidden" />
 
 <script th:inline="javascript">
-    // 刷新任务编辑页面
-    function refreshTaskEditPage(params) {
-        let url = '/validate-sync/page/edit?id=' + $("#taskId").val();
-        if (params) {
-            url += params;
+    // 映射关系列表分页（供添加/删除后局部刷新）
+    var tableGroupPagination = null;
+
+    /** 仅刷新映射关系列表，不重载整页（保留未保存的名称等表单改动） */
+    function refreshTableGroupList() {
+        if (!tableGroupPagination) {
+            return;
         }
-        doLoader(url);
+        // 列表重载后 DOM 顺序以服务端为准，清空未提交的拖拽排序，避免保存时带上过期顺序
+        $("#sortedTableGroupIds").val('');
+        const taskId = $("#taskId").val();
+        tableGroupPagination.doSearch({'id': taskId}, 1);
     }
 
     /**
@@ -231,13 +236,12 @@
         return selectApi;
     }
 
-    // 绑定刷新下拉表事件
+    // 绑定刷新下拉表事件（仅刷新库表缓存，下拉远程搜索会拿到最新表，无需整页重载）
     function bindTableRefresh() {
         let id = $("#taskId").val();
         doPoster("/validate-sync/refreshTables", {'id': id}, function (data) {
             if (data.success === true) {
                 bootGrowl("刷新表成功!", "success");
-                refreshTaskEditPage();
             } else {
                 bootGrowl(data.message, "danger");
             }
@@ -280,10 +284,16 @@
                 $btn.html(originalText).prop('disabled', false);
                 if (data.success === true) {
                     bootGrowl("新增映射关系成功!", "success");
+                    if (sourceSelector && typeof sourceSelector.setValues === 'function') {
+                        sourceSelector.setValues([], true);
+                    }
+                    if (targetSelector && typeof targetSelector.setValues === 'function') {
+                        targetSelector.setValues([], true);
+                    }
+                    refreshTableGroupList();
                 } else {
                     bootGrowl(data.message, "danger");
                 }
-                refreshTaskEditPage();
             });
         });
     }
@@ -309,7 +319,7 @@
                     $btn.html(originalText).prop('disabled', false);
                     if (response.success === true) {
                         bootGrowl("删除映射关系成功!", "success");
-                        refreshTaskEditPage();
+                        refreshTableGroupList();
                     } else {
                         bootGrowl(response.message, "danger");
                     }
@@ -486,9 +496,10 @@
         initMultipleInputTags();
         // 绑定添加表映射关系事件
         bindTableGroupAdd(sourceTableSelect, targetTableSelect);
-        // 渲染搜索输入框和表格
-        function renderSearchTable(pagination, taskId){
-            if (pagination.total > 0) {
+        // 渲染搜索输入框（仅首次有数据时创建一次）并同步列表显隐
+        let searchInited = false;
+        function syncTableGroupListUi(pagination, taskId) {
+            if (pagination.total > 0 && !searchInited) {
                 $("#searchTableGroup").html(`<div class="search-wrapper">
                     <i class="fa fa-search search-icon"></i>
                     <input class="search-input" type="text" maxlength="32" placeholder="搜索表名称">
@@ -499,14 +510,20 @@
                 initSearch('searchTableGroup', function (searchKey) {
                     pagination.doSearch({'searchKey': searchKey, 'id': taskId});
                 });
+                searchInited = true;
+            }
+            if (pagination.total <= 0) {
+                $("#searchTableGroup").empty();
+                searchInited = false;
             }
             $(".search-table-group-list").toggleClass("hidden", pagination.total <= 0);
+            $('#tableGroupDelBtn').prop('disabled', true);
+            $('.tableGroupCheckboxAll').prop('checked', false);
         }
 
         // 初始化分页管理器
-        let initCompleted = false;
         let taskId = $("#taskId").val();
-        let pagination = new PaginationManager({
+        tableGroupPagination = new PaginationManager({
             requestUrl: '/validate-sync/searchTableGroup',
             params: {'id': taskId},
             tableBodySelector: '#tableGroupList',
@@ -523,10 +540,7 @@
             },
             emptyHtml:'<td colspan="4" class="text-center"><p class="empty-text">暂无映射关系</p></td>',
             refreshCompleted: function() {
-                if (!initCompleted) {
-                    renderSearchTable(pagination, taskId);
-                    initCompleted = true;
-                }
+                syncTableGroupListUi(tableGroupPagination, taskId);
                 // 绑定表关系点击事件
                 bindMappingTableGroupListClick();
                 // 绑定删除表映射关系事件

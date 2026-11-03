@@ -1,8 +1,12 @@
 package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ConnectorConfigService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +51,7 @@ public class ConnectorController extends BaseController {
 
     @GetMapping("/page/edit")
     public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
+        requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.READ.getCode());
         model.put("connector", connectorConfigService.getConnector(id));
         return "connector/edit";
     }
@@ -63,21 +68,26 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_COPY)
     @PostMapping("/copy")
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
         try {
-            return RestResult.restSuccess(connectorConfigService.copy(id));
+            requirePermission("connector:edit");
+            requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.WRITE.getCode());
+            return RestResult.restSuccess(connectorConfigService.copy(id, currentUsername()));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_INSERT)
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
+            requirePermission("connector:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(connectorConfigService.add(params));
         } catch (Exception e) {
@@ -86,11 +96,14 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_UPDATE)
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
+            requirePermission("connector:edit");
             Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.CONNECTOR, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(connectorConfigService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -102,6 +115,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult get(HttpServletRequest request, String id) {
         try {
+            requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(connectorConfigService.getConnector(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -109,10 +123,13 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.CONNECTOR_DELETE)
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request, @RequestParam(value = "id") String id) {
         try {
+            requirePermission("connector:edit");
+            requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(connectorConfigService.remove(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -124,6 +141,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult getPosition(@RequestParam(value = "id") String id) {
         try {
+            requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(connectorConfigService.getPosition(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -135,6 +153,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult test(@RequestParam(value = "id") String id) {
         try {
+            requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.READ.getCode());
             boolean isAlive = connectorConfigService.isAlive(id);
             if (isAlive) {
                 return RestResult.restSuccess("连接测试成功");
@@ -151,6 +170,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult getDatabase(String id) {
         try {
+            requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(connectorConfigService.getDatabase(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -162,6 +182,7 @@ public class ConnectorController extends BaseController {
     @ResponseBody
     public RestResult getSchema(String id, String database) {
         try {
+            requireResource(ConfigConstant.CONNECTOR, id, ResourceAclActionEnum.READ.getCode());
             return RestResult.restSuccess(connectorConfigService.getSchema(id, database));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

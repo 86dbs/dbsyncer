@@ -4,10 +4,14 @@
 package org.dbsyncer.web.controller.database.sync;
 
 import org.dbsyncer.biz.DatabaseSyncService;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.log.OperLog;
+import org.dbsyncer.web.log.OperLogType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 /**
  * 整库迁移
@@ -61,6 +66,7 @@ public class DatabaseSyncController extends BaseController {
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
                       @RequestParam(value = "detailStatus", required = false) String detailStatus,
                       @RequestParam(value = "detailType", required = false) String detailType) {
+        requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclActionEnum.READ.getCode());
         if ("detail".equals(page)) {
             Assert.hasText(id, "任务 ID 不能为空");
             DatabaseSyncTaskVO task = databaseSyncService.get(id);
@@ -89,10 +95,12 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_INSERT, message = "新增整库迁移")
     @PostMapping("/add")
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             return RestResult.restSuccess(databaseSyncService.add(getParams(request)));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -100,21 +108,28 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_UPDATE, message = "修改整库迁移")
     @PostMapping("/edit")
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(databaseSyncService.edit(getParams(request)));
+            requirePermission("mapping:edit");
+            Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.DATABASE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
+            return RestResult.restSuccess(databaseSyncService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_DELETE, message = "删除整库迁移")
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam("id") String id) {
         try {
+            requirePermission("mapping:edit");
+            requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(databaseSyncService.delete(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -122,10 +137,13 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_RUNNING, message = "启动整库迁移")
     @PostMapping("/start")
     @ResponseBody
     public RestResult start(@RequestParam("id") String id) {
         try {
+            requirePermission("mapping:operate");
+            requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(databaseSyncService.start(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -133,10 +151,13 @@ public class DatabaseSyncController extends BaseController {
         }
     }
 
+    @OperLog(type = OperLogType.MAPPING_STOP, message = "停止整库迁移")
     @PostMapping("/stop")
     @ResponseBody
     public RestResult stop(@RequestParam("id") String id) {
         try {
+            requirePermission("mapping:operate");
+            requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(databaseSyncService.stop(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -151,7 +172,9 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult searchResult(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(databaseSyncService.searchResult(getParams(request)));
+            Map<String, String> params = getParams(request);
+            requireResource(ConfigConstant.DATABASE_SYNC, params.get("taskId"), ResourceAclActionEnum.READ.getCode());
+            return RestResult.restSuccess(databaseSyncService.searchResult(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -162,6 +185,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult previewTables(HttpServletRequest request) {
         try {
+            requirePermission("mapping:edit");
             return RestResult.restSuccess(databaseSyncService.previewTables(getParams(request)));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
