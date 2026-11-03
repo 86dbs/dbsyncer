@@ -8,12 +8,12 @@ import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.ResourceAclService;
-import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.ValidateSyncTableGroupChecker;
+import org.dbsyncer.biz.enums.ResourceAclActionEnum;
 import org.dbsyncer.biz.task.ValidateSyncMatchTableTask;
 import org.dbsyncer.biz.vo.MappingListConnectorConfigVO;
 import org.dbsyncer.biz.vo.MappingListConnectorVO;
@@ -145,7 +145,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
 
     @Resource
     private TaskProfile taskProfile;
-    
+
     @Resource
     private TaskDetailMetaProfile taskDetailMetaProfile;
 
@@ -158,7 +158,7 @@ public final class ValidateSyncServiceImpl extends BaseServiceImpl implements Va
     /**
      * 任务启停锁
      */
-    private final static Object LOCK = new Object();
+    private static final Object LOCK = new Object();
 
     @Override
     public ValidateSyncTaskVO get(String id) {

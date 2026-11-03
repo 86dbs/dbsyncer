@@ -107,7 +107,7 @@ public class MetricReporter implements ScheduledTaskJob {
 
     private final AppReportMetric report = new AppReportMetric();
 
-    private final static int SHOW_REPORT_DAYS = 30;
+    private static final int SHOW_REPORT_DAYS = 30;
 
     @PostConstruct
     private void init() {
