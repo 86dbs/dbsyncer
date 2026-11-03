@@ -5,6 +5,7 @@ package org.dbsyncer.connector.postgresql.cdc;
 
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BooleanUtil;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.constant.PostgreSQLConfigConstant;
 import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
@@ -34,6 +35,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -51,9 +53,9 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
 
     // spotless:off
     private static final String GET_SLOT =
-            "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
+            "select count(1) from pg_replication_slots where slot_name = ? and plugin = ?";
     private static final String GET_RESTART_LSN =
-            "select restart_lsn from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
+            "select restart_lsn::text from pg_replication_slots where slot_name = ? and plugin = ?";
     private static final String GET_ROLE =
             "SELECT r.rolcanlogin AS login,r.rolreplication AS replication,u.usesuper as superuser,"
                 + "        CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)"
@@ -185,7 +187,11 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
         PGProperty.ASSUME_MIN_SERVER_VERSION.set(props, "9.4");
         PGProperty.REPLICATION.set(props, "database");
         PGProperty.PREFER_QUERY_MODE.set(props, "simple");
-        connection = DriverManager.getConnection(config.getUrl(), props);
+        // 与业务连接同库（config.getUrl() 可能未带 mapping 选库）
+        String db = instance.execute(t -> t.queryForObject("select current_database()", String.class));
+        Assert.hasText(db, "无法解析 PostgreSQL 逻辑复制库名");
+        connection = DriverManager.getConnection(
+                "jdbc:postgresql://" + config.getHost() + ":" + config.getPort() + "/" + db, props);
         Assert.notNull(connection, "Unable to get connection.");
 
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
@@ -206,17 +212,20 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     private void createReplicationSlot(PGConnection pgConnection) throws SQLException {
         String slotName = messageDecoder.getSlotName();
         String plugin = messageDecoder.getOutputPlugin();
-        boolean existSlot = instance.execute(databaseTemplate->databaseTemplate.queryForObject(GET_SLOT, new Object[]{database, slotName, plugin}, Integer.class) > 0);
+        boolean existSlot = instance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject(GET_SLOT, new Object[]{slotName, plugin}, Integer.class) > 0);
         if (!existSlot) {
             pgConnection.getReplicationAPI().createReplicationSlot().logical().withSlotName(slotName).withOutputPlugin(plugin).make();
-
-            // wait for create replication slot to have finished
             sleepInMills(300);
         }
 
         if (!snapshot.containsKey(LSN_POSITION)) {
-            LogSequenceNumber lsn = instance
-                    .execute(databaseTemplate->LogSequenceNumber.valueOf(databaseTemplate.queryForObject(GET_RESTART_LSN, new Object[]{database, slotName, plugin}, String.class)));
+            List<String> rows = instance.execute(databaseTemplate ->
+                    databaseTemplate.queryForList(GET_RESTART_LSN, new Object[]{slotName, plugin}, String.class));
+            if (CollectionUtils.isEmpty(rows)) {
+                throw new PostgreSQLException("复制槽找不到 restart_lsn: " + slotName);
+            }
+            LogSequenceNumber lsn = LogSequenceNumber.valueOf(rows.get(0));
             if (null == lsn || lsn.asLong() == 0) {
                 throw new PostgreSQLException("No maximum LSN recorded in the database");
             }
