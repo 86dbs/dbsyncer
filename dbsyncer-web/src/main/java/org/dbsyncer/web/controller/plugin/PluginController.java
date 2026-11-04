@@ -75,6 +75,7 @@ public class PluginController {
                     if (!PluginFile.isSafeName(filename)) {
                         throw new BizException("插件文件名不合法，仅支持字母、数字、点、下划线和短横线");
                     }
+                    pluginService.unload(filename);
                     File dest = new File(filePath, filename);
                     FileUtils.deleteQuietly(dest);
                     FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
@@ -85,6 +86,21 @@ public class PluginController {
                     clusterService.publishPlugin(filename);
                 }
             }
+            return RestResult.restSuccess("ok");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @OperLog(type = OperLogType.PLUGIN_DELETE)
+    @PostMapping("/remove")
+    @ResponseBody
+    public RestResult remove(String fileName) {
+        try {
+            String name = fileName(fileName);
+            pluginService.delete(name);
+            clusterService.removePlugin(name);
             return RestResult.restSuccess("ok");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

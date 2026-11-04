@@ -225,6 +225,23 @@ public class ClusterController extends BaseController {
         }
     }
 
+    /**
+     * 接收插件删除。文件名在请求头 {@link PluginFile#FILE_NAME_HEADER}。须携带 {@code X-Cluster-Token}。
+     */
+    @PostMapping("/internal/plugin/remove")
+    @ResponseBody
+    public RestResult removePlugin(HttpServletRequest request) {
+        try {
+            String fileName = request.getHeader(PluginFile.FILE_NAME_HEADER);
+            boolean relay = StringUtil.equals("1", request.getHeader(PluginFile.RELAY_HEADER));
+            clusterService.acceptPluginRemove(fileName, relay);
+            return RestResult.restSuccess(Boolean.TRUE);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     private byte[] readPluginBody(HttpServletRequest request) throws IOException {
         long length = request.getContentLengthLong();
         if (length > PluginFile.MAX_BYTES) {

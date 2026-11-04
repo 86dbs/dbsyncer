@@ -92,6 +92,10 @@ public final class OperLogType {
      * 插件-上传
      */
     public static final String PLUGIN_UPDATE = "60";
+    /**
+     * 插件-删除
+     */
+    public static final String PLUGIN_DELETE = "62";
 
     /**
      * 配置-导入

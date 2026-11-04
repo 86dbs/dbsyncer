@@ -16,6 +16,7 @@
                 <th>类名</th>
                 <th>版本</th>
                 <th>文件</th>
+                <th>操作</th>
             </tr>
             </thead>
             <tbody id="pluginList">
@@ -36,6 +37,16 @@
                     <span class="badge badge-success" th:text="${p?.version}"></span>
                 </td>
                 <td class="text-sm" th:text="${p?.fileName}"/>
+                <td>
+                    <button th:if="${not p?.unmodifiable and not #strings.isEmpty(p?.fileName)}"
+                            type="button"
+                            class="table-action-btn delete"
+                            title="删除"
+                            th:attr="data-file=${p?.fileName}"
+                            onclick="deletePlugin(this)">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -282,6 +293,29 @@ public class MyPlugin implements PluginService {
     
     function downLoad(fileName){
         window.open($basePath + "/plugin/download?name=" + fileName);
+    }
+
+    function deletePlugin(el) {
+        var fileName = $(el).data('file');
+        if (!fileName) {
+            return;
+        }
+        showConfirm({
+            title: '确定要删除该插件？',
+            message: '将删除文件 ' + fileName + '，已关联该插件的任务需重新配置。',
+            icon: 'warning',
+            confirmType: 'danger',
+            onConfirm: function () {
+                doPoster('/plugin/remove', {fileName: fileName}, function (response) {
+                    if (response.success === true) {
+                        bootGrowl('删除成功', 'success');
+                        doLoader('/plugin');
+                    } else {
+                        bootGrowl(response.message || '删除失败', 'danger');
+                    }
+                });
+            }
+        });
     }
 
     // 复制代码功能

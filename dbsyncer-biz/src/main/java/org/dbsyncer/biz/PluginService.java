@@ -42,6 +42,20 @@ public interface PluginService {
     void loadPlugins();
 
     /**
+     * 卸载已加载的上传插件（关 SPI/ClassLoader，不删文件）。覆盖上传前调用，避免 Windows 文件锁。
+     *
+     * @param fileName 插件文件名
+     */
+    void unload(String fileName);
+
+    /**
+     * 删除已上传的插件 JAR（内置插件不可删）。
+     *
+     * @param fileName 插件文件名
+     */
+    void delete(String fileName);
+
+    /**
      * 检查文件格式
      *
      * @param filename
