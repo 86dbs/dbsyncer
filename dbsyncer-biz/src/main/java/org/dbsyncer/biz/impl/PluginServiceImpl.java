@@ -66,11 +66,20 @@ public class PluginServiceImpl implements PluginService {
     }
 
     @Override
+    public void unload(String fileName) {
+        try {
+            pluginFactory.unloadPlugin(fileName);
+        } catch (IllegalArgumentException e) {
+            throw new BizException(e.getMessage());
+        }
+    }
+
+    @Override
     public void delete(String fileName) {
         try {
             pluginFactory.deletePlugin(fileName);
             logService.log(LogType.PluginLog.DELETE, fileName);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             throw new BizException(e.getMessage());
         }
     }

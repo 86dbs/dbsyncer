@@ -75,6 +75,7 @@ public class PluginController {
                     if (!PluginFile.isSafeName(filename)) {
                         throw new BizException("插件文件名不合法，仅支持字母、数字、点、下划线和短横线");
                     }
+                    pluginService.unload(filename);
                     File dest = new File(filePath, filename);
                     FileUtils.deleteQuietly(dest);
                     FileUtils.copyInputStreamToFile(file.getInputStream(), dest);

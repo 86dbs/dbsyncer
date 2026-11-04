@@ -30,10 +30,12 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -61,6 +63,11 @@ public class PluginFactory implements DisposableBean {
 
     private final Map<String, PluginService> service = new ConcurrentHashMap<>();
 
+    /**
+     * 上传 JAR 对应的 ClassLoader（按文件名）。Windows 须先 close 才能删/覆盖文件。
+     */
+    private final Map<String, URLClassLoader> classLoaders = new ConcurrentHashMap<>();
+
     @Resource
     private ApplicationContext applicationContext;
 
@@ -68,7 +75,7 @@ public class PluginFactory implements DisposableBean {
     private void init() {
         Map<String, PluginService> services = applicationContext.getBeansOfType(PluginService.class);
         if (!CollectionUtils.isEmpty(services)) {
-            services.forEach((k, s)-> {
+            services.forEach((k, s) -> {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
                 service.putIfAbsent(pluginId, s);
                 plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), "", true));
@@ -83,6 +90,8 @@ public class PluginFactory implements DisposableBean {
     }
 
     public synchronized void loadPlugins() {
+        // 先释放已加载的上传插件，避免 Windows 下 JAR 文件锁导致无法覆盖/删除
+        unloadAllUploaded();
         if (!CollectionUtils.isEmpty(plugins)) {
             List<Plugin> unmodifiablePlugin = plugins.stream().filter(Plugin::isUnmodifiable).collect(Collectors.toList());
             plugins.clear();
@@ -113,7 +122,20 @@ public class PluginFactory implements DisposableBean {
     }
 
     /**
-     * 删除上传的插件 JAR：关闭对应 SPI 实例并删除文件。内置插件不可删。
+     * 仅卸载内存中的上传插件（关 SPI + ClassLoader），不删文件。覆盖上传前调用。
+     *
+     * @param fileName 插件文件名
+     */
+    public synchronized void unloadPlugin(String fileName) {
+        Assert.hasText(fileName, "插件文件名不能为空");
+        if (!PluginFile.isSafeName(fileName)) {
+            throw new IllegalArgumentException("插件文件名不合法，仅支持字母、数字、点、下划线和短横线");
+        }
+        unloadJar(fileName);
+    }
+
+    /**
+     * 删除上传的插件 JAR：关闭 SPI/ClassLoader 并删除文件。内置插件不可删。
      *
      * @param fileName 插件文件名（须为合法 jar 名）
      */
@@ -122,32 +144,23 @@ public class PluginFactory implements DisposableBean {
         if (!PluginFile.isSafeName(fileName)) {
             throw new IllegalArgumentException("插件文件名不合法，仅支持字母、数字、点、下划线和短横线");
         }
-        List<Plugin> matched = new ArrayList<>();
+        File file = new File(PLUGIN_PATH, fileName);
+        boolean known = classLoaders.containsKey(fileName);
         for (Plugin plugin : plugins) {
             if (StringUtil.equals(fileName, plugin.getFileName())) {
-                matched.add(plugin);
-            }
-        }
-        for (Plugin plugin : matched) {
-            if (plugin.isUnmodifiable()) {
-                throw new IllegalArgumentException("内置插件不能删除");
-            }
-            String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
-            PluginService pluginService = service.remove(pluginId);
-            if (pluginService != null) {
-                try {
-                    pluginService.close();
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                known = true;
+                if (plugin.isUnmodifiable()) {
+                    throw new IllegalArgumentException("内置插件不能删除");
                 }
             }
-            plugins.remove(plugin);
         }
-        File file = new File(PLUGIN_PATH, fileName);
-        if (!file.exists() && CollectionUtils.isEmpty(matched)) {
+        if (!file.exists() && !known) {
             throw new IllegalArgumentException("插件文件不存在: " + fileName);
         }
-        FileUtils.deleteQuietly(file);
+        unloadJar(fileName);
+        if (file.exists()) {
+            deleteFileWithRetry(file);
+        }
         logger.info("已删除插件文件: {}", fileName);
     }
 
@@ -160,7 +173,7 @@ public class PluginFactory implements DisposableBean {
         Plugin plugin = context.getPlugin();
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
-            service.computeIfPresent(pluginId, (k, c)-> {
+            service.computeIfPresent(pluginId, (k, c) -> {
                 switch (processEnum) {
                     case BEFORE:
                         c.postProcessBefore(context);
@@ -187,33 +200,115 @@ public class PluginFactory implements DisposableBean {
      * @param jar
      */
     private void loadPlugin(File jar) {
+        String fileName = jar.getName();
+        URLClassLoader loader = null;
         try {
-            String fileName = jar.getName();
+            unloadJar(fileName);
             URL url = jar.toURI().toURL();
-            URLClassLoader loader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
+            loader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
+            classLoaders.put(fileName, loader);
             ServiceLoader<PluginService> services = ServiceLoader.load(PluginService.class, loader);
+            boolean loaded = false;
             for (PluginService s : services) {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
-                service.compute(pluginId, (k, pluginService)-> {
-                    // 先释放历史版本
-                    if (pluginService != null) {
-                        pluginService.close();
+                PluginService previous = service.put(pluginId, s);
+                if (previous != null) {
+                    try {
+                        previous.close();
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
                     }
-                    plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), fileName, false));
-                    logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
-                    s.init();
-                    return s;
-                });
+                }
+                plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), fileName, false));
+                logger.info("{}, {}_{} {}", fileName, s.getName(), s.getVersion(), s.getClass().getName());
+                s.init();
+                loaded = true;
+            }
+            if (!loaded) {
+                closeClassLoader(fileName);
+                logger.warn("JAR 未发现 PluginService 实现: {}", fileName);
             }
         } catch (Throwable e) {
+            closeClassLoader(fileName);
             logger.error(e.getMessage(), e);
         }
+    }
 
+    private void unloadAllUploaded() {
+        Set<String> fileNames = new HashSet<>(classLoaders.keySet());
+        for (Plugin plugin : plugins) {
+            if (!plugin.isUnmodifiable() && StringUtil.isNotBlank(plugin.getFileName())) {
+                fileNames.add(plugin.getFileName());
+            }
+        }
+        for (String fileName : fileNames) {
+            unloadJar(fileName);
+        }
+    }
+
+    private void unloadJar(String fileName) {
+        List<Plugin> matched = new ArrayList<>();
+        for (Plugin plugin : plugins) {
+            if (StringUtil.equals(fileName, plugin.getFileName())) {
+                matched.add(plugin);
+            }
+        }
+        for (Plugin plugin : matched) {
+            String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
+            PluginService pluginService = service.remove(pluginId);
+            if (pluginService != null) {
+                try {
+                    pluginService.close();
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            plugins.remove(plugin);
+        }
+        closeClassLoader(fileName);
+    }
+
+    private void closeClassLoader(String fileName) {
+        URLClassLoader loader = classLoaders.remove(fileName);
+        if (loader == null) {
+            return;
+        }
+        try {
+            loader.close();
+        } catch (IOException e) {
+            logger.warn("关闭插件 ClassLoader 失败, file={}, err={}", fileName, e.getMessage());
+        }
+    }
+
+    /**
+     * Windows 在 ClassLoader.close 后偶发仍短暂占用文件，短重试后仍失败则抛错。
+     */
+    private void deleteFileWithRetry(File file) {
+        final int attempts = 5;
+        for (int i = 0; i < attempts; i++) {
+            if (!file.exists()) {
+                return;
+            }
+            if (file.delete()) {
+                return;
+            }
+            System.gc();
+            try {
+                Thread.sleep(100L * (i + 1));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        if (file.exists()) {
+            throw new IllegalStateException("插件文件删除失败（可能仍被占用）: " + file.getName());
+        }
     }
 
     @Override
     public void destroy() {
-        service.values().forEach(s-> {
+        unloadAllUploaded();
+        service.values().forEach(s -> {
             logger.info("{}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
             try {
                 s.close();
