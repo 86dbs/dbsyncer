@@ -312,6 +312,9 @@ public class MyPlugin implements PluginService {
                         doLoader('/plugin');
                     } else {
                         bootGrowl(response.message || '删除失败', 'danger');
+                        if (response.message && response.message.indexOf('本机已删除') === 0) {
+                            doLoader('/plugin');
+                        }
                     }
                 });
             }
