@@ -92,6 +92,21 @@ public class PluginController {
         }
     }
 
+    @OperLog(type = OperLogType.PLUGIN_DELETE)
+    @PostMapping("/remove")
+    @ResponseBody
+    public RestResult remove(String fileName) {
+        try {
+            String name = fileName(fileName);
+            pluginService.delete(name);
+            clusterService.removePlugin(name);
+            return RestResult.restSuccess("ok");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @GetMapping("/download")
     public void download(HttpServletResponse response, String name) {
         String fileName = String.format("dbsyncer-%s-%s.jar", name, appConfig.getVersion());

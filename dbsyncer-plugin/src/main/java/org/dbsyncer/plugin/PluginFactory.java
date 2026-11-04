@@ -4,8 +4,10 @@
 package org.dbsyncer.plugin;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.sdk.model.Plugin;
+import org.dbsyncer.sdk.model.PluginFile;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.PluginService;
 
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -24,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -106,6 +110,45 @@ public class PluginFactory implements DisposableBean {
 
     public List<Plugin> getPluginAll() {
         return Collections.unmodifiableList(plugins);
+    }
+
+    /**
+     * 删除上传的插件 JAR：关闭对应 SPI 实例并删除文件。内置插件不可删。
+     *
+     * @param fileName 插件文件名（须为合法 jar 名）
+     */
+    public synchronized void deletePlugin(String fileName) {
+        Assert.hasText(fileName, "插件文件名不能为空");
+        if (!PluginFile.isSafeName(fileName)) {
+            throw new IllegalArgumentException("插件文件名不合法，仅支持字母、数字、点、下划线和短横线");
+        }
+        List<Plugin> matched = new ArrayList<>();
+        for (Plugin plugin : plugins) {
+            if (StringUtil.equals(fileName, plugin.getFileName())) {
+                matched.add(plugin);
+            }
+        }
+        for (Plugin plugin : matched) {
+            if (plugin.isUnmodifiable()) {
+                throw new IllegalArgumentException("内置插件不能删除");
+            }
+            String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
+            PluginService pluginService = service.remove(pluginId);
+            if (pluginService != null) {
+                try {
+                    pluginService.close();
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            plugins.remove(plugin);
+        }
+        File file = new File(PLUGIN_PATH, fileName);
+        if (!file.exists() && CollectionUtils.isEmpty(matched)) {
+            throw new IllegalArgumentException("插件文件不存在: " + fileName);
+        }
+        FileUtils.deleteQuietly(file);
+        logger.info("已删除插件文件: {}", fileName);
     }
 
     /**

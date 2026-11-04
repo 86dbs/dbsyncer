@@ -74,7 +74,15 @@ public interface ClusterService {
      */
     default void publishPlugin(String fileName) {
     }
-    
+
+    /**
+     * 通知其他节点删除指定插件文件。
+     *
+     * @param fileName 插件文件名
+     */
+    default void removePlugin(String fileName) {
+    }
+
     /**
      * 本机插件目录中的 JAR 清单。
      *
@@ -103,6 +111,16 @@ public interface ClusterService {
      */
     default void acceptPluginFile(String fileName, byte[] content, boolean relay) {
         throw new UnsupportedOperationException("当前部署不接收插件文件");
+    }
+
+    /**
+     * 接收其他节点的插件删除通知。
+     *
+     * @param fileName 文件名
+     * @param relay    为 true 时接收节点继续通知其他节点
+     */
+    default void acceptPluginRemove(String fileName, boolean relay) {
+        throw new UnsupportedOperationException("当前部署不接收插件删除");
     }
 
     default long forceExpireGracePeriod() {

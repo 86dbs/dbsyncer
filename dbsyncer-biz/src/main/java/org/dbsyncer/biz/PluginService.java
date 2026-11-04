@@ -42,6 +42,13 @@ public interface PluginService {
     void loadPlugins();
 
     /**
+     * 删除已上传的插件 JAR（内置插件不可删）。
+     *
+     * @param fileName 插件文件名
+     */
+    void delete(String fileName);
+
+    /**
      * 检查文件格式
      *
      * @param filename

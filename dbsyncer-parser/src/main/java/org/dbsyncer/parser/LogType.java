@@ -281,7 +281,7 @@ public interface LogType {
      */
     enum PluginLog implements LogType {
 
-        UPDATE("60", "上传成功"), CHECK_ERROR("61", "格式不正确");
+        UPDATE("60", "上传成功"), CHECK_ERROR("61", "格式不正确"), DELETE("62", "删除成功");
 
         private String type;
         private String message;
