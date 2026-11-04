@@ -79,7 +79,8 @@
 <div class="form-container">
     <div class="card-header">
         <h3 class="card-title">如何开发插件？</h3>
-        <p class="text-xs text-tertiary">插件是一种可扩展全量同步和增量同步实现数据转换的技术方式。通过插件可以接收同步数据，自定义同步到目标源的行数据，也能消费数据并实现更多业务场景。</p>
+        <p class="text-xs text-tertiary">
+            插件是一种可扩展全量同步和增量同步实现数据转换的技术方式。通过插件可以接收同步数据，自定义同步到目标源的行数据，也能消费数据并实现更多业务场景。</p>
     </div>
     <div class="card-body">
         <ol class="steps">
@@ -247,7 +248,8 @@ public class MyPlugin implements PluginService {
             <li>
                 <span class="font-medium">配置 SPI</span>
                 <p class="mt-3">
-                    在 /META-INF/ 新建 services 文件夹，并在 services 下新建一个文件，命名为 <code>org.dbsyncer.sdk.spi.PluginService</code>，文件写入实现类路径 <code>org.test.MyPlugin</code>，如果有多个实现就换行再写入
+                    在 /META-INF/ 新建 services 文件夹，并在 services 下新建一个文件，命名为 <code>org.dbsyncer.sdk.spi.PluginService</code>，文件写入实现类路径
+                    <code>org.test.MyPlugin</code>，如果有多个实现就换行再写入
                 </p>
                 <div class="mt-3">
                     <img draggable="false" th:src="@{'/img/plugin/spi.jpg'}" alt="SPI配置示例">
@@ -269,7 +271,7 @@ public class MyPlugin implements PluginService {
 </div>
 
 <script type="text/javascript">
-    $(function() {
+    $(function () {
         // 初始化文件上传组件
         initFileUpload('#pluginUploader', {
             uploadUrl: $basePath + '/plugin/upload',
@@ -277,7 +279,7 @@ public class MyPlugin implements PluginService {
             maxSize: 50 * 1024 * 1024, // 50MB
             acceptedFiles: '.jar',
             autoUpload: true,
-            onSuccess: function(file, response) {
+            onSuccess: function (file, response) {
                 if (response.success) {
                     bootGrowl("插件上传成功！", "success");
                     doLoader("/plugin");
@@ -285,13 +287,13 @@ public class MyPlugin implements PluginService {
                     bootGrowl(response.message || "上传失败", "danger");
                 }
             },
-            onError: function(file, error) {
+            onError: function (file, error) {
                 bootGrowl(error || "上传失败", "danger");
             }
         });
     });
-    
-    function downLoad(fileName){
+
+    function downLoad(fileName) {
         window.open($basePath + "/plugin/download?name=" + fileName);
     }
 
@@ -323,7 +325,7 @@ public class MyPlugin implements PluginService {
         const $btn = $(btn);
         const codeBlock = $btn.siblings('.code-block').find('code');
         const text = codeBlock.text();
-        
+
         copyToClipboard(text, {
             button: $btn,
             successMessage: "复制代码成功！",

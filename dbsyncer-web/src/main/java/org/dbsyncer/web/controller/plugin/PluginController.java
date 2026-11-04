@@ -97,14 +97,21 @@ public class PluginController {
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(String fileName) {
+        String name;
         try {
-            String name = fileName(fileName);
+            name = fileName(fileName);
             pluginService.delete(name);
-            clusterService.removePlugin(name);
-            return RestResult.restSuccess("ok");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
+        }
+        try {
+            clusterService.removePlugin(name);
+            return RestResult.restSuccess("ok");
+        } catch (Exception e) {
+            // 本机已卸载，集群失败单独提示，避免重试时变成「文件不存在」
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail("本机已删除。" + e.getMessage());
         }
     }
 
