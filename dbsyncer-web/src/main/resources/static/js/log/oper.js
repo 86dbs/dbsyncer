@@ -146,8 +146,26 @@
         }
     });
 
-    $('#filterKeyword, #filterUsername, #filterIp').on('blur', search);
-    $('#filterBeginTime, #filterEndTime').on('change', search);
+    $('#filterKeyword, #filterUsername, #filterIp')
+        .on('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                search();
+            }
+        })
+        .on('blur', search);
+    $('#filterBeginTime, #filterEndTime')
+        .on('click', function () {
+            // 点击整框弹出日期选择（原生 type=date 默认多半只点图标才开）
+            if (typeof this.showPicker === 'function') {
+                try {
+                    this.showPicker();
+                } catch (e) {
+                    // 非用户手势或浏览器不支持时忽略
+                }
+            }
+        })
+        .on('change', search);
     $('#resetBtn').on('click', function () {
         $('#filterKeyword').val('');
         $('#filterUsername').val('');
