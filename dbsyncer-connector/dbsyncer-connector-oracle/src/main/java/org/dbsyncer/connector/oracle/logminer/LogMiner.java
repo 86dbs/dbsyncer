@@ -92,6 +92,7 @@ public class LogMiner {
         if (isValid()) {
             LogMinerHelper.endLogMiner(connection);
         }
+        logMinerSessionStarted = false;
         if (null != worker && !worker.isInterrupted()) {
             worker.interrupt();
             worker = null;
@@ -116,10 +117,6 @@ public class LogMiner {
                 lock.unlock();
             }
         }
-    }
-
-    private Connection createConnection() throws SQLException {
-        return DatabaseUtil.getConnection(driverClassName, url, username, password);
     }
 
     private Connection validateConnection() throws SQLException {
@@ -202,7 +199,9 @@ public class LogMiner {
     }
 
     /**
-     * redo 切换时只 add 新日志文件，不重启 LogMiner 会话。
+     * redo 切换时重新登记日志文件。
+     * <p>{@code ADD_LOGFILE(..., NEW)} 会清空并替换当前分析列表，必须再次 {@code START_LOGMNR}，
+     * 否则随后查询 {@code V$LOGMNR_CONTENTS} 会报 ORA-01306。
      */
     private void addLogFilesIfNeeded(long endScn) throws SQLException {
         if (!logMinerSessionStarted) {
@@ -210,6 +209,7 @@ public class LogMiner {
             return;
         }
         LogMinerHelper.addLogFiles(connection, startScn, endScn);
+        LogMinerHelper.startLogMinerSession(connection);
     }
 
     private void logMinerViewProcessor(ResultSet rs) throws SQLException {
@@ -316,24 +316,22 @@ public class LogMiner {
     }
 
     /**
-     * 动态调整 SCN 查询范围
-     * 根据积压情况和查询性能自适应调整
+     * 按 SCN 缺口调整查询窗口。缺口与 {@code currentScnRange} 同单位。
+     * 未追上且本轮查询不慢时放大窗口；已追上且无数据时再缩小。不按行数阈值解释 SCN。
      */
-    private void adjustScnRange(long backlog, long queryDuration) {
-        // 根据积压情况调整
-        if (backlog > MAX_SCN_RANGE * 5) {
-            // 严重积压，增大查询范围
+    private void adjustScnRange(long scnGap, long queryDuration) {
+        boolean behind = scnGap > currentScnRange;
+        if (behind && queryDuration < 30000 && currentScnRange < MAX_SCN_RANGE) {
             long newRange = Math.min(MAX_SCN_RANGE, currentScnRange * 2);
             if (newRange != currentScnRange) {
                 currentScnRange = newRange;
-                logger.info("Increase SCN range to {} due to large backlog: {}", currentScnRange, backlog);
+                logger.info("Increase SCN range to {} due to SCN gap: {}", currentScnRange, scnGap);
             }
-        } else if (backlog < MAX_SCN_RANGE && currentScnRange > MIN_SCN_RANGE) {
-            // 积压不多，可以降低范围提高实时性
+        } else if (!behind && lastQueryRows == 0 && currentScnRange > MIN_SCN_RANGE) {
             long newRange = Math.max(MIN_SCN_RANGE, currentScnRange / 2);
             if (newRange != currentScnRange) {
                 currentScnRange = newRange;
-                logger.info("Decrease SCN range to {} (backlog: {})", currentScnRange, backlog);
+                logger.info("Decrease SCN range to {} (SCN gap: {})", currentScnRange, scnGap);
             }
         }
 
@@ -533,15 +531,25 @@ public class LogMiner {
             try {
                 cachedStatement = createStatement();
                 while (!isInterrupted() && connected) {
-                    // 1. 检查连接有效性
+                    // 1. 检查连接有效性；重建后必须重新 START_LOGMNR（会话绑定 JDBC session）
                     if (!isValid()) {
                         close(cachedStatement);
-                        connection = createConnection();
+                        cachedStatement = null;
+                        close(rs);
+                        rs = null;
+                        Connection stale = connection;
+                        connection = null;
+                        logMinerSessionStarted = false;
+                        close(stale);
+                        connection = validateConnection();
+                        long recoverScn = LogMinerHelper.getCurrentScn(connection);
+                        restartLogMiner(Math.max(recoverScn, startScn));
                         cachedStatement = createStatement();
                     }
 
                     // 关闭上一轮的 ResultSet（但复用 PreparedStatement）
                     close(rs);
+                    rs = null;
 
                     // 2. 确定查询范围（动态调整 SCN 跨度）
                     long currentScn = LogMinerHelper.getCurrentScn(connection);
@@ -553,16 +561,10 @@ public class LogMiner {
                         addLogFilesIfNeeded(endScn);
                     }
 
-                    // 4. 动态调整堆积偏移SCN
+                    // 4. SCN 缺口只用于调整查询窗口，不跳过尚未进入视图的位点
                     long queryStartTime = System.currentTimeMillis();
-
-                    long backlog;
+                    long scnGap = currentScn - startScn;
                     try {
-                        backlog = findBacklogCount(startScn, currentScn);
-                        if (backlog > currentScnRange * 2) {
-                            logger.warn("start SCN: {}, currentScn, {}, SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE", startScn, currentScn, backlog, currentScnRange);
-                        }
-
                         // 5. 查询 LogMiner 视图（复用 PreparedStatement）
                         processedScn = startScn;
 
@@ -574,14 +576,23 @@ public class LogMiner {
                         rs = cachedStatement.executeQuery();
                         logMinerViewProcessor(rs);
                     } catch (SQLException e) {
-                        if (e.getMessage().contains("ORA-00310")) {
-                            logger.info("ORA-00310 restart log miner");
+                        if (isLogMinerSessionError(e)) {
+                            logger.info("LogMiner session invalid, restart after 5s: {}", e.getMessage());
+                            close(rs);
+                            rs = null;
+                            close(cachedStatement);
+                            cachedStatement = null;
                             LogMinerHelper.endLogMiner(connection);
                             logMinerSessionStarted = false;
-                            restartLogMiner(endScn);
+                            sleepSeconds(5);
+                            if (!connected || isInterrupted()) {
+                                break;
+                            }
+                            long nowScn = LogMinerHelper.getCurrentScn(connection);
+                            restartLogMiner(Math.min(nowScn, startScn + currentScnRange));
+                            cachedStatement = createStatement();
                             continue;
-                        } else if (e.getMessage().contains("ORA-01013")) {
-                            // 查询超时，缩小查询范围
+                        } else if (isQueryTimeout(e)) {
                             logger.error("Query timeout after {}s, reducing SCN range", queryTimeout);
                             currentScnRange = Math.max(MIN_SCN_RANGE, currentScnRange / 2);
                             continue;
@@ -591,25 +602,17 @@ public class LogMiner {
 
                     long queryDuration = System.currentTimeMillis() - queryStartTime;
 
-                    // 7. 推进 SCN
+                    // 7. 推进 SCN（保守推进，避免跳过归档延迟尚未出现的 redo）
                     Long smallestUncommittedScn = transactionalBuffer.getSmallestScn();
                     long newStartScn = getNewStartScn(smallestUncommittedScn, endScn);
                     if (newStartScn != startScn) {
                         startScn = newStartScn;
                     }
 
-                    // 当出现堆积时，快速推荐SCN，拿到下一个有效的SCN
-                    if (currentScn - startScn > backlog * 100 || currentScn - startScn > currentScnRange * 2) {
-                        newStartScn = findNextValidScn(startScn, connection);
-                        if (newStartScn != startScn) {
-                            startScn = newStartScn;
-                        }
-                    }
-
                     // 8. 性能统计和动态调整
                     collectStatistics(currentScn, queryDuration);
                     adjustFetchSize();
-                    adjustScnRange(backlog, queryDuration);
+                    adjustScnRange(scnGap, queryDuration);
                     adjustSleepTime();
 
                     // 9. 动态休眠
@@ -634,41 +637,20 @@ public class LogMiner {
         }
     }
 
-    public Long findNextValidScn(Long previousScn, Connection connection) throws SQLException {
-        // 获取SQL查询语句
-        String sql = LogMinerHelper.getNextValidScnAfter();
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            // 设置参数：传入上一个SCN
-            pstmt.setLong(1, previousScn);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    Long nextValidScn = rs.getLong("NEXT_VALID_SCN");
-                    if (!rs.wasNull()) {
-                        return nextValidScn;
-                    }
-                }
-            }
+    private static boolean isLogMinerSessionError(SQLException e) {
+        int code = e.getErrorCode();
+        if (code == 310 || code == 1306) {
+            return true;
         }
-        return previousScn;
+        String message = e.getMessage();
+        return message != null && (message.contains("ORA-00310") || message.contains("ORA-01306"));
     }
 
-    public Long findBacklogCount(Long startScn, Long currentScan) throws SQLException {
-        // 获取SQL查询语句
-        String sql = LogMinerHelper.getBacklogCount();
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            // 设置参数：传入上一个SCN
-            pstmt.setLong(1, startScn);
-            pstmt.setLong(2, currentScan);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong("BACKLOG_COUNT");
-                }
-            }
+    private static boolean isQueryTimeout(SQLException e) {
+        if (e.getErrorCode() == 1013) {
+            return true;
         }
-        return currentScan - startScn;
+        String message = e.getMessage();
+        return message != null && message.contains("ORA-01013");
     }
 }

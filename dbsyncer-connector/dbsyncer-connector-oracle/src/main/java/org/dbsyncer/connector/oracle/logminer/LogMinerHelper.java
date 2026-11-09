@@ -121,26 +121,6 @@ public class LogMinerHelper {
         return query.toString();
     }
 
-    public static String getNextValidScnAfter() {
-        StringBuilder query = new StringBuilder();
-
-        query.append("SELECT MIN(SCN) AS NEXT_VALID_SCN ");
-        query.append("FROM V$LOGMNR_CONTENTS ");
-        query.append("WHERE SCN >= ? AND operation IS NOT NULL");  // 这里就是参数占位符，需要传入上一个SCN
-
-        return query.toString();
-    }
-
-    public static String getBacklogCount() {
-        StringBuilder query = new StringBuilder();
-
-        query.append("SELECT COUNT(SCN) AS BACKLOG_COUNT ");
-        query.append("FROM V$LOGMNR_CONTENTS ");
-        query.append("WHERE SCN >= ? AND SCN<= ? AND operation IS NOT NULL");  // 这里就是参数占位符，需要传入上一个SCN
-
-        return query.toString();
-    }
-
     private static String getExcludedUsers(String logMinerUser) {
         return "'SYS','SYSTEM','" + logMinerUser.toUpperCase() + "'";
     }
