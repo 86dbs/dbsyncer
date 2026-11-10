@@ -33,7 +33,12 @@ public class LogMiner {
     private final String url;
     private final String schema;
     private final String driverClassName;
-    private volatile int queryTimeout = 300;
+    private volatile int queryTimeout = 120;
+    private static final int CONNECTION_CHECK_TIMEOUT_SECONDS = 10;
+    /**
+     * 关停时等待 Worker 退出的上限
+     */
+    private static final long MAX_STOP_WAIT_MILLIS = 60_000L;
 
     // 动态 FetchSize 配置
     private final int minFetchSize = 500;
@@ -88,15 +93,35 @@ public class LogMiner {
         closeQuietly();
     }
 
+    /**
+     * 快速关停：先打断 Worker 并关闭连接（取消可能长达 {@link #queryTimeout} 的阻塞查询），
+     * 最多等待 {@link #MAX_STOP_WAIT_MILLIS}。不再在关停路径上做长时间 isValid / END_LOGMNR。
+     */
     private void closeQuietly() {
-        if (isValid()) {
-            LogMinerHelper.endLogMiner(connection);
+        logMinerSessionStarted = false;
+        Thread current = Thread.currentThread();
+        Thread w = worker;
+        worker = null;
+        if (w != null) {
+            w.interrupt();
         }
-        if (null != worker && !worker.isInterrupted()) {
-            worker.interrupt();
-            worker = null;
+
+        Connection c = connection;
+        connection = null;
+        // 先关连接，打断 JDBC 阻塞读；会话随连接释放，无需再 END_LOGMNR
+        close(c);
+
+        // Worker 内自恢复不会 join 自己；外部关停最多等 MAX_STOP_WAIT_MILLIS
+        if (w != null && w != current) {
+            try {
+                w.join(MAX_STOP_WAIT_MILLIS);
+                if (w.isAlive()) {
+                    logger.warn("LogMiner worker still alive after {} ms stop wait", MAX_STOP_WAIT_MILLIS);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
-        close(connection);
     }
 
     public void start() throws SQLException {
@@ -116,10 +141,6 @@ public class LogMiner {
                 lock.unlock();
             }
         }
-    }
-
-    private Connection createConnection() throws SQLException {
-        return DatabaseUtil.getConnection(driverClassName, url, username, password);
     }
 
     private Connection validateConnection() throws SQLException {
@@ -146,14 +167,7 @@ public class LogMiner {
     }
 
     private void connect() throws SQLException {
-        this.connection = validateConnection();
-        // 判断是否第一次读取
-        if (startScn == 0) {
-            startScn = LogMinerHelper.getCurrentScn(connection);
-            restartLogMiner(startScn);
-        } else {
-            restartLogMiner(LogMinerHelper.getCurrentScn(connection));
-        }
+        openSession();
         logger.info("Start log miner, scn={}", startScn);
         worker = new Worker();
         worker.setName("log-miner-parser-" + url + "_" + worker.hashCode());
@@ -161,19 +175,47 @@ public class LogMiner {
         worker.start();
     }
 
-    private void recover() {
-        logger.error("Connection interrupted, attempting to reconnect");
-        while (connected) {
+    /**
+     * 建立连接并 START_LOGMNR，不启动 Worker（供首次启动与同线程恢复共用）。
+     */
+    private void openSession() throws SQLException {
+        Connection stale = connection;
+        connection = null;
+        logMinerSessionStarted = false;
+        close(stale);
+        Connection conn = validateConnection();
+        // 关停竞态：close() 已置 connected=false 后勿再挂接新连接，避免泄漏
+        if (!connected) {
+            close(conn);
+            throw new SQLException("LogMiner stopped while opening session");
+        }
+        this.connection = conn;
+        if (startScn == 0) {
+            startScn = LogMinerHelper.getCurrentScn(connection);
+            restartLogMiner(startScn);
+        } else {
+            restartLogMiner(LogMinerHelper.getCurrentScn(connection));
+        }
+    }
+
+    /**
+     * 在当前 Worker 线程内重建会话，禁止再 start 新 Worker，避免双读。
+     *
+     * @return 是否恢复成功
+     */
+    private boolean reopenSessionInPlace() {
+        logger.error("Connection interrupted, attempting to reopen LogMiner session in-place");
+        while (connected && !Thread.currentThread().isInterrupted()) {
             try {
-                closeQuietly();
-                connect();
-                logger.info("Reconnect successfully");
-                break;
+                openSession();
+                logger.info("Reopen LogMiner session successfully, scn={}", startScn);
+                return true;
             } catch (Exception e) {
-                logger.error("Reconnect failed", e);
+                logger.error("Reopen LogMiner session failed", e);
                 sleepSeconds(5);
             }
         }
+        return false;
     }
 
     private void sleepSeconds(int seconds) {
@@ -202,7 +244,7 @@ public class LogMiner {
     }
 
     /**
-     * redo 切换时只 add 新日志文件，不重启 LogMiner 会话。
+     * redo 切换时重新登记日志文件。
      */
     private void addLogFilesIfNeeded(long endScn) throws SQLException {
         if (!logMinerSessionStarted) {
@@ -210,6 +252,7 @@ public class LogMiner {
             return;
         }
         LogMinerHelper.addLogFiles(connection, startScn, endScn);
+        LogMinerHelper.startLogMinerSession(connection);
     }
 
     private void logMinerViewProcessor(ResultSet rs) throws SQLException {
@@ -459,10 +502,10 @@ public class LogMiner {
         return connected;
     }
 
-    // 判断连接是否正常
+    // 判断连接是否正常（短超时，避免关停/探活被 queryTimeout 拖死）
     private boolean isValid() {
         try {
-            return connection != null && connection.isValid(queryTimeout);
+            return connection != null && connection.isValid(CONNECTION_CHECK_TIMEOUT_SECONDS);
         } catch (SQLException e) {
             return false;
         }
@@ -531,36 +574,44 @@ public class LogMiner {
             PreparedStatement cachedStatement = null;
             ResultSet rs = null;
             try {
-                cachedStatement = createStatement();
                 while (!isInterrupted() && connected) {
-                    // 1. 检查连接有效性
-                    if (!isValid()) {
-                        close(cachedStatement);
-                        connection = createConnection();
-                        cachedStatement = createStatement();
-                    }
-
-                    // 关闭上一轮的 ResultSet（但复用 PreparedStatement）
-                    close(rs);
-
-                    // 2. 确定查询范围（动态调整 SCN 跨度）
-                    long currentScn = LogMinerHelper.getCurrentScn(connection);
-                    long endScn = Math.min(currentScn, startScn + currentScnRange);
-
-                    // 3. 检查 Redo Log 切换
-                    if (redoLogSwitchOccurred()) {
-                        logger.info("Switch to new redo log");
-                        addLogFilesIfNeeded(endScn);
-                    }
-
-                    // 4. 动态调整堆积偏移SCN
-                    long queryStartTime = System.currentTimeMillis();
-
-                    long backlog;
                     try {
+                        // 1. 检查连接有效性；重建后必须重新 START_LOGMNR（会话绑定 JDBC session）
+                        if (!isValid()) {
+                            close(cachedStatement);
+                            cachedStatement = null;
+                            close(rs);
+                            rs = null;
+                            if (!reopenSessionInPlace()) {
+                                break;
+                            }
+                        }
+                        if (cachedStatement == null) {
+                            cachedStatement = createStatement();
+                        }
+
+                        // 关闭上一轮的 ResultSet（但复用 PreparedStatement）
+                        close(rs);
+                        rs = null;
+
+                        // 2. 确定查询范围（动态调整 SCN 跨度）
+                        long currentScn = LogMinerHelper.getCurrentScn(connection);
+                        long endScn = Math.min(currentScn, startScn + currentScnRange);
+
+                        // 3. 检查 Redo Log 切换
+                        if (redoLogSwitchOccurred()) {
+                            logger.info("Switch to new redo log");
+                            addLogFilesIfNeeded(endScn);
+                        }
+
+                        // 4. 动态调整堆积偏移SCN
+                        long queryStartTime = System.currentTimeMillis();
+
+                        long backlog;
                         backlog = findBacklogCount(startScn, currentScn);
                         if (backlog > currentScnRange * 2) {
-                            logger.warn("start SCN: {}, currentScn, {}, SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE", startScn, currentScn, backlog, currentScnRange);
+                            logger.warn("start SCN: {}, currentScn: {}, SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE",
+                                    startScn, currentScn, backlog, currentScnRange);
                         }
 
                         // 5. 查询 LogMiner 视图（复用 PreparedStatement）
@@ -573,75 +624,102 @@ public class LogMiner {
 
                         rs = cachedStatement.executeQuery();
                         logMinerViewProcessor(rs);
+
+                        long queryDuration = System.currentTimeMillis() - queryStartTime;
+
+                        // 7. 推进 SCN
+                        Long smallestUncommittedScn = transactionalBuffer.getSmallestScn();
+                        long newStartScn = getNewStartScn(smallestUncommittedScn, endScn);
+                        if (newStartScn != startScn) {
+                            startScn = newStartScn;
+                        }
+
+                        // 当出现堆积时，快速推荐SCN，拿到下一个有效的SCN
+                        if (currentScn - startScn > backlog * 100 || currentScn - startScn > currentScnRange * 2) {
+                            newStartScn = findNextValidScn(startScn, connection);
+                            if (newStartScn != startScn) {
+                                startScn = newStartScn;
+                            }
+                        }
+
+                        // 8. 性能统计和动态调整
+                        collectStatistics(currentScn, queryDuration);
+                        adjustFetchSize();
+                        adjustScnRange(backlog, queryDuration);
+                        adjustSleepTime();
+
+                        // 9. 动态休眠
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(currentSleepMillis);
+                        } catch (InterruptedException e) {
+                            if (connected) {
+                                logger.error("Sleep interrupted: {}", e.getMessage());
+                            }
+                            break;
+                        }
                     } catch (SQLException e) {
-                        if (e.getMessage().contains("ORA-00310")) {
-                            logger.info("ORA-00310 restart log miner");
-                            LogMinerHelper.endLogMiner(connection);
+                        if (isLogMinerSessionError(e)) {
+                            logger.info("LogMiner session invalid, restart after 5s: {}", e.getMessage());
+                            close(rs);
+                            rs = null;
+                            close(cachedStatement);
+                            cachedStatement = null;
+                            if (connection != null) {
+                                LogMinerHelper.endLogMiner(connection);
+                            }
                             logMinerSessionStarted = false;
-                            restartLogMiner(endScn);
+                            sleepSeconds(5);
+                            if (!connected || isInterrupted()) {
+                                break;
+                            }
+                            if (!reopenSessionInPlace()) {
+                                break;
+                            }
                             continue;
-                        } else if (e.getMessage().contains("ORA-01013")) {
-                            // 查询超时，缩小查询范围
+                        } else if (isQueryTimeout(e)) {
                             logger.error("Query timeout after {}s, reducing SCN range", queryTimeout);
                             currentScnRange = Math.max(MIN_SCN_RANGE, currentScnRange / 2);
                             continue;
                         }
-                        throw e;
-                    }
-
-                    long queryDuration = System.currentTimeMillis() - queryStartTime;
-
-                    // 7. 推进 SCN
-                    Long smallestUncommittedScn = transactionalBuffer.getSmallestScn();
-                    long newStartScn = getNewStartScn(smallestUncommittedScn, endScn);
-                    if (newStartScn != startScn) {
-                        startScn = newStartScn;
-                    }
-
-                    // 当出现堆积时，快速推荐SCN，拿到下一个有效的SCN
-                    if (currentScn - startScn > backlog * 100 || currentScn - startScn > currentScnRange * 2) {
-                        newStartScn = findNextValidScn(startScn, connection);
-                        if (newStartScn != startScn) {
-                            startScn = newStartScn;
+                        // 其它 SQL 异常：同线程重建会话，禁止再起 Worker
+                        logger.error(e.getMessage(), e);
+                        close(rs);
+                        rs = null;
+                        close(cachedStatement);
+                        cachedStatement = null;
+                        if (!connected || isInterrupted() || !reopenSessionInPlace()) {
+                            break;
+                        }
+                    } catch (Exception e) {
+                        if (!connected || isInterrupted()) {
+                            break;
+                        }
+                        logger.error(e.getMessage(), e);
+                        close(rs);
+                        rs = null;
+                        close(cachedStatement);
+                        cachedStatement = null;
+                        if (!reopenSessionInPlace()) {
+                            break;
                         }
                     }
-
-                    // 8. 性能统计和动态调整
-                    collectStatistics(currentScn, queryDuration);
-                    adjustFetchSize();
-                    adjustScnRange(backlog, queryDuration);
-                    adjustSleepTime();
-
-                    // 9. 动态休眠
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(currentSleepMillis);
-                    } catch (InterruptedException e) {
-                        if (connected) {
-                            logger.error("Sleep interrupted: {}", e.getMessage());
-                        }
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                if (connected) {
-                    logger.error(e.getMessage(), e);
-                    recover();
                 }
             } finally {
                 close(rs);
                 close(cachedStatement);
+                // 兜底：关停后 openSession 竞态挂上的连接也要释放
+                Connection c = connection;
+                connection = null;
+                close(c);
             }
         }
     }
 
     public Long findNextValidScn(Long previousScn, Connection connection) throws SQLException {
-        // 获取SQL查询语句
         String sql = LogMinerHelper.getNextValidScnAfter();
-
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            // 设置参数：传入上一个SCN
+            pstmt.setQueryTimeout(queryTimeout);
             pstmt.setLong(1, previousScn);
-
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     Long nextValidScn = rs.getLong("NEXT_VALID_SCN");
@@ -655,14 +733,11 @@ public class LogMiner {
     }
 
     public Long findBacklogCount(Long startScn, Long currentScan) throws SQLException {
-        // 获取SQL查询语句
         String sql = LogMinerHelper.getBacklogCount();
-
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            // 设置参数：传入上一个SCN
+            pstmt.setQueryTimeout(queryTimeout);
             pstmt.setLong(1, startScn);
             pstmt.setLong(2, currentScan);
-
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getLong("BACKLOG_COUNT");
@@ -670,5 +745,22 @@ public class LogMiner {
             }
         }
         return currentScan - startScn;
+    }
+
+    private static boolean isLogMinerSessionError(SQLException e) {
+        int code = e.getErrorCode();
+        if (code == 310 || code == 1306) {
+            return true;
+        }
+        String message = e.getMessage();
+        return message != null && (message.contains("ORA-00310") || message.contains("ORA-01306"));
+    }
+
+    private static boolean isQueryTimeout(SQLException e) {
+        if (e.getErrorCode() == 1013) {
+            return true;
+        }
+        String message = e.getMessage();
+        return message != null && message.contains("ORA-01013");
     }
 }
