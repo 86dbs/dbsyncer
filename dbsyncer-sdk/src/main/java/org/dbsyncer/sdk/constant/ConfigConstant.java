@@ -128,6 +128,30 @@ public class ConfigConstant {
     public static final String META_DAILY_STAT_DATE = "statDate";
 
     /**
+     * CDC Agent 配置表(dbsyncer_agent)拆分列
+     */
+    public static final String AGENT_LISTEN_PORT = "listenPort";
+    public static final String AGENT_SECRET = "agentSecret";
+    public static final String AGENT_THREAD_NUM = "threadNum";
+    public static final String AGENT_CAPTURE_INTERVAL_MS = "captureIntervalMs";
+    public static final String AGENT_CHECKPOINT = "checkpoint";
+    public static final String AGENT_PUBLIC_KEY = "publicKey";
+    public static final String AGENT_PRIVATE_KEY = "privateKey";
+    public static final String AGENT_STATE = "state";
+
+    /**
+     * 采集任务表(dbsyncer_capture_task)拆分列
+     */
+    public static final String CAPTURE_TASK_AGENT_HOST = "agentHost";
+    public static final String CAPTURE_TASK_AGENT_PORT = "agentPort";
+    public static final String CAPTURE_TASK_QUEUE_CAPACITY = "queueCapacity";
+
+    /**
+     * 采集任务关联表(dbsyncer_capture_task_rel)拆分列
+     */
+    public static final String CAPTURE_TASK_ID = "captureTaskId";
+
+    /**
      * 日志表(dbsyncer_log)筛选列
      */
     public static final String LOG_USERNAME = "username";

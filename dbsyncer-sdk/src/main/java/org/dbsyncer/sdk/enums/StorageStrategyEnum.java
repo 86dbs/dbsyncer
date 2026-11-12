@@ -5,6 +5,9 @@ package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.Strategy;
+import org.dbsyncer.sdk.storage.strategy.AgentStrategy;
+import org.dbsyncer.sdk.storage.strategy.CaptureTaskRelStrategy;
+import org.dbsyncer.sdk.storage.strategy.CaptureTaskStrategy;
 import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
 import org.dbsyncer.sdk.storage.strategy.ClusterTaskStrategy;
 import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
@@ -139,7 +142,22 @@ public enum StorageStrategyEnum {
     /**
      * 同步任务 Meta 日汇总
      */
-    META_DAILY(StorageEnum.META_DAILY, new MetaAggStrategy());
+    META_DAILY(StorageEnum.META_DAILY, new MetaAggStrategy()),
+
+    /**
+     * CDC Agent 配置
+     */
+    AGENT(StorageEnum.AGENT, new AgentStrategy()),
+
+    /**
+     * 采集任务
+     */
+    CAPTURE_TASK(StorageEnum.CAPTURE_TASK, new CaptureTaskStrategy()),
+
+    /**
+     * 采集任务关联
+     */
+    CAPTURE_TASK_REL(StorageEnum.CAPTURE_TASK_REL, new CaptureTaskRelStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

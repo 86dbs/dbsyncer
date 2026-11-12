@@ -16,7 +16,11 @@ public enum ListenerTypeEnum {
     /**
      * 日志
      */
-    LOG("log");
+    LOG("log"),
+    /**
+     * Agent 采集
+     */
+    AGENT("agent");
 
     private final String type;
 
@@ -30,6 +34,10 @@ public enum ListenerTypeEnum {
 
     public static boolean isLog(String type) {
         return StringUtil.equals(LOG.getType(), type);
+    }
+
+    public static boolean isAgent(String type) {
+        return StringUtil.equals(AGENT.getType(), type);
     }
 
     public String getType() {

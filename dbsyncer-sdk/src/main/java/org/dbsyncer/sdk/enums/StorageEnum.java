@@ -93,7 +93,19 @@ public enum StorageEnum {
     /**
      * 同步任务 Meta 汇总
      */
-    META_DAILY("meta_agg");
+    META_DAILY("meta_agg"),
+    /**
+     * CDC Agent 配置
+     */
+    AGENT("agent"),
+    /**
+     * 采集任务
+     */
+    CAPTURE_TASK("capture_task"),
+    /**
+     * 采集任务与同步任务关联
+     */
+    CAPTURE_TASK_REL("capture_task_rel");
 
     private final String type;
 
