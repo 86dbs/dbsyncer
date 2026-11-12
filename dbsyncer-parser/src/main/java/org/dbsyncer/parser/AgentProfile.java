@@ -51,4 +51,13 @@ public interface AgentProfile {
      * @param id 主键
      */
     void remove(String id);
+
+    /**
+     * 更新运行状态。
+     *
+     * @param id    主键
+     * @param state 0-停止 1-运行
+     * @return 影响行数
+     */
+    int updateState(String id, int state);
 }

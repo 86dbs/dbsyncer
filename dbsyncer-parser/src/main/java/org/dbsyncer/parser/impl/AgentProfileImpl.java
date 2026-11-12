@@ -95,6 +95,16 @@ public class AgentProfileImpl implements AgentProfile {
         storageService.remove(StorageEnum.AGENT, id);
     }
 
+    @Override
+    public int updateState(String id, int state) {
+        if (StringUtil.isBlank(id)) {
+            return 0;
+        }
+        return storageService.update(
+                "UPDATE " + TABLE + " SET STATE=?, UPDATE_TIME=? WHERE ID=?",
+                new Object[]{state, System.currentTimeMillis(), id});
+    }
+
     private Map<String, Object> toMap(AgentConfig config) {
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, config.getId());
