@@ -31,6 +31,7 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.parser.message.NoticeStrategyRuntimeBridge;
 import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.sdk.service.ScheduledScanManager;
+import org.dbsyncer.sdk.spi.AgentService;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +95,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private ClusterService clusterService;
 
     @Resource
+    private AgentService agentService;
+
+    @Resource
     private ScheduledScanManager scheduledScanManager;
 
     @Override
@@ -108,6 +112,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // 单机/集群共用：半停态 Meta 归 READY，避免一直「停止中」
         reconcileStoppingMappingMetas();
         clusterService.init();
+        agentService.init();
         if (clusterService.isStandalone()) {
             // Load connectorInstances
             loadConnectorInstance();

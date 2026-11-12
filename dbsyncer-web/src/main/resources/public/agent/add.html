@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">添加 Agent</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button type="button" class="btn btn-primary" id="saveBtn">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 取消
+            </button>
+        </div>
+
+        <form id="agentForm" class="form" onsubmit="return false;">
+            <div class="grid grid-cols-2">
+                <div class="form-item">
+                    <label class="form-label" for="name">名称<strong class="text-primary">*</strong></label>
+                    <input id="name" name="name" class="form-control" type="text" maxlength="50" required>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="listenPort">监听端口<strong class="text-primary">*</strong></label>
+                    <input id="listenPort" name="listenPort" class="form-control" type="number" min="1" max="65535" value="9100" required>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="agentSecret">AGENT 密钥<strong class="text-primary">*</strong></label>
+                    <div class="flex items-center gap-2">
+                        <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256" required>
+                        <button type="button" class="btn btn-outline" id="genSecretBtn">生成</button>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="checkpoint">位点文件名</label>
+                    <input id="checkpoint" name="checkpoint" class="form-control" type="text" maxlength="256" value="tail.ckpt">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="threadNum">采集线程数</label>
+                    <input id="threadNum" name="threadNum" class="form-control" type="number" min="1" max="64" value="4">
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="captureIntervalMs">采集频率(ms)</label>
+                    <input id="captureIntervalMs" name="captureIntervalMs" class="form-control" type="number" min="50" value="1000">
+                </div>
+            </div>
+
+            <div class="form-item mt-5">
+                <label class="form-label" for="jdbcUrl">源库 JDBC URL<strong class="text-primary">*</strong></label>
+                <input id="jdbcUrl" name="jdbcUrl" class="form-control" type="text" required
+                       placeholder="jdbc:oracle:thin:@host:1521/service">
+            </div>
+
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="username">用户名<strong class="text-primary">*</strong></label>
+                    <input id="username" name="username" class="form-control" type="text" required>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="password">密码<strong class="text-primary">*</strong></label>
+                    <input id="password" name="password" class="form-control" type="password" required>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="schema">Schema</label>
+                    <input id="schema" name="schema" class="form-control" type="text">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/agent/agent-form.js}"></script>
+<script>
+    $(document).ready(function () {
+        initAgentForm({mode: 'add'});
+    });
+</script>
+</html>

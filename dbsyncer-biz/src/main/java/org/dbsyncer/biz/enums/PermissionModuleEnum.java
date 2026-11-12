@@ -49,7 +49,12 @@ public enum PermissionModuleEnum {
     /**
      * 资源授权
      */
-    ACL("acl", "资源");
+    ACL("acl", "资源"),
+
+    /**
+     * Agent 管理
+     */
+    AGENT("agent", "Agent");
 
     private final String code;
     private final String name;

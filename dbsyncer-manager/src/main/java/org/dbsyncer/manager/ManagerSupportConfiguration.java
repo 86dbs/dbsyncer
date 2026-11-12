@@ -5,6 +5,7 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.manager.deployment.StandaloneService;
 import org.dbsyncer.parser.impl.FullFlushServiceImpl;
+import org.dbsyncer.sdk.spi.AgentService;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.FullFlushService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
@@ -35,6 +36,21 @@ public class ManagerSupportConfiguration {
             return spi;
         }
         return new StandaloneService();
+    }
+
+    /**
+     * Agent 管理：优先 SPI，否则社区空实现。
+     */
+    @Bean
+    @ConditionalOnMissingBean(AgentService.class)
+    @DependsOn(value = "serviceFactory")
+    public AgentService agentService() {
+        AgentService spi = serviceFactory.get(AgentService.class);
+        if (spi != null) {
+            return spi;
+        }
+        return new AgentService() {
+        };
     }
 
     /**

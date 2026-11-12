@@ -134,6 +134,9 @@ public class ConfigConstant {
     public static final String AGENT_SECRET = "agentSecret";
     public static final String AGENT_THREAD_NUM = "threadNum";
     public static final String AGENT_CAPTURE_INTERVAL_MS = "captureIntervalMs";
+    /**
+     * 位点文件名（如 tail.ckpt），位点内容在文件中
+     */
     public static final String AGENT_CHECKPOINT = "checkpoint";
     public static final String AGENT_PUBLIC_KEY = "publicKey";
     public static final String AGENT_PRIVATE_KEY = "privateKey";
