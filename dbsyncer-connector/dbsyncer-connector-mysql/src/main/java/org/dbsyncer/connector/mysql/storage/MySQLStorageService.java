@@ -764,24 +764,7 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> metaDailyFields = builder.getFields();
 
-        // CDC Agent 配置
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
-                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.AGENT_LISTEN_PORT, ConfigConstant.AGENT_SECRET, ConfigConstant.AGENT_THREAD_NUM,
-                ConfigConstant.AGENT_CAPTURE_INTERVAL_MS, ConfigConstant.AGENT_CHECKPOINT,
-                ConfigConstant.AGENT_PUBLIC_KEY, ConfigConstant.AGENT_PRIVATE_KEY,
-                ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.AGENT_STATE);
-        List<Field> agentFields = builder.getFields();
-
-        // 采集任务
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME,
-                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.CAPTURE_TASK_AGENT_HOST, ConfigConstant.CAPTURE_TASK_AGENT_PORT,
-                ConfigConstant.AGENT_SECRET, ConfigConstant.CAPTURE_TASK_QUEUE_CAPACITY, ConfigConstant.AGENT_STATE,
-                ConfigConstant.AGENT_PUBLIC_KEY, ConfigConstant.AGENT_PRIVATE_KEY);
-        List<Field> captureTaskFields = builder.getFields();
-
-        // 采集任务关联
+        // 采集任务关联（远端采集任务 ↔ 同步任务）
         builder.build(ConfigConstant.CONFIG_MODEL_ID,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.CAPTURE_TASK_ID, ConfigConstant.TASK_ID);
@@ -808,8 +791,6 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.NOTICE_RULE.getType(), k -> new Executor(k, noticeRuleFields, true, true));
         tables.computeIfAbsent(StorageEnum.NOTICE_STRATEGY.getType(), k -> new Executor(k, noticeStrategyFields, true, true));
         tables.computeIfAbsent(StorageEnum.META_DAILY.getType(), k -> new Executor(k, metaDailyFields, true, true));
-        tables.computeIfAbsent(StorageEnum.AGENT.getType(), k -> new Executor(k, agentFields, true, true));
-        tables.computeIfAbsent(StorageEnum.CAPTURE_TASK.getType(), k -> new Executor(k, captureTaskFields, true, true));
         tables.computeIfAbsent(StorageEnum.CAPTURE_TASK_REL.getType(), k -> new Executor(k, captureTaskRelFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
@@ -1190,17 +1171,6 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.NOTICE_STRATEGY_NOTICE_TYPES, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.NOTICE_STRATEGY_REMARK, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.META_DAILY_STAT_DATE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.AGENT_LISTEN_PORT, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.AGENT_SECRET, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.AGENT_THREAD_NUM, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.AGENT_CAPTURE_INTERVAL_MS, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.AGENT_CHECKPOINT, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.AGENT_PUBLIC_KEY, "LONGVARCHAR", Types.LONGVARCHAR),
-                            new Field(ConfigConstant.AGENT_PRIVATE_KEY, "LONGVARCHAR", Types.LONGVARCHAR),
-                            new Field(ConfigConstant.AGENT_STATE, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.CAPTURE_TASK_AGENT_HOST, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.CAPTURE_TASK_AGENT_PORT, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.CAPTURE_TASK_QUEUE_CAPACITY, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CAPTURE_TASK_ID, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());

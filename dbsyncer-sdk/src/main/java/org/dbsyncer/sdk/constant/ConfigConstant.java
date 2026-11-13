@@ -64,10 +64,18 @@ public class ConfigConstant {
     public static final String CONNECTOR_STATUS = "status";
 
     /**
-     * 企业任务 type（存 {@code dbsyncer_task}），与 {@code CommonTaskTypeEnum#name()} 一致
+     * 企业任务 type（存 {@code dbsyncer_task}），与 {@code CommonTaskTypeEnum#getCode()} 一致
      */
     public static final String VALIDATE_SYNC = "validateSync";
     public static final String DATABASE_SYNC = "databaseSync";
+    /**
+     * 本地采集（Netty 服务端 + 源库 CDC）
+     */
+    public static final String CAPTURE_LOCAL = "captureLocal";
+    /**
+     * 远端采集（Netty 客户端连接本地采集）
+     */
+    public static final String CAPTURE_REMOTE = "captureRemote";
 
     /**
      * 业务分组关系表(dbsyncer_group_rel)拆分列
@@ -128,29 +136,8 @@ public class ConfigConstant {
     public static final String META_DAILY_STAT_DATE = "statDate";
 
     /**
-     * CDC Agent 配置表(dbsyncer_agent)拆分列
-     */
-    public static final String AGENT_LISTEN_PORT = "listenPort";
-    public static final String AGENT_SECRET = "agentSecret";
-    public static final String AGENT_THREAD_NUM = "threadNum";
-    public static final String AGENT_CAPTURE_INTERVAL_MS = "captureIntervalMs";
-    /**
-     * 位点文件名（如 tail.ckpt），位点内容在文件中
-     */
-    public static final String AGENT_CHECKPOINT = "checkpoint";
-    public static final String AGENT_PUBLIC_KEY = "publicKey";
-    public static final String AGENT_PRIVATE_KEY = "privateKey";
-    public static final String AGENT_STATE = "state";
-
-    /**
-     * 采集任务表(dbsyncer_capture_task)拆分列
-     */
-    public static final String CAPTURE_TASK_AGENT_HOST = "agentHost";
-    public static final String CAPTURE_TASK_AGENT_PORT = "agentPort";
-    public static final String CAPTURE_TASK_QUEUE_CAPACITY = "queueCapacity";
-
-    /**
-     * 采集任务关联表(dbsyncer_capture_task_rel)拆分列
+     * 采集任务关联表(dbsyncer_capture_task_rel)拆分列。
+     * {@code CAPTURE_TASK_ID} 指向 {@code dbsyncer_task.ID}（TYPE=captureRemote）。
      */
     public static final String CAPTURE_TASK_ID = "captureTaskId";
 

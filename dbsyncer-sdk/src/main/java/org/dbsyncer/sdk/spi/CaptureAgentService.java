@@ -4,13 +4,14 @@
 package org.dbsyncer.sdk.spi;
 
 /**
- * Agent 运行时扩展点。配置读写在开源实现；启动与停止由专业版实现。
+ * 采集任务启停扩展点。配置读写在开源；启动与停止由专业版实现。
+ * <p>支持 {@code captureLocal} / {@code captureRemote}。</p>
  *
  * @author wuji
  * @version 1.0.0
- * @date 2026-11-12
+ * @date 2026-11-13
  */
-public interface AgentService {
+public interface CaptureAgentService {
 
     /**
      * 初始化（专业版装载运行时依赖）。
@@ -28,20 +29,20 @@ public interface AgentService {
     }
 
     /**
-     * 启动。
+     * 启动采集任务。
      *
-     * @param id 主键
+     * @param id 任务主键（{@code dbsyncer_task.ID}）
      */
     default void start(String id) {
-        throw new UnsupportedOperationException("Agent 启停仅专业版可用");
+        throw new UnsupportedOperationException("采集任务启停仅专业版可用");
     }
 
     /**
-     * 停止。
+     * 停止采集任务。
      *
-     * @param id 主键
+     * @param id 任务主键
      */
     default void stop(String id) {
-        throw new UnsupportedOperationException("Agent 启停仅专业版可用");
+        throw new UnsupportedOperationException("采集任务启停仅专业版可用");
     }
 }

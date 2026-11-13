@@ -52,9 +52,9 @@ public enum PermissionModuleEnum {
     ACL("acl", "资源"),
 
     /**
-     * Agent 管理
+     * 采集任务
      */
-    AGENT("agent", "Agent");
+    CAPTURE("capture", "采集任务");
 
     private final String code;
     private final String name;

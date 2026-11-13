@@ -5,7 +5,7 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.manager.deployment.StandaloneService;
 import org.dbsyncer.parser.impl.FullFlushServiceImpl;
-import org.dbsyncer.sdk.spi.AgentService;
+import org.dbsyncer.sdk.spi.CaptureAgentService;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.FullFlushService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
@@ -39,17 +39,17 @@ public class ManagerSupportConfiguration {
     }
 
     /**
-     * Agent 管理：优先 SPI，否则社区空实现。
+     * 采集任务启停：优先 SPI，否则社区空实现。
      */
     @Bean
-    @ConditionalOnMissingBean(AgentService.class)
+    @ConditionalOnMissingBean(CaptureAgentService.class)
     @DependsOn(value = "serviceFactory")
-    public AgentService agentService() {
-        AgentService spi = serviceFactory.get(AgentService.class);
+    public CaptureAgentService captureAgentService() {
+        CaptureAgentService spi = serviceFactory.get(CaptureAgentService.class);
         if (spi != null) {
             return spi;
         }
-        return new AgentService() {
+        return new CaptureAgentService() {
         };
     }
 

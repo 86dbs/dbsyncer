@@ -388,7 +388,9 @@ public abstract class ConfigModelUtil {
             case ConfigConstant.TASK:
             case ConfigConstant.VALIDATE_SYNC:
             case ConfigConstant.DATABASE_SYNC:
-                // 同步/校验/迁移统一存 dbsyncer_task
+            case ConfigConstant.CAPTURE_LOCAL:
+            case ConfigConstant.CAPTURE_REMOTE:
+                // 同步/校验/迁移/采集统一存 dbsyncer_task
                 return StorageEnum.TASK;
             case ConfigConstant.TABLE_GROUP:
                 return StorageEnum.TABLE_GROUP;

@@ -3,7 +3,7 @@ CREATE TABLE `dbsyncer_task` (
   `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
   `UPDATE_TIME` bigint NOT NULL COMMENT '修改时间',
   `NAME` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '任务名称',
-  `TYPE` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '任务类型, 数据同步/订正校验/整库迁移',
+  `TYPE` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '任务类型: mapping/validateSync/databaseSync/captureLocal/captureRemote',
   `JSON` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '配置信息',
   PRIMARY KEY (`ID`) USING BTREE,
   KEY `IDX_UPDATE_TIME` (`UPDATE_TIME`) USING BTREE,

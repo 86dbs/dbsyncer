@@ -27,6 +27,8 @@ import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.InFilter;
+import org.dbsyncer.sdk.model.CaptureLocalTask;
+import org.dbsyncer.sdk.model.CaptureRemoteTask;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -278,6 +280,20 @@ public class TaskProfileImpl implements TaskProfile {
                 }
             } else if (taskType == CommonTaskTypeEnum.DATABASE_SYNC) {
                 DatabaseSyncTask task = JsonUtil.jsonToObj(itemJson, DatabaseSyncTask.class);
+                if (task != null) {
+                    task.setType(taskType.getCode());
+                    importTask(task);
+                    enterpriseTasks.add(task);
+                }
+            } else if (taskType == CommonTaskTypeEnum.CAPTURE_LOCAL) {
+                CaptureLocalTask task = JsonUtil.jsonToObj(itemJson, CaptureLocalTask.class);
+                if (task != null) {
+                    task.setType(taskType.getCode());
+                    importTask(task);
+                    enterpriseTasks.add(task);
+                }
+            } else if (taskType == CommonTaskTypeEnum.CAPTURE_REMOTE) {
+                CaptureRemoteTask task = JsonUtil.jsonToObj(itemJson, CaptureRemoteTask.class);
                 if (task != null) {
                     task.setType(taskType.getCode());
                     importTask(task);

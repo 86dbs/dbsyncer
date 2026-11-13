@@ -28,7 +28,17 @@ public enum CommonTaskTypeEnum {
     /**
      * 整库迁移
      */
-    DATABASE_SYNC("databaseSync", "org.dbsyncer.sdk.model.DatabaseSyncTask");
+    DATABASE_SYNC("databaseSync", "org.dbsyncer.sdk.model.DatabaseSyncTask"),
+
+    /**
+     * 本地采集
+     */
+    CAPTURE_LOCAL("captureLocal", "org.dbsyncer.sdk.model.CaptureLocalTask"),
+
+    /**
+     * 远端采集
+     */
+    CAPTURE_REMOTE("captureRemote", "org.dbsyncer.sdk.model.CaptureRemoteTask");
 
     /**
      * 配置类型 code（与 {@code ConfigModel#type} / 存储 TYPE 列一致）

@@ -95,15 +95,7 @@ public enum StorageEnum {
      */
     META_DAILY("meta_agg"),
     /**
-     * CDC Agent 配置
-     */
-    AGENT("agent"),
-    /**
-     * 采集任务
-     */
-    CAPTURE_TASK("capture_task"),
-    /**
-     * 采集任务与同步任务关联
+     * 采集任务与同步任务关联（CAPTURE_TASK_ID 指向 dbsyncer_task 中 captureRemote）
      */
     CAPTURE_TASK_REL("capture_task_rel");
 

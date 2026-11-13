@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center"
+            th:text="${captureType eq 'captureRemote'} ? '编辑远端采集' : '编辑本地采集'">编辑采集任务</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button type="button" class="btn btn-primary" id="saveBtn">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 取消
+            </button>
+        </div>
+
+        <form id="captureTaskForm" class="form" onsubmit="return false;" th:if="${task != null}">
+            <input type="hidden" id="id" name="id" th:value="${task.id}">
+            <input type="hidden" id="type" name="type" th:value="${captureType}">
+
+            <div class="form-item">
+                <label class="form-label" for="name">名称<strong class="text-primary">*</strong></label>
+                <input id="name" name="name" class="form-control" type="text" maxlength="50" required th:value="${task.name}">
+            </div>
+
+            <div th:if="${captureType ne 'captureRemote'}">
+                <div class="grid grid-cols-2 mt-5">
+                    <div class="form-item">
+                        <label class="form-label" for="listenPort">监听端口<strong class="text-primary">*</strong></label>
+                        <input id="listenPort" name="listenPort" class="form-control" type="number" min="1" max="65535"
+                               required th:value="${task.listenPort}">
+                    </div>
+                    <div class="form-item">
+                        <label class="form-label" for="checkpoint">位点文件名</label>
+                        <input id="checkpoint" name="checkpoint" class="form-control" type="text" maxlength="256"
+                               th:value="${task.checkpoint}">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 mt-5">
+                    <div class="form-item">
+                        <label class="form-label" for="agentSecret">密钥<strong class="text-primary">*</strong></label>
+                        <div class="flex items-center gap-2">
+                            <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256"
+                                   required th:value="${task.agentSecret}">
+                            <button type="button" class="btn btn-outline" id="genSecretBtn">生成</button>
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label class="form-label" for="threadNum">采集线程数</label>
+                        <input id="threadNum" name="threadNum" class="form-control" type="number" min="1" max="64"
+                               th:value="${task.threadNum}">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 mt-5">
+                    <div class="form-item">
+                        <label class="form-label" for="captureIntervalMs">采集频率(ms)</label>
+                        <input id="captureIntervalMs" name="captureIntervalMs" class="form-control" type="number" min="50"
+                               th:value="${task.captureIntervalMs}">
+                    </div>
+                </div>
+                <div class="form-item mt-5">
+                    <label class="form-label" for="jdbcUrl">源库 JDBC URL<strong class="text-primary">*</strong></label>
+                    <input id="jdbcUrl" name="jdbcUrl" class="form-control" type="text" required th:value="${task.jdbcUrl}">
+                </div>
+                <div class="grid grid-cols-2 mt-5">
+                    <div class="form-item">
+                        <label class="form-label" for="username">用户名<strong class="text-primary">*</strong></label>
+                        <input id="username" name="username" class="form-control" type="text" required th:value="${task.username}">
+                    </div>
+                    <div class="form-item">
+                        <label class="form-label" for="password">密码</label>
+                        <input id="password" name="password" class="form-control" type="password"
+                               placeholder="不修改请留空">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 mt-5">
+                    <div class="form-item">
+                        <label class="form-label" for="schema">Schema</label>
+                        <input id="schema" name="schema" class="form-control" type="text" th:value="${task.schema}">
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${captureType eq 'captureRemote'}">
+                <div class="grid grid-cols-2 mt-5">
+                    <div class="form-item">
+                        <label class="form-label" for="agentHost">Agent 主机<strong class="text-primary">*</strong></label>
+                        <input id="agentHost" name="agentHost" class="form-control" type="text" required th:value="${task.agentHost}">
+                    </div>
+                    <div class="form-item">
+                        <label class="form-label" for="agentPort">Agent 端口<strong class="text-primary">*</strong></label>
+                        <input id="agentPort" name="agentPort" class="form-control" type="number" min="1" max="65535"
+                               required th:value="${task.agentPort}">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 mt-5">
+                    <div class="form-item">
+                        <label class="form-label" for="agentSecret">密钥<strong class="text-primary">*</strong></label>
+                        <div class="flex items-center gap-2">
+                            <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256"
+                                   required th:value="${task.agentSecret}">
+                            <button type="button" class="btn btn-outline" id="genSecretBtn">生成</button>
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label class="form-label" for="queueCapacity">队列容量</label>
+                        <input id="queueCapacity" name="queueCapacity" class="form-control" type="number" min="1000"
+                               th:value="${task.queueCapacity}">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/capture-task/capture-task-form.js}"></script>
+<script th:inline="javascript">
+    $(document).ready(function () {
+        initCaptureTaskForm({mode: 'edit', type: /*[[${captureType}]]*/ 'captureLocal'});
+    });
+</script>
+</html>
