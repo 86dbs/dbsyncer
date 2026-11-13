@@ -16,6 +16,11 @@ public class ListenerConfig {
     private String listenerType;
 
     /**
+     * 关联的远端采集任务 ID（仅 Agent 采集）。
+     */
+    private String captureTaskId;
+
+    /**
      * 定时表达式, 格式: [秒] [分] [小时] [日] [月] [周]
      */
     private String cron = "*/30 * * * * ?";
@@ -73,6 +78,14 @@ public class ListenerConfig {
 
     public void setListenerType(String listenerType) {
         this.listenerType = listenerType;
+    }
+
+    public String getCaptureTaskId() {
+        return captureTaskId;
+    }
+
+    public void setCaptureTaskId(String captureTaskId) {
+        this.captureTaskId = captureTaskId;
     }
 
     public String getEventFieldName() {

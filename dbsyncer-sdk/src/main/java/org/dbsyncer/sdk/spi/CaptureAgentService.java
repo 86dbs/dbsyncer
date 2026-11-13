@@ -45,4 +45,23 @@ public interface CaptureAgentService {
     default void stop(String id) {
         throw new UnsupportedOperationException("采集任务启停仅专业版可用");
     }
+
+    /**
+     * 同步任务启动后登记其源 Schema。同一远端采集可登记多个同步任务。
+     *
+     * @param captureTaskId 远端采集任务 ID
+     * @param subscriberId  同步任务 ID
+     * @param schema        源 Schema
+     */
+    default void bindSchema(String captureTaskId, String subscriberId, String schema) {
+    }
+
+    /**
+     * 同步任务停止或删除时移除已登记的 Schema。
+     *
+     * @param captureTaskId 远端采集任务 ID
+     * @param subscriberId  同步任务 ID
+     */
+    default void unbindSchema(String captureTaskId, String subscriberId) {
+    }
 }

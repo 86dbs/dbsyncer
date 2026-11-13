@@ -49,11 +49,51 @@ function bindIncrementConfigChange(){
 }
 function showIncrementConfig(model){
     const incrementQuartz = $("#increment_quartz");
-    if ('log' === model) {
-        incrementQuartz.addClass("hidden");
-    } else {
+    const incrementAgent = $("#increment_agent");
+    if ('timing' === model) {
         incrementQuartz.removeClass("hidden");
+    } else {
+        incrementQuartz.addClass("hidden");
     }
+    if ('agent' === model) {
+        incrementAgent.removeClass("hidden");
+        loadCaptureRemoteOptions();
+    } else {
+        incrementAgent.addClass("hidden");
+    }
+}
+
+function loadCaptureRemoteOptions() {
+    const $select = $("#captureTaskId");
+    if ($select.data("loaded")) {
+        return;
+    }
+    doPoster("/capture-task/query", {}, function (response) {
+        if (!response.success) {
+            bootGrowl(response.message, "danger");
+            return;
+        }
+        const selected = $select.attr("data-selected");
+        const rows = response.data && response.data.data ? response.data.data : [];
+        rows.forEach(function (row) {
+            if (row.type !== "captureRemote") {
+                return;
+            }
+            const $option = $("<option></option>").val(row.id).text(row.name || row.id);
+            if (row.id === selected) {
+                $option.prop("selected", true);
+            }
+            $select.append($option);
+        });
+        $select.data("loaded", true);
+        if ($select.data("dbSelectInitialized")) {
+            const api = $select.data("dbSelect");
+            if (api && typeof api.destroy === "function") {
+                api.destroy();
+            }
+        }
+        initSelect($select);
+    });
 }
 
 // 修改增量点配置

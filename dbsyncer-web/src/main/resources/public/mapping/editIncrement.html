@@ -10,6 +10,20 @@
             <label>日志</label>
             <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" />
             <label>定时</label>
+            <input th:if="${editionInfo != null and editionInfo.edition ne 'community'}" type="radio" name="incrementStrategy" value="agent" th:checked="${'agent' eq mapping?.listener?.listenerType}" />
+            <label th:if="${editionInfo != null and editionInfo.edition ne 'community'}">Agent 采集</label>
+        </div>
+    </div>
+    <div id="increment_agent" class="hidden">
+        <div class="grid grid-cols-4">
+            <div class="form-item">
+                <label class="form-label">远端采集</label>
+                <div class="form-control-area">
+                    <select id="captureTaskId" name="captureTaskId" class="form-control" th:attr="data-selected=${mapping?.listener?.captureTaskId}">
+                        <option value="">请选择</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -7,6 +7,11 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.parser.CaptureTaskRelProfile;
+import org.dbsyncer.parser.model.CaptureTaskRel;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.model.CaptureRemoteTask;
+import org.dbsyncer.sdk.spi.CaptureAgentService;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
@@ -122,6 +127,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private ClusterService clusterService;
 
     @Resource
+    private CaptureTaskRelProfile captureTaskRelProfile;
+
+    @Resource
+    private CaptureAgentService captureAgentService;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
     private ConnectorFactory connectorFactory;
 
     @Resource
@@ -135,8 +149,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private MappingMatchTableTask mappingMatchTableTask;
-    @Resource
-    private TaskProfile taskProfile;
 
     @Resource
     private GroupService groupService;
@@ -248,6 +260,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             connectorFactory.disconnect(targetInstanceId);
 
             // 删除同步任务
+            releaseCapture(mapping);
             mappingProfile.delete(id);
             groupService.bind(null, ConfigConstant.MAPPING, id);
             resourceAclService.revokeAllForResource(ConfigConstant.MAPPING, id);
@@ -379,6 +392,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             try {
                 clusterService.start(mapping, false);
+                bindCaptureRel(mapping);
             } catch (Exception e) {
                 // rollback
                 preloadTemplate.changeMetaState(taskId, CommonTaskStatusEnum.READY);
@@ -398,6 +412,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
             preloadTemplate.changeMetaState(mapping.getId(), CommonTaskStatusEnum.STOPPING);
             clusterService.stop(mapping.getId(), CommonTaskTypeEnum.MAPPING);
+            releaseCapture(mapping);
             // 发送关闭通知消息
             MappingStopContent content = new MappingStopContent();
             content.setTitle("手动停止同步任务");
@@ -786,6 +801,41 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         mapping.setSourceTable(!CollectionUtils.isEmpty(mapping.getSourceTable()) ? mapping.getSourceTable() : new ArrayList<>());
         mapping.setTargetTable(!CollectionUtils.isEmpty(mapping.getTargetTable()) ? mapping.getTargetTable() : new ArrayList<>());
         return isSource ? mapping.getSourceTable() : mapping.getTargetTable();
+    }
+
+    private void bindCaptureRel(Mapping mapping) {
+        if (mapping.getListener() == null || !ListenerTypeEnum.isAgent(mapping.getListener().getListenerType())) {
+            return;
+        }
+        String captureTaskId = StringUtil.trim(mapping.getListener().getCaptureTaskId());
+        Assert.hasText(captureTaskId, "请选择远端采集任务");
+        CaptureRemoteTask remote = taskProfile.getTask(captureTaskId, CaptureRemoteTask.class);
+        if (remote == null || !ConfigConstant.CAPTURE_REMOTE.equals(remote.getType())) {
+            throw new BizException("只能关联远端采集任务");
+        }
+        captureTaskRelProfile.removeByTaskId(mapping.getId());
+        CaptureTaskRel rel = new CaptureTaskRel();
+        rel.setCaptureTaskId(captureTaskId);
+        rel.setTaskId(mapping.getId());
+        long now = System.currentTimeMillis();
+        rel.setCreateTime(now);
+        rel.setUpdateTime(now);
+        if (!captureTaskRelProfile.add(rel)) {
+            throw new BizException("同步任务已关联采集任务");
+        }
+        String schema = StringUtil.trim(mapping.getSourceSchema());
+        Assert.hasText(schema, "同步任务源 Schema 不能为空");
+        captureAgentService.bindSchema(captureTaskId, mapping.getId(), schema);
+    }
+
+    private void releaseCapture(Mapping mapping) {
+        if (mapping.getListener() != null && ListenerTypeEnum.isAgent(mapping.getListener().getListenerType())) {
+            String captureTaskId = StringUtil.trim(mapping.getListener().getCaptureTaskId());
+            if (StringUtil.isNotBlank(captureTaskId)) {
+                captureAgentService.unbindSchema(captureTaskId, mapping.getId());
+            }
+        }
+        captureTaskRelProfile.removeByTaskId(mapping.getId());
     }
 
     private void removeCustomTable(Mapping mapping, Map<String, String> params) {

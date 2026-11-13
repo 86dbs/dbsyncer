@@ -270,6 +270,14 @@ public final class IncrementPuller extends AbstractPuller implements Application
         ConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
         String listenerType = listenerConfig.getListenerType();
+        if (ListenerTypeEnum.isAgent(listenerType)) {
+            AgentCaptureListener agentListener = new AgentCaptureListener();
+            ParserConsumer consumer = parserConsumer.clone();
+            consumer.build(meta.getTaskId(), list, mapping.getChannelSize());
+            agentListener.register(consumer);
+            agentListener.init();
+            return agentListener;
+        }
 
         Listener listener = connectorFactory.getListener(connectorConfig.getConnectorType(), listenerType);
         if (null == listener) {

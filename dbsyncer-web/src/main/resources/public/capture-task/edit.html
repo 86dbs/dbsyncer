@@ -76,12 +76,6 @@
                                placeholder="不修改请留空">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 mt-5">
-                    <div class="form-item">
-                        <label class="form-label" for="schema">Schema</label>
-                        <input id="schema" name="schema" class="form-control" type="text" th:value="${task.schema}">
-                    </div>
-                </div>
             </div>
 
             <div th:if="${captureType eq 'captureRemote'}">
