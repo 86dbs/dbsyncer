@@ -4,6 +4,7 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
@@ -13,6 +14,8 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
+import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.message.NoticeStrategyRuntimeBridge;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -25,10 +28,12 @@ import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
+import org.dbsyncer.sdk.model.CaptureLocalTask;
+import org.dbsyncer.sdk.model.CaptureRemoteTask;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
-import org.dbsyncer.parser.message.NoticeStrategyRuntimeBridge;
 import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.sdk.service.ScheduledScanManager;
 import org.dbsyncer.sdk.spi.CaptureAgentService;
@@ -70,6 +75,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private MappingProfile mappingProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -116,6 +124,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (clusterService.isStandalone()) {
             // Load connectorInstances
             loadConnectorInstance();
+            // 采集任务先于同步任务，Agent 模式才能连上并登记 Schema
+            launchCaptureTasks();
             // 同步任务：按任务级 Meta 恢复 Mapping
             launchSyncMappings();
             //初始化定时检测任务
@@ -222,6 +232,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             loadConnectorInstance();
         }
         reconcileStoppingMappingMetas();
+        if (clusterService.isStandalone()) {
+            launchCaptureTasks();
+        }
         launchSyncMappings();
     }
 
@@ -262,6 +275,50 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     /**
+     * 恢复采集任务：仅续跑 Meta=RUNNING 的本地采集、远端采集。本地先于远端。
+     */
+    private void launchCaptureTasks() {
+        if (!captureAgentService.isAvailable()) {
+            return;
+        }
+        launchRunningTasks(CaptureLocalTask.class, "本地采集");
+        launchRunningTasks(CaptureRemoteTask.class, "远端采集");
+    }
+
+    private <T extends ConfigModel> void launchRunningTasks(Class<T> type, String label) {
+        taskProfile.pageScanTasks(type, ConfigConstant.PAGE_SIZE, tasks -> {
+            if (CollectionUtils.isEmpty(tasks)) {
+                return;
+            }
+            List<String> taskIds = new ArrayList<>();
+            for (T task : tasks) {
+                if (task != null && StringUtil.isNotBlank(task.getId())) {
+                    taskIds.add(task.getId());
+                }
+            }
+            Map<String, Meta> metaMap = taskMetaProfile.getTaskMetaMap(taskIds);
+            if (CollectionUtils.isEmpty(metaMap)) {
+                return;
+            }
+            for (T task : tasks) {
+                if (task == null || StringUtil.isBlank(task.getId())) {
+                    continue;
+                }
+                Meta meta = metaMap.get(task.getId());
+                if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
+                    continue;
+                }
+                try {
+                    captureAgentService.start(task.getId());
+                    logger.info("恢复{}任务, id={}, name={}", label, task.getId(), task.getName());
+                } catch (Exception e) {
+                    logger.error("恢复{}任务失败, id={}, name={}, err={}", label, task.getId(), task.getName(), e.getMessage(), e);
+                }
+            }
+        });
+    }
+
+    /**
      * 恢复同步驱动(Mapping)：仅续跑 Meta=RUNNING 的任务。
      * <p>STOPPING 收口见 {@link #reconcileStoppingMappingMetas()}。
      * <p>先按任务类型 {@code mapping} 分页拉取任务，再批量查任务级 Meta（{@code isTaskDetail=0}），
@@ -292,6 +349,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
                 try {
                     reConnect(mapping);
+                    bindAgentSchema(mapping);
                     // 自动恢复：CDC 监听启动失败时按配置重试
                     clusterService.start(mapping, true);
                 } catch (Exception e) {
@@ -299,6 +357,21 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
             }
         });
+    }
+
+    /**
+     * Agent 采集的订阅只在内存里。重启后按任务配置重新登记，不重复写关联表。
+     */
+    private void bindAgentSchema(Mapping mapping) {
+        if (mapping.getListener() == null || !ListenerTypeEnum.isAgent(mapping.getListener().getListenerType())) {
+            return;
+        }
+        String captureTaskId = StringUtil.trim(mapping.getListener().getCaptureTaskId());
+        String schema = StringUtil.trim(mapping.getSourceSchema());
+        if (StringUtil.isBlank(captureTaskId) || StringUtil.isBlank(schema)) {
+            return;
+        }
+        captureAgentService.bindSchema(captureTaskId, mapping.getId(), schema);
     }
 
     public void reConnect(Mapping mapping) {
