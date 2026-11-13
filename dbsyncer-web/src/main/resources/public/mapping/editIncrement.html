@@ -3,26 +3,28 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content" id="mapping_increment" class="hidden py-3">
-    <!-- 增量策略选择 -->
+    <!-- 同步方式 -->
+    <p><i class="fa fa-exchange text-success"></i> 同步方式</p>
     <div class="grid grid-cols-4">
-        <div id="increment_strategy" class="radio-group">
-            <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" />
-            <label>日志</label>
-            <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" />
-            <label>定时</label>
-            <input th:if="${editionInfo != null and editionInfo.edition ne 'community'}" type="radio" name="incrementStrategy" value="agent" th:checked="${'agent' eq mapping?.listener?.listenerType}" />
-            <label th:if="${editionInfo != null and editionInfo.edition ne 'community'}">Agent 采集</label>
-        </div>
-    </div>
-    <div id="increment_agent" class="hidden">
-        <div class="grid grid-cols-4">
-            <div class="form-item">
-                <label class="form-label">远端采集</label>
-                <div class="form-control-area">
-                    <select id="captureTaskId" name="captureTaskId" class="form-control" th:attr="data-selected=${mapping?.listener?.captureTaskId}">
-                        <option value="">请选择</option>
-                    </select>
+        <div class="form-item lg:col-span-2">
+            <label class="form-label">方式</label>
+            <div class="form-control-area">
+                <div id="increment_strategy" class="radio-group radio-group-control-height">
+                    <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" />
+                    <label>日志</label>
+                    <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" />
+                    <label>定时</label>
+                    <input th:if="${editionInfo != null and editionInfo.edition ne 'community'}" type="radio" name="incrementStrategy" value="agent" th:checked="${'agent' eq mapping?.listener?.listenerType}" />
+                    <label th:if="${editionInfo != null and editionInfo.edition ne 'community'}">Agent 采集</label>
                 </div>
+            </div>
+        </div>
+        <div id="increment_agent" class="form-item lg:col-span-2 hidden">
+            <label class="form-label">远端采集 <strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <select id="captureTaskId" name="captureTaskId" class="form-control" th:attr="data-selected=${mapping?.listener?.captureTaskId}">
+                    <option value="">请选择</option>
+                </select>
             </div>
         </div>
     </div>

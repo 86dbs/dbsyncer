@@ -3,9 +3,11 @@
  */
 package org.dbsyncer.connector.oracle.schema.support;
 
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.TimestampType;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Set;
@@ -40,6 +42,17 @@ public final class OracleTimestampType extends TimestampType {
 
     @Override
     protected Timestamp merge(Object val, Field field) {
+        if (val instanceof String) {
+            Timestamp timestamp = DateFormatUtil.stringToTimestamp((String) val);
+            if (null != timestamp) {
+                return timestamp;
+            }
+        }
+        if (val instanceof Date) {
+            Date date = (Date) val;
+            return new Timestamp(date.getTime());
+        }
+
         return throwUnsupportedException(val, field);
     }
 
