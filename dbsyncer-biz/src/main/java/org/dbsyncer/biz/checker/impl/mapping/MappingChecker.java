@@ -163,16 +163,17 @@ public class MappingChecker extends AbstractChecker {
         Assert.hasText(sourceConnectorId, "数据源不能为空.");
         Assert.hasText(targetConnectorId, "目标源不能为空.");
 
-        // 如果连接发生变更, 释放源库连接资源
+        // 连接器或库名/schema 变更时释放旧实例，避免池中仍持有过期 catalog
         String sId = mapping.getSourceConnectorId();
-        if (StringUtil.isNotBlank(sId) && !StringUtil.equals(sId, sourceConnectorId)) {
+        if (StringUtil.isNotBlank(sId) && (connectorOrDatabaseChanged(sId, mapping.getSourceDatabase(), mapping.getSourceSchema(),
+                sourceConnectorId, sourceDatabase, sourceSchema))) {
             String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sId, ConnectorInstanceUtil.SOURCE_SUFFIX);
             connectorFactory.disconnect(sourceInstanceId);
         }
 
-        // 如果连接发生变更, 释放目标库连接资源
         String tId = mapping.getTargetConnectorId();
-        if (StringUtil.isNotBlank(tId) && !StringUtil.equals(tId, targetConnectorId)) {
+        if (StringUtil.isNotBlank(tId) && (connectorOrDatabaseChanged(tId, mapping.getTargetDatabase(), mapping.getTargetSchema(),
+                targetConnectorId, targetDatabase, targetSchema))) {
             String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), tId, ConnectorInstanceUtil.TARGET_SUFFIX);
             connectorFactory.disconnect(targetInstanceId);
         }
@@ -184,6 +185,16 @@ public class MappingChecker extends AbstractChecker {
         mapping.setTargetDatabase(targetDatabase);
         mapping.setTargetSchema(targetSchema);
         preloadTemplate.reConnect(mapping);
+    }
+
+    /**
+     * 连接器 ID 或库名/schema 任一变更即视为需拆除旧连接实例。blank 与 null 按空串比较。
+     */
+    private static boolean connectorOrDatabaseChanged(String oldConnectorId, String oldDatabase, String oldSchema,
+                                                      String newConnectorId, String newDatabase, String newSchema) {
+        return !StringUtil.equals(oldConnectorId, newConnectorId)
+                || !StringUtil.equals(StringUtil.getIfBlank(oldDatabase, StringUtil.EMPTY), StringUtil.getIfBlank(newDatabase, StringUtil.EMPTY))
+                || !StringUtil.equals(StringUtil.getIfBlank(oldSchema, StringUtil.EMPTY), StringUtil.getIfBlank(newSchema, StringUtil.EMPTY));
     }
 
     public void addMeta(Mapping mapping) {
