@@ -68,14 +68,6 @@ public class ConfigConstant {
      */
     public static final String VALIDATE_SYNC = "validateSync";
     public static final String DATABASE_SYNC = "databaseSync";
-    /**
-     * 本地采集（Netty 服务端 + 源库 CDC）
-     */
-    public static final String CAPTURE_LOCAL = "captureLocal";
-    /**
-     * 远端采集（Netty 客户端连接本地采集）
-     */
-    public static final String CAPTURE_REMOTE = "captureRemote";
 
     /**
      * 业务分组关系表(dbsyncer_group_rel)拆分列
@@ -140,6 +132,14 @@ public class ConfigConstant {
      * {@code CAPTURE_TASK_ID} 指向 {@code dbsyncer_task.ID}（TYPE=captureRemote）。
      */
     public static final String CAPTURE_TASK_ID = "captureTaskId";
+    /**
+     * 本地采集（Netty 服务端 + 源库 CDC）
+     */
+    public static final String CAPTURE_LOCAL = "captureLocal";
+    /**
+     * 远端采集（Netty 客户端连接本地采集）
+     */
+    public static final String CAPTURE_REMOTE = "captureRemote";
 
     /**
      * 日志表(dbsyncer_log)筛选列

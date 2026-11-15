@@ -49,12 +49,12 @@ function bindIncrementConfigChange(){
 }
 function showIncrementConfig(model){
     const incrementQuartz = $("#increment_quartz");
-    const incrementAgent = $("#increment_agent");
     if ('timing' === model) {
         incrementQuartz.removeClass("hidden");
     } else {
         incrementQuartz.addClass("hidden");
     }
+    const incrementAgent = $("#increment_agent");
     if ('agent' === model) {
         incrementAgent.removeClass("hidden");
         loadCaptureRemoteOptions();

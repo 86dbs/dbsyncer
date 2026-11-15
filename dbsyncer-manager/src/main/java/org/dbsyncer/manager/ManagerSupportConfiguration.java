@@ -38,9 +38,6 @@ public class ManagerSupportConfiguration {
         return new StandaloneService();
     }
 
-    /**
-     * 采集任务启停：优先 SPI，否则社区空实现。
-     */
     @Bean
     @ConditionalOnMissingBean(CaptureAgentService.class)
     @DependsOn(value = "serviceFactory")

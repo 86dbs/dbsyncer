@@ -95,7 +95,7 @@ public enum StorageEnum {
      */
     META_DAILY("meta_agg"),
     /**
-     * 采集任务与同步任务关联（CAPTURE_TASK_ID 指向 dbsyncer_task 中 captureRemote）
+     * 采集任务与同步任务关联
      */
     CAPTURE_TASK_REL("capture_task_rel");
 

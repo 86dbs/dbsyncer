@@ -7,11 +7,6 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.GroupSearchFilter;
 import org.dbsyncer.biz.GroupService;
 import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.parser.CaptureTaskRelProfile;
-import org.dbsyncer.parser.model.CaptureTaskRel;
-import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.sdk.model.CaptureRemoteTask;
-import org.dbsyncer.sdk.spi.CaptureAgentService;
 import org.dbsyncer.biz.ResourceAclService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.UserConfigService;
@@ -37,15 +32,16 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.parser.CaptureTaskRelProfile;
 import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.NoticeRuleProfile;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.TaskDetailMetaProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
+import org.dbsyncer.parser.model.CaptureTaskRel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -57,11 +53,14 @@ import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.CaptureRemoteTask;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.CaptureAgentService;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -113,9 +112,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private TaskMetaProfile taskMetaProfile;
-
-    @Resource
-    private TaskDetailMetaProfile taskDetailMetaProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;

@@ -143,7 +143,7 @@ public enum StorageStrategyEnum {
     META_DAILY(StorageEnum.META_DAILY, new MetaAggStrategy()),
 
     /**
-     * 采集任务关联（远端采集任务 ↔ 同步任务）
+     * 采集任务关联
      */
     CAPTURE_TASK_REL(StorageEnum.CAPTURE_TASK_REL, new CaptureTaskRelStrategy());
 
