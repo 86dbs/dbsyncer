@@ -3,7 +3,6 @@ package org.dbsyncer.common.util;
 import org.dbsyncer.common.model.RsaVersion;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.IOUtils;
 
 import javax.crypto.Cipher;
 
@@ -176,11 +175,10 @@ public class RSAUtil {
         } else {
             maxBlock = keySize / 8 - 11;
         }
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
         int offSet = 0;
         byte[] buff;
         int i = 0;
-        try {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             while (datas.length > offSet) {
                 if (datas.length - offSet > maxBlock) {
                     buff = cipher.doFinal(datas, offSet, maxBlock);
@@ -191,12 +189,10 @@ public class RSAUtil {
                 i++;
                 offSet = i * maxBlock;
             }
+            return out.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException("加解密阀值为[" + maxBlock + "]的数据时发生异常", e);
         }
-        byte[] result = out.toByteArray();
-        IOUtils.closeQuietly(out);
-        return result;
     }
 
 }
