@@ -17,12 +17,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- Spring Boot Autoconfigure（ConditionalOnMissingBean 等） -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure</artifactId>
-        </dependency>
-
         <!-- Spring-JDBC -->
         <dependency>
             <groupId>org.springframework</groupId>
