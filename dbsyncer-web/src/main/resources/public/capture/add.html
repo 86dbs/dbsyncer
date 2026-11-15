@@ -42,7 +42,14 @@
                         <label class="form-label" for="agentSecret">密钥<strong class="text-primary">*</strong></label>
                         <div class="flex items-center gap-2">
                             <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256" required>
-                            <button type="button" class="btn btn-outline" id="genSecretBtn">生成</button>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-outline" id="copySecretBtn">
+                                    <i class="fa fa-copy"></i> 复制
+                                </button>
+                                <button type="button" class="btn btn-outline" id="genSecretBtn">
+                                    <span class="fa fa-refresh"></span> 生成
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="form-item">
@@ -90,7 +97,14 @@
                         <label class="form-label" for="agentSecret">密钥<strong class="text-primary">*</strong></label>
                         <div class="flex items-center gap-2">
                             <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256" required>
-                            <button type="button" class="btn btn-outline" id="genSecretBtn">生成</button>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-outline" id="copySecretBtn">
+                                    <i class="fa fa-copy"></i> 复制
+                                </button>
+                                <button type="button" class="btn btn-outline" id="genSecretBtn">
+                                    <span class="fa fa-refresh"></span> 生成
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="form-item">
@@ -103,7 +117,7 @@
     </div>
 </div>
 
-<script th:src="@{/js/capture-task/capture-task-form.js}"></script>
+<script th:src="@{/js/capture/capture-form.js}"></script>
 <script th:inline="javascript">
     $(document).ready(function () {
         initCaptureTaskForm({mode: 'add', type: /*[[${captureType}]]*/ 'captureLocal'});

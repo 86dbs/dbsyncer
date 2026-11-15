@@ -51,18 +51,30 @@
     function renderRow(task, index) {
         var canEdit = !window.DBSPermission || DBSPermission.has('capture:edit');
         var running = Number(task.state) === 1 || Number(task.state) === 2;
-        var editBtn = canEdit && !running ? `
+        var editBtn = canEdit ? `
             <button class="table-action-btn view" title="修改" onclick="doLoader('/capture/page/edit?id=${escapeHtml(task.id)}')">
                 <i class="fa fa-edit"></i>
             </button>` : '';
-        var startBtn = canEdit && !running ? `
+        var state = Number(task.state);
+        var stateBtn = '';
+        if (canEdit) {
+            if (state === 1) {
+                stateBtn = `
+            <button class="table-action-btn play" title="停止" onclick="stopCaptureTask('${escapeHtml(task.id)}')">
+                <i class="fa fa-pause"></i>
+            </button>`;
+            } else if (state === 2) {
+                stateBtn = `
+            <button class="table-action-btn play" title="停止中" disabled>
+                <i class="fa fa-spinner fa-spin"></i>
+            </button>`;
+            } else {
+                stateBtn = `
             <button class="table-action-btn play" title="启动" onclick="startCaptureTask('${escapeHtml(task.id)}')">
                 <i class="fa fa-play"></i>
-            </button>` : '';
-        var stopBtn = canEdit && running ? `
-            <button class="table-action-btn delete" title="停止" onclick="stopCaptureTask('${escapeHtml(task.id)}')">
-                <i class="fa fa-stop"></i>
-            </button>` : '';
+            </button>`;
+            }
+        }
         var deleteBtn = canEdit && !running ? `
             <button class="table-action-btn delete" title="删除" onclick="deleteCaptureTask('${escapeHtml(task.id)}')">
                 <i class="fa fa-trash"></i>
@@ -77,8 +89,7 @@
                 <td>
                     <div class="flex items-center">
                         ${editBtn}
-                        ${startBtn}
-                        ${stopBtn}
+                        ${stateBtn}
                         ${deleteBtn}
                     </div>
                 </td>

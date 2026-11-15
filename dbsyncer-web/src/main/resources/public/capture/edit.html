@@ -9,7 +9,12 @@
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">
-            <button type="button" class="btn btn-primary" id="saveBtn">
+            <span th:if="${task?.state ne 0}">
+                <button type="button" class="btn btn-info" disabled>
+                    <i class="fa fa-save"></i> 运行中
+                </button>
+            </span>
+            <button th:if="${task?.state eq 0}" type="button" class="btn btn-primary" id="saveBtn">
                 <i class="fa fa-save"></i> 保存
             </button>
             <button type="button" class="btn btn-outline" onclick="backIndexPage()">
@@ -45,7 +50,14 @@
                         <div class="flex items-center gap-2">
                             <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256"
                                    required th:value="${task.agentSecret}">
-                            <button type="button" class="btn btn-outline" id="genSecretBtn">生成</button>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-outline" id="copySecretBtn">
+                                    <i class="fa fa-copy"></i> 复制
+                                </button>
+                                <button type="button" class="btn btn-outline" id="genSecretBtn">
+                                    <span class="fa fa-refresh"></span> 生成
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="form-item">
@@ -96,7 +108,14 @@
                         <div class="flex items-center gap-2">
                             <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256"
                                    required th:value="${task.agentSecret}">
-                            <button type="button" class="btn btn-outline" id="genSecretBtn">生成</button>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-outline" id="copySecretBtn">
+                                    <i class="fa fa-copy"></i> 复制
+                                </button>
+                                <button type="button" class="btn btn-outline" id="genSecretBtn">
+                                    <span class="fa fa-refresh"></span> 生成
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="form-item">
@@ -110,7 +129,7 @@
     </div>
 </div>
 
-<script th:src="@{/js/capture-task/capture-task-form.js}"></script>
+<script th:src="@{/js/capture/capture-form.js}"></script>
 <script th:inline="javascript">
     $(document).ready(function () {
         initCaptureTaskForm({mode: 'edit', type: /*[[${captureType}]]*/ 'captureLocal'});
