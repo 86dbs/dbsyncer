@@ -5,7 +5,7 @@
     'use strict';
 
     window.backIndexPage = function () {
-        doLoader('/capture-task/list');
+        doLoader('/capture/list');
     };
 
     window.initCaptureTaskForm = function (options) {
@@ -13,7 +13,7 @@
         var mode = options.mode || 'add';
 
         $('#genSecretBtn').off('click').on('click', function () {
-            doPoster('/capture-task/generateSecret', {}, function (res) {
+            doPoster('/capture/generateSecret', {}, function (res) {
                 if (res.success) {
                     $('#agentSecret').val(res.data);
                 } else {
@@ -31,7 +31,7 @@
             $('#captureTaskForm').serializeArray().forEach(function (item) {
                 params[item.name] = item.value;
             });
-            var url = mode === 'edit' ? '/capture-task/edit' : '/capture-task/add';
+            var url = mode === 'edit' ? '/capture/edit' : '/capture/add';
             doPoster(url, params, function (res) {
                 if (res.success) {
                     backIndexPage();

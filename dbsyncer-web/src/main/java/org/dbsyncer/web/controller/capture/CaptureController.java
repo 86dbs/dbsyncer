@@ -34,8 +34,8 @@ import java.util.Map;
  * @date 2026-11-13
  */
 @Controller
-@RequestMapping("/capture-task")
-public class CaptureTaskController extends BaseController {
+@RequestMapping("/capture")
+public class CaptureController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -47,15 +47,14 @@ public class CaptureTaskController extends BaseController {
     @GetMapping("/list")
     public String list(ModelMap model) {
         initEditionInfo(model);
-        model.put("captureAvailable", captureAgentService.isAvailable());
-        return "capture-task/list";
+        return "capture/list";
     }
 
     @GetMapping("/page/add")
     public String pageAdd(ModelMap model, @RequestParam(value = "type", required = false) String type) {
         initEditionInfo(model);
         model.put("captureType", StringUtil.isBlank(type) ? "captureLocal" : type);
-        return "capture-task/add";
+        return "capture/add";
     }
 
     @GetMapping("/page/edit")
@@ -64,7 +63,7 @@ public class CaptureTaskController extends BaseController {
         Map<String, Object> task = captureTaskService.get(id);
         model.put("task", task);
         model.put("captureType", task == null ? null : task.get("type"));
-        return "capture-task/edit";
+        return "capture/edit";
     }
 
     @PostMapping("/query")

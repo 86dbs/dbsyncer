@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 采集任务配置管理（开源）。启停由 {@code CaptureAgentService} 扩展点承担。
+ * 采集任务配置管理
  *
  * @author wuji
  * @version 1.0.0

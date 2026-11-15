@@ -52,7 +52,7 @@
         var canEdit = !window.DBSPermission || DBSPermission.has('capture:edit');
         var running = Number(task.state) === 1 || Number(task.state) === 2;
         var editBtn = canEdit && !running ? `
-            <button class="table-action-btn view" title="修改" onclick="doLoader('/capture-task/page/edit?id=${escapeHtml(task.id)}')">
+            <button class="table-action-btn view" title="修改" onclick="doLoader('/capture/page/edit?id=${escapeHtml(task.id)}')">
                 <i class="fa fa-edit"></i>
             </button>` : '';
         var startBtn = canEdit && !running ? `
@@ -98,7 +98,7 @@
             title: '启动采集任务',
             content: '确认启动该采集任务？',
             onConfirm: function () {
-                doPoster('/capture-task/start', {id: id}, function (res) {
+                doPoster('/capture/start', {id: id}, function (res) {
                     if (res.success) {
                         refreshCaptureTaskList();
                     } else {
@@ -114,7 +114,7 @@
             title: '停止采集任务',
             content: '确认停止该采集任务？',
             onConfirm: function () {
-                doPoster('/capture-task/stop', {id: id}, function (res) {
+                doPoster('/capture/stop', {id: id}, function (res) {
                     if (res.success) {
                         refreshCaptureTaskList();
                     } else {
@@ -130,7 +130,7 @@
             title: '删除采集任务',
             content: '确认删除该采集任务？删除后不可恢复。',
             onConfirm: function () {
-                doPoster('/capture-task/remove', {id: id}, function (res) {
+                doPoster('/capture/remove', {id: id}, function (res) {
                     if (res.success) {
                         refreshCaptureTaskList();
                     } else {
@@ -142,14 +142,14 @@
     };
 
     window.backIndexPage = function () {
-        doLoader('/capture-task/list');
+        doLoader('/capture/list');
     };
 
     pagination = new PaginationManager({
-        requestUrl: '/capture-task/query',
+        requestUrl: '/capture/query',
         tableBodySelector: '#captureTaskTableBody',
         renderRow: renderRow,
-        storageKey: 'capture-task-list',
+        storageKey: 'capture-list',
         refreshCompleted: function () {
             if (window.DBSPermission) {
                 DBSPermission.apply('#mainContent');
