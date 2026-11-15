@@ -105,17 +105,11 @@
     }
 
     window.startCaptureTask = function (id) {
-        showConfirm({
-            title: '启动采集任务',
-            content: '确认启动该采集任务？',
-            onConfirm: function () {
-                doPoster('/capture/start', {id: id}, function (res) {
-                    if (res.success) {
-                        refreshCaptureTaskList();
-                    } else {
-                        alert(res.message || '启动失败');
-                    }
-                });
+        doPoster('/capture/start', {id: id}, function (res) {
+            if (res.success) {
+                refreshCaptureTaskList();
+            } else {
+                bootGrowl(res.message || '启动失败', 'danger');
             }
         });
     };
