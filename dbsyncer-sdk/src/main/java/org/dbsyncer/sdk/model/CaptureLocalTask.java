@@ -60,11 +60,6 @@ public class CaptureLocalTask extends ConfigModel {
     private String username;
     private String password;
 
-    /**
-     * Schema，可选
-     */
-    private String schema;
-
     public String getConnectorType() {
         return connectorType;
     }
@@ -153,11 +148,4 @@ public class CaptureLocalTask extends ConfigModel {
         this.password = password;
     }
 
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
-    }
 }

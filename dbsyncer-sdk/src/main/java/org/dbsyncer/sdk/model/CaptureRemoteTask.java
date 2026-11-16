@@ -26,6 +26,7 @@ public class CaptureRemoteTask extends ConfigModel {
     private Integer queueCapacity = 100000;
     private String publicKey;
     private String privateKey;
+    private String schema;
 
     public String getAgentHost() {
         return agentHost;
@@ -73,5 +74,13 @@ public class CaptureRemoteTask extends ConfigModel {
 
     public void setPrivateKey(String privateKey) {
         this.privateKey = privateKey;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 }

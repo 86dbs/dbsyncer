@@ -71,7 +71,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         }
         CaptureRemoteTask remote = taskProfile.getTask(id, CaptureRemoteTask.class);
         if (remote != null && ConfigConstant.CAPTURE_REMOTE.equals(remote.getType())) {
-            return toRemoteView(remote, true);
+            return toRemoteView(remote);
         }
         return null;
     }
@@ -149,7 +149,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
             if (task instanceof CaptureLocalTask) {
                 result.add(toLocalView((CaptureLocalTask) task, false));
             } else if (task instanceof CaptureRemoteTask) {
-                result.add(toRemoteView((CaptureRemoteTask) task, false));
+                result.add(toRemoteView((CaptureRemoteTask) task));
             }
         }
     }
@@ -215,7 +215,6 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         task.setJdbcUrl(jdbcUrl);
         task.setUsername(username);
         task.setPassword(password);
-        task.setSchema(StringUtil.trim(params.get("schema")));
         return task;
     }
 
@@ -237,6 +236,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         task.setAgentHost(agentHost);
         task.setAgentPort(agentPort);
         task.setAgentSecret(agentSecret);
+        task.setSchema(StringUtil.trim(params.get("schema")));
         task.setQueueCapacity(NumberUtil.toInt(params.get("queueCapacity"), 100000));
         return task;
     }
@@ -253,12 +253,11 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         if (detail) {
             map.put("jdbcUrl", task.getJdbcUrl());
             map.put("username", task.getUsername());
-            map.put("schema", task.getSchema());
         }
         return map;
     }
 
-    private Map<String, Object> toRemoteView(CaptureRemoteTask task, boolean detail) {
+    private Map<String, Object> toRemoteView(CaptureRemoteTask task) {
         Map<String, Object> map = baseView(task.getId(), task.getName(), task.getType(),
                 task.getCreateTime(), task.getUpdateTime());
         map.put("agentHost", task.getAgentHost());
@@ -266,6 +265,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         map.put("agentSecret", task.getAgentSecret());
         map.put("queueCapacity", task.getQueueCapacity());
         map.put("publicKey", task.getPublicKey());
+        map.put("schema", task.getSchema());
         return map;
     }
 
