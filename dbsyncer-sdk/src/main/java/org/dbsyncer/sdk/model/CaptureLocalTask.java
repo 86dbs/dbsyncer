@@ -7,8 +7,7 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
- * 本地采集任务（{@code TYPE=captureLocal}），配置持久化到 {@code dbsyncer_task.JSON}。
- * <p>本机作为 Netty 服务端，采集源库 CDC 并推送。</p>
+ * 本地采集任务
  *
  * @author wuji
  * @version 1.0.0
@@ -19,6 +18,11 @@ public class CaptureLocalTask extends ConfigModel {
     public CaptureLocalTask() {
         super.setType(ConfigConstant.CAPTURE_LOCAL);
     }
+
+    /**
+     * 连接器类型
+     */
+    private String connectorType;
 
     /**
      * Netty 监听端口
@@ -60,6 +64,14 @@ public class CaptureLocalTask extends ConfigModel {
      * Schema，可选
      */
     private String schema;
+
+    public String getConnectorType() {
+        return connectorType;
+    }
+
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
+    }
 
     public Integer getListenPort() {
         return listenPort;

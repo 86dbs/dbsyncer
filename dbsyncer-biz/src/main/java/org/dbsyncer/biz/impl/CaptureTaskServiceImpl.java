@@ -194,6 +194,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         Assert.hasText(username, "用户名不能为空");
 
         String password = params.get("password");
+        String connectorType = params.get("connectorType");
         if (existing != null && StringUtil.isBlank(password)) {
             password = existing.getPassword();
         }
@@ -204,6 +205,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
             task.setId(params.get("id"));
         }
         task.setName(name);
+        task.setConnectorType(connectorType);
         task.setListenPort(listenPort);
         task.setAgentSecret(agentSecret);
         task.setThreadNum(NumberUtil.toInt(params.get("threadNum"), 4));
