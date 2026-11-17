@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.AgentOffsetConstant;
 import org.dbsyncer.sdk.listener.ChangedEvent;
@@ -14,8 +13,6 @@ import org.dbsyncer.sdk.model.ChangedOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -34,6 +31,11 @@ public final class AgentCaptureListener implements Listener {
     private Watcher watcher;
     private Map<String, String> snapshot;
     private String taskId;
+    /**
+     * 最近一次 refreshEvent 写入内存位点的时间；flush 按此节流，不依赖 meta.updateTime
+     * （incrementMeta 不刷新 updateTime，会导致启动 20s 后位点只更新内存不落库）。
+     */
+    private volatile long lastRefreshTime;
 
     public void setSnapshot(Map<String, String> snapshot) {
         this.snapshot = snapshot;
@@ -49,6 +51,7 @@ public final class AgentCaptureListener implements Listener {
 
     @Override
     public void close() {
+        forceFlushEvent();
     }
 
     @Override
@@ -72,7 +75,8 @@ public final class AgentCaptureListener implements Listener {
 
     @Override
     public void refreshEvent(ChangedOffset offset) {
-        if (offset == null || CollectionUtils.isEmpty(snapshot)) {
+        // snapshot 允许为空 Map：Agent 位点键首次写入前 map 可能尚无元素，不能用 isEmpty 拦截。
+        if (offset == null || snapshot == null) {
             return;
         }
         Object position = offset.getPosition();
@@ -89,22 +93,26 @@ public final class AgentCaptureListener implements Listener {
         if (StringUtil.isNotBlank(offset.getNextFileName())) {
             snapshot.put(AgentOffsetConstant.REDO_PATH, offset.getNextFileName());
         }
+        lastRefreshTime = System.currentTimeMillis();
     }
 
     @Override
     public void flushEvent() {
-        if (watcher == null || CollectionUtils.isEmpty(snapshot)) {
+        if (watcher == null || snapshot == null || snapshot.isEmpty()) {
             return;
         }
-        if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
-            logger.info("Agent snapshot taskId={}, snapshot={}", taskId, snapshot);
-            watcher.flushEvent(snapshot);
+        // 近 20s 内有位点刷新才落库，避免无事件时空刷；用 lastRefreshTime 而非 meta.updateTime。
+        if (lastRefreshTime <= 0L
+                || System.currentTimeMillis() - lastRefreshTime > FLUSH_DELAYED_SECONDS * 1000L) {
+            return;
         }
+        logger.info("Agent snapshot taskId={}, snapshot={}", taskId, snapshot);
+        watcher.flushEvent(snapshot);
     }
 
     @Override
     public void forceFlushEvent() {
-        if (watcher == null || CollectionUtils.isEmpty(snapshot)) {
+        if (watcher == null || snapshot == null || snapshot.isEmpty()) {
             return;
         }
         logger.info("Agent force flush snapshot taskId={}, snapshot={}", taskId, snapshot);

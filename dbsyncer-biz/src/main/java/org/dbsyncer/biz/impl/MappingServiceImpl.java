@@ -52,6 +52,7 @@ import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
+import org.dbsyncer.sdk.constant.AgentOffsetConstant;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -79,6 +80,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -614,10 +616,42 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Connector t = connectorProfile.getConnector(mapping.getTargetConnectorId());
         MappingVO vo = new MappingVO(s, t, metaVo);
         BeanUtils.copyProperties(mapping, vo);
+        // Agent 编辑页展示 redo 位点键（无值时补空，便于查看/修改）
+        enrichAgentSnapshotForView(mapping, metaVo);
         // 全量表列表体积大，下拉/搜索走 searchTables 分页；VO 不回传
         vo.setSourceTable(null);
         vo.setTargetTable(null);
         return vo;
+    }
+
+    /**
+     * Agent 模式：编辑页展示核心 redo 位点（scn/sequence/block）；offset/path 仅有值时展示（仅视图副本，不回写 Meta）。
+     */
+    private void enrichAgentSnapshotForView(Mapping mapping, MetaVO metaVo) {
+        if (mapping == null || mapping.getListener() == null || metaVo == null
+                || !ListenerTypeEnum.isAgent(mapping.getListener().getListenerType())) {
+            return;
+        }
+        Map<String, String> snapshot = metaVo.getSnapshot();
+        Map<String, String> view = snapshot == null ? new LinkedHashMap<>(8) : new LinkedHashMap<>(snapshot);
+        putAgentOffsetIfAbsent(view, AgentOffsetConstant.REDO_SCN);
+        putAgentOffsetIfAbsent(view, AgentOffsetConstant.REDO_SEQUENCE);
+        putAgentOffsetIfAbsent(view, AgentOffsetConstant.REDO_BLOCK);
+        removeAgentOffsetIfBlank(view, AgentOffsetConstant.REDO_OFFSET);
+        removeAgentOffsetIfBlank(view, AgentOffsetConstant.REDO_PATH);
+        metaVo.setSnapshot(view);
+    }
+
+    private static void putAgentOffsetIfAbsent(Map<String, String> snapshot, String key) {
+        if (!snapshot.containsKey(key)) {
+            snapshot.put(key, StringUtil.EMPTY);
+        }
+    }
+
+    private static void removeAgentOffsetIfBlank(Map<String, String> snapshot, String key) {
+        if (StringUtil.isBlank(snapshot.get(key))) {
+            snapshot.remove(key);
+        }
     }
 
     /**

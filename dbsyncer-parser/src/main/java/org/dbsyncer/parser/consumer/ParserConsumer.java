@@ -64,6 +64,7 @@ public final class ParserConsumer implements Watcher, Cloneable {
         Meta meta = taskMetaProfile.getMeta(taskId);
         if (meta != null) {
             meta.setSnapshot(snapshot);
+            meta.setUpdateTime(System.currentTimeMillis());
             taskMetaProfile.updateMeta(meta);
         }
     }
