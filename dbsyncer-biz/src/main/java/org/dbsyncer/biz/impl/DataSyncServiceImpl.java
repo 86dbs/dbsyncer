@@ -16,6 +16,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.MappingProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskDetailProfile;
@@ -24,8 +25,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.util.ConnectorInstanceUtil;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
@@ -33,7 +32,6 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
-import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -77,6 +75,9 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Resource
     private ConnectorFactory connectorFactory;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     @Override
     public MessageVO getMessageVo(String taskId, String messageId) {
@@ -130,12 +131,12 @@ public class DataSyncServiceImpl implements DataSyncService {
             return target;
         }
 
-        // 4、获取连接器服务
+        // 4、按目标连接器类型取 SchemaResolver（不依赖连接池活实例）
         Mapping mapping = mappingProfile.get(tableGroup.getTaskId());
-        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
-        ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
-        ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
-        SchemaResolver schemaResolver = sourceConnector.getSchemaResolver();
+        Assert.notNull(mapping, "Mapping can not be null.");
+        SchemaResolver schemaResolver = connectorFactory
+                .getConnectorService(connectorProfile.getConnector(mapping.getTargetConnectorId()).getConfig())
+                .getSchemaResolver();
         if (schemaResolver == null) {
             logger.warn("反序列化失败，没有实现SchemaResolver");
             return target;
