@@ -16,9 +16,11 @@ import java.util.Map;
 public interface CaptureTaskService {
 
     /**
-     * 列出全部采集任务（本地 + 远端），不含私钥。
+     * 列出采集任务（不含私钥）。
+     *
+     * @param type {@code captureLocal} / {@code captureRemote}；空则返回全部
      */
-    List<Map<String, Object>> list();
+    List<Map<String, Object>> list(String type);
 
     /**
      * 按 ID 查询（不含私钥）。

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">编辑本地采集</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <span th:if="${task?.state ne 0}">
+                <button type="button" class="btn btn-info" disabled>
+                    <i class="fa fa-save"></i> 运行中
+                </button>
+            </span>
+            <button th:if="${task?.state eq 0}" type="button" class="btn btn-primary" id="saveBtn">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 取消
+            </button>
+        </div>
+
+        <form id="captureTaskForm" class="form" onsubmit="return false;" th:if="${task != null}">
+            <input type="hidden" id="id" name="id" th:value="${task.id}">
+            <input type="hidden" id="type" name="type" value="captureLocal">
+
+            <div class="grid grid-cols-2 mt-4">
+                <div class="form-item">
+                    <label class="form-label">类型</label>
+                    <div class="form-control-area">
+                        <select id="connectorType" name="connectorType" class="form-control">
+                            <option th:value="Oracle" th:text="Oracle"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input id="name" name="name" class="form-control" type="text" maxlength="50" required th:value="${task.name}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="listenPort">监听端口<strong class="text-primary">*</strong></label>
+                    <input id="listenPort" name="listenPort" class="form-control" type="number" min="1" max="65535"
+                           required th:value="${task.listenPort}">
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="checkpoint">位点文件名</label>
+                    <input id="checkpoint" name="checkpoint" class="form-control" type="text" maxlength="256"
+                           th:value="${task.checkpoint}">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="agentSecret">密钥<strong class="text-primary">*</strong></label>
+                    <div class="flex items-center gap-2">
+                        <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256"
+                               required th:value="${task.agentSecret}">
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" id="copySecretBtn">
+                                <i class="fa fa-copy"></i> 复制
+                            </button>
+                            <button type="button" class="btn btn-outline" id="genSecretBtn">
+                                <span class="fa fa-refresh"></span> 生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="threadNum">采集线程数</label>
+                    <input id="threadNum" name="threadNum" class="form-control" type="number" min="1" max="64"
+                           th:value="${task.threadNum}">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="captureIntervalMs">采集频率(ms)</label>
+                    <input id="captureIntervalMs" name="captureIntervalMs" class="form-control" type="number" min="50"
+                           th:value="${task.captureIntervalMs}">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="username">用户名<strong class="text-primary">*</strong></label>
+                    <input id="username" name="username" class="form-control" type="text" required th:value="${task.username}">
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="password">密码</label>
+                    <input id="password" name="password" class="form-control" type="password"
+                           placeholder="不修改请留空">
+                </div>
+            </div>
+            <div class="form-item mt-5">
+                <label class="form-label" for="jdbcUrl">源库 JDBC URL<strong class="text-primary">*</strong></label>
+                <input id="jdbcUrl" name="jdbcUrl" class="form-control" type="text" required th:value="${task.jdbcUrl}">
+            </div>
+        </form>
+        <!-- 为类型 dbSelect 下拉预留高度，避免被 form-container 裁切 -->
+        <div class="blank-block-md"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/capture/capture-form.js}"></script>
+<script>
+    $(document).ready(function () {
+        initCaptureTaskForm({mode: 'edit', type: 'captureLocal'});
+    });
+</script>
+</html>

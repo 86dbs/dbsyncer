@@ -3,8 +3,11 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import java.util.List;
+import java.util.Map;
+
 /**
- * 采集任务启停扩展点
+ * 采集任务启停扩展点；无 SPI 实现时由 Manager 注入空实现。
  *
  * @author wuji
  * @version 1.0.0
@@ -12,22 +15,30 @@ package org.dbsyncer.sdk.spi;
  */
 public interface CaptureAgentService {
 
-    default void init() {
-    }
+    void init();
 
-    default boolean isAvailable() {
-        return false;
-    }
+    boolean isAvailable();
 
-    default void start(String id) {
-    }
+    void start(String id);
 
-    default void stop(String id) {
-    }
+    void stop(String id);
 
-    default void bindSchema(String captureTaskId, String mappingId, String schema) {
-    }
+    void bindSchema(String captureTaskId, String mappingId, String schema);
 
-    default void unbindSchema(String captureTaskId, String mappingId) {
-    }
+    void unbindSchema(String captureTaskId, String mappingId);
+
+    /**
+     * 远端采集运行态摘要。约定键：{@code queueSize}。
+     */
+    Map<String, Object> getRemoteRuntimeInfo(String captureTaskId);
+
+    /**
+     * 本地采集运行态摘要。约定键：{@code queueSize}、{@code queueCapacity}、{@code checkpoint}。
+     */
+    Map<String, Object> getLocalRuntimeInfo(String captureTaskId);
+
+    /**
+     * 本地采集已连接客户端列表。
+     */
+    List<Map<String, Object>> listLocalClients(String captureTaskId);
 }

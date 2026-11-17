@@ -52,9 +52,14 @@ public enum PermissionModuleEnum {
     ACL("acl", "资源"),
 
     /**
-     * 采集任务
+     * 本地采集
      */
-    CAPTURE("capture", "采集任务");
+    CAPTURE_LOCAL("captureLocal", "本地采集"),
+
+    /**
+     * 远端采集
+     */
+    CAPTURE_REMOTE("captureRemote", "远端采集");
 
     private final String code;
     private final String name;

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">添加远端采集</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button type="button" class="btn btn-primary" id="saveBtn">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 取消
+            </button>
+        </div>
+
+        <form id="captureTaskForm" class="form" onsubmit="return false;">
+            <input type="hidden" id="type" name="type" value="captureRemote">
+
+            <div class="grid grid-cols-2 mt-4">
+                <div class="form-item">
+                    <label class="form-label">类型</label>
+                    <div class="form-control-area">
+                        <select id="connectorType" name="connectorType" class="form-control">
+                            <option th:value="Oracle" th:text="Oracle"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input id="name" name="name" class="form-control" type="text" maxlength="50" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="agentHost">Agent 主机<strong class="text-primary">*</strong></label>
+                    <input id="agentHost" name="agentHost" class="form-control" type="text" required>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="agentPort">Agent 端口<strong class="text-primary">*</strong></label>
+                    <input id="agentPort" name="agentPort" class="form-control" type="number" min="1" max="65535" value="9100" required>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label" for="agentSecret">密钥<strong class="text-primary">*</strong></label>
+                    <div class="flex items-center gap-2">
+                        <input id="agentSecret" name="agentSecret" class="form-control" type="text" maxlength="256" required>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" id="copySecretBtn">
+                                <i class="fa fa-copy"></i> 复制
+                            </button>
+                            <button type="button" class="btn btn-outline" id="genSecretBtn">
+                                <span class="fa fa-refresh"></span> 生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label" for="queueCapacity">队列容量</label>
+                    <input id="queueCapacity" name="queueCapacity" class="form-control" type="number" min="1000" value="100000">
+                </div>
+            </div>
+        </form>
+        <!-- 为类型 dbSelect 下拉预留高度，避免被 form-container 裁切 -->
+        <div class="blank-block-md"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/capture/capture-form.js}"></script>
+<script>
+    $(document).ready(function () {
+        initCaptureTaskForm({mode: 'add', type: 'captureRemote'});
+    });
+</script>
+</html>

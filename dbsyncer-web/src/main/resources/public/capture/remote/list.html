@@ -7,10 +7,10 @@
     <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
     <div class="bg-info/10 border border-info rounded-lg p-4 mb-6 text-left">
         <h4 class="text-lg font-semibold text-info mb-2">
-            <i class="fa fa-server"></i> 什么是采集任务？
+            <i class="fa fa-server"></i> 什么是远端采集？
         </h4>
         <p class="text-sm text-secondary mb-3">
-            采集任务支持本地采集（本机采源库日志）与远端采集（连接本地采集收事件），适合源库与同步平台分离部署的场景。
+            远端采集在同步平台侧连接本地采集，接收事件并路由到同步任务，适合源库与平台分离部署。
         </p>
     </div>
     <p class="text-secondary mb-6">
@@ -25,21 +25,20 @@
 </div>
 
 <!-- 专业版内容 -->
-<div th:if="${editionInfo.edition ne 'community'}" class="form-container">
+<div th:if="${editionInfo.edition ne 'community'}" class="form-container"
+     data-capture-type="captureRemote"
+     data-edit-permission="captureRemote:edit"
+     data-page-base="/capture/remote">
     <div class="card-header">
-        <h3 class="card-title text-center">采集任务</h3>
+        <h3 class="card-title text-center">远端采集</h3>
     </div>
     <div class="card-body">
 
         <div class="flex items-center justify-between gap-2 mb-4">
             <div></div>
             <div class="flex items-center gap-2">
-                <button class="btn btn-outline" type="button" data-permission="capture:edit"
-                        onclick="doLoader('/capture/page/add?type=captureLocal')">
-                    <i class="fa fa-plus"></i> 本地采集
-                </button>
-                <button class="btn btn-primary" type="button" data-permission="capture:edit"
-                        onclick="doLoader('/capture/page/add?type=captureRemote')">
+                <button id="addCaptureTaskBtn" class="btn btn-primary" type="button"
+                        data-permission="captureRemote:edit">
                     <i class="fa fa-plus"></i> 远端采集
                 </button>
             </div>
@@ -49,9 +48,14 @@
             <thead>
             <tr>
                 <th></th>
-                <th>名称</th>
-                <th>类型</th>
+                <th>任务名称</th>
+                <th>主机端口</th>
+                <th>关联同步任务</th>
+                <th>连接类型</th>
                 <th>状态</th>
+                <th>客户端队列容量</th>
+                <th>位点信息</th>
+                <th>订阅信息</th>
                 <th>更新时间</th>
                 <th>操作</th>
             </tr>

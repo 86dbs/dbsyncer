@@ -20,6 +20,11 @@ public class CaptureRemoteTask extends ConfigModel {
         super.setType(ConfigConstant.CAPTURE_REMOTE);
     }
 
+    /**
+     * 连接器类型（如 Oracle）
+     */
+    private String connectorType;
+
     private String agentHost;
     private Integer agentPort;
     private String agentSecret;
@@ -27,6 +32,14 @@ public class CaptureRemoteTask extends ConfigModel {
     private String publicKey;
     private String privateKey;
     private String schema;
+
+    public String getConnectorType() {
+        return connectorType;
+    }
+
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
+    }
 
     public String getAgentHost() {
         return agentHost;

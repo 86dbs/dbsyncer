@@ -89,8 +89,10 @@ public class RbacSeedService implements ApplicationListener<ContextRefreshedEven
                 new PermissionDef("system:edit", "编辑系统配置", PermissionModuleEnum.SYSTEM),
                 new PermissionDef("acl:view", "查看资源授权", PermissionModuleEnum.ACL),
                 new PermissionDef("acl:edit", "编辑资源授权", PermissionModuleEnum.ACL),
-                new PermissionDef("capture:view", "查看采集任务", PermissionModuleEnum.CAPTURE),
-                new PermissionDef("capture:edit", "编辑采集任务", PermissionModuleEnum.CAPTURE)
+                new PermissionDef("captureLocal:view", "查看本地采集", PermissionModuleEnum.CAPTURE_LOCAL),
+                new PermissionDef("captureLocal:edit", "编辑本地采集", PermissionModuleEnum.CAPTURE_LOCAL),
+                new PermissionDef("captureRemote:view", "查看远端采集", PermissionModuleEnum.CAPTURE_REMOTE),
+                new PermissionDef("captureRemote:edit", "编辑远端采集", PermissionModuleEnum.CAPTURE_REMOTE)
         );
     }
 

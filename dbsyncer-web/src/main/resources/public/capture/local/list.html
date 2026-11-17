@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 社区版提示 -->
+<div th:if="${editionInfo.edition eq 'community'}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+    <div class="bg-info/10 border border-info rounded-lg p-4 mb-6 text-left">
+        <h4 class="text-lg font-semibold text-info mb-2">
+            <i class="fa fa-server"></i> 什么是本地采集？
+        </h4>
+        <p class="text-sm text-secondary mb-3">
+            本地采集部署在源库侧，采集日志并通过网络推送给远端采集，适合源库与平台分离部署。
+        </p>
+    </div>
+    <p class="text-secondary mb-6">
+        该功能仅在专业版开放，请下载
+        <a href="https://gitee.com/ghi/dbsyncer/releases"
+           class="text-primary hover-underline font-medium"
+           title="下载专业版"
+           target="_blank">
+            <i class="fa fa-download"></i> 专业版
+        </a>
+    </p>
+</div>
+
+<!-- 专业版内容 -->
+<div th:if="${editionInfo.edition ne 'community'}" class="form-container"
+     data-capture-type="captureLocal"
+     data-edit-permission="captureLocal:edit"
+     data-page-base="/capture/local">
+    <div class="card-header">
+        <h3 class="card-title text-center">本地采集</h3>
+    </div>
+    <div class="card-body">
+
+        <div class="flex items-center justify-between gap-2 mb-4">
+            <div></div>
+            <div class="flex items-center gap-2">
+                <button id="addCaptureTaskBtn" class="btn btn-primary" type="button"
+                        data-permission="captureLocal:edit">
+                    <i class="fa fa-plus"></i> 本地采集
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>任务名称</th>
+                <th>状态</th>
+                <th>队列容量</th>
+                <th>位点信息</th>
+                <th>连接类型</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="captureTaskTableBody"></tbody>
+        </table>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<script th:if="${editionInfo.edition ne 'community'}" th:src="@{/js/capture/capture-list.js}"></script>
+</html>

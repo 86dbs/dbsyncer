@@ -275,6 +275,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
             ParserConsumer consumer = parserConsumer.clone();
             consumer.build(meta.getTaskId(), list, mapping.getChannelSize());
             agentListener.register(consumer);
+            agentListener.setSnapshot(meta.getSnapshot());
+            agentListener.setTaskId(meta.getId());
             agentListener.init();
             return agentListener;
         }

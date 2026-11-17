@@ -15,10 +15,14 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.CaptureTaskRelProfile;
 import org.dbsyncer.parser.TaskMetaProfile;
 import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.model.CaptureTaskRel;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CaptureLocalTask;
 import org.dbsyncer.sdk.model.CaptureRemoteTask;
+import org.dbsyncer.sdk.spi.CaptureAgentService;
+import org.dbsyncer.sdk.util.AgentOffsetUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -31,8 +35,10 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * {@link CaptureTaskService} 实现。
@@ -51,13 +57,21 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
     @Resource
     private CaptureTaskRelProfile captureTaskRelProfile;
     @Resource
+    private CaptureAgentService captureAgentService;
+    @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Override
-    public List<Map<String, Object>> list() {
+    public List<Map<String, Object>> list(String type) {
         List<Map<String, Object>> result = new ArrayList<>();
-        collect(result, taskProfile.queryTasks(CaptureLocalTask.class, 1, Integer.MAX_VALUE, null, null).getData());
-        collect(result, taskProfile.queryTasks(CaptureRemoteTask.class, 1, Integer.MAX_VALUE, null, null).getData());
+        String normalized = StringUtil.trim(type);
+        boolean all = StringUtil.isBlank(normalized);
+        if (all || ConfigConstant.CAPTURE_LOCAL.equals(normalized)) {
+            collect(result, taskProfile.queryTasks(CaptureLocalTask.class, 1, Integer.MAX_VALUE, null, null).getData());
+        }
+        if (all || ConfigConstant.CAPTURE_REMOTE.equals(normalized)) {
+            collect(result, taskProfile.queryTasks(CaptureRemoteTask.class, 1, Integer.MAX_VALUE, null, null).getData());
+        }
         result.sort(Comparator.comparing(
                 (Map<String, Object> m) -> NumberUtil.toLong(String.valueOf(m.get("updateTime")), 0L)).reversed());
         return result;
@@ -233,10 +247,11 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
             task.setId(params.get("id"));
         }
         task.setName(name);
+        String connectorType = StringUtil.trim(params.get("connectorType"));
+        task.setConnectorType(StringUtil.isBlank(connectorType) ? "Oracle" : connectorType);
         task.setAgentHost(agentHost);
         task.setAgentPort(agentPort);
         task.setAgentSecret(agentSecret);
-        task.setSchema(StringUtil.trim(params.get("schema")));
         task.setQueueCapacity(NumberUtil.toInt(params.get("queueCapacity"), 100000));
         return task;
     }
@@ -249,7 +264,9 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         map.put("threadNum", task.getThreadNum());
         map.put("captureIntervalMs", task.getCaptureIntervalMs());
         map.put("checkpoint", task.getCheckpoint());
+        map.put("connectorType", StringUtil.isBlank(task.getConnectorType()) ? "Oracle" : task.getConnectorType());
         map.put("publicKey", task.getPublicKey());
+        enrichLocalRuntime(map, task);
         if (detail) {
             map.put("jdbcUrl", task.getJdbcUrl());
             map.put("username", task.getUsername());
@@ -257,16 +274,157 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         return map;
     }
 
+    /**
+     * 填充本地列表展示：推送队列占用、位点。
+     */
+    private void enrichLocalRuntime(Map<String, Object> map, CaptureLocalTask task) {
+        Map<String, Object> runtime = captureAgentService.getLocalRuntimeInfo(task.getId());
+        Integer queueSize = null;
+        Integer queueCapacity = null;
+        if (runtime != null) {
+            if (runtime.get("queueSize") != null) {
+                queueSize = NumberUtil.toInt(String.valueOf(runtime.get("queueSize")), -1);
+                if (queueSize < 0) {
+                    queueSize = null;
+                }
+            }
+            if (runtime.get("queueCapacity") != null) {
+                queueCapacity = NumberUtil.toInt(String.valueOf(runtime.get("queueCapacity")), -1);
+                if (queueCapacity <= 0) {
+                    queueCapacity = null;
+                }
+            }
+            Object checkpoint = runtime.get("checkpoint");
+            if (checkpoint instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> checkpointMap = (Map<String, Object>) checkpoint;
+                map.put("checkpointDetail", checkpointMap);
+                map.put("checkpointText", formatCheckpoint(checkpointMap));
+            }
+        }
+        if (!map.containsKey("checkpointText")) {
+            map.put("checkpointText", StringUtil.isBlank(task.getCheckpoint()) ? "-" : task.getCheckpoint());
+        }
+        map.put("queueSize", queueSize);
+        map.put("queueCapacity", queueCapacity);
+        if (queueCapacity != null) {
+            map.put("queueCapacityText", (queueSize == null ? 0 : queueSize) + "/" + queueCapacity);
+        } else {
+            map.put("queueCapacityText", "-");
+        }
+    }
+
     private Map<String, Object> toRemoteView(CaptureRemoteTask task) {
         Map<String, Object> map = baseView(task.getId(), task.getName(), task.getType(),
                 task.getCreateTime(), task.getUpdateTime());
         map.put("agentHost", task.getAgentHost());
         map.put("agentPort", task.getAgentPort());
+        map.put("agentAddress", formatHostPort(task.getAgentHost(), task.getAgentPort()));
         map.put("agentSecret", task.getAgentSecret());
+        map.put("connectorType", StringUtil.isBlank(task.getConnectorType()) ? "Oracle" : task.getConnectorType());
         map.put("queueCapacity", task.getQueueCapacity());
         map.put("publicKey", task.getPublicKey());
         map.put("schema", task.getSchema());
+        enrichRemoteRelations(map, task);
         return map;
+    }
+
+    /**
+     * 填充远端列表展示：关联同步任务、订阅 Schema、位点、运行队列占用。
+     */
+    private void enrichRemoteRelations(Map<String, Object> map, CaptureRemoteTask task) {
+        List<CaptureTaskRel> rels = captureTaskRelProfile.listByCaptureTaskId(task.getId());
+        List<String> mappingNames = new ArrayList<>();
+        Set<String> schemas = new LinkedHashSet<>();
+        if (StringUtil.isNotBlank(task.getSchema())) {
+            String[] parts = StringUtil.split(task.getSchema(), StringUtil.COMMA);
+            if (parts != null) {
+                for (String part : parts) {
+                    if (StringUtil.isNotBlank(part)) {
+                        schemas.add(part.trim().toUpperCase());
+                    }
+                }
+            }
+        }
+        Map<String, Object> minCheckpoint = null;
+        if (!CollectionUtils.isEmpty(rels)) {
+            for (CaptureTaskRel rel : rels) {
+                if (rel == null || StringUtil.isBlank(rel.getTaskId())) {
+                    continue;
+                }
+                Mapping mapping = taskProfile.getTask(rel.getTaskId(), Mapping.class);
+                if (mapping != null) {
+                    if (StringUtil.isNotBlank(mapping.getName())) {
+                        mappingNames.add(mapping.getName());
+                    }
+                    if (StringUtil.isNotBlank(mapping.getSourceSchema())) {
+                        schemas.add(mapping.getSourceSchema().trim().toUpperCase());
+                    }
+                } else {
+                    mappingNames.add(rel.getTaskId());
+                }
+                Meta meta = taskMetaProfile.getMeta(rel.getTaskId());
+                if (meta != null && !CollectionUtils.isEmpty(meta.getSnapshot())) {
+                    Map<String, Object> checkpoint = AgentOffsetUtil.readCheckpoint(meta.getSnapshot());
+                    minCheckpoint = AgentOffsetUtil.min(minCheckpoint, checkpoint);
+                }
+            }
+        }
+        map.put("mappingNames", mappingNames);
+        map.put("mappingNamesText", mappingNames.isEmpty() ? "-" : String.join(", ", mappingNames));
+        map.put("subscribeSchemas", new ArrayList<>(schemas));
+        map.put("subscribeText", schemas.isEmpty() ? "-" : String.join(", ", schemas));
+        map.put("checkpoint", minCheckpoint);
+        map.put("checkpointText", formatCheckpoint(minCheckpoint));
+
+        Integer queueCapacity = task.getQueueCapacity() == null || task.getQueueCapacity() <= 0
+                ? 100000 : task.getQueueCapacity();
+        Integer queueSize = null;
+        Map<String, Object> runtime = captureAgentService.getRemoteRuntimeInfo(task.getId());
+        if (runtime != null && runtime.get("queueSize") != null) {
+            queueSize = NumberUtil.toInt(String.valueOf(runtime.get("queueSize")), -1);
+            if (queueSize < 0) {
+                queueSize = null;
+            }
+        }
+        map.put("queueSize", queueSize);
+        map.put("queueCapacityText", queueSize == null
+                ? String.valueOf(queueCapacity)
+                : queueSize + "/" + queueCapacity);
+    }
+
+    private static String formatHostPort(String host, Integer port) {
+        if (StringUtil.isBlank(host)) {
+            return "-";
+        }
+        if (port == null || port <= 0) {
+            return host;
+        }
+        return host + ":" + port;
+    }
+
+    private static String formatCheckpoint(Map<String, Object> checkpoint) {
+        if (checkpoint == null || checkpoint.isEmpty()) {
+            return "-";
+        }
+        List<String> parts = new ArrayList<>();
+        appendCheckpointPart(parts, "scn", checkpoint.get("scn"));
+        appendCheckpointPart(parts, "seq", checkpoint.get("sequence"));
+        appendCheckpointPart(parts, "block", checkpoint.get("block"));
+        appendCheckpointPart(parts, "offset", checkpoint.get("offset"));
+        appendCheckpointPart(parts, "path", checkpoint.get("path"));
+        return parts.isEmpty() ? "-" : String.join(", ", parts);
+    }
+
+    private static void appendCheckpointPart(List<String> parts, String label, Object value) {
+        if (value == null) {
+            return;
+        }
+        String text = String.valueOf(value).trim();
+        if (StringUtil.isBlank(text) || "null".equalsIgnoreCase(text)) {
+            return;
+        }
+        parts.add(label + "=" + text);
     }
 
     private Map<String, Object> baseView(String id, String name, String type, Long createTime, Long updateTime) {

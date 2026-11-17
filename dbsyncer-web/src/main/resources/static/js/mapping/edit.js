@@ -68,7 +68,7 @@ function loadCaptureRemoteOptions() {
     if ($select.data("loaded")) {
         return;
     }
-    doPoster("/capture/query", {}, function (response) {
+    doPoster("/capture/query", {type: "captureRemote"}, function (response) {
         if (!response.success) {
             bootGrowl(response.message, "danger");
             return;
