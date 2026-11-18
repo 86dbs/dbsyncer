@@ -193,12 +193,12 @@
                     <table class="table">
                         <thead>
                         <tr>
-                            <th>客户端地址</th>
+                            <th>IP</th>
                             <th>端口</th>
                             <th>订阅信息</th>
-                            <th>注册信息</th>
-                            <th>心跳上报时间</th>
-                            <th>客户端队列容量</th>
+                            <th>注册时间</th>
+                            <th>心跳时间</th>
+                            <th>队列容量</th>
                         </tr>
                         </thead>
                         <tbody>${renderClientRows(clients)}</tbody>
@@ -249,7 +249,7 @@
                 <td class="text-center">${displayText(task.queueCapacityText)}</td>
                 <td title="${displayText(task.checkpointText)}">${displayText(task.checkpointText)}</td>
                 <td title="${displayText(task.subscribeText)}">${displayText(task.subscribeText)}</td>
-                <td>${formatTime(task.updateTime)}</td>
+                <td>${formatRelativeTime(task.updateTime)}</td>
                 <td>${renderActions(task)}</td>
             </tr>`;
     }

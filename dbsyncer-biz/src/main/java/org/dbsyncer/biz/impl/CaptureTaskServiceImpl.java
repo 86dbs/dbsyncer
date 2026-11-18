@@ -22,7 +22,6 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CaptureLocalTask;
 import org.dbsyncer.sdk.model.CaptureRemoteTask;
 import org.dbsyncer.sdk.spi.CaptureAgentService;
-import org.dbsyncer.sdk.util.AgentOffsetUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -330,7 +329,8 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
     }
 
     /**
-     * 填充远端列表展示：关联同步任务、订阅 Schema、位点、运行队列占用。
+     * 填充远端列表展示：关联同步任务、订阅 Schema、运行态位点与队列占用。
+     * <p>位点取远端运行时已收到的最新位点，不取关联同步任务进度。</p>
      */
     private void enrichRemoteRelations(Map<String, Object> map, CaptureRemoteTask task) {
         List<CaptureTaskRel> rels = captureTaskRelProfile.listByCaptureTaskId(task.getId());
@@ -346,7 +346,6 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
                 }
             }
         }
-        Map<String, Object> minCheckpoint = null;
         if (!CollectionUtils.isEmpty(rels)) {
             for (CaptureTaskRel rel : rels) {
                 if (rel == null || StringUtil.isBlank(rel.getTaskId())) {
@@ -363,11 +362,6 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
                 } else {
                     mappingNames.add(rel.getTaskId());
                 }
-                Meta meta = taskMetaProfile.getMeta(rel.getTaskId());
-                if (meta != null && !CollectionUtils.isEmpty(meta.getSnapshot())) {
-                    Map<String, Object> checkpoint = AgentOffsetUtil.readCheckpoint(meta.getSnapshot());
-                    minCheckpoint = AgentOffsetUtil.min(minCheckpoint, checkpoint);
-                }
             }
         }
         map.put("mappingNames", mappingNames);
@@ -375,12 +369,11 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         map.put("mappingNamesText", mappingNames.isEmpty() ? "-" : String.join(", ", mappingNames));
         map.put("subscribeSchemas", new ArrayList<>(schemas));
         map.put("subscribeText", schemas.isEmpty() ? "-" : String.join(", ", schemas));
-        map.put("checkpoint", minCheckpoint);
-        map.put("checkpointText", formatCheckpoint(minCheckpoint));
 
         Integer queueCapacity = task.getQueueCapacity() == null || task.getQueueCapacity() <= 0
                 ? 100000 : task.getQueueCapacity();
         Integer queueSize = null;
+        Map<String, Object> checkpoint = null;
         Map<String, Object> runtime = captureAgentService.getRemoteRuntimeInfo(task.getId());
         if (runtime != null) {
             if (runtime.get("queueSize") != null) {
@@ -395,12 +388,23 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
                     queueCapacity = runtimeCapacity;
                 }
             }
+            Object runtimeCheckpoint = runtime.get("checkpoint");
+            if (runtimeCheckpoint instanceof Map && !((Map<?, ?>) runtimeCheckpoint).isEmpty()) {
+                checkpoint = castCheckpoint(runtimeCheckpoint);
+            }
         }
+        map.put("checkpoint", checkpoint);
+        map.put("checkpointText", formatCheckpoint(checkpoint));
         map.put("queueSize", queueSize);
         map.put("queueCapacity", queueCapacity);
         map.put("queueCapacityText", queueSize == null
                 ? String.valueOf(queueCapacity)
                 : queueSize + "/" + queueCapacity);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> castCheckpoint(Object value) {
+        return (Map<String, Object>) value;
     }
 
     private static String formatHostPort(String host, Integer port) {

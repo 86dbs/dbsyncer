@@ -42,7 +42,7 @@ public interface CaptureAgentService {
     }
 
     /**
-     * 远端采集运行态摘要。约定键：{@code queueSize}、{@code queueCapacity}。
+     * 远端采集运行态摘要。约定键：{@code queueSize}、{@code queueCapacity}、{@code checkpoint}。
      */
     default Map<String, Object> getRemoteRuntimeInfo(String captureTaskId) {
         return Collections.emptyMap();
