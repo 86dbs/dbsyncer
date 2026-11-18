@@ -322,6 +322,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Set<String> allowedIds = resourceAclService.resolveAllowedIds(
                 params.get(UserConfigService.CURRENT_USER_NAME), ConfigConstant.MAPPING, ResourceAclActionEnum.READ.getCode());
         groupFilter = resourceAclService.applyToSearchFilter(groupFilter, allowedIds);
+        groupFilter = applyCaptureTaskFilter(groupFilter, params.get(ConfigConstant.CAPTURE_TASK_ID));
         Paging<MappingListVO> result = new Paging<>(pageNum, pageSize);
         if (groupFilter.isEmptyResult()) {
             return result;
@@ -831,6 +832,41 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         mapping.setSourceTable(!CollectionUtils.isEmpty(mapping.getSourceTable()) ? mapping.getSourceTable() : new ArrayList<>());
         mapping.setTargetTable(!CollectionUtils.isEmpty(mapping.getTargetTable()) ? mapping.getTargetTable() : new ArrayList<>());
         return isSource ? mapping.getSourceTable() : mapping.getTargetTable();
+    }
+
+    /**
+     * 按远端采集任务筛选同步任务：查 {@code dbsyncer_capture_task_rel} 得到 taskId，再与分组/ACL 结果求交。
+     */
+    private GroupSearchFilter applyCaptureTaskFilter(GroupSearchFilter base, String captureTaskIdParam) {
+        if (base == null || base.isEmptyResult()) {
+            return base;
+        }
+        String captureTaskId = StringUtil.trim(captureTaskIdParam);
+        if (StringUtil.isBlank(captureTaskId)) {
+            return base;
+        }
+        List<CaptureTaskRel> rels = captureTaskRelProfile.listByCaptureTaskId(captureTaskId);
+        if (CollectionUtils.isEmpty(rels)) {
+            return GroupSearchFilter.EMPTY;
+        }
+        Set<String> matched = rels.stream()
+                .filter(Objects::nonNull)
+                .map(CaptureTaskRel::getTaskId)
+                .filter(StringUtil::isNotBlank)
+                .collect(Collectors.toCollection(HashSet::new));
+        if (matched.isEmpty()) {
+            return GroupSearchFilter.EMPTY;
+        }
+        if (!base.hasIdFilter()) {
+            return new GroupSearchFilter(false, new ArrayList<>(matched));
+        }
+        List<String> intersected = base.getIds().stream()
+                .filter(matched::contains)
+                .collect(Collectors.toList());
+        if (intersected.isEmpty()) {
+            return GroupSearchFilter.EMPTY;
+        }
+        return new GroupSearchFilter(false, intersected);
     }
 
     private void bindCaptureRel(Mapping mapping) {

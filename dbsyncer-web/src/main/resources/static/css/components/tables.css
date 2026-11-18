@@ -48,6 +48,12 @@ tr[draggable="true"]:hover {
   max-width: 260px;
 }
 
+/* 覆盖 .table th 默认左对齐，仅在显式标记 text-center 时生效 */
+.table th.text-center,
+.table td.text-center {
+  text-align: center;
+}
+
 /* 表格单元格中包含 select 或 dbSelect 组件时，允许下拉框显示 */
 .table td:has(select),
 .table td:has(.dbsyncer-select) {

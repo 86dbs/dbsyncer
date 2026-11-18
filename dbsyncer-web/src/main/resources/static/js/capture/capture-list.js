@@ -220,22 +220,52 @@
         openLocalClientsDialog($btn.attr('data-task-id'), $btn.attr('data-task-name') || '');
     });
 
+    /**
+     * 关联同步任务只展示数量；有关联时可点进数据同步列表并按本采集任务筛选。
+     */
+    function renderMappingCountCell(task) {
+        var count = Number(task.mappingCount);
+        if (isNaN(count)) {
+            count = Array.isArray(task.mappingNames) ? task.mappingNames.length : 0;
+        }
+        if (count <= 0) {
+            return '0';
+        }
+        var id = escapeHtml(task.id || '');
+        var title = escapeHtml(task.mappingNamesText || ('关联 ' + count + ' 个同步任务'));
+        return '<a href="javascript:void(0)" class="text-primary hover:underline cursor-pointer" title="' + title + '"'
+            + ' onclick="openMappingsByCaptureTask(\'' + id + '\')">' + count + '</a>';
+    }
+
     function renderRemoteRow(task, index) {
         return `
             <tr>
                 <td>${index}</td>
                 <td>${displayText(task.name)}</td>
                 <td>${displayText(task.agentAddress)}</td>
-                <td title="${displayText(task.mappingNamesText)}">${displayText(task.mappingNamesText)}</td>
-                <td>${displayText(task.connectorType)}</td>
+                <td class="text-center">${renderMappingCountCell(task)}</td>
+                <td class="text-center">${displayText(task.connectorType)}</td>
                 <td>${renderTaskStateText(task.state)}</td>
-                <td>${displayText(task.queueCapacityText)}</td>
+                <td class="text-center">${displayText(task.queueCapacityText)}</td>
                 <td title="${displayText(task.checkpointText)}">${displayText(task.checkpointText)}</td>
                 <td title="${displayText(task.subscribeText)}">${displayText(task.subscribeText)}</td>
                 <td>${formatTime(task.updateTime)}</td>
                 <td>${renderActions(task)}</td>
             </tr>`;
     }
+
+    window.openMappingsByCaptureTask = function (captureTaskId) {
+        try {
+            if (captureTaskId) {
+                localStorage.setItem('dbsyncer.mapping.captureTaskId', captureTaskId);
+            } else {
+                localStorage.removeItem('dbsyncer.mapping.captureTaskId');
+            }
+        } catch (e) {
+            // ignore
+        }
+        doLoader('/mapping/list');
+    };
 
     function renderRow(task, index) {
         if (captureType === 'captureRemote') {

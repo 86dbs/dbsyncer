@@ -17,6 +17,11 @@
                         <i class="fa fa-times"></i>
                     </span>
                 </div>
+                <div id="mappingCaptureFilter" class="flex-shrink-0 w-320 hidden">
+                    <select id="captureTaskFilter" class="form-control" title="按远端采集任务筛选">
+                        <option value="">全部远端采集</option>
+                    </select>
+                </div>
                 <div id="mappingGroupToolbar" class="flex items-center gap-2"></div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
@@ -116,14 +121,47 @@
         window.backIndexPage = function () {
             doLoader('/mapping/list');
         };
+        const captureFilterKey = 'dbsyncer.mapping.captureTaskId';
         let groupToolbar = null;
+        let searchInput = null;
+        let currentCaptureTaskId = '';
+        try {
+            currentCaptureTaskId = localStorage.getItem(captureFilterKey) || '';
+        } catch (e) {
+            currentCaptureTaskId = '';
+        }
+
+        function buildSearchParams(extra) {
+            const params = groupToolbar
+                ? groupToolbar.getSearchParams(extra || {})
+                : $.extend({}, extra || {});
+            params.captureTaskId = currentCaptureTaskId || '';
+            return params;
+        }
+
+        function persistCaptureFilter(value) {
+            currentCaptureTaskId = value || '';
+            try {
+                if (currentCaptureTaskId) {
+                    localStorage.setItem(captureFilterKey, currentCaptureTaskId);
+                } else {
+                    localStorage.removeItem(captureFilterKey);
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+
         // 初始化分页管理器
         const pagination = new PaginationManager({
             requestUrl: '/mapping/search',
             tableBodySelector: '#mappingTableBody',
             storageKey: 'mapping-list',
             pageSize: 5,
-            params: {groupId: (window.GroupToolbar && GroupToolbar.peekStoredGroupId('mapping')) || ''},
+            params: {
+                groupId: (window.GroupToolbar && GroupToolbar.peekStoredGroupId('mapping')) || '',
+                captureTaskId: currentCaptureTaskId
+            },
             refreshCompleted: function () {
                 if (groupToolbar) {
                     groupToolbar.setListTotal(pagination.total || 0);
@@ -185,7 +223,6 @@
             customPageSize: true,
         });
 
-        let searchInput = null;
         groupToolbar = GroupToolbar.initListToolbar({
             containerSelector: '#mappingGroupToolbar',
             createButtonHostSelector: '#mappingGroupCreateHost',
@@ -194,24 +231,93 @@
             addPageUrl: '/mapping/pageAdd',
             addButtonSelector: '#mappingAddBtn',
             onChange: function () {
-                pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchInput ? searchInput.getValue() : ''}), 1);
+                pagination.doSearch(buildSearchParams({searchKey: searchInput ? searchInput.getValue() : ''}), 1);
             }
         });
         groupToolbar.setListTotal(pagination.total || 0);
 
         // 搜索框输入事件
         searchInput = initSearch('searchMapping', function (searchKey) {
-            pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchKey}), 1);
+            pagination.doSearch(buildSearchParams({searchKey: searchKey}), 1);
         });
+
+        // 远端采集任务筛选：仅当存在远端采集任务时显示，否则保持隐藏
+        const $captureWrap = $('#mappingCaptureFilter');
+        const $captureSelect = $('#captureTaskFilter');
+
+        function hideCaptureFilter(clearFilter) {
+            $captureWrap.addClass('hidden').css('display', 'none');
+            if (clearFilter && currentCaptureTaskId) {
+                persistCaptureFilter('');
+                pagination.doSearch(buildSearchParams({
+                    searchKey: searchInput ? searchInput.getValue() : ''
+                }), 1);
+            }
+        }
+
+        function showCaptureFilter() {
+            $captureWrap.removeClass('hidden').css('display', '');
+        }
+
+        // 默认隐藏；确认有远端采集任务后再显示
+        hideCaptureFilter(false);
+        if (window.DBSPermission && !DBSPermission.has('captureRemote:view')) {
+            hideCaptureFilter(true);
+        } else {
+            doPoster('/capture/query', {type: 'captureRemote'}, function (response) {
+                if (!response.success) {
+                    hideCaptureFilter(true);
+                    return;
+                }
+                const rows = response.data && response.data.data ? response.data.data : [];
+                const remotes = (rows || []).filter(function (row) {
+                    return row && row.type === 'captureRemote' && row.id;
+                });
+                if (!remotes.length) {
+                    hideCaptureFilter(true);
+                    return;
+                }
+                const selectData = [{value: '', label: '全部远端采集'}];
+                remotes.forEach(function (row) {
+                    selectData.push({value: row.id, label: row.name || row.id});
+                });
+                const selected = remotes.some(function (row) {
+                    return row.id === currentCaptureTaskId;
+                }) ? currentCaptureTaskId : '';
+                if (currentCaptureTaskId && !selected) {
+                    persistCaptureFilter('');
+                }
+                // 先显示再初始化 dbSelect，避免父级 display:none 时宽度为 0
+                showCaptureFilter();
+                $captureSelect.dbSelect({
+                    type: 'single',
+                    data: selectData,
+                    defaultValue: [selected],
+                    onSelect: function (values) {
+                        const value = (values && values[0]) != null ? values[0] : '';
+                        persistCaptureFilter(value);
+                        pagination.doSearch(buildSearchParams({
+                            searchKey: searchInput ? searchInput.getValue() : ''
+                        }), 1);
+                    }
+                });
+                if (selected === '') {
+                    const api = $captureSelect.data('dbSelect');
+                    if (api && typeof api.setValues === 'function') {
+                        api.setValues([''], true);
+                    }
+                }
+            });
+        }
 
         // 列表局部刷新（启动/停止等操作后保持当前页与分页大小）
         window.refreshIndexList = function () {
-            pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchInput.getValue()}), pagination.currentPage);
+            pagination.doSearch(buildSearchParams({searchKey: searchInput.getValue()}), pagination.currentPage);
         };
 
         // 注册到全局定时刷新管理器
         PageRefreshManager.register(() => {
-            pagination.doSearch(groupToolbar.getSearchParams({searchKey: searchInput.getValue()}), pagination.currentPage);
+            pagination.doSearch(buildSearchParams({searchKey: searchInput.getValue()}), pagination.currentPage);
         });
     });
 </script>

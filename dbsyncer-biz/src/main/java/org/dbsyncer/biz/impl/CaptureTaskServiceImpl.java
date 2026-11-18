@@ -371,6 +371,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
             }
         }
         map.put("mappingNames", mappingNames);
+        map.put("mappingCount", mappingNames.size());
         map.put("mappingNamesText", mappingNames.isEmpty() ? "-" : String.join(", ", mappingNames));
         map.put("subscribeSchemas", new ArrayList<>(schemas));
         map.put("subscribeText", schemas.isEmpty() ? "-" : String.join(", ", schemas));
@@ -381,13 +382,22 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
                 ? 100000 : task.getQueueCapacity();
         Integer queueSize = null;
         Map<String, Object> runtime = captureAgentService.getRemoteRuntimeInfo(task.getId());
-        if (runtime != null && runtime.get("queueSize") != null) {
-            queueSize = NumberUtil.toInt(String.valueOf(runtime.get("queueSize")), -1);
-            if (queueSize < 0) {
-                queueSize = null;
+        if (runtime != null) {
+            if (runtime.get("queueSize") != null) {
+                queueSize = NumberUtil.toInt(String.valueOf(runtime.get("queueSize")), -1);
+                if (queueSize < 0) {
+                    queueSize = null;
+                }
+            }
+            if (runtime.get("queueCapacity") != null) {
+                int runtimeCapacity = NumberUtil.toInt(String.valueOf(runtime.get("queueCapacity")), -1);
+                if (runtimeCapacity > 0) {
+                    queueCapacity = runtimeCapacity;
+                }
             }
         }
         map.put("queueSize", queueSize);
+        map.put("queueCapacity", queueCapacity);
         map.put("queueCapacityText", queueSize == null
                 ? String.valueOf(queueCapacity)
                 : queueSize + "/" + queueCapacity);
