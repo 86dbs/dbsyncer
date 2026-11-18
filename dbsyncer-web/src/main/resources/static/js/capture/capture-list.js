@@ -175,7 +175,7 @@
                     <td>${displayText(client.port)}</td>
                     <td title="${displayText(client.subscribeText)}">${displayText(client.subscribeText)}</td>
                     <td>${formatTime(client.registerTime)}</td>
-                    <td>${formatTime(client.lastHeartbeatTime)}</td>
+                    <td>${formatRelativeTime(client.lastHeartbeatTime)}</td>
                     <td>${displayText(client.queueCapacityText)}</td>
                 </tr>`;
         }).join('');
@@ -249,7 +249,7 @@
                 <td class="text-center">${displayText(task.queueCapacityText)}</td>
                 <td title="${displayText(task.checkpointText)}">${displayText(task.checkpointText)}</td>
                 <td title="${displayText(task.subscribeText)}">${displayText(task.subscribeText)}</td>
-                <td>${formatRelativeTime(task.updateTime)}</td>
+                 <td>${formatTime(task.updateTime)}</td>
                 <td>${renderActions(task)}</td>
             </tr>`;
     }
