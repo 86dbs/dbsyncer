@@ -1,5 +1,6 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ * Modified: preserve UTF-8 code points across chunk boundaries.
  */
 package org.dbsyncer.common.util;
 
@@ -57,25 +58,34 @@ public class DataChunkUtil {
 
         byte[] dataBytes = data.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         int totalSize = dataBytes.length;
-        int totalChunks = (int) Math.ceil((double) totalSize / chunkSize);
 
         List<DataChunk> chunks = new ArrayList<>();
         String chunkId = generateChunkId();
 
-        for (int i = 0; i < totalChunks; i++) {
-            int start = i * chunkSize;
-            int end = Math.min(start + chunkSize, totalSize);
+        for (int start = 0; start < totalSize;) {
+            int end = start + Math.min(chunkSize, totalSize - start);
+            // Keep UTF-8 code points intact so each string chunk can be decoded independently.
+            if (end < totalSize) {
+                while (end > start && (dataBytes[end] & 0xC0) == 0x80) {
+                    end--;
+                }
+            }
             byte[] chunkBytes = new byte[end - start];
             System.arraycopy(dataBytes, start, chunkBytes, 0, end - start);
 
             DataChunk chunk = new DataChunk();
             chunk.setChunkId(chunkId);
-            chunk.setChunkIndex(i);
-            chunk.setTotalChunks(totalChunks);
+            chunk.setChunkIndex(chunks.size());
             chunk.setData(new String(chunkBytes, java.nio.charset.StandardCharsets.UTF_8));
             chunk.setSize(chunkBytes.length);
 
             chunks.add(chunk);
+            start = end;
+        }
+
+        int totalChunks = chunks.size();
+        for (DataChunk chunk : chunks) {
+            chunk.setTotalChunks(totalChunks);
         }
 
         logger.info("数据分片完成，总大小: {}KB, 分片数: {}, 分片大小: {}KB", totalSize / 1024, totalChunks, chunkSize / 1024);

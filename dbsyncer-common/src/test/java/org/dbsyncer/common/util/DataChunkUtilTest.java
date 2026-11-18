@@ -1,5 +1,6 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ * Modified: cover UTF-8-safe chunk boundaries.
  */
 package org.dbsyncer.common.util;
 
@@ -105,6 +106,25 @@ public class DataChunkUtilTest {
         Assert.assertEquals("合并后的数据应相同", originalData, mergedData);
 
         logger.info("合并分片测试通过");
+    }
+
+    @Test
+    public void testMergeChunks_PreservesUtf8AtChunkBoundary() {
+        for (String multibyteText : new String[] {"中", "\uD83D\uDE00"}) {
+            StringBuilder data = new StringBuilder();
+            for (int i = 0; i < 102399; i++) {
+                data.append('a');
+            }
+            data.append(multibyteText);
+            String originalData = data.toString();
+
+            List<DataChunk> chunks = DataChunkUtil.chunkData(originalData, 100 * 1024);
+            Assert.assertEquals(2, chunks.size());
+            for (DataChunk chunk : chunks) {
+                Assert.assertTrue(chunk.getSize() <= 100 * 1024);
+            }
+            Assert.assertEquals(originalData, DataChunkUtil.mergeChunks(chunks));
+        }
     }
 
     @Test
