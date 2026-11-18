@@ -78,6 +78,10 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
         notifyServiceMap.forEach((channel, service) -> {
             try {
                 setMessageReceiversIfMail(channel, message, rule);
+                if (channel == NoticeChannelEnum.EMAIL && CollectionUtils.isEmpty(message.getReceivers())) {
+                    logger.warn("邮件渠道已启用但无收件人，跳过发送（请在通知规则中配置邮件）");
+                    return;
+                }
                 service.notify(message);
             } catch (Exception e) {
                 logger.error("Send message error, channel: {}", channel, e);
@@ -178,9 +182,45 @@ public class NoticeChannelDispatcher implements NoticeDeliveryHandler {
         if (channel != NoticeChannelEnum.EMAIL) {
             return;
         }
-        if (rule == null || StringUtil.isBlank(rule.getEmails())) {
+        List<String> receivers = resolveMailReceivers(rule);
+        if (!receivers.isEmpty()) {
+            message.setReceivers(receivers);
+        }
+    }
+
+    /**
+     * 有作用域规则用规则邮件；无作用域（手动测试、连接器离线等）汇总全部规则中的邮件。
+     */
+    private List<String> resolveMailReceivers(NoticeRule rule) {
+        LinkedHashSet<String> emails = new LinkedHashSet<>();
+        if (rule != null && StringUtil.isNotBlank(rule.getEmails())) {
+            addEmails(emails, rule.getEmails());
+            return new ArrayList<>(emails);
+        }
+        List<NoticeRule> all = noticeRuleProfile.listAll();
+        if (CollectionUtils.isEmpty(all)) {
+            return new ArrayList<>();
+        }
+        for (NoticeRule item : all) {
+            if (item != null && StringUtil.isNotBlank(item.getEmails())) {
+                addEmails(emails, item.getEmails());
+            }
+        }
+        return new ArrayList<>(emails);
+    }
+
+    private static void addEmails(Set<String> target, String raw) {
+        if (target == null || StringUtil.isBlank(raw)) {
             return;
         }
-        message.setReceivers(new ArrayList<>(Arrays.asList(StringUtil.split(rule.getEmails(), StringUtil.COMMA))));
+        String[] parts = StringUtil.split(raw, StringUtil.COMMA);
+        if (parts == null) {
+            return;
+        }
+        for (String part : parts) {
+            if (StringUtil.isNotBlank(part)) {
+                target.add(part.trim());
+            }
+        }
     }
 }
