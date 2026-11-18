@@ -207,7 +207,7 @@
             showConfirm({
                 title: '客户端列表' + (name ? ' - ' + name : ''),
                 body: body,
-                size: 'xlarge',
+                size: 'max',
                 showCancel: false,
                 confirmText: '关闭',
                 confirmType: 'info'

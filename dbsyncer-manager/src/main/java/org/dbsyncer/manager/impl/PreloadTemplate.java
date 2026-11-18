@@ -128,6 +128,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             launchCaptureTasks();
             // 同步任务：按任务级 Meta 恢复 Mapping
             launchSyncMappings();
+            // 冷启动：订阅与表组就绪后，远端上报最小位点（仅此处触发）
+            captureAgentService.minCheckpoint();
             //初始化定时检测任务
             scheduledScanManager.start();
         }
@@ -281,11 +283,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (!captureAgentService.isAvailable()) {
             return;
         }
-        launchRunningTasks(CaptureLocalTask.class, "本地采集");
-        launchRunningTasks(CaptureRemoteTask.class, "远端采集");
+        launchRunningTasks(CaptureLocalTask.class);
+        launchRunningTasks(CaptureRemoteTask.class);
     }
 
-    private <T extends ConfigModel> void launchRunningTasks(Class<T> type, String label) {
+    private <T extends ConfigModel> void launchRunningTasks(Class<T> type) {
         taskProfile.pageScanTasks(type, ConfigConstant.PAGE_SIZE, tasks -> {
             if (CollectionUtils.isEmpty(tasks)) {
                 return;
@@ -310,9 +312,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
                 try {
                     captureAgentService.start(task.getId());
-                    logger.info("恢复{}任务, id={}, name={}", label, task.getId(), task.getName());
+                    logger.info("恢复采集任务, id={}, name={}, type={}", task.getId(), task.getName(), type.getSimpleName());
                 } catch (Exception e) {
-                    logger.error("恢复{}任务失败, id={}, name={}, err={}", label, task.getId(), task.getName(), e.getMessage(), e);
+                    logger.error("恢复采集任务失败, id={}, name={}, type={}, err={}",
+                            task.getId(), task.getName(), type.getSimpleName(), e.getMessage(), e);
                 }
             }
         });
@@ -349,9 +352,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
                 try {
                     reConnect(mapping);
-                    bindAgentSchema(mapping);
-                    // 自动恢复：CDC 监听启动失败时按配置重试
+                    // 先启动同步（注册表组），再 bindSchema 触发 SUBSCRIBE + CHECKPOINT，避免重放事件因 pickers 未就绪被丢。
                     clusterService.start(mapping, true);
+                    bindAgentSchema(mapping);
                 } catch (Exception e) {
                     logger.error("恢复同步驱动失败, taskId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
                 }

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -15,30 +16,49 @@ import java.util.Map;
  */
 public interface CaptureAgentService {
 
-    void init();
+    default void init() {
+    }
 
-    boolean isAvailable();
+    default boolean isAvailable() {
+        return false;
+    }
 
-    void start(String id);
+    /**
+     * 程序冷启动恢复：预加载完成后由远端向本地上报最小位点（运行中重连/手动启停不调用）。
+     */
+    default void minCheckpoint() {
+    }
 
-    void stop(String id);
+    default void start(String id) {
+    }
 
-    void bindSchema(String captureTaskId, String mappingId, String schema);
+    default void stop(String id) {
+    }
 
-    void unbindSchema(String captureTaskId, String mappingId);
+    default void bindSchema(String captureTaskId, String mappingId, String schema) {
+    }
+
+    default void unbindSchema(String captureTaskId, String mappingId) {
+    }
 
     /**
      * 远端采集运行态摘要。约定键：{@code queueSize}。
      */
-    Map<String, Object> getRemoteRuntimeInfo(String captureTaskId);
+    default Map<String, Object> getRemoteRuntimeInfo(String captureTaskId) {
+        return Collections.emptyMap();
+    }
 
     /**
      * 本地采集运行态摘要。约定键：{@code queueSize}、{@code queueCapacity}、{@code checkpoint}。
      */
-    Map<String, Object> getLocalRuntimeInfo(String captureTaskId);
+    default Map<String, Object> getLocalRuntimeInfo(String captureTaskId) {
+        return Collections.emptyMap();
+    }
 
     /**
      * 本地采集已连接客户端列表。
      */
-    List<Map<String, Object>> listLocalClients(String captureTaskId);
+    default List<Map<String, Object>> listLocalClients(String captureTaskId) {
+        return Collections.emptyList();
+    }
 }

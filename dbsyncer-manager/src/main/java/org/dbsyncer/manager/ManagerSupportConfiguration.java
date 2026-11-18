@@ -15,9 +15,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author AE86
@@ -49,47 +46,8 @@ public class ManagerSupportConfiguration {
         if (spi != null) {
             return spi;
         }
-        // 社区版空实现：启停与运行态均无能力
+        // 社区版空实现：全部走接口默认方法
         return new CaptureAgentService() {
-            @Override
-            public void init() {
-            }
-
-            @Override
-            public boolean isAvailable() {
-                return false;
-            }
-
-            @Override
-            public void start(String id) {
-            }
-
-            @Override
-            public void stop(String id) {
-            }
-
-            @Override
-            public void bindSchema(String captureTaskId, String mappingId, String schema) {
-            }
-
-            @Override
-            public void unbindSchema(String captureTaskId, String mappingId) {
-            }
-
-            @Override
-            public Map<String, Object> getRemoteRuntimeInfo(String captureTaskId) {
-                return Collections.emptyMap();
-            }
-
-            @Override
-            public Map<String, Object> getLocalRuntimeInfo(String captureTaskId) {
-                return Collections.emptyMap();
-            }
-
-            @Override
-            public List<Map<String, Object>> listLocalClients(String captureTaskId) {
-                return Collections.emptyList();
-            }
         };
     }
 
