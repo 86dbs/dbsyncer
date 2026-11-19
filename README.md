@@ -64,6 +64,7 @@ https://dbsyncer.cn
 ## 📦安装配置
 
 -
+
 dbsyncer-x.x.x.zip [社区版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E7%A4%BE%E5%8C%BA%E7%89%88%E5%AE%89%E8%A3%85)
 -
 dbsyncer-enterprise-x.x.x.zip [专业版安装教程](https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E4%B8%93%E4%B8%9A%E7%89%88%E5%AE%89%E8%A3%85)
@@ -83,10 +84,10 @@ dbsyncer-enterprise-x.x.x.zip [专业版安装教程](https://gitee.com/ghi/dbsy
 ```shell
 # 社区版
 docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:latest
-docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:2.1.5
+docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:2.1.6
 # 专业版
 docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer-enterprise:latest
-docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer-enterprise:2.1.5
+docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer-enterprise:2.1.6
 ```
 
 * 运行命令
@@ -153,28 +154,47 @@ $ ./build.sh
 | Linux   | Intel(R) Xeon(R) CPU E5-2696 v3B 8核心 内存48GB | 1亿条 | 37分52秒 |
 | Windows | AMD Ryzen 7 5800x 8核心 12GB                  | 1亿条 | 57分43秒 |
 
-#### 增量同步
+#### 专业版性能测试（实测数据）
 
-| 系统      | 机器配置                                        | 分配内存 | TPS    | 峰值      |
-|---------|---------------------------------------------|------|--------|---------|
-| Mac     | Apple M3 Pro 12核心 内存18GB                    | 4GB  | 8112/秒 | 11000/秒 |
-| Linux   | Intel(R) Xeon(R) CPU E5-2696 v3B 8核心 内存48GB | 4GB  | 8000/秒 | 10000/秒 |
-| Windows | AMD Ryzen 7 5800x 8核心 12GB                  | 4GB  | 7553/秒 | 9000/秒  |
+多节点分布式集群实测：全量与增量引擎协同加速，吞吐显著优于单机部署与社区版。
 
-<img src="https://foruda.gitee.com/images/1722860668272963387/7110f00f_376718.png" />
+| 场景   | 指标       | 结果           |
+|------|----------|--------------|
+| 全量同步 | 1 亿条数据耗时 | **10m 15s**  |
+| 增量同步 | 平均 TPS   | **33,797/s** |
+| 增量同步 | 峰值 TPS   | **50,491/s** |
 
-<img src="https://foruda.gitee.com/images/1732952268144233045/b607609e_376718.png" />
+#### 测试环境 · 多节点集群
+
+| 节点   | 机器配置                       |
+|------|----------------------------|
+| 节点 1 | Apple M5 Air · 10 核 · 24GB |
+| 节点 2 | Apple M3 Pro · 12 核 · 18GB |
+
+<img src="https://foruda.gitee.com/images/1795073396322895477/b1035cda_13397205.png" />
+
+<img src="https://foruda.gitee.com/images/1795073444613715622/2742d93e_13397205.png" />
+
+<img src="https://foruda.gitee.com/images/1795074476180664836/68f29194_13397205.png" />
+
+<img src="https://foruda.gitee.com/images/1795074382071170265/4a489d87_13397205.png" />
 
 [专业版介绍](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)
 
 ## 🐞[常见问题](https://gitee.com/ghi/dbsyncer/wikis/%E5%92%A8%E8%AF%A2%E9%97%AE%E9%A2%98/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
 
 *
+
 MySQL无法连接。默认使用的驱动版本为8.0.21，如果为mysql5.x需要手动替换驱动 [mysql-connector-java-5.1.40.jar](https://gitee.com/ghi/dbsyncer/attach_files)
+
 *
+
 SQLServer无法连接。案例：[驱动程序无法通过使用安全套接字层(SSL)加密与 SQL Server 建立安全连接。错误:“The server selected protocol version TLS10 is not accepted by client preferences [TLS12]”](https://gitee.com/ghi/dbsyncer/issues/I4PL46?from=project-issue)
+
 *
+
 同步数据乱码。案例：[mysql8表导入sqlserver2008R2后，sqlserver表nvarchar字段内容为乱码](https://gitee.com/ghi/dbsyncer/issues/I4JXY0)
+
 * [如何开启远程debug模式？](https://gitee.com/ghi/dbsyncer/issues/I63F6R)
 
 ## 🤝贡献支持
@@ -182,6 +202,7 @@ SQLServer无法连接。案例：[驱动程序无法通过使用安全套接字�
 * DBS团队目标：**坚持开源，让每一个用户都能轻松完成数据同步！**
 * QQ群讨论: **875519623**
 *
+
 欢迎大家提需求和建议[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!
 （详细描述你的原始需求，我们会帮你提供一些方案，节约大家的成本）
 
