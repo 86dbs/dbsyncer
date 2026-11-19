@@ -171,9 +171,13 @@ $ ./build.sh
 | 节点 1 | Apple M5 Air · 10 核 · 24GB |
 | 节点 2 | Apple M3 Pro · 12 核 · 18GB |
 
-<img src="https://foruda.gitee.com/images/1722860668272963387/7110f00f_376718.png" />
+<img src="https://foruda.gitee.com/images/1795073396322895477/b1035cda_13397205.png" />
 
-<img src="https://foruda.gitee.com/images/1732952268144233045/b607609e_376718.png" />
+<img src="https://foruda.gitee.com/images/1795073444613715622/2742d93e_13397205.png" />
+
+<img src="https://foruda.gitee.com/images/1795074476180664836/68f29194_13397205.png" />
+
+<img src="https://foruda.gitee.com/images/1795074382071170265/4a489d87_13397205.png" />
 
 [专业版介绍](https://gitee.com/ghi/dbsyncer/wikis/DBSyncer%E4%B8%93%E4%B8%9A%E7%89%88)
 
