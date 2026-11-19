@@ -45,6 +45,11 @@ public class CaptureLocalTask extends ConfigModel {
     private Integer captureIntervalMs = 1000;
 
     /**
+     * 单帧最多推送事件数（避免一行超过协议长度）
+     */
+    private Integer pushBatch = 200;
+
+    /**
      * 位点文件名（内容在文件中）
      */
     private String checkpoint = "tail.ckpt";
@@ -98,6 +103,14 @@ public class CaptureLocalTask extends ConfigModel {
 
     public void setCaptureIntervalMs(Integer captureIntervalMs) {
         this.captureIntervalMs = captureIntervalMs;
+    }
+
+    public Integer getPushBatch() {
+        return pushBatch;
+    }
+
+    public void setPushBatch(Integer pushBatch) {
+        this.pushBatch = pushBatch;
     }
 
     public String getCheckpoint() {

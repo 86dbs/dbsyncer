@@ -223,6 +223,9 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         task.setAgentSecret(agentSecret);
         task.setThreadNum(NumberUtil.toInt(params.get("threadNum"), 4));
         task.setCaptureIntervalMs(NumberUtil.toInt(params.get("captureIntervalMs"), 1000));
+        int pushBatch = NumberUtil.toInt(params.get("pushBatch"), 200);
+        Assert.isTrue(pushBatch >= 1 && pushBatch <= 5000, "单帧事件数须在 1~5000");
+        task.setPushBatch(pushBatch);
         String checkpoint = StringUtil.trim(params.get("checkpoint"));
         task.setCheckpoint(StringUtil.isBlank(checkpoint) ? "tail.ckpt" : checkpoint);
         task.setJdbcUrl(jdbcUrl);
@@ -262,6 +265,7 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         map.put("agentSecret", task.getAgentSecret());
         map.put("threadNum", task.getThreadNum());
         map.put("captureIntervalMs", task.getCaptureIntervalMs());
+        map.put("pushBatch", task.getPushBatch());
         map.put("checkpoint", task.getCheckpoint());
         map.put("connectorType", StringUtil.isBlank(task.getConnectorType()) ? "Oracle" : task.getConnectorType());
         map.put("publicKey", task.getPublicKey());
