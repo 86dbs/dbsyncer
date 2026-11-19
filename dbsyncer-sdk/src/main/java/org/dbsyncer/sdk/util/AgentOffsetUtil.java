@@ -37,7 +37,11 @@ public final class AgentOffsetUtil {
         Map<String, Object> checkpoint = new HashMap<>(8);
         checkpoint.put("sequence", sequence.trim());
         checkpoint.put("block", defaultNumber(snapshot.get(AgentOffsetConstant.REDO_BLOCK), "1"));
-        checkpoint.put("offset", defaultNumber(snapshot.get(AgentOffsetConstant.REDO_OFFSET), "0"));
+        // offset 仅在有值时带上：缺省成 0 会把同 sequence/block 的本地位点误判为更旧。
+        String offset = snapshot.get(AgentOffsetConstant.REDO_OFFSET);
+        if (StringUtil.isNotBlank(offset)) {
+            checkpoint.put("offset", offset.trim());
+        }
         String scn = snapshot.get(AgentOffsetConstant.REDO_SCN);
         if (StringUtil.isNotBlank(scn)) {
             checkpoint.put("scn", scn.trim());
@@ -87,6 +91,7 @@ public final class AgentOffsetUtil {
 
     /**
      * 比较两个位点：sequence → block → offset。负值表示 left 更旧。
+     * <p>任一侧缺少 offset 时，同 sequence/block 视为相等。
      */
     public static int compare(Map<String, Object> left, Map<String, Object> right) {
         long ls = longValue(left, "sequence");
@@ -99,7 +104,14 @@ public final class AgentOffsetUtil {
         if (lb != rb) {
             return Long.compare(lb, rb);
         }
+        if (!hasOffset(left) || !hasOffset(right)) {
+            return 0;
+        }
         return Integer.compare(intValue(left, "offset"), intValue(right, "offset"));
+    }
+
+    private static boolean hasOffset(Map<String, Object> map) {
+        return map != null && map.get("offset") != null && StringUtil.isNotBlank(String.valueOf(map.get("offset")));
     }
 
     public static long longValue(Map<String, Object> map, String key) {
