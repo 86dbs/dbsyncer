@@ -205,7 +205,7 @@
                     </table>
                 </div>`;
             showConfirm({
-                title: '客户端列表' + (name ? ' - ' + name : ''),
+                title: '客户端列表',
                 body: body,
                 size: 'max',
                 showCancel: false,
