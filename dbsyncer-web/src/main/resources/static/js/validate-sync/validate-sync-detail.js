@@ -396,6 +396,8 @@
             var tgt = row.targetTotal != null ? row.targetTotal : 0;
             var counts = resolveDiffFixedCounts(row);
             var pending = counts.diff > counts.fixed;
+            var canOperate = !window.DBSPermission || DBSPermission.has('validateSync:operate');
+            var showManualRevise = pending && canOperate;
 
             closeDiffDetailModal();
             currentDetailId = row.id || '';
@@ -408,13 +410,13 @@
                 size: 'max',
                 position: 'center',
                 body: buildDiffDetailBodyHtml(data, tableNameOuter),
-                confirmText: pending ? '手动订正(最多100条)' : '关闭',
-                showCancel: pending,
+                confirmText: showManualRevise ? '手动订正(最多100条)' : '关闭',
+                showCancel: showManualRevise,
                 cancelText: '关闭',
                 confirmType: 'primary',
-                closeOnConfirm: !pending,
+                closeOnConfirm: !showManualRevise,
                 onConfirm: function () {
-                    if (pending) {
+                    if (showManualRevise) {
                         openManualReviseConfirm();
                         return;
                     }

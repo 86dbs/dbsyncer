@@ -38,6 +38,8 @@ public class GroupController extends BaseController {
 
     private static final String PERM_CONNECTOR_EDIT = "connector:edit";
     private static final String PERM_MAPPING_EDIT = "mapping:edit";
+    private static final String PERM_VALIDATE_SYNC_EDIT = "validateSync:edit";
+    private static final String PERM_DATABASE_SYNC_EDIT = "databaseSync:edit";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -214,7 +216,7 @@ public class GroupController extends BaseController {
     }
 
     /**
-     * 按资源类型映射编辑权限：连接器用 connector:edit，任务类用 mapping:edit。
+     * 按资源类型映射编辑权限：连接器 / 同步任务 / 订正校验 / 整库迁移各自独立。
      * 未传类型时任一编辑权即可（兼容旧调用）。
      */
     private void requireGroupManagePermission(String resourceType) {
@@ -222,12 +224,18 @@ public class GroupController extends BaseController {
             requirePermission(PERM_CONNECTOR_EDIT);
             return;
         }
-        if (StringUtil.equals(ConfigConstant.MAPPING, resourceType)
-                || StringUtil.equals(ConfigConstant.VALIDATE_SYNC, resourceType)
-                || StringUtil.equals(ConfigConstant.DATABASE_SYNC, resourceType)) {
+        if (StringUtil.equals(ConfigConstant.MAPPING, resourceType)) {
             requirePermission(PERM_MAPPING_EDIT);
             return;
         }
-        requireAnyPermission(PERM_CONNECTOR_EDIT, PERM_MAPPING_EDIT);
+        if (StringUtil.equals(ConfigConstant.VALIDATE_SYNC, resourceType)) {
+            requirePermission(PERM_VALIDATE_SYNC_EDIT);
+            return;
+        }
+        if (StringUtil.equals(ConfigConstant.DATABASE_SYNC, resourceType)) {
+            requirePermission(PERM_DATABASE_SYNC_EDIT);
+            return;
+        }
+        requireAnyPermission(PERM_CONNECTOR_EDIT, PERM_MAPPING_EDIT, PERM_VALIDATE_SYNC_EDIT, PERM_DATABASE_SYNC_EDIT);
     }
 }

@@ -100,7 +100,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("databaseSync:edit");
             return RestResult.restSuccess(databaseSyncService.add(getParams(request)));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -113,7 +113,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("databaseSync:edit");
             Map<String, String> params = getParams(request);
             requireResource(ConfigConstant.DATABASE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(databaseSyncService.edit(params));
@@ -128,7 +128,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult remove(@RequestParam("id") String id) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("databaseSync:edit");
             requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(databaseSyncService.delete(id));
         } catch (Exception e) {
@@ -142,7 +142,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult start(@RequestParam("id") String id) {
         try {
-            requirePermission("mapping:operate");
+            requirePermission("databaseSync:operate");
             requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(databaseSyncService.start(id));
         } catch (Exception e) {
@@ -156,7 +156,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult stop(@RequestParam("id") String id) {
         try {
-            requirePermission("mapping:operate");
+            requirePermission("databaseSync:operate");
             requireResource(ConfigConstant.DATABASE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(databaseSyncService.stop(id));
         } catch (Exception e) {
@@ -185,7 +185,7 @@ public class DatabaseSyncController extends BaseController {
     @ResponseBody
     public RestResult previewTables(HttpServletRequest request) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("databaseSync:edit");
             return RestResult.restSuccess(databaseSyncService.previewTables(getParams(request)));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

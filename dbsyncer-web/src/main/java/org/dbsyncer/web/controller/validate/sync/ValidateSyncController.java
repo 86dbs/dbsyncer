@@ -98,7 +98,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult add(HttpServletRequest request) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(validateSyncService.add(params));
         } catch (Exception e) {
@@ -115,7 +115,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult edit(HttpServletRequest request) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             Map<String, String> params = getParams(request);
             requireResource(ConfigConstant.VALIDATE_SYNC, params.get(ConfigConstant.CONFIG_MODEL_ID), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.edit(params));
@@ -130,7 +130,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.copy(id, currentUsername()));
         } catch (Exception e) {
@@ -147,7 +147,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult remove(@RequestParam(value = "id") String id) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.delete(id));
         } catch (Exception e) {
@@ -164,7 +164,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult start(@RequestParam(value = "id") String id) {
         try {
-            requirePermission("mapping:operate");
+            requirePermission("validateSync:operate");
             requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(validateSyncService.start(id));
         } catch (Exception e) {
@@ -181,7 +181,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult stop(@RequestParam(value = "id") String id) {
         try {
-            requirePermission("mapping:operate");
+            requirePermission("validateSync:operate");
             requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(validateSyncService.stop(id));
         } catch (Exception e) {
@@ -219,7 +219,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.refreshTables(id));
         } catch (Exception e) {
@@ -248,7 +248,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult refreshFields(@RequestParam(value = "id") String id) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             requireResource(ConfigConstant.VALIDATE_SYNC, id, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.refreshFields(id));
         } catch (Exception e) {
@@ -262,7 +262,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult addTableGroup(HttpServletRequest request) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             Map<String, String> params = getParams(request);
             requireResource(ConfigConstant.VALIDATE_SYNC, params.get("taskId"), ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.addTableGroup(params));
@@ -277,7 +277,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult editTableGroup(HttpServletRequest request) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             Map<String, String> params = getParams(request);
             TableGroup tableGroup = tableGroupService.getTableGroup(params.get(ConfigConstant.CONFIG_MODEL_ID));
             requireResource(ConfigConstant.VALIDATE_SYNC, tableGroup.getTaskId(), ResourceAclActionEnum.WRITE.getCode());
@@ -295,7 +295,7 @@ public class ValidateSyncController extends BaseController {
             @RequestParam(value = "taskId", required = false) String taskId,
             @RequestParam(value = "ids") String ids) {
         try {
-            requirePermission("mapping:edit");
+            requirePermission("validateSync:edit");
             requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclActionEnum.WRITE.getCode());
             return RestResult.restSuccess(validateSyncService.removeTableGroup(taskId, ids));
         } catch (Exception e) {
@@ -361,7 +361,7 @@ public class ValidateSyncController extends BaseController {
     @ResponseBody
     public RestResult manualRevise(@RequestParam("taskId") String taskId, @RequestParam("id") String id) {
         try {
-            requirePermission("mapping:operate");
+            requirePermission("validateSync:operate");
             requireResource(ConfigConstant.VALIDATE_SYNC, taskId, ResourceAclActionEnum.OPERATE.getCode());
             return RestResult.restSuccess(validateSyncService.manualReviseDetail(taskId, id));
         } catch (Exception e) {

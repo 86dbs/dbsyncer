@@ -32,6 +32,16 @@ public enum PermissionModuleEnum {
     MAPPING("mapping", "同步任务"),
 
     /**
+     * 订正校验
+     */
+    VALIDATE_SYNC("validateSync", "订正校验"),
+
+    /**
+     * 整库迁移
+     */
+    DATABASE_SYNC("databaseSync", "整库迁移"),
+
+    /**
      * 告警通知
      */
     NOTICE("notice", "告警通知"),
@@ -78,7 +88,7 @@ public enum PermissionModuleEnum {
         }
         String key = code.trim().toLowerCase(Locale.ROOT);
         for (PermissionModuleEnum module : values()) {
-            if (StringUtil.equals(module.code, key)) {
+            if (StringUtil.equals(module.code.toLowerCase(Locale.ROOT), key)) {
                 return module;
             }
         }

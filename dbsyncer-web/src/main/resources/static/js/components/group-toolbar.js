@@ -23,6 +23,22 @@
     }
 
     /**
+     * 按资源类型解析分组编辑权限码（与后端 GroupController 一致）。
+     */
+    function resolveEditPermission(resourceType) {
+        if (resourceType === 'connector') {
+            return 'connector:edit';
+        }
+        if (resourceType === 'validateSync') {
+            return 'validateSync:edit';
+        }
+        if (resourceType === 'databaseSync') {
+            return 'databaseSync:edit';
+        }
+        return 'mapping:edit';
+    }
+
+    /**
      * 读取已缓存的分组筛选（供列表首屏查询与工具栏恢复共用）。
      */
     function peekStoredGroupId(resourceType) {
@@ -297,8 +313,7 @@
 
         var resourceType = options.resourceType || '';
         var searchUrl = options.searchUrl || '';
-        var editPermission = options.editPermission
-            || (resourceType === 'connector' ? 'connector:edit' : 'mapping:edit');
+        var editPermission = options.editPermission || resolveEditPermission(resourceType);
         // 从缓存恢复，避免编辑/删除整页重载后筛选回到「全部」
         var currentGroupId = peekStoredGroupId(resourceType);
         var listTotal = 0;

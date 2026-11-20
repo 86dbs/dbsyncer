@@ -106,17 +106,25 @@
         return '<span class="badge ' + config.class + '">' + config.text + '</span>';
     }
 
+    function hasPermission(code) {
+        return !window.DBSPermission || DBSPermission.has(code);
+    }
+
     function renderTaskStateButton(state, mappingId) {
         const stateConfig = getTaskStateConfig(mappingId);
         const config = stateConfig[state] || stateConfig[0];
         const disabledAttr = config.disabled ? ' disabled' : '';
         const onclickAttr = config.onclick ? ' onclick="' + config.onclick + '"' : '';
+        const canOperate = hasPermission('validateSync:operate');
+        const canEdit = hasPermission('validateSync:edit');
         const stateBtn = [];
-        stateBtn.push(
-            '<button class="table-action-btn play" data-id="' + mappingId + '" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
-            + '<i class="fa ' + config.icon + '"></i></button>'
-        );
-        if (state === 0 || state === 3) {
+        if (canOperate) {
+            stateBtn.push(
+                '<button class="table-action-btn play" data-id="' + mappingId + '" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
+                + '<i class="fa ' + config.icon + '"></i></button>'
+            );
+        }
+        if ((state === 0 || state === 3) && canEdit) {
             stateBtn.push(
                 '<button class="table-action-btn delete" title="删除" onclick="deleteTask(\'' + mappingId + '\')">'
                 + '<i class="fa fa-trash"></i></button>'
@@ -282,8 +290,10 @@
                     + '<td>' + renderTaskStateText(task.metaState || 0) + '</td>'
                     + '<td>' + formatDate(task.updateTime || '') + '</td>'
                     + '<td><div class="flex items-center">'
-                    + '<button class="table-action-btn view" title="修改" onclick="doLoader(\'/validate-sync/page/edit?id=' + task.id + '\')">'
-                    + '<i class="fa fa-edit"></i></button>'
+                    + (hasPermission('validateSync:edit')
+                        ? ('<button class="table-action-btn view" title="修改" onclick="doLoader(\'/validate-sync/page/edit?id=' + task.id + '\')">'
+                            + '<i class="fa fa-edit"></i></button>')
+                        : '')
                     + renderTaskStateButton(task.metaState || 0, task.id)
                     + '</div></td>'
                     + '</tr>';

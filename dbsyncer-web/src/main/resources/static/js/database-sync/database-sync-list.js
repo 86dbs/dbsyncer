@@ -90,14 +90,23 @@
         return '<span class="badge ' + config.class + '">' + config.text + '</span>';
     }
 
+    function hasPermission(code) {
+        return !window.DBSPermission || DBSPermission.has(code);
+    }
+
     function renderTaskStateButton(state, taskId) {
         const stateConfig = getTaskStateConfig(taskId);
         const config = stateConfig[state] || stateConfig[0];
         const disabledAttr = config.disabled ? ' disabled' : '';
         const onclickAttr = config.onclick ? ' onclick="' + config.onclick + '"' : '';
-        let html = '<button class="table-action-btn play" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
-            + '<i class="fa ' + config.icon + '"></i></button>';
-        if (state === 0 || state === 3) {
+        const canOperate = hasPermission('databaseSync:operate');
+        const canEdit = hasPermission('databaseSync:edit');
+        let html = '';
+        if (canOperate) {
+            html += '<button class="table-action-btn play" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
+                + '<i class="fa ' + config.icon + '"></i></button>';
+        }
+        if ((state === 0 || state === 3) && canEdit) {
             html += '<button class="table-action-btn delete" title="删除" onclick="databaseSyncRemove(\'' + taskId + '\')">'
                 + '<i class="fa fa-trash"></i></button>';
         }
@@ -308,9 +317,10 @@
                     + '<td>' + renderTaskStateText(task.metaState || 0) + '</td>'
                     + '<td>' + formatDate(task.updateTime || '') + '</td>'
                     + '<td><div class="flex items-center">'
-                    + '<button class="table-action-btn view" title="修改" onclick="doLoader(\'/database-sync/page/edit?id='
-                    + taskId + '\')">'
-                    + '<i class="fa fa-edit"></i></button>'
+                    + (hasPermission('databaseSync:edit')
+                        ? ('<button class="table-action-btn view" title="修改" onclick="doLoader(\'/database-sync/page/edit?id='
+                            + taskId + '\')"><i class="fa fa-edit"></i></button>')
+                        : '')
                     + renderTaskStateButton(task.metaState || 0, task.id)
                     + '</div></td>'
                     + '</tr>';
