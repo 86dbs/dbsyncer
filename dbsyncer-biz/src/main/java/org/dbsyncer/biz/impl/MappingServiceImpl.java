@@ -61,7 +61,6 @@ import org.dbsyncer.sdk.model.CaptureRemoteTask;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.spi.CaptureAgentService;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -126,9 +125,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private CaptureTaskRelProfile captureTaskRelProfile;
-
-    @Resource
-    private CaptureAgentService captureAgentService;
 
     @Resource
     private TaskProfile taskProfile;
@@ -889,18 +885,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (!captureTaskRelProfile.add(rel)) {
             throw new BizException("同步任务已关联采集任务");
         }
-        String schema = StringUtil.trim(mapping.getSourceSchema());
-        Assert.hasText(schema, "同步任务源 Schema 不能为空");
-        captureAgentService.bindSchema(captureTaskId, mapping.getId(), schema);
+        // Schema 订阅与 Runtime 启停由本机 ensureRemote/releaseRemote 负责，此处只落关联表
+        Assert.hasText(StringUtil.trim(mapping.getSourceSchema()), "同步任务源 Schema 不能为空");
     }
 
     private void releaseCapture(Mapping mapping) {
-        if (mapping.getListener() != null && ListenerTypeEnum.isAgent(mapping.getListener().getListenerType())) {
-            String captureTaskId = StringUtil.trim(mapping.getListener().getCaptureTaskId());
-            if (StringUtil.isNotBlank(captureTaskId)) {
-                captureAgentService.unbindSchema(captureTaskId, mapping.getId());
-            }
-        }
+        // Runtime 回收由本机 releaseRemote 负责，此处只清关联表
         captureTaskRelProfile.removeByTaskId(mapping.getId());
     }
 

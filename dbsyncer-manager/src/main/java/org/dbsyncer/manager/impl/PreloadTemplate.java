@@ -28,10 +28,8 @@ import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.CaptureLocalTask;
-import org.dbsyncer.sdk.model.CaptureRemoteTask;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.notice.MessageService;
@@ -124,12 +122,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (clusterService.isStandalone()) {
             // Load connectorInstances
             loadConnectorInstance();
-            // 采集任务先于同步任务，Agent 模式才能连上并登记 Schema
+            // 仅恢复本地采集；远端由同步任务 ensureRemote 按需拉起并上报 min
             launchCaptureTasks();
-            // 同步任务：按任务级 Meta 恢复 Mapping
+            // 同步任务：按任务级 Meta 恢复 Mapping（Agent 在本机 start 路径 ensure）
             launchSyncMappings();
-            // 冷启动：订阅与表组就绪后，远端上报最小位点（仅此处触发）
-            captureAgentService.minCheckpoint();
             //初始化定时检测任务
             scheduledScanManager.start();
         }
@@ -277,14 +273,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     /**
-     * 恢复采集任务：仅续跑 Meta=RUNNING 的本地采集、远端采集。本地先于远端。
+     * 恢复本地采集：仅续跑 Meta=RUNNING 的 captureLocal。远端不盲起。
      */
     private void launchCaptureTasks() {
         if (!captureAgentService.isAvailable()) {
             return;
         }
         launchRunningTasks(CaptureLocalTask.class);
-        launchRunningTasks(CaptureRemoteTask.class);
     }
 
     private <T extends ConfigModel> void launchRunningTasks(Class<T> type) {
@@ -352,29 +347,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
                 try {
                     reConnect(mapping);
-                    // 先启动同步（注册表组），再 bindSchema 触发 SUBSCRIBE + CHECKPOINT，避免重放事件因 pickers 未就绪被丢。
+                    // Agent 远端 ensure/release 在本机 start/stop 路径完成
                     clusterService.start(mapping, true);
-                    bindAgentSchema(mapping);
                 } catch (Exception e) {
                     logger.error("恢复同步驱动失败, taskId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
                 }
             }
         });
-    }
-
-    /**
-     * Agent 采集的订阅只在内存里。重启后按任务配置重新登记，不重复写关联表。
-     */
-    private void bindAgentSchema(Mapping mapping) {
-        if (mapping.getListener() == null || !ListenerTypeEnum.isAgent(mapping.getListener().getListenerType())) {
-            return;
-        }
-        String captureTaskId = StringUtil.trim(mapping.getListener().getCaptureTaskId());
-        String schema = StringUtil.trim(mapping.getSourceSchema());
-        if (StringUtil.isBlank(captureTaskId) || StringUtil.isBlank(schema)) {
-            return;
-        }
-        captureAgentService.bindSchema(captureTaskId, mapping.getId(), schema);
     }
 
     public void reConnect(Mapping mapping) {

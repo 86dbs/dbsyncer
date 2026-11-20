@@ -254,7 +254,9 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
         task.setAgentHost(agentHost);
         task.setAgentPort(agentPort);
         task.setAgentSecret(agentSecret);
-        task.setQueueCapacity(NumberUtil.toInt(params.get("queueCapacity"), 100000));
+        int queueCapacity = NumberUtil.toInt(params.get("queueCapacity"), 100000);
+        Assert.isTrue(queueCapacity >= 1000 && queueCapacity <= 500000, "队列容量须在 1000~500000");
+        task.setQueueCapacity(queueCapacity);
         return task;
     }
 
@@ -320,6 +322,10 @@ public class CaptureTaskServiceImpl implements CaptureTaskService {
     private Map<String, Object> toRemoteView(CaptureRemoteTask task) {
         Map<String, Object> map = baseView(task.getId(), task.getName(), task.getType(),
                 task.getCreateTime(), task.getUpdateTime());
+        // 远端状态以本机 Runtime 为准（由同步任务 ensure 驱动），不看菜单启停 Meta
+        map.put("state", captureAgentService.isRemoteRunning(task.getId())
+                ? CommonTaskStatusEnum.RUNNING.getCode()
+                : CommonTaskStatusEnum.READY.getCode());
         map.put("agentHost", task.getAgentHost());
         map.put("agentPort", task.getAgentPort());
         map.put("agentAddress", formatHostPort(task.getAgentHost(), task.getAgentPort()));

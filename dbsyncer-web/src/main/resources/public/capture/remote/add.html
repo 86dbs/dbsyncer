@@ -4,7 +4,7 @@
 
 <div class="form-container">
     <div class="card-header">
-        <h3 class="card-title text-center">添加远端采集</h3>
+        <h3 class="card-title text-center">添加远端采集配置</h3>
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">
@@ -63,7 +63,8 @@
                 </div>
                 <div class="form-item">
                     <label class="form-label" for="queueCapacity">队列容量</label>
-                    <input id="queueCapacity" name="queueCapacity" class="form-control" type="number" min="1000" value="100000">
+                    <input id="queueCapacity" name="queueCapacity" class="form-control" type="number" min="1000"
+                           max="500000" value="100000">
                 </div>
             </div>
         </form>

@@ -96,6 +96,9 @@
     var captureType = pageMeta.type;
     var pagination = null;
 
+    /**
+     * 远端采集配置：无独立启停，仅编辑/删除（运行中不可删）。
+     */
     function renderActions(task) {
         var canEdit = !window.DBSPermission || DBSPermission.has(pageMeta.editPermission);
         var state = Number(task.state) || 0;
@@ -104,7 +107,6 @@
             <button class="table-action-btn view" title="修改" onclick="doLoader('${pageMeta.pageBase}/page/edit?id=${escapeHtml(task.id)}')">
                 <i class="fa fa-edit"></i>
             </button>` : '';
-        var stateBtn = canEdit ? renderTaskStateButton(state, escapeHtml(task.id)) : '';
         var deleteBtn = canEdit && !running ? `
             <button class="table-action-btn delete" title="删除" onclick="deleteCaptureTask('${escapeHtml(task.id)}')">
                 <i class="fa fa-trash"></i>
@@ -112,7 +114,6 @@
         return `
             <div class="flex items-center">
                 ${editBtn}
-                ${stateBtn}
                 ${deleteBtn}
             </div>`;
     }
