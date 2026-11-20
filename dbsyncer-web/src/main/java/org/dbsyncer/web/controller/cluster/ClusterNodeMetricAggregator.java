@@ -378,16 +378,26 @@ public class ClusterNodeMetricAggregator {
         return result;
     }
 
+    /**
+     * TPS 平均：只对非零采样点求平均（与性能监控一致）；全 0 则返回 0。
+     */
     private double averageSeries(List<Object> values) {
         if (CollectionUtils.isEmpty(values)) {
             return 0D;
         }
         long total = 0L;
+        int count = 0;
         for (Object value : values) {
-            if (value instanceof Number) {
-                total += ((Number) value).longValue();
+            if (!(value instanceof Number)) {
+                continue;
             }
+            long n = ((Number) value).longValue();
+            if (n <= 0L) {
+                continue;
+            }
+            total += n;
+            count++;
         }
-        return Math.floor((double) total / values.size());
+        return count == 0 ? 0D : Math.floor((double) total / count);
     }
 }

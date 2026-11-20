@@ -326,8 +326,32 @@ public class MetricReporter implements ScheduledTaskJob {
             vo.addName(key);
             vo.addValue(map.getOrDefault(key, 0L));
         }
-        vo.setAverage(Math.floor(map.values().stream().mapToInt(Long::intValue).average().orElse(0)));
+        // 与集群页一致：只对非零采样点求平均，避免空闲秒把均值拉低
+        vo.setAverage(averageNonZero(vo.getValue()));
         return vo;
+    }
+
+    /**
+     * 非零采样点算术平均（向下取整）；全 0 则返回 0。
+     */
+    private static double averageNonZero(List<Object> values) {
+        if (CollectionUtils.isEmpty(values)) {
+            return 0D;
+        }
+        long sum = 0L;
+        int count = 0;
+        for (Object value : values) {
+            if (!(value instanceof Number)) {
+                continue;
+            }
+            long n = ((Number) value).longValue();
+            if (n <= 0L) {
+                continue;
+            }
+            sum += n;
+            count++;
+        }
+        return count == 0 ? 0D : Math.floor((double) sum / count);
     }
 
     /**
